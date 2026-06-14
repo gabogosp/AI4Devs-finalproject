@@ -1,0 +1,37 @@
+# === Blindaje opción 2 — andamiaje de Spekode local-only (NO publicar) ===
+# El bootstrap siembra symlinks + wrappers + hooks en la raíz. Existen en disco
+# para que las herramientas (Claude Code, Cursor, Codex, Gemini) funcionen, pero
+# NO entran a git: son el fingerprint/IP del framework.
+# (El submodule /spekode y /.gitmodules SÍ se commitean: solo un puntero a un
+#  repo privado — revela que hay metodología, no expone una línea de fuente.)
+/.agents/
+/.claude/
+/.codex/
+/.cursor/
+/.github/hooks/
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/codex.md
+/spekode-version.txt
+/docs/project-config.yml
+/openspec/config.yaml
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === Backups (de /design-frontend --regenerate, etc.) ===
+*.bak.*
+
+# === Build / runtime (se extiende cuando arranque el código) ===
+node_modules/
+dist/
+build/
+.env
+.env.local
