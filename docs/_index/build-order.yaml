@@ -1,0 +1,26 @@
+# Materialized build-order index (DAG topological order + cycles + critical path).
+# Conforma a build-order.schema.yaml. Fuente del DAG: us-status.yaml (blocked_by).
+# Companion humano: docs/delivery/build-order.md.
+generated: 2026-06-15
+parent-prd: docs/product/prd.md
+cycles_detected: []          # sin ciclos — DAG válido
+critical_path: [US-001, US-003, US-007, US-008, US-009, US-010, US-012, US-011]
+order:
+  - { id: US-001, layer: 0, cycle: 1, on_critical_path: true,  blocked_by: [],              unblocked_now: true,  disciplines: [BE, FE, QA, INFRA] }
+  - { id: US-017, layer: 1, cycle: 1, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [FE, BE, QA] }
+  - { id: US-002, layer: 1, cycle: 2, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-003, layer: 1, cycle: 2, on_critical_path: true,  blocked_by: [US-001],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-006, layer: 1, cycle: 2, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-005, layer: 2, cycle: 3, on_critical_path: false, blocked_by: [US-001, US-006], unblocked_now: false, disciplines: [BE, QA, INFRA] }
+  - { id: US-007, layer: 2, cycle: 4, on_critical_path: true,  blocked_by: [US-003],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-004, layer: 3, cycle: 3, on_critical_path: false, blocked_by: [US-005],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-008, layer: 3, cycle: 4, on_critical_path: true,  blocked_by: [US-007],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-009, layer: 4, cycle: 4, on_critical_path: true,  blocked_by: [US-008],         unblocked_now: false, disciplines: [BE, QA, INFRA] }
+  - { id: US-010, layer: 5, cycle: 4, on_critical_path: true,  blocked_by: [US-009],         unblocked_now: false, disciplines: [BE, QA] }
+  - { id: US-012, layer: 6, cycle: 5, on_critical_path: true,  blocked_by: [US-010],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-016, layer: 6, cycle: 6, on_critical_path: false, blocked_by: [US-010],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-015, layer: 6, cycle: 6, on_critical_path: false, blocked_by: [US-014, US-010], unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-014, layer: 1, cycle: 6, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-011, layer: 7, cycle: 5, on_critical_path: true,  blocked_by: [US-010, US-012], unblocked_now: false, disciplines: [BE, QA] }
+  - { id: US-013, layer: 7, cycle: 5, on_critical_path: false, blocked_by: [US-010, US-012], unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-018, layer: 1, cycle: 6, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [FE] }

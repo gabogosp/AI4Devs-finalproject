@@ -1,0 +1,68 @@
+# Materialized index of Architecture Decision Records (ADRs).
+# Materialized index (read-only for consumers).
+# Source of truth is the markdown under docs/architecture/decisions/; this is the projection.
+decisions:
+  - id: ADR-0001
+    title: Adopt Railway + Neon + Cloudflare R2 as the platform
+    status: Accepted
+    path: docs/architecture/decisions/0001-platform-railway-neon-r2.md
+    affects: [INFRA, dsm-ferreteria]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0002
+    title: PostgreSQL + pgvector as the single datastore for transactional data and product embeddings
+    status: Accepted
+    path: docs/architecture/decisions/0002-postgresql-pgvector-single-datastore.md
+    affects: [search, catalog, enrichment, import, data-platform]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0003
+    title: Adopt Google Gemini as the AI provider (embeddings + description enrichment)
+    status: Accepted
+    path: docs/architecture/decisions/0003-google-gemini-ai-provider.md
+    affects: [search, enrichment, semantic-search, pgvector, ai-worker]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0004
+    title: Use Redis + BullMQ for asynchronous background processing
+    status: Accepted
+    path: docs/architecture/decisions/0004-redis-bullmq-async-processing.md
+    affects: [worker, api, redis]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0005
+    title: First-party JWT authentication in the NestJS backend
+    status: Accepted
+    path: docs/architecture/decisions/0005-own-jwt-authentication.md
+    affects: [auth, backend-nestjs, customer, admin]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0006
+    title: Use MercadoPago Checkout Pro (hosted) for guest payments
+    status: Accepted
+    path: docs/architecture/decisions/0006-mercadopago-hosted-checkout.md
+    affects: [payments, checkout, cart]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0007
+    title: Build the backend as a modular monolith in NestJS
+    status: Accepted
+    path: docs/architecture/decisions/0007-modular-monolith-nestjs.md
+    affects: [backend, catalog, search, enrichment, cart, checkout, payments, orders, stock, auth, import, metrics, notifications, worker]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null
+  - id: ADR-0008
+    title: Decrement inventory only on approved payment, via an atomic conditional UPDATE
+    status: Accepted
+    path: docs/architecture/decisions/0008-stock-decrement-on-payment.md
+    affects: [inventory, checkout, payments, stock]
+    triggered-by: "E2E §20"
+    supersedes: null
+    superseded-by: null

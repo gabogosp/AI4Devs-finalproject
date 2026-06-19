@@ -16,6 +16,14 @@
 /spekode-version.txt
 /docs/project-config.yml
 /openspec/config.yaml
+# Auditorías internas de QA (output de tooling; mencionan agentes/plantillas del framework)
+/docs/audits/
+
+# Tracker de mejoras al framework (no es parte del deliverable)
+/FRAMEWORK-GAPS.md
+
+# Captura cruda de prompts (con comandos del framework); el deshuesado va a prompts.md
+/prompts_usados.md
 
 # === OS / editor ===
 .DS_Store
