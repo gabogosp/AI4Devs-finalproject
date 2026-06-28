@@ -11,7 +11,7 @@
 
 DSM Refrigeración y Ferretería is a real, single-location hardware store in CABA (Buenos Aires, Argentina) with no prior digital presence. The project delivers its first e-commerce: online catalog (≥5,000 SKUs), customer base, MercadoPago checkout, and an AI-powered natural-language product search. Operating constraints are those of a brick-and-mortar "ferretería": a tight budget priced in ARS, no appetite for hyperscaler spend at launch, low expected concurrency (~50 sustained), and a solo / small engineering team that cannot afford to operate self-managed infrastructure.
 
-The organization ships a default infrastructure baseline (`AWS Lightsail baseline`) that the architect is normally instructed not to redecide. This project's needs diverge from that default on three load-bearing points: (1) the AI search requires managed PostgreSQL with the `pgvector` extension and an HNSW index (see ADR 0002), which is a first-class managed feature on Neon but additional operational surface on Lightsail/RDS; (2) the workload includes a long-running worker plus a Redis-backed job queue (BullMQ — see ADR 0004) that benefits from a single-project compute model; and (3) the team size makes developer experience and managed services a primary cost driver, not a secondary nicety. The platform has already been fixed in `docs/project-config.yml` (`stacks.infra: { platform: railway, db: neon-postgres-pgvector, storage: cloudflare-r2 }`) and described end-to-end in the approved E2E (§13 Deployment, §16 stack, §17 NFRs). Because this contradicts a documented org standard, it requires an ADR.
+The organization ships a default infrastructure baseline (`AWS Lightsail baseline`) that the architect is normally instructed not to redecide. This project's needs diverge from that default on three load-bearing points: (1) the AI search requires managed PostgreSQL with the `pgvector` extension and an HNSW index (see ADR 0002), which is a first-class managed feature on Neon but additional operational surface on Lightsail/RDS; (2) the workload includes a long-running worker plus a Redis-backed job queue (BullMQ — see ADR 0004) that benefits from a single-project compute model; and (3) the team size makes developer experience and managed services a primary cost driver, not a secondary nicety. The platform is fixed for this project (`platform: railway, db: neon-postgres-pgvector, storage: cloudflare-r2`) and described end-to-end in the approved E2E (§13 Deployment, §16 stack, §17 NFRs). Because this contradicts a documented org standard, it requires an ADR.
 
 The question this ADR answers: **what platform do we run on, given a hardware-store budget, a solo team, a managed-`pgvector` requirement, and an explicit deviation from the org's `AWS Lightsail baseline`?**
 
@@ -90,7 +90,7 @@ Detailed topology, NFR mapping, and runbooks live in the E2E (§13 Deployment, �
 
 - E2E: [`docs/product/design-e2e.md`](../../product/design-e2e.md) §13 (Deployment), §16 (Stack), §17 (NFRs → infrastructure), §18 (Observability — OSS deviation note), §20 (Decisions needing an ADR — ADR-001 trigger)
 - Org baseline deviated from: the organization's default infrastructure baseline (`AWS Lightsail baseline`).
-- Project configuration (platform already fixed): [`docs/project-config.yml`](../../project-config.yml) (`stacks.infra`)
+- Platform configuration (fixed for this project): `platform: railway · db: neon-postgres-pgvector · storage: cloudflare-r2`
 - Related ADRs: ADR 0002 (Neon + `pgvector`), ADR 0004 (Redis + BullMQ on Railway)
 
 ---

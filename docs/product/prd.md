@@ -3,9 +3,8 @@ type: prd
 cliente: dsm-ferreteria
 status: Approved             # Draft → In Review → Approved
 version: 1
-language: es                 # cascada a todo downstream (E2E, US, openspec, code references)
+language: es                 # cascada a todo downstream (E2E, US, código)
 sources:
-  - docs/project-config.yml
   - brief de discovery (provisto por el PO, 2026-06-14)
 approvers:
   product-owner: Pedro Suarez
@@ -267,7 +266,7 @@ Postura: **defaults de fábrica ajustados a presupuesto** (hosting económico: R
 - **Dependencia**: se generará `docs/product/design-system.md` como fuente de verdad visual + de interacción antes de la primera tarea de UI.
 - **Acción pendiente** (no es pregunta abierta): materializar el design-system baseline antes del primer ticket de frontend.
 
-## 9. Plataformas / stacks (heredado de project-config.yml)
+## 9. Plataformas / stacks
 
 | Stack | Incluido | Notas |
 |---|---|---|
@@ -278,7 +277,7 @@ Postura: **defaults de fábrica ajustados a presupuesto** (hosting económico: R
 | iOS / Android | no | Fuera de alcance — el MVP es web responsive. |
 | Backoffice (app separada) | no | El Backoffice administrativo del dueño vive como sección del frontend web; se podría extraer a una app separada si el negocio crece. |
 
-> Coincide con `docs/project-config.yml` (`stacks.active: [BE, WEB, INFRA, QA]`).
+> Stacks activos del proyecto: **BE, WEB, INFRA, QA**.
 
 ## 10. Plan de releases (alto nivel)
 

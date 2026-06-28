@@ -4,7 +4,7 @@ cliente: dsm-ferreteria
 parent-prd: docs/product/prd.md
 status: Approved                       # Draft → Approved (aprueba arquitecto + PO)
 language: es
-target_stacks: [web]                  # de project-config.yml (stacks.active: BE, WEB, INFRA, QA)
+target_stacks: [web]                  # stacks activos del proyecto: BE, WEB, INFRA, QA
 created: 2026-06-14
 updated: 2026-06-15
 generated-by: design-system-baseline
@@ -411,7 +411,7 @@ Claro, directo y útil. Sin jerga técnica innecesaria. Tratamiento informal arg
 - **SSR/SEO** (PRD §4): páginas de categoría y producto renderizadas en servidor, metadatos + sitemap. Los componentes del design-system no deben depender de JS para el contenido indexable.
 - **JSON-LD (shape mínimo)**: producto → `schema.org/Product` + `Offer` (`priceCurrency:"ARS"`, `price`, `availability` mapeado del stock: `InStock`/`OutOfStock`, `image`, `sku`). Categorías → `BreadcrumbList`. Load-bearing para "ser encontrado en Google" (PRD §1.2).
 - **Modo oscuro**: **no incluido en MVP** (ver §14). La extensión a dark sin reescribir componentes **requiere la capa de alias semánticos** (§12.1): los componentes consumen tokens semánticos (`surface`, `text-primary`, `border`), no primitivos; el dark se logra re-mapeando los alias.
-- **Sin secciones iOS/Android/Backoffice-app**: fuera de alcance (project-config `stacks.active` no las declara). El "backoffice" es una sección del web.
+- **Sin secciones iOS/Android/Backoffice-app**: fuera de alcance (no están entre los stacks activos del proyecto). El "backoffice" es una sección del web.
 
 ### 12.1 Contrato de tokens (CSS vars + alias semánticos)
 

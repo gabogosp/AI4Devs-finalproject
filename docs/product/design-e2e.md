@@ -13,7 +13,6 @@ linear-doc-id: null
 sources:
   - docs/product/prd.md
   - docs/product/design-system.md
-  - docs/project-config.yml
 ---
 
 # Solución End-to-End — DSM Refrigeración y Ferretería (E-commerce)
@@ -36,7 +35,7 @@ Construimos un **e-commerce SSR** para una ferretería de un local (CABA) cuyo d
 4. **Procesamiento asíncrono con Redis + BullMQ**: el import masivo de miles de SKUs, el enriquecimiento IA y la generación de embeddings corren en un **worker** con reintentos y rate-limit; nunca bloquean el request.
 5. **MercadoPago Checkout Pro (hosted)** — DSM queda **fuera de alcance PCI**; el stock se decrementa **al confirmar el pago** vía webhook idempotente. Se añade un **medio de pago simulado "DSM"** (modo test) para demos y test E2E.
 6. **Next.js con SSR** para que catálogo y fichas sean indexables (SEO, objetivo de negocio del PRD). El panel del dueño (backoffice) vive dentro del mismo app web.
-7. **Plataforma Railway + Neon + Cloudflare R2** — **desviación del baseline AWS Lightsail** (ya fijada en `project-config.yml`), formalizada en ADR-0001.
+7. **Plataforma Railway + Neon + Cloudflare R2** — **desviación del baseline AWS Lightsail** (ya fijada para el proyecto), formalizada en ADR-0001.
 
 ### 1.1 Trazabilidad — capacidades PRD §2.1 → solución
 
@@ -270,7 +269,7 @@ erDiagram
         string buyer_email
         string buyer_phone
         string fulfillment "pickup"
-        string status "new|preparing|ready|delivered|cancelled"
+        string status "pending_payment|new|preparing|ready|delivered|cancelled"
         int total_ars_cents
         bool consent_accepted
         timestamp created_at
@@ -688,14 +687,14 @@ Cómo se **opera** el sistema una vez desplegado. Dos roles de operación:
 
 ## 20. Decisiones que necesitan ADR
 
-- [ ] ADR-0001: Plataforma Railway + Neon + Cloudflare R2 (desviación del baseline AWS Lightsail; incluye nota de observabilidad Sentry+Railway en vez de Grafana OSS).
-- [ ] ADR-0002: PostgreSQL + `pgvector` (HNSW) como datastore único, sin motor de búsqueda dedicado.
-- [ ] ADR-0003: Google Gemini (`text-embedding-004` + `gemini-1.5-flash`) como proveedor de IA (embeddings + enriquecimiento).
-- [ ] ADR-0004: Redis + BullMQ para procesamiento asíncrono.
-- [ ] ADR-0005: Autenticación propia (NestJS + JWT + bcrypt) vs SaaS — incluye cookie `httpOnly`+`secure`+`SameSite`, access corto + refresh rotado, rate-limit/lockout, 2FA admin opcional.
-- [ ] ADR-0006: MercadoPago Checkout Pro (hosted) + medio de pago simulado "DSM" para test/demo.
-- [ ] ADR-0007: Monolito modular NestJS (vs microservicios), con stock desacoplado para ML downstream.
-- [ ] ADR-0008: Decremento de stock al aprobar pago con UPDATE atómico + idempotencia (vs reserva con TTL).
+- [x] ADR-0001: Plataforma Railway + Neon + Cloudflare R2 (desviación del baseline AWS Lightsail; incluye nota de observabilidad Sentry+Railway en vez de Grafana OSS).
+- [x] ADR-0002: PostgreSQL + `pgvector` (HNSW) como datastore único, sin motor de búsqueda dedicado.
+- [x] ADR-0003: Google Gemini (`text-embedding-004` + `gemini-1.5-flash`) como proveedor de IA (embeddings + enriquecimiento).
+- [x] ADR-0004: Redis + BullMQ para procesamiento asíncrono.
+- [x] ADR-0005: Autenticación propia (NestJS + JWT + bcrypt) vs SaaS — incluye cookie `httpOnly`+`secure`+`SameSite`, access corto + refresh rotado, rate-limit/lockout, 2FA admin opcional.
+- [x] ADR-0006: MercadoPago Checkout Pro (hosted) + medio de pago simulado "DSM" para test/demo.
+- [x] ADR-0007: Monolito modular NestJS (vs microservicios), con stock desacoplado para ML downstream.
+- [x] ADR-0008: Decremento de stock al aprobar pago con UPDATE atómico + idempotencia (vs reserva con TTL).
 
 ## 21. Suposiciones técnicas
 
