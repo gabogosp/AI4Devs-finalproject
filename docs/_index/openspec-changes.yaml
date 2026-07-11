@@ -1,0 +1,14 @@
+# Materialized index of OpenSpec changes.
+# Written by planning agents on change creation; status transitions touched by /develop-*, /commit, /archive-change.
+# Source of truth: openspec/changes/{name}/ artifacts + branch state; this is the projection.
+changes:
+  - name: US-001-admin-catalogo-productos-infrastructure
+    us-id: US-001
+    discipline: INFRA
+    status: Draft
+    parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+    linear-task-id: null            # Linear MCP not connected — local only
+    audit-baseline: null
+    audit-derived: false
+    estimate-hours: 20              # E2E §7 INFRA-US-001 range 16-24h; midpoint
+    branch: feat/US-001-admin-catalogo-productos-infra

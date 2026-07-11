@@ -13,6 +13,7 @@ user-stories:
     linear-issue-id: null
     created: 2026-06-15
     ready-at: 2026-06-15
+    in-progress-at: 2026-07-11        # first plan invocation (infrastructure-developer)
     blocked_by: []
   - id: US-002
     slug: storefront-navegacion-categorias
