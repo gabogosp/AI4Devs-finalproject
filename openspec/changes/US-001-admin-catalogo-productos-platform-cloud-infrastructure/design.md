@@ -1,6 +1,6 @@
 ---
 parent-us: US-001
-discipline: INFRA
+discipline: infrastructure
 language: es
 ---
 

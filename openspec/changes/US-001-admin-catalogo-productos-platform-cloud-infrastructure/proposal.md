@@ -2,7 +2,8 @@
 tracker-id: null
 tracker-source: null
 parent-us: US-001
-discipline: INFRA
+discipline: infrastructure
+variant: platform-cloud
 language: es
 ---
 
@@ -58,5 +59,5 @@ Ninguno directamente — este change no implementa comportamiento funcional. Hab
 - User Story: `docs/user-stories/US-001-admin-catalogo-productos.md`
 - E2E: `docs/product/design-e2e.md` §13 (despliegue), §17 (NFRs), §18 (observabilidad), §18.5 (operatividad/runbook)
 - ADRs: `0001-platform-railway-neon-r2.md`, `0002-*` (pgvector)
-- Change gemelo (prerequisito): `openspec/changes/US-001-admin-catalogo-productos-bootstrap-local/`
+- Change gemelo (prerequisito): `openspec/changes/US-001-admin-catalogo-productos-bootstrap-local-infrastructure/`
 - Siguiente: `/plan-deployment US-001` (primer deploy vivo, tras scaffolding de app)

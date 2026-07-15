@@ -1,6 +1,6 @@
 ---
 parent-us: US-001
-discipline: INFRA
+discipline: infrastructure
 language: es
 ---
 
@@ -12,7 +12,7 @@ language: es
 - [ ] Cuentas creadas: Railway, Neon, Cloudflare (con billing en ARS resuelto).
 - [ ] **Q-3 resuelta**: región definida (default US-East salvo que Ley 25.326 exija AR).
 - [ ] **Q-2 resuelta**: planes Neon/Railway confirmados con `pgvector`+HNSW y PITR.
-- [ ] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube).
+- [ ] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local-infrastructure` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube).
 - [ ] Railway CLI (`railway`) y Neon CLI (`neonctl`) instaladas y autenticadas.
 
 ## Fase 1: Provisioning de la plataforma

@@ -2,7 +2,8 @@
 tracker-id: null
 tracker-source: null
 parent-us: US-001
-discipline: INFRA
+discipline: infrastructure
+variant: bootstrap-local
 language: es
 ---
 
@@ -41,7 +42,7 @@ Los AC de comportamiento (AC-3, AC-4, AC-6, AC-8 — RBAC admin) son de BE/FE y 
 
 ## Out of scope
 
-- **Provisioning de nube** (Railway, Neon, R2, Redis gestionado, secretos, DNS/TLS, autodeploy, runbook) → change `US-001-admin-catalogo-productos-platform-cloud`.
+- **Provisioning de nube** (Railway, Neon, R2, Redis gestionado, secretos, DNS/TLS, autodeploy, runbook) → change `US-001-admin-catalogo-productos-platform-cloud-infrastructure`.
 - **Scaffolding de las apps** (`nest new`, `create-next-app`) → primer ticket de BE (`BE-US-001`) y FE (`FE-US-001`); acá solo se entrega la estructura de carpetas + el glue del workspace.
 - **Endpoints CRUD, transiciones de estado, RBAC admin** → BE (`BE-US-001`).
 - **Panel del dueño (listado, formularios, publicar/archivar)** → FE (`FE-US-001`).
@@ -67,4 +68,4 @@ Los AC de comportamiento (AC-3, AC-4, AC-6, AC-8 — RBAC admin) son de BE/FE y 
 - User Story: `docs/user-stories/US-001-admin-catalogo-productos.md`
 - E2E: `docs/product/design-e2e.md` §8 (modelo de datos), §13 (despliegue), §16 (stack), §17 (NFRs)
 - ADRs: `docs/architecture/decisions/0001-platform-railway-neon-r2.md`, `0002-*` (pgvector)
-- Change gemelo: `openspec/changes/US-001-admin-catalogo-productos-platform-cloud/`
+- Change gemelo: `openspec/changes/US-001-admin-catalogo-productos-platform-cloud-infrastructure/`

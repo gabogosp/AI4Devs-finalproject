@@ -3,18 +3,14 @@
 # Owned per-entry by the planning agent that creates the change; status transitions
 # are touched by /develop-*, /commit, /archive-change.
 #
-# NOTE (standards gap — needs human ratification): the greenfield two-change bootstrap
-# split (railway-baseline.md §0) yields folder suffixes `-bootstrap-local` and
-# `-platform-cloud`, which do NOT match the `name` regex in
-# spekode/docs/_index/_schemas/openspec-changes.schema.yaml (that regex only allows
-# per-discipline suffixes like `-infrastructure`). Entries below use the real folder
-# names (load-bearing: referenced by the baseline and by /develop-infrastructure) with
-# discipline: infrastructure. Reconcile by extending the schema pattern to allow the
-# greenfield bootstrap suffixes. See the agent's report.
+# Greenfield bootstrap split (railway-baseline §0): US-001 legitimately has TWO
+# infrastructure changes, distinguished by `variant` (bootstrap-local | platform-cloud)
+# per openspec-changes.schema.yaml (F39). The discipline stays the trailing folder token.
 
-- name: US-001-admin-catalogo-productos-bootstrap-local
+- name: US-001-admin-catalogo-productos-bootstrap-local-infrastructure
   us-id: US-001
   discipline: infrastructure
+  variant: bootstrap-local
   status: draft
   parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
   linear-task-id: null
@@ -29,9 +25,10 @@
   archived-at: null
   archive-path: null
 
-- name: US-001-admin-catalogo-productos-platform-cloud
+- name: US-001-admin-catalogo-productos-platform-cloud-infrastructure
   us-id: US-001
   discipline: infrastructure
+  variant: platform-cloud
   status: draft
   parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
   linear-task-id: null
