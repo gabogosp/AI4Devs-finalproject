@@ -41,7 +41,7 @@ Cloudflare (DNS + CDN + R2)
 Neon: PostgreSQL 16 + pgvector, US-East, PITR + snapshots diarios (RPO ≤ 24h)
 ```
 
-- **Region**: US-East por defecto (E2E §13; menor costo/latencia aceptable a MercadoPago AR). **Gate Q-3**: si Ley 25.326 exige residencia AR, cambia la región de Neon (y posiblemente proveedor). No se aprovisiona hasta resolver Q-3.
+- **Region**: **US-East** (E2E §13; menor costo/latencia aceptable a MercadoPago AR). Q-3 resuelta 2026-07-15: la Ley 25.326 no exige residencia local; la transferencia internacional se cubre con consentimiento informado en registro/política de privacidad (US-017).
 - **Multi-AZ**: no (plan económico; aceptable para 99.5% — ADR-0001).
 - **Entornos**: `staging` + `production` como Railway environments; se promueve staging → production. PR ephemeral envs opcionales (diferidos).
 
@@ -88,7 +88,7 @@ Desviación OSS ratificada: en vez de operar Grafana (Loki/Tempo/Prometheus) pro
 | Alertas | Sentry → email/Slack | Configurar regla de alerta básica (spike de errores) con runbook |
 | Retención de logs | **Q-E** | Railway rota; sink de retención (Better Stack/Loki) propuesto como diferido si el budget lo permite |
 
-SLO propuesto: **99.5% mensual** (tier 2, coherente con Railway single-AZ y E2E §17) `[propuesto — confirma Ops/Arquitecto]`. El SLO solo es real si hay métrica que lo mide (Railway uptime/health) y alerta que lo guarda (Sentry/health check) — se documenta la cadena en el runbook.
+SLO: **99.5% mensual** (tier 2, coherente con Railway single-AZ y E2E §17) `[confirmado 2026-07-15 — Q-D cerrada]`. El SLO solo es real si hay métrica que lo mide (Railway uptime/health) y alerta que lo guarda (Sentry/health check) — se documenta la cadena en el runbook.
 
 ### Runbook del servicio nuevo (operations-standards — obligatorio)
 
@@ -119,8 +119,9 @@ No dispara la escalation rule (no PCI —MP hosted, sin PAN/CVV—, no PHI, no c
 ## Trade-offs
 
 - **Sentry + Railway vs Grafana OSS**: menos profundidad de métricas/retención propia, a cambio de cero ops de un stack de observabilidad. Ratificado en ADR-0001.
-- **Sink de retención de logs diferido (Q-E)**: Sentry cubre errores; los logs de Railway rotan. Riesgo: sin sink, no hay auditoría de logs a largo plazo. Se propone diferir por budget y revisar. El baseline §5 lo pide — se explicita como deuda consciente, no se omite en silencio.
-- **US-East vs residencia AR (Q-3)**: costo/latencia vs posible requisito legal. Gate externo: no se aprovisiona hasta resolver.
+- **Sink de retención de logs diferido (Q-E, cerrada 2026-07-15)**: Sentry cubre errores; los logs de Railway rotan. Riesgo: sin sink, no hay auditoría de logs a largo plazo. Diferido por budget — deuda consciente, no omisión silenciosa (el baseline §5 lo pide).
+- **US-East vs residencia AR (Q-3, cerrada 2026-07-15)**: US-East + consentimiento informado (US-017). Región revisable si Legal objeta a futuro.
+- **Free tiers para staging (Q-2, cerrada 2026-07-15)**: menor costo inicial a cambio de restore mínimo/autosuspend en staging; el upgrade a plan pago con PITR es gate previo al primer deploy productivo.
 - **staging + production desde el bootstrap**: dos entornos desde el día 1 duplican algún costo, pero habilitan promover en vez de deployar directo a prod (baseline §2).
 
 ## Costo estimado
@@ -130,14 +131,17 @@ No dispara la escalation rule (no PCI —MP hosted, sin PAN/CVV—, no PHI, no c
 ## Obligaciones operacionales
 
 - **Runbook**: `docs/services/dsm-ecommerce/runbook.md` (esqueleto en este change — obligatorio por operations-standards).
-- **SLO**: 99.5% mensual `[propuesto — confirma Ops/Arquitecto]`.
+- **SLO**: 99.5% mensual `[confirmado 2026-07-15 — Q-D cerrada]`.
 - **Alertas**: spike de errores (Sentry → email/Slack) con entrada de runbook; cola BullMQ atascada (se afina cuando el worker exista, US-005+).
 
 ## Open questions
 
-- Q-2, Q-3 (E2E §23): planes Neon/Railway + residencia — gates externos de ejecución.
-- Q-D: SLO 99.5% — confirma Ops/Arquitecto.
-- Q-E: sink de retención de logs — confirma Arquitecto.
+Todas cerradas el 2026-07-15 (ver detalle en `proposal.md` §Open questions):
+
+- Q-2: free tiers para staging; upgrade con PITR como gate pre-prod.
+- Q-3: US-East + consentimiento informado (US-017).
+- Q-D: SLO 99.5% mensual confirmado.
+- Q-E: sink de retención diferido; Sentry cubre errores.
 
 ## References
 

@@ -59,9 +59,11 @@ Los AC de comportamiento (AC-3, AC-4, AC-6, AC-8 — RBAC admin) son de BE/FE y 
 
 ## Open questions
 
-- **Q-A (gestor de workspace)**: se propone **pnpm** (`packageManager: pnpm@9`) por eficiencia de disco/velocidad en monorepos. El E2E no fija gestor. Si BE/FE prefieren npm workspaces, decidir antes de mergear este change (cambia `package.json` raíz + `pnpm-workspace.yaml`). `[propuesto — confirma equipo BE/FE]`.
-- **Q-B (versión de Node)**: se propone **Node 22 LTS** (`.nvmrc: 22`, `engines: >=22 <23`). `[propuesto — confirma equipo]`.
-- **Q-C (mecanismo de seed)**: se propone seed idempotente vía `tsx prisma/seed.ts` con datos mínimos de demo (2-3 categorías + 3-5 productos borrador) para que FE tenga con qué renderizar sin depender de la nube. `[propuesto — confirma equipo]`.
+Todas cerradas — ninguna bloquea la ejecución.
+
+- **Q-A (gestor de workspace)**: **pnpm** (`packageManager: pnpm@9`) por eficiencia de disco/velocidad en monorepos; `package.json` raíz + `pnpm-workspace.yaml`. `[cerrada 2026-07-15 — PO confirma pnpm 9]`.
+- **Q-B (versión de Node)**: **Node 22 LTS** (`.nvmrc: 22`, `engines: >=22 <23`). `[cerrada 2026-07-15 — PO confirma Node 22 LTS]`.
+- **Q-C (mecanismo de seed)**: seed idempotente vía `tsx prisma/seed.ts` con datos mínimos de demo (2-3 categorías + 3-5 productos borrador) para que FE tenga con qué renderizar sin depender de la nube. `[cerrada 2026-07-15 — PO confirma tsx prisma/seed.ts]`.
 
 ## References
 

@@ -720,8 +720,8 @@ Cómo se **opera** el sistema una vez desplegado. Dos roles de operación:
 | Id | Pregunta | A quién | Bloquea aprobación |
 |---|---|---|---|
 | Q-1 | Aprobar `design-system.md` para poder firmar §10. | Arquitecto + PO | ✅ Resuelta — `design-system.md` `Approved` el 2026-06-15. |
-| Q-2 | Plan concreto de Neon/Railway que garantice `pgvector`+HNSW y backups PITR. | Arquitecto | No (confirmación, no rediseño) |
-| Q-3 | ¿Ley 25.326 exige residencia de PII en Argentina? Define región de Neon/Railway. | PO / Legal | No (default US-East; ajustable) |
+| Q-2 | Plan concreto de Neon/Railway que garantice `pgvector`+HNSW y backups PITR. | Arquitecto | ✅ Resuelta 2026-07-15 — free tiers para staging; upgrade a plan pago (PITR) como gate previo al primer deploy productivo (ver change `US-001-...-platform-cloud-infrastructure`). |
+| Q-3 | ¿Ley 25.326 exige residencia de PII en Argentina? Define región de Neon/Railway. | PO / Legal | ✅ Resuelta 2026-07-15 — US-East + consentimiento informado en registro/política de privacidad (US-017); no exige residencia local. |
 | Q-4 | Ventana aceptable para el enriquecimiento inicial del catálogo (afecta rate-limit/costo). | PO | No |
 
 > Ninguna bloquea la **autoría** del E2E. Q-1 bloquea la firma `Approved` de §10 (gate del design-system).

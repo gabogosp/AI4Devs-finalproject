@@ -49,10 +49,12 @@ Ninguno directamente — este change no implementa comportamiento funcional. Hab
 
 ## Open questions
 
-- **Q-2 (E2E §23)**: plan concreto de Neon/Railway que garantice `pgvector`+HNSW y PITR. `[propuesto — confirma Arquitecto]`. Bloquea la ejecución de este change (no su autoría): sin plan confirmado no se aprovisiona.
-- **Q-3 (E2E §23)**: ¿Ley 25.326 exige residencia de PII en Argentina? Define la región de Neon/Railway. Default US-East; ajustable. `[propuesto — confirma PO/Legal]`. Es un **gate externo** de este change.
-- **Q-D (SLO)**: se propone tier 2 — **99.5% mensual** (heredado del E2E §17, coherente con Railway single-AZ). `[propuesto — confirma Ops/Arquitecto]`.
-- **Q-E (sink de logs)**: Railway logs rota; el baseline §5 pide un sink de retención. Se propone diferir el sink de retención (Better Stack/Loki) a una tarea posterior si el budget lo permite, dado que Sentry cubre errores. `[propuesto — confirma Arquitecto]`.
+Todas cerradas el 2026-07-15 — el gate de aprovisionamiento queda levantado (resta solo el gate operativo de cuentas/billing).
+
+- **Q-2 (E2E §23)**: plan de Neon/Railway. **Decisión: free tiers primero, upgrade pre-prod** — staging se aprovisiona en tiers gratuitos (Neon Free incluye `pgvector`+HNSW; ventana de restore mínima y autosuspend aceptados para staging); upgrade a plan pago (PITR/backup real) es **gate previo al primer deploy productivo**, verificado por `/plan-deployment`. `[cerrada — PO]`.
+- **Q-3 (E2E §23)**: residencia de PII (Ley 25.326). **Decisión: US-East + consentimiento informado** — la transferencia internacional se cubre vía consentimiento en el registro + política de privacidad (US-017 contempla el consentimiento). Región revisable si Legal objeta a futuro. `[cerrada — PO]`.
+- **Q-D (SLO)**: **99.5% mensual** (tier 2, heredado del E2E §17, coherente con Railway single-AZ). `[cerrada — PO confirma]`.
+- **Q-E (sink de logs)**: **diferir el sink de retención** (Better Stack/Loki) a una tarea posterior si el budget lo permite; Sentry cubre errores. Se acepta perder logs históricos no-error mientras tanto. `[cerrada — PO confirma]`.
 
 ## References
 

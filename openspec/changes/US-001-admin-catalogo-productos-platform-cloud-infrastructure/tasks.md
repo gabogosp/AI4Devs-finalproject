@@ -10,8 +10,8 @@ language: es
 
 ## Pre-requisitos (gates externos — este change no arranca sin ellos)
 - [ ] Cuentas creadas: Railway, Neon, Cloudflare (con billing en ARS resuelto).
-- [ ] **Q-3 resuelta**: región definida (default US-East salvo que Ley 25.326 exija AR).
-- [ ] **Q-2 resuelta**: planes Neon/Railway confirmados con `pgvector`+HNSW y PITR.
+- [x] **Q-3 resuelta** (2026-07-15): región **US-East** + consentimiento informado en registro/política de privacidad (US-017).
+- [x] **Q-2 resuelta** (2026-07-15): **free tiers primero** — staging en Neon Free (`pgvector`+HNSW incluidos; restore mínimo y autosuspend aceptados) + Railway; upgrade a plan pago (PITR real) es gate previo al primer deploy productivo, verificado por `/plan-deployment`.
 - [ ] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local-infrastructure` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube).
 - [ ] Railway CLI (`railway`) y Neon CLI (`neonctl`) instaladas y autenticadas.
 
@@ -30,7 +30,7 @@ language: es
   - **Verify**: `railway variables --service redis` (o dashboard) muestra la connection string del Redis gestionado.
 
 - [ ] T1.4 Aprovisionar Neon PostgreSQL con `pgvector` en la región definida
-  - **Exit criterion**: existe una base Neon con la extensión `vector` disponible y PITR habilitado, en la región de Q-3.
+  - **Exit criterion**: existe una base Neon con la extensión `vector` disponible, en US-East (Q-3). Free tier aceptado para staging (Q-2); PITR llega con el upgrade pre-prod.
   - **Verify**: `neonctl projects list` muestra el proyecto en la región correcta; `psql "$NEON_DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS vector; SELECT extname FROM pg_extension WHERE extname='vector';"` devuelve `vector`.
 
 - [ ] T1.5 Crear el bucket Cloudflare R2 para imágenes de productos
