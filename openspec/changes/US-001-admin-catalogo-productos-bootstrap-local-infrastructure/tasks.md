@@ -22,7 +22,7 @@ language: es
   - **Exit criterion**: `.nvmrc` contiene `22`; `.gitignore` ignora `.env.local`, `node_modules`, `dist`; existen `apps/web`, `apps/api`, `apps/worker`, `packages/db` cada uno con un `.gitkeep` o `README.md`.
   - **Verify**: `grep -qx 22 .nvmrc && grep -q '.env.local' .gitignore && for d in apps/web apps/api apps/worker packages/db; do test -d "$d" || exit 1; done`
 
-- [ ] T1.3 Instalar el workspace y probar que resuelve
+- [x] T1.3 Instalar el workspace y probar que resuelve
   - **Exit criterion**: `pnpm install` completa sin error y genera `pnpm-lock.yaml`.
   - **Verify**: `pnpm install --frozen-lockfile 2>/dev/null || pnpm install; test -f pnpm-lock.yaml`
 
