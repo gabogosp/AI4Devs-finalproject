@@ -14,7 +14,7 @@ language: es
 
 ## Fase 1: Esqueleto del monorepo + toolchain del workspace
 
-- [ ] T1.1 Crear el `package.json` raíz con workspaces, gestor y Node pinneados
+- [x] T1.1 Crear el `package.json` raíz con workspaces, gestor y Node pinneados
   - **Exit criterion**: existe `/package.json` con `"private": true`, `"packageManager": "pnpm@9.x"`, `"engines": { "node": ">=22 <23" }` y `"workspaces"`/`pnpm-workspace.yaml` declarando `apps/*` y `packages/*`.
   - **Verify**: `node -e "const p=require('./package.json'); if(!p.private||!p.packageManager||!p.engines?.node) process.exit(1)" && test -f pnpm-workspace.yaml && grep -q 'apps/\*' pnpm-workspace.yaml`
 
