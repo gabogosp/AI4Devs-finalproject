@@ -18,7 +18,7 @@ language: es
   - **Exit criterion**: existe `/package.json` con `"private": true`, `"packageManager": "pnpm@9.x"`, `"engines": { "node": ">=22 <23" }` y `"workspaces"`/`pnpm-workspace.yaml` declarando `apps/*` y `packages/*`.
   - **Verify**: `node -e "const p=require('./package.json'); if(!p.private||!p.packageManager||!p.engines?.node) process.exit(1)" && test -f pnpm-workspace.yaml && grep -q 'apps/\*' pnpm-workspace.yaml`
 
-- [ ] T1.2 Crear `.nvmrc`, `.gitignore` y la estructura de carpetas placeholder
+- [x] T1.2 Crear `.nvmrc`, `.gitignore` y la estructura de carpetas placeholder
   - **Exit criterion**: `.nvmrc` contiene `22`; `.gitignore` ignora `.env.local`, `node_modules`, `dist`; existen `apps/web`, `apps/api`, `apps/worker`, `packages/db` cada uno con un `.gitkeep` o `README.md`.
   - **Verify**: `grep -qx 22 .nvmrc && grep -q '.env.local' .gitignore && for d in apps/web apps/api apps/worker packages/db; do test -d "$d" || exit 1; done`
 
