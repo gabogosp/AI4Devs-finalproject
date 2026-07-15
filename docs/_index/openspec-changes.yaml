@@ -1,14 +1,47 @@
 # Materialized index of OpenSpec changes.
-# Written by planning agents on change creation; status transitions touched by /develop-*, /commit, /archive-change.
-# Source of truth: openspec/changes/{name}/ artifacts + branch state; this is the projection.
-changes:
-  - name: US-001-admin-catalogo-productos-infrastructure
-    us-id: US-001
-    discipline: INFRA
-    status: Draft
-    parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
-    linear-task-id: null            # Linear MCP not connected — local only
-    audit-baseline: null
-    audit-derived: false
-    estimate-hours: 20              # E2E §7 INFRA-US-001 range 16-24h; midpoint
-    branch: feat/US-001-admin-catalogo-productos-infra
+# Source of truth: openspec/changes/*/proposal.md frontmatter.
+# Owned per-entry by the planning agent that creates the change; status transitions
+# are touched by /develop-*, /commit, /archive-change.
+#
+# NOTE (standards gap — needs human ratification): the greenfield two-change bootstrap
+# split (railway-baseline.md §0) yields folder suffixes `-bootstrap-local` and
+# `-platform-cloud`, which do NOT match the `name` regex in
+# spekode/docs/_index/_schemas/openspec-changes.schema.yaml (that regex only allows
+# per-discipline suffixes like `-infrastructure`). Entries below use the real folder
+# names (load-bearing: referenced by the baseline and by /develop-infrastructure) with
+# discipline: infrastructure. Reconcile by extending the schema pattern to allow the
+# greenfield bootstrap suffixes. See the agent's report.
+
+- name: US-001-admin-catalogo-productos-bootstrap-local
+  us-id: US-001
+  discipline: infrastructure
+  status: draft
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 10
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-07-11
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-001-admin-catalogo-productos-platform-cloud
+  us-id: US-001
+  discipline: infrastructure
+  status: draft
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 8
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-07-11
+  completed-at: null
+  archived-at: null
+  archive-path: null
