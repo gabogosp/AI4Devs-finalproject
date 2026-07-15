@@ -48,33 +48,34 @@ language: es
 
 ## Fase 4: Esquema del catálogo (Prisma) — única fuente de verdad
 
-- [ ] T4.1 Crear `packages/db` con Prisma y los scripts `migrate`/`migrate:deploy`/`seed`
+- [x] T4.1 Crear `packages/db` con Prisma y los scripts `migrate`/`migrate:deploy`/`seed`
   - **Exit criterion**: `packages/db/package.json` (nombre `@dsm/db`) declara scripts `migrate` (`prisma migrate dev`), `migrate:deploy` (`prisma migrate deploy`), `seed`; Prisma está pinneado como devDependency.
   - **Verify**: `node -e "const p=require('./packages/db/package.json'); if(p.name!=='@dsm/db'||!p.scripts.migrate||!p.scripts['migrate:deploy']||!p.scripts.seed) process.exit(1)"`
 
-- [ ] T4.2 Habilitar la extensión `pgvector` como primera migración
+- [x] T4.2 Habilitar la extensión `pgvector` como primera migración
   - **Exit criterion**: existe una migración cuyo SQL incluye `CREATE EXTENSION IF NOT EXISTS vector`.
   - **Verify**: `grep -rq 'CREATE EXTENSION IF NOT EXISTS vector' packages/db/prisma/migrations/`
 
-- [ ] T4.3 Modelar `categories` en `schema.prisma` con slug único y self-ref
+- [x] T4.3 Modelar `categories` en `schema.prisma` con slug único y self-ref
   - **Exit criterion**: el modelo `Category` tiene `id uuid` PK, `slug` `@unique`, `parent_id` self-relation nullable, `name`, `created_at`.
   - **Verify**: `grep -A12 'model Category' packages/db/prisma/schema.prisma | grep -q '@unique'`
 
-- [ ] T4.4 Modelar `products` con constraints de SKU, precio, stock, estado e índices
+- [x] T4.4 Modelar `products` con constraints de SKU, precio, stock, estado e índices
   - **Exit criterion**: el modelo `Product` tiene `sku` `@unique`, `price_ars_cents` y `stock` `int`, `status` con default `draft`, índice `@@index([category_id, status])`; y la migración generada incluye los CHECK `price_ars_cents > 0`, `stock >= 0` y `status IN ('draft','published','archived')`.
   - **Verify**: `grep -A20 'model Product' packages/db/prisma/schema.prisma | grep -q '@@index(\[category_id, status\])' && grep -rEq 'price_ars_cents.*> 0' packages/db/prisma/migrations/ && grep -rEq 'stock.*>= 0' packages/db/prisma/migrations/ && grep -rq "status IN ('draft', 'published', 'archived')" packages/db/prisma/migrations/`
 
-- [ ] T4.5 Aplicar las migraciones contra el Postgres local y confirmar el esquema
+- [x] T4.5 Aplicar las migraciones contra el Postgres local y confirmar el esquema
   - **Exit criterion**: `migrate` corre limpio contra el Postgres de docker-compose; las tablas `categories` y `products` existen con sus constraints.
   - **Verify**: `pnpm --filter @dsm/db migrate && docker compose exec -T postgres psql -U dsm -d dsm -c "\d products" | grep -q 'products_sku_key' && docker compose exec -T postgres psql -U dsm -d dsm -c "\d products" | grep -Eq 'stock_check|products_stock'`
 
-- [ ] T4.6 Crear el seed idempotente con datos mínimos de demo
+- [x] T4.6 Crear el seed idempotente con datos mínimos de demo
   - **Exit criterion**: `prisma/seed.ts` inserta 2-3 categorías y 3-5 productos en estado `draft` de forma idempotente (re-correrlo no duplica ni falla).
   - **Verify**: `pnpm --filter @dsm/db seed && pnpm --filter @dsm/db seed && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM products" | grep -Eq '^[3-5]$'`
 
-- [ ] T4.7 Probar que los constraints rechazan datos inválidos (defensa en profundidad de AC-5/AC-9)
+- [x] T4.7 Probar que los constraints rechazan datos inválidos (defensa en profundidad de AC-5/AC-9)
   - **Exit criterion**: insertar un producto con `price_ars_cents <= 0`, `stock < 0`, o un SKU duplicado es rechazado por la DB.
-  - **Verify**: `docker compose exec -T postgres psql -U dsm -d dsm -c "INSERT INTO products (id,sku,name,price_ars_cents,stock,status) VALUES (gen_random_uuid(),'X-NEG','x',-1,0,'draft');" 2>&1 | grep -qi 'violates check constraint'`
+  - **Verify**: `docker compose exec -T postgres psql -U dsm -d dsm -c "INSERT INTO products (id,sku,name,price_ars_cents,stock,status,category_id) SELECT gen_random_uuid(),'X-NEG','x',-1,0,'draft',id FROM categories LIMIT 1;" 2>&1 | grep -qi 'violates check constraint'`
+  - **Nota (ejecución 2026-07-15)**: la fila de prueba original omitía `category_id` (NOT NULL), por lo que Postgres reportaba el not-null antes de llegar al CHECK de precio. Corregido para proveer un `category_id` válido vía subquery; probado además que `products_stock_check`, `products_status_check` y el unique de SKU también rechazan.
 
 ## Fase 5: Puerta de CI de PR
 

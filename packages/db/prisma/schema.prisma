@@ -1,0 +1,39 @@
+// Esquema del catálogo — única fuente de verdad del modelo de datos (US-001).
+// pgvector se habilita por migración (embeddings llegan en US-005).
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug       String     @unique
+  name       String
+  parent_id  String?    @db.Uuid
+  parent     Category?  @relation("CategoryTree", fields: [parent_id], references: [id])
+  children   Category[] @relation("CategoryTree")
+  created_at DateTime   @default(now())
+  products   Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sku             String   @unique
+  name            String
+  price_ars_cents Int
+  stock           Int      @default(0)
+  status          String   @default("draft")
+  category_id     String   @db.Uuid
+  category        Category @relation(fields: [category_id], references: [id])
+  created_at      DateTime @default(now())
+
+  @@index([category_id, status])
+  @@map("products")
+}
