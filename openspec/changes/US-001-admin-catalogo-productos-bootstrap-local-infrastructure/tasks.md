@@ -9,8 +9,8 @@ language: es
 > Cada task es closure-grade: atómica, con `Exit criterion:` observable y `Verify:` con el comando exacto que `/develop-infrastructure` corre. Los comandos asumen la raíz del repo como cwd.
 
 ## Pre-requisitos
-- [ ] Docker + docker-compose instalados en la máquina de desarrollo.
-- [ ] Confirmadas Q-A (gestor: pnpm), Q-B (Node 22), Q-C (seed) del `proposal.md`, o aceptados los defaults propuestos.
+- [x] Docker + docker-compose instalados en la máquina de desarrollo.
+- [x] Confirmadas Q-A (gestor: pnpm), Q-B (Node 22), Q-C (seed) del `proposal.md`, o aceptados los defaults propuestos.
 
 ## Fase 1: Esqueleto del monorepo + toolchain del workspace
 
@@ -89,8 +89,8 @@ language: es
 
 ## Verificación (suite-level)
 
-- [ ] Monorepo instala limpio: `pnpm install --frozen-lockfile`
-- [ ] Dependencias locales arriba y healthy: `make up && docker compose ps | grep -c healthy` ≥ 2
-- [ ] Esquema aplica y siembra limpio desde cero: `make down && make up && make migrate-local && make seed-local`
-- [ ] CI de PR válida sintácticamente: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"`
-- [ ] No hay secretos comiteados: `git grep -Ei '(sk_live|APP_USR-|AIza[A-Za-z0-9]{20})' -- . ':(exclude).env.example'` no devuelve nada (o solo placeholders documentados).
+- [x] Monorepo instala limpio: `pnpm install --frozen-lockfile`
+- [x] Dependencias locales arriba y healthy: `make up && docker compose ps | grep -c healthy` ≥ 2
+- [x] Esquema aplica y siembra limpio desde cero: `make down && make up && make migrate-local && make seed-local`
+- [x] CI de PR válida sintácticamente: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"`
+- [x] No hay secretos comiteados: `git grep -Ei '(sk_live|APP_USR-|AIza[A-Za-z0-9]{20})' -- . ':(exclude).env.example'` no devuelve nada (o solo placeholders documentados).
