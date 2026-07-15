@@ -38,11 +38,11 @@ language: es
 
 ## Fase 3: Variables de entorno y targets locales
 
-- [ ] T3.1 Crear `.env.example` con toda variable (placeholders, sin secretos)
+- [x] T3.1 Crear `.env.example` con toda variable (placeholders, sin secretos)
   - **Exit criterion**: `.env.example` contiene al menos `DATABASE_URL`, `REDIS_URL` con valores placeholder locales; no contiene ningún secreto real (sin API keys de MP/Gemini/Resend con valor).
   - **Verify**: `grep -q '^DATABASE_URL=' .env.example && grep -q '^REDIS_URL=' .env.example && ! grep -Eiq '(sk_live|APP_USR-|AIza)[A-Za-z0-9]' .env.example`
 
-- [ ] T3.2 Crear el `Makefile` con los targets `up`, `migrate-local`, `seed-local`, `run-local`, `down`
+- [x] T3.2 Crear el `Makefile` con los targets `up`, `migrate-local`, `seed-local`, `run-local`, `down`
   - **Exit criterion**: `make -n up`, `make -n migrate-local`, `make -n seed-local`, `make -n down` imprimen el comando esperado sin ejecutarlo.
   - **Verify**: `for t in up migrate-local seed-local down; do make -n "$t" >/dev/null 2>&1 || exit 1; done`
 
