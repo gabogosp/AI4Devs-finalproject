@@ -32,7 +32,7 @@ language: es
   - **Exit criterion**: `docker-compose.yml` define el servicio `postgres` con imagen `pgvector/pgvector:pg16`, healthcheck `pg_isready`, volumen nombrado; y el servicio `redis` con imagen `redis:7-alpine`, healthcheck `redis-cli ping`.
   - **Verify**: `docker compose config >/dev/null && docker compose config | grep -q 'pgvector/pgvector:pg16' && docker compose config | grep -q 'redis:7'`
 
-- [ ] T2.2 Levantar las dependencias y confirmar que Postgres acepta `pgvector`
+- [x] T2.2 Levantar las dependencias y confirmar que Postgres acepta `pgvector`
   - **Exit criterion**: `docker compose up -d` deja `postgres` y `redis` healthy; la extensión `vector` es instalable en la instancia local.
   - **Verify**: `docker compose up -d && sleep 5 && docker compose exec -T postgres psql -U dsm -d dsm -c "CREATE EXTENSION IF NOT EXISTS vector; SELECT extname FROM pg_extension WHERE extname='vector';" | grep -q vector`
 
