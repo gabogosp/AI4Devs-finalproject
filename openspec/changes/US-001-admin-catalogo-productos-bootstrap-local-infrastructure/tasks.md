@@ -28,7 +28,7 @@ language: es
 
 ## Fase 2: Dependencias locales (docker-compose)
 
-- [ ] T2.1 Crear `docker-compose.yml` con Postgres (pgvector) y Redis pinneados
+- [x] T2.1 Crear `docker-compose.yml` con Postgres (pgvector) y Redis pinneados
   - **Exit criterion**: `docker-compose.yml` define el servicio `postgres` con imagen `pgvector/pgvector:pg16`, healthcheck `pg_isready`, volumen nombrado; y el servicio `redis` con imagen `redis:7-alpine`, healthcheck `redis-cli ping`.
   - **Verify**: `docker compose config >/dev/null && docker compose config | grep -q 'pgvector/pgvector:pg16' && docker compose config | grep -q 'redis:7'`
 
