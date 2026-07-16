@@ -29,11 +29,11 @@ language: es
 
 ## Fase 2: Dependencias locales (docker-compose)
 
-- [ ] T2.1 Crear `docker-compose.yml` con Postgres (pgvector) y Redis pinneados
+- [x] T2.1 Crear `docker-compose.yml` con Postgres (pgvector) y Redis pinneados
   - **Exit criterion**: `docker-compose.yml` define el servicio `postgres` con imagen `pgvector/pgvector:pg16`, healthcheck `pg_isready -U dsm -d dsm`, volumen nombrado `pgdata`, puerto de host `${POSTGRES_PORT:-5432}`; y el servicio `redis` con imagen `redis:7-alpine`, healthcheck `redis-cli ping`, volumen `redisdata`, puerto `${REDIS_PORT:-6379}`.
   - **Verify**: `docker compose config >/dev/null && docker compose config | grep -q 'pgvector/pgvector:pg16' && docker compose config | grep -q 'redis:7-alpine'`
 
-- [ ] T2.2 Levantar las dependencias y confirmar que Postgres acepta `pgvector`
+- [x] T2.2 Levantar las dependencias y confirmar que Postgres acepta `pgvector`
   - **Exit criterion**: `docker compose up -d` deja `postgres` y `redis` healthy; la extensión `vector` es instalable en la instancia local.
   - **Verify**: `docker compose up -d && sleep 6 && docker compose exec -T postgres psql -U dsm -d dsm -c "CREATE EXTENSION IF NOT EXISTS vector; SELECT extname FROM pg_extension WHERE extname='vector';" | grep -q vector`
 
