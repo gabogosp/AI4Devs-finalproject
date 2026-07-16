@@ -49,15 +49,15 @@ language: es
 
 ## Fase 4: Esquema del catálogo (Prisma) — única fuente de verdad
 
-- [ ] T4.1 Crear `packages/db` (`@dsm/db`) con Prisma 5.22 y los scripts `migrate`/`migrate:deploy`/`seed`
+- [x] T4.1 Crear `packages/db` (`@dsm/db`) con Prisma 5.22 y los scripts `migrate`/`migrate:deploy`/`seed`
   - **Exit criterion**: `packages/db/package.json` (nombre `@dsm/db`) declara scripts `migrate` (`prisma migrate dev`), `migrate:deploy` (`prisma migrate deploy`), `seed` (`tsx prisma/seed.ts`); Prisma `5.22.0` pinneado (dep `@prisma/client` + devDep `prisma`) y `tsx` como devDependency.
   - **Verify**: `node -e "const p=require('./packages/db/package.json'); if(p.name!=='@dsm/db'||p.scripts.migrate!=='prisma migrate dev'||p.scripts['migrate:deploy']!=='prisma migrate deploy'||!p.scripts.seed.includes('tsx')||p.dependencies['@prisma/client']!=='5.22.0') process.exit(1)"`
 
-- [ ] T4.2 Habilitar la extensión `pgvector` como primera migración
+- [x] T4.2 Habilitar la extensión `pgvector` como primera migración
   - **Exit criterion**: existe la migración `20260715000000_enable_pgvector` cuyo SQL incluye `CREATE EXTENSION IF NOT EXISTS vector`.
   - **Verify**: `grep -rq 'CREATE EXTENSION IF NOT EXISTS vector' packages/db/prisma/migrations/`
 
-- [ ] T4.3 Modelar `categories` en `schema.prisma` con las 5 columnas del subconjunto US-001
+- [x] T4.3 Modelar `categories` en `schema.prisma` con las 5 columnas del subconjunto US-001
   - **Exit criterion**: el modelo `Category` (mapeado a `categories`) tiene exactamente las columnas `id` (uuid PK, default `gen_random_uuid()`), `slug` (`@unique`), `name`, `parent_id` (self-relation `CategoryTree` nullable), `created_at` (default `now()`).
   - **Verify**: `for c in 'id' 'slug' 'name' 'parent_id' 'created_at'; do grep -A14 'model Category' packages/db/prisma/schema.prisma | grep -q "$c" || exit 1; done && grep -A14 'model Category' packages/db/prisma/schema.prisma | grep -q '@unique'`
 
