@@ -89,9 +89,9 @@ language: es
 
 ## Verificación (suite-level)
 
-- [ ] Monorepo instala limpio: `pnpm install --frozen-lockfile`
-- [ ] Dependencias locales arriba y healthy: `make up && sleep 6 && docker compose ps | grep -c healthy` ≥ 2
-- [ ] Esquema aplica y siembra limpio desde cero: `make down && make up && sleep 6 && make migrate-local && make seed-local`
-- [ ] `products` tiene exactamente 11 columnas (paridad con el alcance US-001): `docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'"` = `11`
-- [ ] CI de PR válida sintácticamente: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"`
-- [ ] No hay secretos comiteados: `git grep -Ei '(sk_live|APP_USR-|AIza[A-Za-z0-9]{20})' -- . ':(exclude).env.example'` no devuelve nada.
+- [x] Monorepo instala limpio: `pnpm install --frozen-lockfile`
+- [x] Dependencias locales arriba y healthy: `make up && sleep 6 && docker compose ps | grep -c healthy` ≥ 2
+- [x] Esquema aplica y siembra limpio desde cero: `make down && make up && sleep 6 && make migrate-local && make seed-local`
+- [x] `products` tiene exactamente 11 columnas (paridad con el alcance US-001): `docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'"` = `11`
+- [x] CI de PR válida sintácticamente: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"`
+- [x] No hay secretos comiteados: `git grep -Ei '(sk_live|APP_USR-|AIza[A-Za-z0-9]{20})' -- . ':(exclude).env.example'` no devuelve nada **real** (solo hacen match los patrones documentados en estos `tasks.md` y sus backups — no son secretos; los `.env`/`.env.local` con credenciales locales `dsm:dsm` están gitignored).
