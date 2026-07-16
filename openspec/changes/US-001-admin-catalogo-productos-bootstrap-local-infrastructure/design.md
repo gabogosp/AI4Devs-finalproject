@@ -73,17 +73,14 @@ La extensión `pgvector` se habilita **en la migración Prisma** (`CREATE EXTENS
 
 > **Fuente**: transcripción del E2E §8 (DER + notas), **acotada al subconjunto de US-001**. No es una decisión arquitectónica nueva: motor (PostgreSQL Neon), extensión (`pgvector`), ORM (Prisma + `$queryRaw` para kNN en US-004+), unidad monetaria (centavos ARS) y constraints ya están ratificados en ADR-0001/0002 y en el E2E `Approved`.
 
-**Alcance de este change (materializado)**: solo `categories` y `products`, con las columnas que US-001 necesita, más la habilitación de `pgvector`. El E2E §8 declara `products` con 13 columnas; este esquema materializa **8** — las restantes son de otras US y se agregan por migración cuando esa US las introduce:
+**Alcance de este change**: solo `categories` y `products`, con las columnas que US-001 necesita, más la habilitación de `pgvector`. El E2E §8 declara `products` con 13 columnas; este esquema materializa **11** — las 2 restantes son del pipeline de IA (US-005) y se agregan por migración cuando esa US las introduce:
 
-| Columna del DER §8 no materializada acá | US que la agrega | Por qué |
+| Columna del DER §8 diferida (no materializada acá) | US que la agrega | Por qué |
 |---|---|---|
-| `description_raw` | US-003 (ficha) / US-006 (import) | US-001 carga alta/edición sin descripción larga |
-| `description_enriched` | US-005 (enriquecimiento IA) | La puebla el pipeline de IA |
-| `image_url` | US-003 (ficha) | Imagen opcional, no bloquea el alta |
+| `description_enriched` | US-005 (enriquecimiento IA) | La puebla el pipeline de IA; ninguna lógica de US-001 la toca |
 | `enrichment_done` | US-005 | Flag del pipeline de enriquecimiento |
-| `updated_at` | US-002/US-003 (cuando haga falta auditar cambios) | US-001 no depende de mtime |
 
-Esto respeta el principio "esquema autorizado una vez por US": US-001 no carga columnas muertas que ninguna de sus lógicas usa; cada US extiende el esquema con su propia migración cuando la necesita.
+Esto respeta el principio de esquema **autorado por necesidad real**: US-001 materializa las columnas que sus ACs ejercitan — incluidas `description_raw` e `image_url`, que el dueño edita en **AC-3** ("modifica su precio, stock, descripción, categoría o imagen") — y difiere solo las del pipeline de IA (US-005), que ninguna lógica de US-001 toca. `updated_at` se incluye como columna de auditoría estándar de una tabla mutable.
 
 #### Tabla `categories` (5 columnas — AS-BUILT)
 
@@ -95,18 +92,21 @@ Esto respeta el principio "esquema autorizado una vez por US": US-001 no carga c
 | `parent_id` | `uuid` | FK → `categories.id` NULL (`categories_parent_id_fkey`, ON DELETE SET NULL — rubro/subrubro, self-ref) |
 | `created_at` | `timestamp(3)` | NOT NULL default `CURRENT_TIMESTAMP` |
 
-#### Tabla `products` (8 columnas — AS-BUILT)
+#### Tabla `products` (11 columnas)
 
 | Columna | Tipo | Constraint |
 |---|---|---|
 | `id` | `uuid` | PK, default `gen_random_uuid()` |
 | `sku` | `text` | **UNIQUE** (`products_sku_key`), NOT NULL (AC-9) |
 | `name` | `text` | NOT NULL |
+| `description_raw` | `text` | NULL — descripción manual, editable en AC-3; no requerida para publicar (§10) |
 | `price_ars_cents` | `int` | NOT NULL, **CHECK `products_price_check` (`price_ars_cents > 0`)** (AC-5; centavos, IVA incluido) |
 | `stock` | `int` | NOT NULL, default `0`, **CHECK `products_stock_check` (`stock >= 0`)** (AC-5) |
 | `status` | `text` | NOT NULL, default `'draft'`, **CHECK `products_status_check` (`status IN ('draft','published','archived')`)** (AC-2/AC-4/AC-7) |
 | `category_id` | `uuid` | FK → `categories.id` (`products_category_id_fkey`, ON DELETE RESTRICT), NOT NULL |
+| `image_url` | `text` | NULL — una imagen principal opcional (§4), editable en AC-3; el archivo se sube a R2 en `platform-cloud` |
 | `created_at` | `timestamp(3)` | NOT NULL default `CURRENT_TIMESTAMP` |
+| `updated_at` | `timestamp(3)` | NOT NULL default `CURRENT_TIMESTAMP`, `@updatedAt` (Prisma lo actualiza en cada write) |
 
 **Índice** (E2E §8): `products_category_id_status_idx` sobre `(category_id, status)`; `products_sku_key` UNIQUE (implícito por el constraint). El índice HNSW sobre embeddings NO se crea acá (tabla `product_embeddings` es de US-005).
 
@@ -149,7 +149,7 @@ Workflow `ci.yml` en cada `pull_request` y push a `main`:
 - **Redis en el compose desde US-001 aunque US-001 no lo use**: se incluye para no parchear el compose por-US. Costo: una imagen más en local. Beneficio: el compose es fiel a producción desde el día 1.
 - **`packages/db` separado vs esquema dentro de `apps/api`**: paquete separado para que `platform-cloud` aplique migraciones sin depender de la app API y para que el esquema sea consumible por worker + api.
 - **pgvector vía migración vs init-script del contenedor**: migración, para que el mismo mecanismo (Prisma) aplique local y en la nube.
-- **Esquema mínimo de US-001 (8 columnas) vs DER completo (13)**: se materializó el subconjunto de US-001. Beneficio: sin columnas muertas; cada US extiende con su migración. Costo: US-003/US-005 agregan columnas por migración (barato en greenfield sin datos productivos).
+- **Esquema de US-001 (11 columnas) vs DER completo (13)**: se materializan las columnas que las ACs de US-001 ejercitan (incl. `description_raw`/`image_url` de AC-3) + `updated_at`; se difieren solo `description_enriched`/`enrichment_done` (US-005). Beneficio: sin columnas muertas del pipeline de IA. Costo: una migración adicional en US-005 (barato en greenfield sin datos productivos).
 
 ## Observability
 

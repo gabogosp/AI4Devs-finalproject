@@ -27,12 +27,12 @@ Este change es el **primer entregable, día 1, camino crítico**. Su gemelo `pla
 - **Esquema del catálogo** (`categories`, `products`) autorizado y validado contra el PostgreSQL de `docker-compose`: migraciones Prisma, extensión `pgvector` habilitada localmente, constraints (SKU único, `stock >= 0`, `price_ars_cents > 0`, estado válido), índice `products(category_id, status)`. Esto es la **única fuente de verdad** del esquema; `platform-cloud` lo *aplica* a la nube después.
 - **Puerta CI-de-PR** (GitHub Actions `ci.yml`): workflow que corre lint + typecheck + `prisma generate` + `prisma migrate deploy` + test contra un Postgres de servicio (`pgvector/pgvector:pg16`) en cada PR y push a `main` — valida cada commit **antes de que exista cualquier target de deploy**. Sin secretos de nube.
 
-## Alcance del esquema (AS-BUILT — subconjunto de US-001)
+## Alcance del esquema (subconjunto de US-001)
 
-> El E2E §8 declara el DER **completo** de `products` (13 columnas: incluye `description_raw`, `description_enriched`, `image_url`, `enrichment_done`, `updated_at`). Este change materializa **solo el subconjunto que US-001 necesita**: las columnas de descripción enriquecida y `enrichment_done` son de **US-005** (enriquecimiento IA + embeddings) y `image_url` de la ficha (US-003), y se agregan por migración en esas US. El esquema autorizado acá es intencionalmente el mínimo de US-001, no el DER entero — así el esquema se autoriza una vez por US sin cargar columnas que ninguna lógica de US-001 usa.
+> El E2E §8 declara el DER **completo** de `products` (13 columnas). Este change materializa **11** — las columnas que las ACs de US-001 ejercitan (incluidas `description_raw` e `image_url`, editables en **AC-3**) más `updated_at` como auditoría estándar. Difiere solo `description_enriched` y `enrichment_done`, del pipeline de IA de **US-005** (ninguna lógica de US-001 las toca), que esa US agrega por migración. El esquema se **autora por necesidad real**, sin cargar columnas muertas.
 
 `categories` (5 columnas): `id` (uuid PK), `slug` (unique), `name`, `parent_id` (self-FK nullable), `created_at`.
-`products` (8 columnas): `id` (uuid PK), `sku` (unique), `name`, `price_ars_cents` (int, CHECK > 0), `stock` (int, default 0, CHECK >= 0), `status` (default `draft`, CHECK IN draft/published/archived), `category_id` (FK), `created_at`.
+`products` (11 columnas): `id` (uuid PK), `sku` (unique), `name`, `description_raw` (nullable), `price_ars_cents` (int, CHECK > 0), `stock` (int, default 0, CHECK >= 0), `status` (default `draft`, CHECK IN draft/published/archived), `category_id` (FK), `image_url` (nullable), `created_at`, `updated_at`.
 
 ## ACs de US-001 cubiertos (parcialmente — capa de datos)
 
@@ -53,7 +53,7 @@ Los AC de comportamiento (AC-3, AC-4, AC-6, AC-8 — RBAC admin) son de BE/FE y 
 - **Scaffolding de las apps** (`nest new`, `create-next-app`) → primer ticket de BE (`BE-US-001`) y FE (`FE-US-001`); acá solo se entrega la estructura de carpetas + el glue del workspace.
 - **Endpoints CRUD, transiciones de estado, RBAC admin** → BE (`BE-US-001`).
 - **Panel del dueño (listado, formularios, publicar/archivar)** → FE (`FE-US-001`).
-- **Columnas de `products` de otras US** (`description_raw`, `description_enriched`, `image_url`, `enrichment_done`, `updated_at`) → US-003/US-005 las agregan por migración.
+- **Columnas de `products` del pipeline de IA** (`description_enriched`, `enrichment_done`) → US-005 las agrega por migración.
 - **Tablas de otras US** (`orders`, `order_items`, `payments`, `carts`, `cart_items`, `customers`, `product_embeddings`) → sus respectivas US. `product_embeddings` y su índice HNSW se crean en US-005; acá solo se habilita la extensión `pgvector` para que exista de entrada.
 - **El primer deploy vivo** → lo planifica `/plan-deployment` cuando haya una app scaffoldeada.
 
