@@ -61,19 +61,19 @@ language: es
   - **Exit criterion**: el modelo `Category` (mapeado a `categories`) tiene exactamente las columnas `id` (uuid PK, default `gen_random_uuid()`), `slug` (`@unique`), `name`, `parent_id` (self-relation `CategoryTree` nullable), `created_at` (default `now()`).
   - **Verify**: `for c in 'id' 'slug' 'name' 'parent_id' 'created_at'; do grep -A14 'model Category' packages/db/prisma/schema.prisma | grep -q "$c" || exit 1; done && grep -A14 'model Category' packages/db/prisma/schema.prisma | grep -q '@unique'`
 
-- [ ] T4.4 Modelar `products` con las 11 columnas del subconjunto US-001, constraints e índice (F40 — column-complete)
+- [x] T4.4 Modelar `products` con las 11 columnas del subconjunto US-001, constraints e índice (F40 — column-complete)
   - **Exit criterion**: el modelo `Product` (mapeado a `products`) tiene **exactamente** las 11 columnas del alcance US-001 — `id` (uuid PK), `sku` (`@unique`), `name`, `description_raw` (text, nullable — AC-3), `price_ars_cents` (int), `stock` (int, default 0), `status` (string default `draft`), `category_id` (uuid FK), `image_url` (text, nullable — AC-3/§4), `created_at` (default `now()`), `updated_at` (`@updatedAt`) — más el índice `@@index([category_id, status])`; y la migración `init_catalog` incluye los CHECK `products_price_check` (`price_ars_cents > 0`), `products_stock_check` (`stock >= 0`) y `products_status_check` (`status IN ('draft','published','archived')`). Diferidas a US-005: `description_enriched`, `enrichment_done` (ver `design.md` §Persistencia).
   - **Verify**: `for c in 'sku' 'name' 'description_raw' 'price_ars_cents' 'stock' 'status' 'category_id' 'image_url' 'created_at' 'updated_at'; do grep -A22 'model Product' packages/db/prisma/schema.prisma | grep -q "$c" || exit 1; done && grep -A22 'model Product' packages/db/prisma/schema.prisma | grep -q '@@index(\[category_id, status\])' && grep -rq 'products_price_check.*price_ars_cents > 0' packages/db/prisma/migrations/ && grep -rq 'products_stock_check.*stock >= 0' packages/db/prisma/migrations/ && grep -rq "products_status_check.*status IN ('draft', 'published', 'archived')" packages/db/prisma/migrations/`
 
-- [ ] T4.5 Aplicar las migraciones contra el Postgres local y confirmar el esquema materializado
+- [x] T4.5 Aplicar las migraciones contra el Postgres local y confirmar el esquema materializado
   - **Exit criterion**: `migrate` corre limpio contra el Postgres de docker-compose; las tablas `categories` y `products` existen con sus 5 y 11 columnas respectivamente y sus constraints.
   - **Verify**: `pnpm --filter @dsm/db migrate && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'" | grep -qx 11 && docker compose exec -T postgres psql -U dsm -d dsm -c "\d products" | grep -q 'products_sku_key' && docker compose exec -T postgres psql -U dsm -d dsm -c "\d products" | grep -q 'products_stock_check'`
 
-- [ ] T4.6 Crear el seed idempotente con datos mínimos de demo
+- [x] T4.6 Crear el seed idempotente con datos mínimos de demo
   - **Exit criterion**: `prisma/seed.ts` inserta 3 categorías (refrigeracion/ferreteria/electricidad) y 4 productos en estado `draft` vía upsert por clave natural (slug/sku); re-correrlo no duplica ni falla.
   - **Verify**: `pnpm --filter @dsm/db seed && pnpm --filter @dsm/db seed && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM products" | grep -qx 4 && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM categories" | grep -qx 3`
 
-- [ ] T4.7 Probar que los constraints rechazan datos inválidos (defensa en profundidad de AC-5/AC-9)
+- [x] T4.7 Probar que los constraints rechazan datos inválidos (defensa en profundidad de AC-5/AC-9)
   - **Exit criterion**: insertar un producto con `price_ars_cents <= 0`, `stock < 0`, estado inválido, o un SKU duplicado es rechazado por la DB (violación de CHECK o de UNIQUE).
   - **Verify**: `docker compose exec -T postgres psql -U dsm -d dsm -c "INSERT INTO products (id,sku,name,price_ars_cents,stock,status,category_id) SELECT gen_random_uuid(),'X-NEG','x',-1,0,'draft',id FROM categories LIMIT 1;" 2>&1 | grep -qi 'violates check constraint' && docker compose exec -T postgres psql -U dsm -d dsm -c "INSERT INTO products (id,sku,name,price_ars_cents,stock,status,category_id) SELECT gen_random_uuid(),'REF-001','dup',1,0,'draft',id FROM categories LIMIT 1;" 2>&1 | grep -qi 'duplicate key\|unique'`
 

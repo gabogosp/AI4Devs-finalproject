@@ -27,12 +27,15 @@ model Product {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sku             String   @unique
   name            String
+  description_raw String?
   price_ars_cents Int
   stock           Int      @default(0)
   status          String   @default("draft")
   category_id     String   @db.Uuid
   category        Category @relation(fields: [category_id], references: [id])
+  image_url       String?
   created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
 
   @@index([category_id, status])
   @@map("products")
