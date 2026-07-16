@@ -79,11 +79,11 @@ language: es
 
 ## Fase 5: Puerta de CI de PR
 
-- [ ] T5.1 Crear `.github/workflows/ci.yml` con lint/typecheck/test + migración contra Postgres de servicio
+- [x] T5.1 Crear `.github/workflows/ci.yml` con lint/typecheck/test + migración contra Postgres de servicio
   - **Exit criterion**: el workflow corre en `pull_request` y push a `main`; usa Node 22 + pnpm 9.15.9; levanta un servicio `pgvector/pgvector:pg16`; corre `prisma generate`, `pnpm -r lint`, `pnpm -r typecheck`, `pnpm --filter @dsm/db migrate:deploy` y `pnpm -r test`; no referencia ningún secreto de nube.
   - **Verify**: `grep -q 'pull_request' .github/workflows/ci.yml && grep -q 'pgvector/pgvector:pg16' .github/workflows/ci.yml && grep -q 'migrate:deploy' .github/workflows/ci.yml && ! grep -Eiq 'RAILWAY_TOKEN|NEON_|R2_|secrets\.(MP|GEMINI|RESEND)' .github/workflows/ci.yml`
 
-- [ ] T5.2 Validar el workflow con lint de YAML de Actions
+- [x] T5.2 Validar el workflow con lint de YAML de Actions
   - **Exit criterion**: el YAML del workflow es sintácticamente válido y sus jobs resuelven.
   - **Verify**: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` (y, si `act` está disponible, `act pull_request -n` corre en dry-run sin error de parseo).
 
