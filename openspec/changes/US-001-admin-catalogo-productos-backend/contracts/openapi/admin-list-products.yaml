@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: "admin-list-products — Listado paginado del catálogo (panel)"
+  version: "v1"
+  description: |
+    Lista productos del panel con paginación offset (api-standards §6.1) y orden.
+    Soporta ≥5.000 SKUs sin degradación (NFR US-001 §9) apoyándose en el índice
+    products(category_id,status). Exclusivo del rol admin (AC-8).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+paths:
+  /v1/admin/products:
+    get:
+      operationId: adminListProducts
+      tags: [products, admin]
+      summary: Listado paginado de productos del panel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: status
+          in: query
+          description: Filtro opcional por estado
+          schema: { type: string, enum: [draft, published, archived] }
+        - name: category_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: sort
+          in: query
+          description: "Campo:dirección, e.g. created_at:desc"
+          schema: { type: string, default: "created_at:desc" }
+      responses:
+        '200':
+          description: Página de productos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    ProductListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ProductDTO' }
+        pagination:
+          type: object
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    ProductDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer }
+        stock: { type: integer }
+        status: { type: string, enum: [draft, published, archived] }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+  responses:
+    Unauthorized:
+      description: Sin sesión admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/unauthorized", title: "No autorizado", status: 401 }
+    Forbidden:
+      description: Sesión sin rol admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/forbidden", title: "Acceso denegado", status: 403 }

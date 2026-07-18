@@ -1,0 +1,145 @@
+openapi: 3.0.3
+info:
+  title: "admin-update-product — Editar / publicar / archivar producto"
+  version: "v1"
+  description: |
+    Edita campos del producto (precio/stock/descripción/categoría/imagen — AC-3)
+    y/o transiciona su estado vía `status` (publicar AC-4, archivar AC-7). La
+    regla de completitud para publicar (nombre+precio+stock+categoría) la aplica
+    el service (AC-6): si falta algo → 422 y el producto permanece en su estado.
+    Exclusivo del rol admin (AC-8).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+paths:
+  /v1/admin/products/{id}:
+    patch:
+      operationId: adminUpdateProduct
+      tags: [products, admin]
+      summary: Editar / publicar / archivar producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: traceparent
+          in: header
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+            examples:
+              editar:
+                summary: Editar precio y stock (AC-3)
+                value: { price_ars_cents: 1650000, stock: 3 }
+              publicar:
+                summary: Publicar (AC-4)
+                value: { status: "published" }
+              archivar:
+                summary: Archivar (AC-7)
+                value: { status: "archived" }
+      responses:
+        '200':
+          description: Producto actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProductDTO' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/ProductNotFound' }
+        '409': { $ref: '#/components/responses/InvalidTransition' }
+        '422': { $ref: '#/components/responses/IncompleteOrInvalid' }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    UpdateProductRequest:
+      type: object
+      description: Todos los campos opcionales; al menos uno requerido.
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        description_raw: { type: string, nullable: true, maxLength: 5000 }
+        price_ars_cents: { type: integer, minimum: 1, description: "Centavos ARS, IVA incluido; > 0 (AC-5)" }
+        stock: { type: integer, minimum: 0 }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, format: uri, nullable: true }
+        status:
+          type: string
+          enum: [draft, published, archived]
+          description: Dispara la máquina de transición del service (AC-4/6/7)
+    ProductDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer }
+        stock: { type: integer }
+        status: { type: string, enum: [draft, published, archived] }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+  responses:
+    Unauthorized:
+      description: Sin sesión admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/unauthorized", title: "No autorizado", status: 401 }
+    Forbidden:
+      description: Sesión sin rol admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/forbidden", title: "Acceso denegado", status: 403 }
+    ProductNotFound:
+      description: Producto inexistente
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/product-not-found", title: "Producto no encontrado", status: 404 }
+    InvalidTransition:
+      description: Transición de estado inválida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/invalid-transition", title: "Transición inválida", status: 409, detail: "No se puede reactivar un producto archivado" }
+    IncompleteOrInvalid:
+      description: Publicación incompleta (AC-6) o campo inválido (AC-5)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            type: "dsm:catalog/incomplete-for-publish"
+            title: "No se puede publicar un producto incompleto"
+            status: 422
+            detail: "Faltan datos requeridos para publicar; el producto permanece en borrador"
+            errors:
+              - { field: "category_id", message: "La categoría es requerida para publicar" }

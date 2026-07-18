@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: "admin-create-category — Crear categoría (rubro)"
+  version: "v1"
+  description: |
+    Crea una categoría; el slug se deriva del nombre en el service (kebab
+    normalizado) y es único (AC-1). El cliente NO envía slug. Colisión de slug
+    → 409. Exclusivo del rol admin (AC-8).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+paths:
+  /v1/admin/categories:
+    post:
+      operationId: adminCreateCategory
+      tags: [categories, admin]
+      summary: Crear categoría
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategoryRequest' }
+            examples:
+              minimo:
+                value: { name: "Refrigeración" }
+              subrubro:
+                value: { name: "Compresores", parent_id: "550e8400-e29b-41d4-a716-446655440000" }
+      responses:
+        '201':
+          description: Categoría creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoryDTO' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/DuplicateSlug' }
+        '422': { $ref: '#/components/responses/InvalidCategoryField' }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    CreateCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Rubro padre (self-FK) para subrubros
+    CategoryDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string, description: "Derivado del nombre, único" }
+        name: { type: string }
+        parent_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+  responses:
+    Unauthorized:
+      description: Sin sesión admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/unauthorized", title: "No autorizado", status: 401 }
+    Forbidden:
+      description: Sesión sin rol admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/forbidden", title: "Acceso denegado", status: 403 }
+    DuplicateSlug:
+      description: Ya existe una categoría con ese slug (AC-1)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/duplicate-slug", title: "Categoría duplicada", status: 409, detail: "Ya existe una categoría con el slug refrigeracion" }
+    InvalidCategoryField:
+      description: Validación por campo
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            type: "dsm:catalog/invalid-category"
+            title: "Datos de categoría inválidos"
+            status: 422
+            errors:
+              - { field: "name", message: "El nombre es requerido" }

@@ -1,0 +1,116 @@
+openapi: 3.0.3
+info:
+  title: "admin-update-category — Editar categoría"
+  version: "v1"
+  description: |
+    Edita el nombre de una categoría (y opcionalmente su padre). Si el nombre
+    cambia, el slug se re-deriva y se re-verifica su unicidad (AC-1); colisión
+    → 409. Exclusivo del rol admin (AC-8).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+paths:
+  /v1/admin/categories/{id}:
+    patch:
+      operationId: adminUpdateCategory
+      tags: [categories, admin]
+      summary: Editar categoría
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCategoryRequest' }
+            examples:
+              renombrar:
+                value: { name: "Refrigeración industrial" }
+      responses:
+        '200':
+          description: Categoría actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoryDTO' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/CategoryNotFound' }
+        '409': { $ref: '#/components/responses/DuplicateSlug' }
+        '422': { $ref: '#/components/responses/InvalidCategoryField' }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    UpdateCategoryRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, minLength: 1, maxLength: 255 }
+        parent_id: { type: string, format: uuid, nullable: true }
+    CategoryDTO:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        parent_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+  responses:
+    Unauthorized:
+      description: Sin sesión admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/unauthorized", title: "No autorizado", status: 401 }
+    Forbidden:
+      description: Sesión sin rol admin (AC-8)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/forbidden", title: "Acceso denegado", status: 403 }
+    CategoryNotFound:
+      description: Categoría inexistente
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/category-not-found", title: "Categoría no encontrada", status: 404 }
+    DuplicateSlug:
+      description: Ya existe una categoría con ese slug (AC-1)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/duplicate-slug", title: "Categoría duplicada", status: 409 }
+    InvalidCategoryField:
+      description: Validación por campo
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            type: "dsm:catalog/invalid-category"
+            title: "Datos de categoría inválidos"
+            status: 422
+            errors:
+              - { field: "name", message: "El nombre no puede estar vacío" }
