@@ -100,15 +100,15 @@ language: es
 
 ## Fase 6: Máquina de transición de estado (AC-4, AC-6, AC-7)
 
-- [ ] T6.1 `products.state.ts` — transiciones válidas + requisitos de publicación
+- [x] T6.1 `products.state.ts` — transiciones válidas + requisitos de publicación
   - **Exit criterion**: TS plano (sin tipos de framework) que define transiciones válidas (`draft→published`, `draft→archived`, `published→archived`, `published→draft`) y la regla de completitud para publicar (nombre+precio+stock+categoría); transición inválida y publicación incompleta lanzan `InvalidTransitionError` con el detalle de qué falta.
   - **Verify**: `pnpm --filter @dsm/api test -- products.state` (unit: cada transición válida OK; inválida→error; publicar sin categoría→error listando "category_id")
 
-- [ ] T6.2 Publicar (AC-4) + intento incompleto (AC-6) en el service + controller
+- [x] T6.2 Publicar (AC-4) + intento incompleto (AC-6) en el service + controller
   - **Exit criterion**: `PATCH /v1/admin/products/{id}` con `{status:"published"}` publica si cumple requisitos (→ `published`); si falta algo → `422` indicando qué falta y el producto **permanece** `draft` (sin escritura parcial).
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-products-publish` (e2e-nest: completo→published; sin categoría→422 y status sigue draft)
 
-- [ ] T6.3 Archivar (AC-7)
+- [x] T6.3 Archivar (AC-7)
   - **Exit criterion**: `PATCH /v1/admin/products/{id}` con `{status:"archived"}` pasa a `archived`; **sin** delete físico (el registro persiste); desde `draft` o `published`.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-products-archive` (e2e-nest: archivar→status archived; el registro sigue existiendo por findById)
 

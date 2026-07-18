@@ -6,6 +6,11 @@ import {
   ProductsRepository,
 } from './products.repository';
 import { NotFoundError } from '../common/errors/domain-errors';
+import {
+  assertPublishable,
+  assertValidTransition,
+  ProductStatus,
+} from './products.state';
 
 export interface UpdateProductInput {
   name?: string;
@@ -45,5 +50,20 @@ export class ProductsService {
   async update(id: string, input: UpdateProductInput): Promise<Product> {
     await this.get(id); // 404 si no existe (antes de tocar la DB)
     return this.repo.update(id, input);
+  }
+
+  /** AC-4/AC-6/AC-7: transición de estado validada (publicar/archivar/despublicar). */
+  async changeStatus(id: string, target: ProductStatus): Promise<Product> {
+    const product = await this.get(id); // 404 si no existe
+    assertValidTransition(product.status as ProductStatus, target);
+    if (target === 'published') {
+      assertPublishable({
+        name: product.name,
+        price_ars_cents: product.price_ars_cents,
+        stock: product.stock,
+        category_id: product.category_id,
+      });
+    }
+    return this.repo.update(id, { status: target });
   }
 }

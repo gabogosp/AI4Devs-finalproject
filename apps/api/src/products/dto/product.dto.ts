@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -8,6 +9,7 @@ import {
   Min,
 } from 'class-validator';
 import { Product } from '@dsm/db';
+import { PRODUCT_STATUSES, ProductStatus } from '../products.state';
 
 export class CreateProductDto {
   @IsString()
@@ -66,6 +68,11 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   image_url?: string;
+
+  // Transición de estado (AC-4/6/7). Si viene, el controller enruta a changeStatus.
+  @IsOptional()
+  @IsIn(PRODUCT_STATUSES)
+  status?: ProductStatus;
 }
 
 export class ListProductsQueryDto {

@@ -62,6 +62,13 @@ export class ProductsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateProductDto,
   ): Promise<ProductResponseDto> {
+    // AC-4/6/7: si el body trae `status`, es una transición de estado; si no,
+    // es una edición de campos (AC-3).
+    if (dto.status) {
+      return ProductResponseDto.from(
+        await this.products.changeStatus(id, dto.status),
+      );
+    }
     return ProductResponseDto.from(await this.products.update(id, dto));
   }
 }
