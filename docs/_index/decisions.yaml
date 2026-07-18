@@ -66,3 +66,11 @@ decisions:
     triggered-by: "E2E §20"
     supersedes: null
     superseded-by: null
+  - id: ADR-0009
+    title: Phased admin-authentication seam — ships in US-001, hardened in US-014
+    status: Accepted
+    path: docs/architecture/decisions/0009-admin-auth-seam-us001.md
+    affects: [auth, admin, backend-nestjs, catalog]
+    triggered-by: manual
+    supersedes: null
+    superseded-by: null

@@ -5,7 +5,7 @@
 > **Decision-makers**: Gabriel Suarez (Arquitecto)
 > **Supersedes**: —
 > **Superseded by**: —
-> **Related**: ADR 0007 (NestJS monolith), ADR 0004 (Redis rate-limit)
+> **Related**: ADR 0007 (NestJS monolith), ADR 0004 (Redis rate-limit), ADR 0009 (phased admin-auth seam — refines how/when the admin portion of this auth is delivered)
 
 ## Context
 
@@ -71,7 +71,7 @@ Registered customer accounts are delivered as a "Should" capability; guest check
 
 - E2E design: `docs/product/design-e2e.md` §6.1, §14, §16, §20
 - PRD: `docs/product/prd.md` §7
-- Related ADRs: ADR 0007 (NestJS monolith), ADR 0004 (Redis rate-limit)
+- Related ADRs: ADR 0007 (NestJS monolith), ADR 0004 (Redis rate-limit), ADR 0009 (phased admin-auth seam — refines how/when the admin portion is delivered)
 
 ---
 
