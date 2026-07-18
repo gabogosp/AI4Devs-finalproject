@@ -1,0 +1,3 @@
+[submodule "spekode"]
+	path = spekode
+	url = git@github.com:gabogosp/ai-specs
