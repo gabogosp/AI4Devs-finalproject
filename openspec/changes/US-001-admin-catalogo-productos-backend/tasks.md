@@ -54,11 +54,11 @@ language: es
 
 ## Fase 3: Guard RBAC admin (seam mínimo — gated por OQ-1)
 
-- [ ] T3.1 `AdminGuard` que valida JWT con claim `role=admin`
+- [x] T3.1 `AdminGuard` que valida JWT con claim `role=admin`
   - **Exit criterion**: `AdminGuard` valida firma con `JWT_SECRET` y exige claim `role=admin`; sin token → `401`, token válido sin rol admin → `403`; el contrato `role=admin` queda documentado para que US-014 lo endurezca sin reescribir el guard.
   - **Verify**: `pnpm --filter @dsm/api test -- admin-guard` (unit: sin token→401, rol!=admin→403, rol=admin→pasa)
 
-- [ ] T3.2 Emisión acotada de token admin (seam) detrás de config
+- [x] T3.2 Emisión acotada de token admin (seam) detrás de config
   - **Exit criterion**: mecanismo mínimo para obtener un token admin (login admin básico o token seed de bootstrap) detrás de flag de config; **sin** registro de clientes, refresh rotado ni 2FA (eso es US-014).
   - **Verify**: `pnpm --filter @dsm/api test -- admin-token` (unit/e2e: emite token con `role=admin` verificable por el guard)
 
