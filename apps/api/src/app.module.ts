@@ -3,6 +3,7 @@ import { AppConfigModule } from './config/config.module';
 import { AppLoggingModule } from './common/logging/logging.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { CategoriesModule } from './categories/categories.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -10,7 +11,13 @@ import { HealthModule } from './health/health.module';
  * las Fases 4-7.
  */
 @Module({
-  imports: [AppConfigModule, AppLoggingModule, PrismaModule, HealthModule],
+  imports: [
+    AppConfigModule,
+    AppLoggingModule,
+    PrismaModule,
+    HealthModule,
+    CategoriesModule,
+  ],
   controllers: [],
   providers: [],
 })

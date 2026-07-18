@@ -64,15 +64,15 @@ language: es
 
 ## Fase 4: CategoriesModule (AC-1)
 
-- [ ] T4.1 Repositorio de categorías (envuelve Prisma `@dsm/db`)
+- [x] T4.1 Repositorio de categorías (envuelve Prisma `@dsm/db`)
   - **Exit criterion**: `CategoriesRepository` con `create`/`findMany`/`findById`/`update`; traduce `P2002` (slug) → `ConflictError`; ningún otro servicio toca el client.
   - **Verify**: `pnpm --filter @dsm/api test -- categories.repository` (integration Testcontainers: crear con slug repetido → ConflictError)
 
-- [ ] T4.2 Service de categorías con derivación de slug único (AC-1)
+- [x] T4.2 Service de categorías con derivación de slug único (AC-1)
   - **Exit criterion**: `CategoriesService.create` deriva `slug` kebab-normalizado del `name`, persiste; colisión de slug → `ConflictError`; slug NO se acepta del cliente.
   - **Verify**: `pnpm --filter @dsm/api test -- categories.service` (unit: "Refrigeración" → slug "refrigeracion"; colisión → ConflictError)
 
-- [ ] T4.3 Controller `/v1/admin/categories` (POST/GET/PATCH) + DTOs + guard
+- [x] T4.3 Controller `/v1/admin/categories` (POST/GET/PATCH) + DTOs + guard
   - **Exit criterion**: rutas `POST/GET/PATCH /v1/admin/categories` con `CreateCategoryDto`/`UpdateCategoryDto`/`CategoryResponseDto`, protegidas por `AdminGuard`; POST 201 con slug único, colisión 409.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-categories` (e2e-nest: crear categoría 201; duplicado 409; sin admin 401/403)
 
