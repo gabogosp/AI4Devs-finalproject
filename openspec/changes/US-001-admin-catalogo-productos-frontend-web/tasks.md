@@ -28,24 +28,24 @@ language: es
 
 ## Pre-requisitos
 - [x] **OQ-FE-1** (proposal §Open questions) `[Resolved: 2026-07-18 — opción A]`: el admin obtiene el JWT `role=admin` vía una **página mínima de acceso admin** que postea al seam del backend (ADR-0009); US-014 la endurece sin reescribir. La Fase 4 se ejecuta contra la opción A.
-- [ ] `bootstrap-local` disponible: `apps/web` presente como placeholder en la rama de integración; `.env.example` de Fase 0 con `NEXT_PUBLIC_API_BASE_URL` (o equivalente). Confirmar el nombre exacto de la var contra el `.env.example` entregado por infra.
-- [ ] API del backend consumible: el change `US-001-admin-catalogo-productos-backend` expone `/v1/admin/categories` y `/v1/admin/products` (contrato en `apps/api/docs/api/openapi.yaml`). Los tests de integración FE mockean ese contrato con MSW; no requieren la API corriendo.
+- [x] `bootstrap-local` disponible: `apps/web` presente como placeholder en la rama de integración; `.env.example` de Fase 0 con `NEXT_PUBLIC_API_BASE_URL` (o equivalente). Confirmar el nombre exacto de la var contra el `.env.example` entregado por infra.
+- [x] API del backend consumible: el change `US-001-admin-catalogo-productos-backend` expone `/v1/admin/categories` y `/v1/admin/products` (contrato en `apps/api/docs/api/openapi.yaml`). Los tests de integración FE mockean ese contrato con MSW; no requieren la API corriendo.
 
 ## Fase 1: Scaffolding de `apps/web` + toolchain de la app
 
-- [ ] T1.1 Scaffoldear la app Next.js (App Router, TS strict) en `apps/web` anclada al workspace
+- [x] T1.1 Scaffoldear la app Next.js (App Router, TS strict) en `apps/web` anclada al workspace
   - **Exit criterion**: existe `apps/web/package.json` con `"name": "@dsm/web"`, Next 15 + React 19, scripts `dev`/`build`/`lint`/`typecheck`/`test`/`test:e2e`; `pnpm install` resuelve el workspace incluyendo `@dsm/web`; `app/` usa App Router (no `pages/`).
   - **Verify**: `node -e "const p=require('./apps/web/package.json'); if(p.name!=='@dsm/web') process.exit(1); if(!('next' in {...p.dependencies})) process.exit(1); for (const s of ['dev','build','lint','typecheck','test']) if(!(s in (p.scripts||{}))) process.exit(1)" && test -d apps/web/app && test ! -d apps/web/pages && (pnpm install --frozen-lockfile 2>/dev/null || pnpm install)`
 
-- [ ] T1.2 TypeScript strict + lint + typecheck de la app
+- [x] T1.2 TypeScript strict + lint + typecheck de la app
   - **Exit criterion**: `apps/web/tsconfig.json` con `strict: true` (o `extends` que lo aporte); `pnpm --filter @dsm/web lint` y `pnpm --filter @dsm/web typecheck` corren y pasan sobre el scaffold.
   - **Verify**: `node -e "const t=require('./apps/web/tsconfig.json'); const c=t.compilerOptions||{}; if(c.strict!==true && !t.extends) process.exit(1)" && pnpm --filter @dsm/web typecheck && pnpm --filter @dsm/web lint`
 
-- [ ] T1.3 Env tipado + validado (`NEXT_PUBLIC_API_BASE_URL`) sin secretos en el bundle
+- [x] T1.3 Env tipado + validado (`NEXT_PUBLIC_API_BASE_URL`) sin secretos en el bundle
   - **Exit criterion**: existe un módulo de env tipado (Zod) que valida `NEXT_PUBLIC_API_BASE_URL` al arranque; ningún secreto server-only lleva prefijo `NEXT_PUBLIC_`; `.env.example` local documenta la var (per next-standards §8).
   - **Verify**: `pnpm --filter @dsm/web typecheck && grep -rq "NEXT_PUBLIC_API_BASE_URL" apps/web && ! grep -rn "NEXT_PUBLIC_.*SECRET\|NEXT_PUBLIC_.*TOKEN\|NEXT_PUBLIC_JWT" apps/web/src apps/web/app 2>/dev/null`
 
-- [ ] T1.4 Vitest + RTL + MSW + Playwright configurados
+- [x] T1.4 Vitest + RTL + MSW + Playwright configurados
   - **Exit criterion**: `pnpm --filter @dsm/web test` corre Vitest (jsdom) con un test trivial verde; `msw` instalado con `src/test/server.ts` (`onUnhandledRequest: 'error'`); Playwright instalado con config que corre contra `next build && next start` (no dev).
   - **Verify**: `pnpm --filter @dsm/web test -- --run && test -f apps/web/src/test/server.ts && node -e "const p=require('./apps/web/package.json'); const d={...p.devDependencies}; for(const k of ['vitest','msw','@playwright/test']) if(!(k in d)) process.exit(1)"`
 
