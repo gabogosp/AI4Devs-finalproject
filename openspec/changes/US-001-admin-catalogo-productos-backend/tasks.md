@@ -78,23 +78,23 @@ language: es
 
 ## Fase 5: ProductsModule — CRUD + validación (AC-2, AC-3, AC-5, AC-9)
 
-- [ ] T5.1 Repositorio de productos (envuelve Prisma `@dsm/db`)
+- [x] T5.1 Repositorio de productos (envuelve Prisma `@dsm/db`)
   - **Exit criterion**: `ProductsRepository` con `create`/`findMany`(paginado)/`findById`/`update`; traduce `P2002` (sku)→`ConflictError`, `P2003` (category_id FK)→`ValidationError`; único punto de acceso al ORM.
   - **Verify**: `pnpm --filter @dsm/api test -- products.repository` (integration Testcontainers: sku duplicado→ConflictError; category_id inexistente→ValidationError; CHECK price/stock atrapados)
 
-- [ ] T5.2 DTOs + validación por campo (AC-5)
+- [x] T5.2 DTOs + validación por campo (AC-5)
   - **Exit criterion**: `CreateProductDto`/`UpdateProductDto` con `price_ars_cents @Min(1)`, `stock @Min(0)`, `sku`/`name` no vacíos, `category_id` uuid, `image_url?` url; violación → `422` con `errors[]` **por campo**; sin escritura parcial.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-products-validation` (e2e-nest: precio 0 → 422 field `price_ars_cents`; stock -1 → 422 field `stock`; nombre vacío → 422 field `name`)
 
-- [ ] T5.3 Alta de producto en `draft` (AC-2) + SKU único (AC-9)
+- [x] T5.3 Alta de producto en `draft` (AC-2) + SKU único (AC-9)
   - **Exit criterion**: `POST /v1/admin/products` crea el producto con `status='draft'` por defecto; SKU duplicado → `409` "SKU duplicado" sin crear segundo producto.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-products-create` (e2e-nest: alta → 201 status draft; mismo SKU otra vez → 409, count sigue en 1)
 
-- [ ] T5.4 Editar producto (AC-3)
+- [x] T5.4 Editar producto (AC-3)
   - **Exit criterion**: `PATCH /v1/admin/products/{id}` actualiza `price_ars_cents`, `stock`, `description_raw`, `category_id`, `image_url`; `price_ars_cents` es entero (centavos ARS, IVA incluido); `updated_at` se refresca; producto inexistente → `404`.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-products-update` (e2e-nest: editar precio/stock/categoría persiste; id inexistente → 404)
 
-- [ ] T5.5 Listado paginado del panel (NFR ≥5.000 SKUs)
+- [x] T5.5 Listado paginado del panel (NFR ≥5.000 SKUs)
   - **Exit criterion**: `GET /v1/admin/products?limit=&offset=&sort=` devuelve `{data:[], pagination:{limit,offset,total}}` (api-standards §6.1); usa el índice `(category_id,status)`; array vacío como `[]`.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-products-list` (integration: sembrar >100 productos, paginar, total correcto, sin degradación de query)
 

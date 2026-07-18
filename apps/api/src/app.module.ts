@@ -4,6 +4,7 @@ import { AppLoggingModule } from './common/logging/logging.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
 import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -17,6 +18,7 @@ import { CategoriesModule } from './categories/categories.module';
     PrismaModule,
     HealthModule,
     CategoriesModule,
+    ProductsModule,
   ],
   controllers: [],
   providers: [],

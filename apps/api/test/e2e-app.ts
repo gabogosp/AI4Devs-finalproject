@@ -36,3 +36,12 @@ export function customerToken(): string {
     secret: process.env.JWT_SECRET,
   });
 }
+
+/** Vacía el catálogo (products→categories por FK) para tests deterministas. */
+export async function truncateCatalog(prisma: {
+  $executeRawUnsafe: (sql: string) => Promise<unknown>;
+}): Promise<void> {
+  await prisma.$executeRawUnsafe(
+    'TRUNCATE TABLE products, categories RESTART IDENTITY CASCADE',
+  );
+}

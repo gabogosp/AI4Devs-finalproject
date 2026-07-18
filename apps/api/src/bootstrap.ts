@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import { HttpProblemFilter } from './common/filters/http-problem.filter';
 
 /**
@@ -12,6 +12,8 @@ export function configureApp(app: INestApplication): void {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      // AC-5: violación de validación → 422 (no 400) con errors[] por campo.
+      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
     }),
   );
   app.useGlobalFilters(new HttpProblemFilter());
