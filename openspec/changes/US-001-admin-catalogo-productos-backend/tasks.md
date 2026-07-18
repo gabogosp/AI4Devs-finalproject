@@ -13,24 +13,24 @@ language: es
 
 ## Pre-requisitos
 - [x] **OQ-1 resuelta** (proposal §Open questions) `[Resolved: 2026-07-18]`: el seam de auth admin es **owned-by-US-001** (AdminGuard con JWT `role=admin`); US-014 lo endurece sin reescribir el guard. DAG sin invertir → la Fase 3 (guard) **se ejecuta**.
-- [ ] `bootstrap-local` mergeado: `@dsm/db` disponible como workspace, `docker-compose` levantable (Postgres+pgvector) para los tests de integración.
-- [ ] Confirmadas OQ-2 (sin columna nueva) y OQ-3 (sin `Idempotency-Key` v1).
+- [x] `bootstrap-local` disponible: `@dsm/db` presente como workspace en la rama de integración `feature-entrega2-GOSP` y `docker-compose` (Postgres+pgvector) healthy. (PR #2 aún no mergeado a `main`; se satisface vía la rama de integración.)
+- [x] Confirmadas OQ-2 (sin columna nueva) y OQ-3 (sin `Idempotency-Key` v1, decisión consciente).
 
 ## Fase 1: Scaffolding de `apps/api` + toolchain de la app
 
-- [ ] T1.1 Scaffoldear la app NestJS en `apps/api` anclada al workspace
+- [x] T1.1 Scaffoldear la app NestJS en `apps/api` anclada al workspace
   - **Exit criterion**: existe `apps/api/package.json` con `"name": "@dsm/api"`, dependencia `@dsm/db` (workspace), scripts `build`/`start`/`lint`/`typecheck`/`test`; `pnpm install` resuelve el workspace incluyendo `@dsm/api`.
   - **Verify**: `node -e "const p=require('./apps/api/package.json'); if(p.name!=='@dsm/api') process.exit(1); const d={...p.dependencies,...p.devDependencies}; if(!('@dsm/db' in d)) process.exit(1)" && pnpm install --frozen-lockfile 2>/dev/null || pnpm install`
 
-- [ ] T1.2 Configurar TypeScript strict + lint + typecheck de la app
+- [x] T1.2 Configurar TypeScript strict + lint + typecheck de la app
   - **Exit criterion**: `apps/api/tsconfig` con `strict: true`; `pnpm --filter @dsm/api lint` y `pnpm --filter @dsm/api typecheck` corren y pasan sobre el scaffold.
   - **Verify**: `node -e "const t=require('./apps/api/tsconfig.json'); const c=t.compilerOptions||{}; if(c.strict!==true && !(t.extends)) process.exit(1)" && pnpm --filter @dsm/api typecheck && pnpm --filter @dsm/api lint`
 
-- [ ] T1.3 Config validada al arranque (esquema Zod/Joi de env)
+- [x] T1.3 Config validada al arranque (esquema Zod/Joi de env)
   - **Exit criterion**: `apps/api/src/config` valida `DATABASE_URL`, `JWT_SECRET`, `PORT` con `@nestjs/config` + esquema; el arranque falla si falta una var (fail-fast, §7).
   - **Verify**: `pnpm --filter @dsm/api test -- config` (test unit que arranca el schema de config con env inválido y espera throw)
 
-- [ ] T1.4 `PrismaService` que extiende el client de `@dsm/db` + módulo
+- [x] T1.4 `PrismaService` que extiende el client de `@dsm/db` + módulo
   - **Exit criterion**: `apps/api/src/prisma/prisma.service.ts` extiende el `PrismaClient` de `@dsm/db`, conecta en `onModuleInit`, desconecta en `onModuleDestroy`; es el único punto de acceso al ORM.
   - **Verify**: `pnpm --filter @dsm/api typecheck && grep -rq "@dsm/db" apps/api/src/prisma/`
 
