@@ -60,3 +60,21 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-001-admin-catalogo-productos-frontend-web
+  us-id: US-001
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 7
+  assignee: null
+  branch: feat/US-001-admin-catalogo-productos-frontend-web
+  pr-url: null
+  created: 2026-07-18
+  completed-at: null
+  archived-at: null
+  archive-path: null
