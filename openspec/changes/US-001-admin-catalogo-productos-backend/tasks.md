@@ -36,19 +36,19 @@ language: es
 
 ## Fase 2: Cross-cutting — filtro RFC 7807, errores de dominio, logging, health
 
-- [ ] T2.1 Errores de dominio + filtro de excepciones global RFC 7807
+- [x] T2.1 Errores de dominio + filtro de excepciones global RFC 7807
   - **Exit criterion**: existen `NotFoundError`, `ConflictError`, `ValidationError`, `InvalidTransitionError` (TS plano); `HttpProblemFilter` global mapea cada uno al envelope RFC 7807 (`type`,`title`,`status`,`detail`,`instance`,`errors[]`) per api-standards §8; nunca filtra stack/Prisma crudo.
   - **Verify**: `pnpm --filter @dsm/api test -- problem-filter` (unit: cada error de dominio → status + envelope esperado; error de Prisma crudo NO aparece en el body)
 
-- [ ] T2.2 `ValidationPipe` global (whitelist) en el bootstrap
+- [x] T2.2 `ValidationPipe` global (whitelist) en el bootstrap
   - **Exit criterion**: `main.ts` registra `ValidationPipe` con `whitelist: true, forbidNonWhitelisted: true, transform: true`; un body con campo desconocido → `400`/`422` RFC 7807.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-validation` (e2e-nest: POST con campo extra → rechazo con envelope)
 
-- [ ] T2.3 Logging pino estructurado + interceptor de request/trace id
+- [x] T2.3 Logging pino estructurado + interceptor de request/trace id
   - **Exit criterion**: logger pino JSON con logger-por-request que inyecta `trace_id`, `request_id`, `endpoint`, `method`; sin `console.log` en paths de producción (§9).
   - **Verify**: `pnpm --filter @dsm/api typecheck && ! grep -rn "console.log" apps/api/src --include=*.ts | grep -v ".spec."`
 
-- [ ] T2.4 Endpoints de health/readiness
+- [x] T2.4 Endpoints de health/readiness
   - **Exit criterion**: `GET /health` responde 200 (liveness); `GET /ready` checa la conexión Prisma y responde 200/503.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-health`
 

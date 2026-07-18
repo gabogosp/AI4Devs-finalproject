@@ -1,12 +1,16 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { configureApp } from './bootstrap';
 
 /**
- * Bootstrap de `@dsm/api`. La Fase 2 añade ValidationPipe global, filtro
- * RFC 7807 y logging pino; por ahora arranca el módulo raíz.
+ * Bootstrap de `@dsm/api`: ValidationPipe global + filtro RFC 7807 (configureApp)
+ * + logger pino estructurado.
  */
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
+  configureApp(app);
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
 }
