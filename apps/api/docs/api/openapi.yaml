@@ -1,0 +1,221 @@
+openapi: 3.0.3
+info:
+  title: DSM — API de administración del catálogo (US-001)
+  version: 1.0.0
+  description: >-
+    Panel del dueño: categorías y productos, máquina de estado y RBAC admin.
+    Errores en envelope RFC 7807 (`application/problem+json`, `type` `dsm:catalog/*`).
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-categories
+    description: Gestión de categorías (AC-1)
+  - name: admin-products
+    description: Gestión de productos (AC-2..AC-9)
+  - name: health
+    description: Liveness / readiness
+security:
+  - adminBearer: []
+paths:
+  /admin/categories:
+    post:
+      tags: [admin-categories]
+      summary: Crear categoría (AC-1)
+      description: Crea una categoría; el slug se deriva del nombre (único).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategory' }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [admin-categories]
+      summary: Listar categorías (AC-1)
+      description: Devuelve todas las categorías.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Category' } } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+  /admin/categories/{id}:
+    patch:
+      tags: [admin-categories]
+      summary: Editar categoría (AC-1)
+      description: Actualiza el nombre/parent de una categoría.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCategory' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /admin/products:
+    post:
+      tags: [admin-products]
+      summary: Crear producto en draft (AC-2, AC-5, AC-9)
+      description: Alta en estado draft; SKU único; validación por campo (422).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProduct' }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [admin-products]
+      summary: Listar productos (paginado, NFR)
+      description: Listado paginado del panel (limit/offset).
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ProductList' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+  /admin/products/{id}:
+    get:
+      tags: [admin-products]
+      summary: Obtener producto (AC-3)
+      description: Devuelve un producto por id.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+    patch:
+      tags: [admin-products]
+      summary: Editar o cambiar estado (AC-3, AC-4, AC-6, AC-7)
+      description: >-
+        Sin `status`: edita campos (AC-3). Con `status`: transición de estado
+        (publicar/archivar/despublicar); publicar incompleto → 422 y permanece draft.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProduct' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con claim role=admin (seam ADR-0009)
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Problem:
+      description: Error RFC 7807
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    CreateCategory:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        parent_id: { type: string, format: uuid, nullable: true }
+    UpdateCategory:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        parent_id: { type: string, format: uuid, nullable: true }
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        parent_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+    CreateProduct:
+      type: object
+      required: [sku, name, price_ars_cents, category_id]
+      properties:
+        sku: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer, minimum: 1, description: Centavos ARS (IVA incluido) }
+        stock: { type: integer, minimum: 0, default: 0 }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+    UpdateProduct:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer, minimum: 1 }
+        stock: { type: integer, minimum: 0 }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published, archived] }
+    Product:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        name: { type: string }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer }
+        stock: { type: integer }
+        status: { type: string, enum: [draft, published, archived] }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ProductList:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        pagination:
+          type: object
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    Problem:
+      type: object
+      description: RFC 7807
+      properties:
+        type: { type: string, example: 'dsm:catalog/conflict' }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }

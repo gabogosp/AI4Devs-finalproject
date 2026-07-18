@@ -124,22 +124,22 @@ language: es
 
 ## Fase 8: Contratos OpenAPI + documentación
 
-- [ ] T8.1 Contratos OpenAPI por endpoint alineados con la implementación
+- [x] T8.1 Contratos OpenAPI por endpoint alineados con la implementación
   - **Exit criterion**: cada yaml de `contracts/openapi/*.yaml` (7 endpoints) valida (OpenAPI 3.x) y coincide con la implementación (paths, DTOs, catálogo de errores RFC 7807 `dsm:catalog/*`).
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-001-admin-catalogo-productos-backend/contracts/openapi/*.yaml`
 
-- [ ] T8.2 README del servicio + OpenAPI publicado del servicio
+- [x] T8.2 README del servicio + OpenAPI publicado del servicio
   - **Exit criterion**: `apps/api/README.md` documenta cómo correr/testear la app; `apps/api/docs/api/openapi.yaml` (o Swagger generado) refleja los endpoints admin.
   - **Verify**: `test -f apps/api/README.md && test -f apps/api/docs/api/openapi.yaml`
 
 ## Verification (suite-level)
 
-- [ ] Todos los unit tests pasan: `pnpm --filter @dsm/api test`
-- [ ] Integration (Testcontainers) pasan: `pnpm --filter @dsm/api test -- --group=integration` (requiere Docker; usa el esquema de `@dsm/db`)
-- [ ] E2E-nest (supertest) pasan: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] Contract tests OpenAPI pasan: `npx @stoplight/spectral-cli lint openspec/changes/US-001-admin-catalogo-productos-backend/contracts/openapi/*.yaml`
-- [ ] CI del monorepo verde con la app scaffoldeada: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test`
+- [x] Integration pasan (dentro del suite `pnpm test`; jest-runner-groups no se cableó, así que `--group` corre el suite completo — los specs `*.repository` integration van verdes): `pnpm --filter @dsm/api test -- --group=integration` (requiere Docker; usa el esquema de `@dsm/db`)
+- [x] E2E-nest (supertest) pasan: `pnpm --filter @dsm/api test:e2e`
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+- [x] Contract tests OpenAPI pasan: `npx @stoplight/spectral-cli lint openspec/changes/US-001-admin-catalogo-productos-backend/contracts/openapi/*.yaml`
+- [x] CI del monorepo verde con la app scaffoldeada: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
 
 ## Trazabilidad AC → tasks
 
