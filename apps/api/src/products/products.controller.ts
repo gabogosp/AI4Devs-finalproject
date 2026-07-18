@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { ProductsService } from './products.service';
+import { CatalogEventsService } from '../observability/catalog-events.service';
 import {
   CreateProductDto,
   ListProductsQueryDto,
@@ -27,12 +28,16 @@ export interface ProductListResponse {
 @Controller('v1/admin/products')
 @UseGuards(AdminGuard)
 export class ProductsController {
-  constructor(private readonly products: ProductsService) {}
+  constructor(
+    private readonly products: ProductsService,
+    private readonly events: CatalogEventsService,
+  ) {}
 
   @Post()
   @HttpCode(201)
   async create(@Body() dto: CreateProductDto): Promise<ProductResponseDto> {
     const created = await this.products.create(dto);
+    this.events.emit('product.created', created.id);
     return ProductResponseDto.from(created);
   }
 
@@ -65,9 +70,13 @@ export class ProductsController {
     // AC-4/6/7: si el body trae `status`, es una transición de estado; si no,
     // es una edición de campos (AC-3).
     if (dto.status) {
-      return ProductResponseDto.from(
-        await this.products.changeStatus(id, dto.status),
-      );
+      const updated = await this.products.changeStatus(id, dto.status);
+      if (dto.status === 'published') {
+        this.events.emit('product.published', updated.id);
+      } else if (dto.status === 'archived') {
+        this.events.emit('product.archived', updated.id);
+      }
+      return ProductResponseDto.from(updated);
     }
     return ProductResponseDto.from(await this.products.update(id, dto));
   }

@@ -3,6 +3,7 @@ import { AppConfigModule } from './config/config.module';
 import { AppLoggingModule } from './common/logging/logging.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { HealthModule } from './health/health.module';
+import { CatalogEventsModule } from './observability/catalog-events.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 
@@ -17,6 +18,7 @@ import { ProductsModule } from './products/products.module';
     AppLoggingModule,
     PrismaModule,
     HealthModule,
+    CatalogEventsModule,
     CategoriesModule,
     ProductsModule,
   ],

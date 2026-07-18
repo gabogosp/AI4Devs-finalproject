@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { CategoriesService } from './categories.service';
+import { CatalogEventsService } from '../observability/catalog-events.service';
 import {
   CategoryResponseDto,
   CreateCategoryDto,
@@ -20,12 +21,16 @@ import {
 @Controller('v1/admin/categories')
 @UseGuards(AdminGuard)
 export class CategoriesController {
-  constructor(private readonly categories: CategoriesService) {}
+  constructor(
+    private readonly categories: CategoriesService,
+    private readonly events: CatalogEventsService,
+  ) {}
 
   @Post()
   @HttpCode(201)
   async create(@Body() dto: CreateCategoryDto): Promise<CategoryResponseDto> {
     const created = await this.categories.create(dto);
+    this.events.emit('category.created', created.id);
     return CategoryResponseDto.from(created);
   }
 

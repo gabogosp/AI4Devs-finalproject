@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { AppConfigModule } from '../src/config/config.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
+import { CatalogEventsModule } from '../src/observability/catalog-events.module';
 import { configureApp } from '../src/bootstrap';
 
 /**
@@ -14,7 +15,7 @@ export async function bootTestApp(
   modules: Type<unknown>[],
 ): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({
-    imports: [AppConfigModule, PrismaModule, ...modules],
+    imports: [AppConfigModule, PrismaModule, CatalogEventsModule, ...modules],
   }).compile();
   const app = moduleRef.createNestApplication();
   configureApp(app);

@@ -114,11 +114,11 @@ language: es
 
 ## Fase 7: RBAC end-to-end (AC-8) + observabilidad de negocio
 
-- [ ] T7.1 Guard RBAC cubriendo TODAS las rutas `/v1/admin/*` (AC-8)
+- [x] T7.1 Guard RBAC cubriendo TODAS las rutas `/v1/admin/*` (AC-8)
   - **Exit criterion**: toda ruta `/v1/admin/*` (categorías y productos, todos los métodos) exige `AdminGuard`; visitante sin sesión → `401`, rol no-admin → `403`; ninguna operación de administración se expone sin auth.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-rbac` (e2e-nest: barrido de todas las rutas admin sin token → 401; con token no-admin → 403)
 
-- [ ] T7.2 Eventos de negocio (E2E §18, KPI PRD §1.4)
+- [x] T7.2 Eventos de negocio (E2E §18, KPI PRD §1.4)
   - **Exit criterion**: `product.created`/`product.published`/`product.archived`/`category.created` se emiten como log pino estructurado (con `admin_user_id` pseudónimo + `trace_id`) + contador de métrica; sin PII de comprador (no aplica en catálogo).
   - **Verify**: `pnpm --filter @dsm/api test -- events` (unit/e2e: publicar un producto emite `product.published` con los campos esperados)
 

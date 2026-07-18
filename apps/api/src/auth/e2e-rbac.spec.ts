@@ -1,0 +1,50 @@
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { customerToken, bootTestApp } from '../../test/e2e-app';
+import { CategoriesModule } from '../categories/categories.module';
+import { ProductsModule } from '../products/products.module';
+
+type Method = 'get' | 'post' | 'patch';
+
+/**
+ * AC-8: barrido de TODAS las rutas /v1/admin/* — sin token → 401, con token
+ * no-admin → 403. Ninguna operación de administración se expone sin auth.
+ */
+describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await bootTestApp([CategoriesModule, ProductsModule]);
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  const uuid = '00000000-0000-0000-0000-000000000001';
+  const routes: Array<[Method, string]> = [
+    ['post', '/v1/admin/categories'],
+    ['get', '/v1/admin/categories'],
+    ['patch', `/v1/admin/categories/${uuid}`],
+    ['post', '/v1/admin/products'],
+    ['get', '/v1/admin/products'],
+    ['get', `/v1/admin/products/${uuid}`],
+    ['patch', `/v1/admin/products/${uuid}`],
+  ];
+
+  function call(method: Method, path: string): request.Test {
+    const agent = request(app.getHttpServer());
+    return agent[method](path);
+  }
+
+  it.each(routes)('sin token: %s %s → 401', async (method, path) => {
+    const res = await call(method, path).send({});
+    expect(res.status).toBe(401);
+  });
+
+  it.each(routes)('token no-admin: %s %s → 403', async (method, path) => {
+    const res = await call(method, path)
+      .set('Authorization', `Bearer ${customerToken()}`)
+      .send({});
+    expect(res.status).toBe(403);
+  });
+});
