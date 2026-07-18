@@ -8,6 +8,7 @@
 /.claude/
 /.codex/
 /.cursor/
+/.opencode/
 /.github/hooks/
 /AGENTS.md
 /CLAUDE.md
