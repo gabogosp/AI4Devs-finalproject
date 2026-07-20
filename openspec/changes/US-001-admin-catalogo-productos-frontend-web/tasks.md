@@ -51,15 +51,15 @@ language: es
 
 ## Fase 2: Design-system → tokens + shell + a11y baseline
 
-- [ ] T2.1 Tokens del design-system → `tailwind.config.ts` + CSS vars (alias semánticos §12.1)
+- [x] T2.1 Tokens del design-system → `tailwind.config.ts` + CSS vars (alias semánticos §12.1)
   - **Exit criterion**: `tailwind.config.ts` referencia CSS vars para colores (`primary` #1A56DB, `accent` #C2410C, semánticos), `borderRadius` (var `--radius`), `boxShadow` (§6), `spacing` (§4), `screens` (§4.1), `zIndex` (§6.1); `:root` define los alias semánticos (`--background`,`--foreground`,`--surface`,`--border`,`--ring`,`--primary`,...); los componentes consumen alias, no primitivos hex.
   - **Verify**: `pnpm --filter @dsm/web typecheck && grep -q "\-\-primary" apps/web/**/globals.css apps/web/app/globals.css 2>/dev/null && grep -q "hsl(var(--primary))\|var(--primary)" apps/web/tailwind.config.ts`
 
-- [ ] T2.2 Shell del layout + Inter (`next/font`) + `<html lang="es-AR">` + Metadata API
+- [x] T2.2 Shell del layout + Inter (`next/font`) + `<html lang="es-AR">` + Metadata API
   - **Exit criterion**: `app/layout.tsx` es Server Component, carga Inter con `next/font` (`display: swap`), fija `<html lang="es-AR">`, y exporta `metadata` (título del panel) vía Metadata API; sin `<head>` manual.
   - **Verify**: `pnpm --filter @dsm/web typecheck && grep -q 'lang="es-AR"' apps/web/app/layout.tsx && grep -q "next/font" apps/web/app/layout.tsx && grep -q "export const metadata\|generateMetadata" apps/web/app/layout.tsx`
 
-- [ ] T2.3 Componentes base accesibles (Button, Input/Field, Select) del design-system
+- [x] T2.3 Componentes base accesibles (Button, Input/Field, Select) del design-system
   - **Exit criterion**: existen `Button` (variantes primary/secondary/accent/ghost/destructive, estado `loading` con `aria-busy`, área táctil ≥44px, focus ring `shadow-focus`) e `Input`/`Field` (label asociado, estado error con `aria-describedby`) en `src/components/ui/`; tests component verdes.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/components/ui`
 

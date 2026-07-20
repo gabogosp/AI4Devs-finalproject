@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Tokens del design-system (§2-§6) como CSS vars. Los componentes consumen los
+   alias semánticos, no los hex primitivos. */
+:root {
+  /* Brand */
+  --brand-primary: #1a56db;
+  --brand-primary-dark: #1e40af;
+  --brand-primary-subtle: #eff4fe;
+  --accent: #ea580c;
+  --accent-strong: #c2410c;
+  --accent-subtle: #fff3ec;
+
+  /* Neutros */
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  --white: #ffffff;
+
+  /* Semánticos */
+  --success: #15803d;
+  --success-subtle: #ecfdf3;
+  --warning: #b45309;
+  --warning-subtle: #fef7ec;
+  --error: #dc2626;
+  --error-subtle: #fef2f2;
+  --info: #0e7490;
+
+  /* Alias semánticos (lo que consumen los componentes) */
+  --background: var(--gray-50);
+  --foreground: var(--gray-900);
+  --surface: var(--white);
+  --muted: var(--gray-500);
+  --border: var(--gray-200);
+  --ring: var(--brand-primary);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--white);
+
+  /* Radius (§5) */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  /* Shadows (§6) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(26, 86, 219, 0.4);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
