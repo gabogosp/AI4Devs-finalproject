@@ -65,23 +65,23 @@ language: es
 
 ## Fase 3: Cliente HTTP + error mapping RFC 7807 + repositorios
 
-- [ ] T3.1 Cliente HTTP centralizado con interceptores (auth, trace, timeout)
+- [x] T3.1 Cliente HTTP centralizado con interceptores (auth, trace, timeout)
   - **Exit criterion**: `src/lib/http/client.ts` es el único punto de red; interceptor inyecta `Authorization: Bearer <token>` cuando hay sesión, propaga `traceparent`, aplica timeout (§8.3); ningún componente llama `fetch`/`axios` directo.
   - **Verify**: `pnpm --filter @dsm/web typecheck && grep -rq "traceparent" apps/web/src/lib/http && ! grep -rn "fetch(" apps/web/src/components apps/web/src/features 2>/dev/null | grep -v ".test." | grep -v "http/client"`
 
-- [ ] T3.2 Mapeo del envelope RFC 7807 → `AppError` tipado (por campo)
+- [x] T3.2 Mapeo del envelope RFC 7807 → `AppError` tipado (por campo)
   - **Exit criterion**: `src/lib/http/errors.ts` mapea `application/problem+json` (`type` `dsm:catalog/*`, `status`, `detail`, `errors[]`) a una unión `AppError` (`validation` con `fieldErrors`, `conflict`, `unauthorized`, `forbidden`, `notFound`, `network`, `server`); nunca filtra el body crudo a la UI; unit tests cubren 422 (por campo), 409, 401/403, 5xx, error de red.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/lib/http/errors`
 
-- [ ] T3.3 `categoriesService` (crear / listar / editar) + DTO↔dominio
+- [x] T3.3 `categoriesService` (crear / listar / editar) + DTO↔dominio
   - **Exit criterion**: `src/features/categories/categoriesService.ts` envuelve el cliente HTTP para `POST/GET/PATCH /v1/admin/categories`; no envía `slug` (lo deriva el server); mapea DTO↔dominio; unit tests con MSW verdes.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/categories/categoriesService`
 
-- [ ] T3.4 `productsService` (crear / listar paginado / obtener / editar / publicar / archivar) + money mapping
+- [x] T3.4 `productsService` (crear / listar paginado / obtener / editar / publicar / archivar) + money mapping
   - **Exit criterion**: `src/features/products/productsService.ts` cubre `POST/GET/GET:id/PATCH /v1/admin/products`; el listado envía `limit`/`offset` y devuelve `pagination{limit,offset,total}`; publicar/archivar son `PATCH {status}`; `price_ars_cents` (centavos) se mapea a/desde el dominio; unit tests con MSW verdes.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products/productsService`
 
-- [ ] T3.5 Helper de formato ARS (mismo en server y client, sin hydration mismatch)
+- [x] T3.5 Helper de formato ARS (mismo en server y client, sin hydration mismatch)
   - **Exit criterion**: `src/lib/format/currency.ts` usa `Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0})` sobre `price_ars_cents/100` → `$ 12.500`; es puro y compartido por Server y Client Components; unit test cubre el redondeo entero.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/lib/format/currency`
 
