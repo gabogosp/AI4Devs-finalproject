@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AppErrorException } from '@/lib/http/errors';
+import { track } from '@/lib/observability/events';
 import {
   productsService,
   type Product,
@@ -39,6 +40,7 @@ export function ProductActions({
       const updated = await productsService.publish(product.id);
       setStatus(updated.status); // solo cambia si el backend confirmó
       setMessage('Producto publicado.');
+      track('product_published', { product_id: product.id });
       onChanged?.(updated);
     } catch (err) {
       if (
@@ -65,6 +67,7 @@ export function ProductActions({
       setStatus(updated.status);
       setConfirmOpen(false);
       setMessage('Producto archivado.');
+      track('product_archived', { product_id: product.id });
       onChanged?.(updated);
     } catch {
       setMessage('No se pudo archivar.');

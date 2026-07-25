@@ -153,36 +153,36 @@ language: es
 
 ## Fase 8: Resiliencia, observabilidad y accesibilidad transversales
 
-- [ ] T8.1 Error boundary por ruta + skeleton + dedup de submit + cancelación
+- [x] T8.1 Error boundary por ruta + skeleton + dedup de submit + cancelación
   - **Exit criterion**: cada route segment del panel tiene `loading.tsx` (skeleton) y `error.tsx` (boundary con reintento que reporta a Sentry, no silencia); los servicios cancelan con `AbortController` al desmontar; el submit deduplica (deshabilitado in-flight); test cubre el boundary con un fetch 5xx.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features && test -f apps/web/app/(admin)/error.tsx -o -f apps/web/app/error.tsx`
 
-- [ ] T8.2 Observabilidad FE — Sentry + eventos de negocio backoffice
+- [x] T8.2 Observabilidad FE — Sentry + eventos de negocio backoffice
   - **Exit criterion**: Sentry inicializado (errores + Web Vitals, per E2E §18); se emiten `bo_screen_shown`, `product_created`, `product_published`, `product_archived`, `category_created` con `operator_id` (pseudónimo) y `correlation_id` propagado; sin PII en dimensiones; unit test verifica que la acción de publicar emite `product_published`.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/lib/observability && grep -rq "product_published" apps/web/src`
 
-- [ ] T8.3 Accesibilidad — axe-core sin violaciones en las pantallas del panel
+- [x] T8.3 Accesibilidad — axe-core sin violaciones en las pantallas del panel
   - **Exit criterion**: test de accesibilidad con `axe-core`/`jest-axe` sobre listado, alta, edición y confirmación de archivar → 0 violaciones; teclado navegable; foco al `<h1>` al cambiar de ruta (design-system §11); color nunca único portador de estado.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features --grep a11y` (o el runner de axe configurado)
 
-- [ ] T8.4 Security headers (Next wiring) + sin `dangerouslySetInnerHTML` sin sanitizar
+- [x] T8.4 Security headers (Next wiring) + sin `dangerouslySetInnerHTML` sin sanitizar
   - **Exit criterion**: `next.config.js`/`middleware.ts` fija CSP (report-only → enforce), HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Content-Type-Options: nosniff` (next-standards §8.bis); no hay `dangerouslySetInnerHTML` sin DOMPurify (§12.1).
   - **Verify**: `pnpm --filter @dsm/web build && ! grep -rn "dangerouslySetInnerHTML" apps/web/src apps/web/app 2>/dev/null | grep -v "DOMPurify"`
 
-- [ ] T8.5 Smoke E2E del happy path (red de seguridad del dev; la batería de aceptación es owned-by-QA)
+- [x] T8.5 Smoke E2E del happy path (red de seguridad del dev; la batería de aceptación es owned-by-QA)
   - **Exit criterion**: un spec Playwright estable (auto-waiting locators por rol, sin `waitForTimeout`) cubre: acceso admin → crear categoría → alta de producto en draft → publicar; corre contra `next build && next start`; verde.
   - **Verify**: `pnpm --filter @dsm/web test:e2e`
 
 ## Documentación
 
-- [ ] T9.1 `apps/web/README.md` — reemplazar el placeholder
+- [x] T9.1 `apps/web/README.md` — reemplazar el placeholder
   - **Exit criterion**: `apps/web/README.md` documenta cómo correr la app (`pnpm --filter @dsm/web dev`), la var `NEXT_PUBLIC_API_BASE_URL`, el seam de auth admin (referencia a ADR-0009), y el scope (panel del dueño); sin quedar el texto placeholder original (per documentation-standards §11.1).
   - **Verify**: `! grep -q "Placeholder" apps/web/README.md && grep -q "NEXT_PUBLIC_API_BASE_URL" apps/web/README.md`
 
 ## Verification (suite-level)
-- [ ] Unit + component + integration verdes: `pnpm --filter @dsm/web test -- --run`
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción OK: `pnpm --filter @dsm/web build`
-- [ ] Smoke E2E verde: `pnpm --filter @dsm/web test:e2e`
-- [ ] Accesibilidad (axe-core) sin violaciones en las pantallas del panel.
+- [x] Unit + component + integration verdes: `pnpm --filter @dsm/web test -- --run`
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`
+- [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
+- [x] Build de producción OK: `pnpm --filter @dsm/web build`
+- [x] Smoke E2E verde: `pnpm --filter @dsm/web test:e2e`
+- [x] Accesibilidad (axe-core) sin violaciones en las pantallas del panel.
