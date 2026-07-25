@@ -103,15 +103,15 @@ language: es
 
 ## Fase 5: Categorías — pantallas (AC-1)
 
-- [ ] T5.1 Estado + listado de categorías (unión discriminada `idle|loading|success|error`)
+- [x] T5.1 Estado + listado de categorías (unión discriminada `idle|loading|success|error`)
   - **Exit criterion**: `app/(admin)/categorias/page.tsx` renderiza el listado con estados explícitos (skeleton en loading, empty accionable, error con reintento); sin flags booleanos ni `if(data)` catch-all (§11.4/11.9); component test cubre los 4 estados.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/categories`
 
-- [ ] T5.2 Alta de categoría (nombre → slug server-side)
+- [x] T5.2 Alta de categoría (nombre → slug server-side)
   - **Exit criterion**: formulario de alta (React Hook Form + Zod: `name` requerido no vacío); el `slug` no es campo editable; en éxito refresca el listado; 409 (slug duplicado) → banner + mensaje claro; component/integration test (MSW) cubre éxito y 409.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/categories`
 
-- [ ] T5.3 Edición de categoría
+- [x] T5.3 Edición de categoría
   - **Exit criterion**: formulario de edición precargado (`PATCH /v1/admin/categories/{id}`) que preserva el input en error de validación; 404 (categoría inexistente) → estado accionable; test cubre edición OK.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/categories`
 
