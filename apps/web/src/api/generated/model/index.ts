@@ -6,6 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './adminLogin';
+export * from './adminLoginResponse';
 export * from './category';
 export * from './createCategory';
 export * from './createProduct';

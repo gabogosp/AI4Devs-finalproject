@@ -144,11 +144,11 @@ language: es
 > auditoría; estaba documentado sólo en un comentario de código, sin task dueña — silent drop
 > per la regla F40 del framework.
 
-- [ ] T9.1 Exponer `POST /v1/admin/auth/login` + declararlo en el contrato
+- [x] T9.1 Exponer `POST /v1/admin/auth/login` + declararlo en el contrato
   - **Exit criterion**: un `@Controller` en `apps/api/src/auth/` expone `POST /v1/admin/auth/login` que recibe `{ bootstrapToken }`, delega en `AdminAuthService.loginWithBootstrap`, responde `200 { token }` con el JWT `role=admin`, y responde `401` (RFC 7807, sin filtrar detalle) ante token inválido. El endpoint queda declarado en `apps/api/docs/api/openapi.yaml` (con `required` en request y response, coherente con el resto del contrato) y **excluido de `AdminGuard`** (es la ruta que emite el token). Tests e2e-nest cubren 200 y 401.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=auth && grep -q "/admin/auth/login" apps/api/docs/api/openapi.yaml`
 
-- [ ] T9.2 Retirar el mock del login en el FE y regenerar el contrato
+- [x] T9.2 Retirar el mock del login en el FE y regenerar el contrato
   - **Exit criterion**: con el endpoint declarado, `pnpm --filter @dsm/web codegen` incorpora la ruta a los artefactos generados; el comentario de gap en `adminSession.ts` se reemplaza por la referencia al contrato; el escenario `@blocked-by-backend` del change QA se desbloquea.
   - **Verify**: `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
 
@@ -173,6 +173,6 @@ language: es
 | AC-6 (publicar incompleto → rechazo) | T6.1, T6.2 | en este change |
 | AC-7 (archivar, no borrar) | T6.3 | en este change |
 | AC-8 (RBAC admin) | T3.1, T3.2, T7.1 | en este change — **gated por OQ-1** |
-| AC-8 (login admin — costura HTTP) | T9.1, T9.2 | **abierto** — el service existe, falta el controller; el FE lo mockea |
+| AC-8 (login admin — costura HTTP) | T9.1, T9.2 | en este change — `POST /v1/admin/auth/login` expuesto y declarado en el contrato |
 | AC-9 (SKU único) | T5.1, T5.3 | en este change |
 | AC-10 (precio histórico) | — | cubierto-por-diseño; verificable e2e recién con checkout (fuera de US-001 BE) |

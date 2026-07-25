@@ -8,6 +8,22 @@
 import * as zod from 'zod';
 
 /**
+ * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular. US-014 la reemplaza preservando el contrato `role=admin`.
+ * @summary Login admin — intercambia el bootstrap token por un JWT (AC-8)
+ */
+
+
+
+export const PostAdminAuthLoginBody = zod.object({
+  "bootstrapToken": zod.string().min(1)
+})
+
+export const PostAdminAuthLoginResponse = zod.object({
+  "token": zod.string().describe('JWT con claim role=admin')
+})
+
+
+/**
  * Crea una categoría; el slug se deriva del nombre (único).
  * @summary Crear categoría (AC-1)
  */

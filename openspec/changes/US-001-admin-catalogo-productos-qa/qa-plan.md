@@ -261,10 +261,10 @@ Feature: Acceso restringido al panel de catálogo
     Then el precio de ese producto en la orden histórica no cambia
     And el catálogo refleja el precio nuevo sólo para ventas futuras
 
-  @blocked-by-backend @regression
+  @acceptance @regression @critical-path
   Scenario: X-6 — Login admin real por la página de acceso (AC-8)
-    # @blocked-by-backend — no existe controller para POST /v1/admin/auth/login (OQ-QA-1).
-    # Se activa cuando el backend exponga la ruta; hasta entonces el resto usa el fallback de JWT minteado.
+    # DESBLOQUEADO 2026-07-25: el backend expuso POST /v1/admin/auth/login
+    # (change backend, Fase 9). El fixture adminAuth usa la rama de login REAL.
     Given un dueño en la página de acceso con su bootstrap token
     When envía el formulario de acceso
     Then obtiene una sesión de administrador válida
@@ -412,7 +412,7 @@ Feature: Acceso restringido al panel de catálogo
   target_tooling: Cucumber+Playwright
   gherkin_scenario: "X-6 — Login admin real por la página de acceso (AC-8)"
   name: Acceso_LoginRealPorPagina_ObtieneSesionAdmin
-  status: blocked-by-backend   # falta controller POST /v1/admin/auth/login (OQ-QA-1)
+  status: ready   # desbloqueado 2026-07-25: POST /v1/admin/auth/login expuesto (backend Fase 9)
 ```
 
 ### 5.2 E2E cross-stack de la costura FE↔BE (Playwright, browser → API real)
@@ -627,7 +627,7 @@ axe-core (vía `@axe-core/playwright`) sobre las 4 pantallas del panel corriendo
 
 ## 15. Open questions
 
-- **OQ-QA-1** `[Resolved: 2026-07-25 — flujos gateados vía JWT role=admin minteado por fixture; login real por página @blocked-by-backend (TC-019) hasta POST /v1/admin/auth/login — owner: backend, revisit: al aterrizar el controller]` — sin controller de login.
+- **OQ-QA-1** `[Resolved: 2026-07-25 — DESBLOQUEADA el mismo día: el backend expuso POST /v1/admin/auth/login (change backend, Fase 9 T9.1/T9.2), declarada en openapi.yaml (tag admin-auth, security: []) y verificada contra la API viva (200 + JWT role=admin; 401 RFC 7807; 422 por campo). El fixture adminAuth resuelve por login REAL; TC-019 pasa de blocked-by-backend a ready]`
 - **OQ-QA-2** `[Deferred: k6 corre en local/CI contra Postgres sembrado; los umbrales quedan propuestos y se re-miden en un entorno prod-shaped — owner: Arquitecto/QA, revisit: al provisionar platform-cloud (pre-uat)]` — carga sin cloud vivo.
 - **OQ-QA-3** `[Resolved: Tier 2 derivado]` — sin `service-catalog.yaml`; Tier 2 asumido (backoffice fundacional).
 

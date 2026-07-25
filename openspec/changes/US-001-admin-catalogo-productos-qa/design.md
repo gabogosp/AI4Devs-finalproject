@@ -81,7 +81,7 @@ Regla de dependencia: L3 no corre sin L1 + L2 verdes de ambos changes de discipl
 1. **Login real** — `POST /v1/admin/auth/login` con el bootstrap token. **Bloqueado hoy**: no existe el controller (`AdminAuthService` tiene `loginWithBootstrap`/`issueAdminToken` a nivel servicio, sin ruta HTTP). Se activa cuando el backend lo exponga.
 2. **Fallback test-only** — mintea un JWT `role=admin` firmado con el `JWT_SECRET` compartido (mismo claim/contrato que `issueAdminToken`), inyectado en el header del interceptor FE (via `localStorage`/sessionStorage seed antes de navegar) y en el `Authorization` de Newman/k6. Desbloquea **todos los endpoints gateados ahora**.
 
-El escenario "login real por la página `/acceso`" queda `@blocked-by-backend` (no se ejecuta hasta el controller). El resto del panel se ejercita vía el fallback. **No se inventa** una ruta que no existe: el fixture documenta el gap y elige el fallback explícito.
+**Actualizado 2026-07-25**: el escenario "login real por la página `/acceso`" ya **no** está bloqueado — el backend expuso `POST /v1/admin/auth/login` (change backend, Fase 9), declarada en el contrato y verificada contra la API viva. El fixture resuelve por la rama de **login real**; el fallback de JWT minteado queda como red para entornos sin `ADMIN_BOOTSTRAP_TOKEN`.
 
 ### Test data y determinismo (`testing-standards.md` §5, §14.3, §14.8)
 
@@ -132,7 +132,7 @@ El barrido RBAC deriva de la superficie STRIDE de endpoints admin (E2E §14: *El
 
 ## Open questions
 
-- **OQ-QA-1** `[Resolved: 2026-07-25 — aceptación vía JWT minteado por fixture; login real por página @blocked-by-backend hasta POST /v1/admin/auth/login — owner: backend, revisit: al aterrizar el controller]` — no hay controller de login. Ver proposal §Open questions.
+- **OQ-QA-1** `[Resolved: 2026-07-25 — DESBLOQUEADA el mismo día: el backend expuso POST /v1/admin/auth/login (change backend, Fase 9). El fixture adminAuth resuelve por login REAL; el fallback de JWT minteado queda como red para entornos sin bootstrap token]` Ver proposal §Open questions.
 - **OQ-QA-2** `[Deferred: k6 en local/CI, umbrales propuestos re-medidos en prod-shaped — owner: Arquitecto/QA, revisit: al provisionar platform-cloud (pre-uat)]` — carga sin cloud vivo.
 - **OQ-QA-3** `[Resolved: Tier 2 derivado]` — sin `service-catalog.yaml`; Tier 2 asumido (backoffice fundacional), cobertura alta en caminos críticos.
 

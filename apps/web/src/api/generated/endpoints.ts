@@ -6,6 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  AdminLogin,
+  AdminLoginResponse,
   Category,
   CreateCategory,
   CreateProduct,
@@ -28,6 +30,67 @@ import {
 import type {
   RequestHandlerOptions
 } from 'msw';
+
+export type postAdminAuthLoginResponse200 = {
+  data: AdminLoginResponse
+  status: 200
+}
+
+export type postAdminAuthLoginResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type postAdminAuthLoginResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type postAdminAuthLoginResponse503 = {
+  data: ProblemResponse
+  status: 503
+}
+
+export type postAdminAuthLoginResponseSuccess = (postAdminAuthLoginResponse200) & {
+  headers: Headers;
+};
+export type postAdminAuthLoginResponseError = (postAdminAuthLoginResponse401 | postAdminAuthLoginResponse422 | postAdminAuthLoginResponse503) & {
+  headers: Headers;
+};
+
+export type postAdminAuthLoginResponse = (postAdminAuthLoginResponseSuccess | postAdminAuthLoginResponseError)
+
+export const getPostAdminAuthLoginUrl = () => {
+
+
+
+
+  return `/v1/admin/auth/login`
+}
+
+/**
+ * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular. US-014 la reemplaza preservando el contrato `role=admin`.
+ * @summary Login admin — intercambia el bootstrap token por un JWT (AC-8)
+ */
+export const postAdminAuthLogin = async (adminLogin: AdminLogin, options?: RequestInit): Promise<postAdminAuthLoginResponse> => {
+
+  const res = await fetch(getPostAdminAuthLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminLogin)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: postAdminAuthLoginResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as postAdminAuthLoginResponse
+}
+
+
 
 export type postAdminCategoriesResponse201 = {
   data: Category
@@ -474,6 +537,8 @@ export const patchAdminProductsId = async (id: string,
 }
 
 
+export const getPostAdminAuthLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
+
 export const getPostAdminCategoriesResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getGetAdminCategoriesResponseMock = (): Category[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
@@ -488,6 +553,18 @@ export const getGetAdminProductsIdResponseMock = (overrideResponse: Partial<Extr
 
 export const getPatchAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
+
+export const getPostAdminAuthLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/auth/login', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getPostAdminAuthLoginResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 
 export const getPostAdminCategoriesMockHandler = (overrideResponse?: Category | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Category> | Category), options?: RequestHandlerOptions) => {
   return http.post('*/admin/categories', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
@@ -573,6 +650,7 @@ export const getPatchAdminProductsIdMockHandler = (overrideResponse?: Product | 
   }, options)
 }
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
+  getPostAdminAuthLoginMockHandler(),
   getPostAdminCategoriesMockHandler(),
   getGetAdminCategoriesMockHandler(),
   getPatchAdminCategoriesIdMockHandler(),

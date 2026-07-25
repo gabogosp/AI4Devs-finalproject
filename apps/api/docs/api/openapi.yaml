@@ -12,6 +12,8 @@ servers:
   - url: /v1
     description: Base URL versionada
 tags:
+  - name: admin-auth
+    description: Seam de login admin (AC-8, ADR-0009)
   - name: admin-categories
     description: Gestión de categorías (AC-1)
   - name: admin-products
@@ -21,6 +23,25 @@ tags:
 security:
   - adminBearer: []
 paths:
+  /admin/auth/login:
+    post:
+      tags: [admin-auth]
+      summary: Login admin — intercambia el bootstrap token por un JWT (AC-8)
+      description: >-
+        Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo
+        `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo
+        sería circular. US-014 la reemplaza preservando el contrato `role=admin`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminLogin' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminLoginResponse' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
   /admin/categories:
     post:
       tags: [admin-categories]
@@ -138,6 +159,16 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    AdminLogin:
+      type: object
+      required: [bootstrapToken]
+      properties:
+        bootstrapToken: { type: string, minLength: 1 }
+    AdminLoginResponse:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, description: JWT con claim role=admin }
     CreateCategory:
       type: object
       required: [name]

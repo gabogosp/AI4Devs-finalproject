@@ -16,8 +16,8 @@
 - [ ] T1.1 Crear el paquete workspace `@dsm/qa` (`qa/`) con la estructura `acceptance|e2e|functional|performance|support` y su `package.json` (cucumber, @playwright/test, newman, @axe-core/playwright, tsx).
   - **Exit criterion**: `qa/package.json` existe, resuelve en el workspace pnpm, y expone los scripts `test:acceptance`, `test:e2e`, `test:functional`, `test:load`, `test:a11y`.
   - **Verify**: `pnpm --filter @dsm/qa install && pnpm --filter @dsm/qa run --if-present test:acceptance -- --help`
-- [ ] T1.2 Implementar el fixture de auth `qa/support/admin-auth.ts` (precedencia login-real → fallback JWT `role=admin` minteado con `JWT_SECRET`) y documentar el gap OQ-QA-1 en el propio archivo.
-  - **Exit criterion**: `adminAuth()` devuelve un token `role=admin` usable por Playwright, Cucumber, Newman y k6; el fallback firma con el `JWT_SECRET` compartido cuando la ruta de login no existe.
+- [ ] T1.2 Implementar el fixture de auth `qa/support/admin-auth.ts` (precedencia login-real → fallback JWT `role=admin` minteado con `JWT_SECRET`).
+  - **Exit criterion**: `adminAuth()` devuelve un token `role=admin` usable por Playwright, Cucumber, Newman y k6. **La ruta de login real YA existe** (`POST /v1/admin/auth/login`, backend Fase 9 — declarada en `openapi.yaml`, tag `admin-auth`), así que la precedencia resuelve por login real; el fallback de JWT minteado queda sólo como red para entornos sin `ADMIN_BOOTSTRAP_TOKEN`.
   - **Verify**: `pnpm --filter @dsm/qa exec tsx qa/support/admin-auth.smoke.ts` (imprime un JWT válido y su claim `role=admin`)
 - [ ] T1.3 Implementar seed determinista `qa/support/seed.ts` + builders `qa/support/builders.ts` (vía API real; SKU con prefijo único por-run).
   - **Exit criterion**: `seedCatalogo()` crea categorías/productos vía la API y devuelve sus ids; re-ejecutar no colisiona (idempotente).
@@ -31,9 +31,9 @@
 - [ ] T2.2 Escribir los `.feature` Negative (N-1/2/3, N-4, N-5, N-8, N-6, N-7) y step defs, con negative-space (sin escritura parcial, sin doble efecto, RBAC).
   - **Exit criterion**: TC-010..TC-015 verdes; N-1/2/3 asertan que el producto **no se crea** y N-5 que **no crea un segundo** con el SKU.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@acceptance and @regression" --profile negative`
-- [ ] T2.3 Escribir los cross-feature (X-1, X-2) y marcar X-5 `@deferred` + X-6 `@blocked-by-backend` sin ejecutarlos.
-  - **Exit criterion**: TC-016/TC-017 verdes cross-stack (FE→API real); TC-018 (`@deferred`) y TC-019 (`@blocked-by-backend`) presentes y excluidos del run por tag.
-  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@critical-path and not @deferred and not @blocked-by-backend"`
+- [ ] T2.3 Escribir los cross-feature (X-1, X-2, **X-6**) y marcar X-5 `@deferred` sin ejecutarlo.
+  - **Exit criterion**: TC-016/TC-017 verdes cross-stack (FE→API real); **TC-019 (X-6, login real por `/acceso`) verde** — desbloqueado 2026-07-25, el backend expone `POST /v1/admin/auth/login` (change backend, Fase 9), así que el fixture `adminAuth` usa la rama de login REAL, no el fallback; TC-018 (`@deferred`) presente y excluido por tag.
+  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@critical-path and not @deferred"`
 
 ## Fase 3: E2E cross-stack de la costura FE↔BE (Playwright)
 
@@ -70,9 +70,9 @@
 
 ## Verification (suite-level)
 
-- [ ] La suite de aceptación (excluyendo `@deferred`/`@blocked-by-backend`) pasa: `pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred and not @blocked-by-backend"`
+- [ ] La suite de aceptación (excluyendo sólo `@deferred`) pasa: `pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"`
 - [ ] E2E de costura pasa: `pnpm --filter @dsm/qa test:e2e`
 - [ ] Funcional API pasa: `pnpm --filter @dsm/qa test:functional`
 - [ ] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
 - [ ] Carga smoke-load exit 0: `k6 run --vus 2 --duration 30s qa/performance/baseline.js`
-- [ ] Cada AC activo (AC-1..AC-9) tiene ≥1 test-case verde; AC-10 presente `@deferred`; login-real presente `@blocked-by-backend`.
+- [ ] Cada AC activo (AC-1..AC-9) tiene ≥1 test-case verde, **incluido el login real por `/acceso`** (TC-019, desbloqueado por la Fase 9 del backend); AC-10 presente `@deferred`.
