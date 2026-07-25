@@ -117,23 +117,23 @@ language: es
 
 ## Fase 6: Productos — alta / edición + validación (AC-2, AC-3, AC-5, AC-9)
 
-- [ ] T6.1 Listado de productos con TanStack Table + paginación server-side (OQ-FE-3)
+- [x] T6.1 Listado de productos con TanStack Table + paginación server-side (OQ-FE-3)
   - **Exit criterion**: `app/(admin)/productos/page.tsx` usa TanStack Table en `manualPagination` cableada a `limit`/`offset` de la API; muestra `pagination.total`; skeleton por página (no spinner de página completa); badge de estado (draft/published/archived) con texto+color (no solo color); tabla→cards en mobile; component test cubre carga + cambio de página.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products/ProductList`
 
-- [ ] T6.2 Formulario de alta de producto en draft (AC-2) + validación cliente (AC-5)
+- [x] T6.2 Formulario de alta de producto en draft (AC-2) + validación cliente (AC-5)
   - **Exit criterion**: `app/(admin)/productos/nuevo/page.tsx` con React Hook Form + Zod espejo del DTO (`sku`,`name` requeridos; `price_ars_cents` derivado de `$>0`; `stock`≥0; `category_id` seleccionado de las categorías; `description_raw?`,`image_url?`); submit deshabilitado in-flight; en éxito feedback "creado en borrador — no visible hasta publicar"; component test cubre validación cliente + submit OK (MSW).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products/ProductForm`
 
-- [ ] T6.3 Formulario de edición de producto (AC-3)
+- [x] T6.3 Formulario de edición de producto (AC-3)
   - **Exit criterion**: `app/(admin)/productos/[id]/page.tsx` precarga (`GET /v1/admin/products/{id}`) y edita precio/stock/descripción/categoría/`image_url` (`PATCH`); muestra el precio en `$` con "IVA incluido" (helper T3.5); "unsaved changes" al navegar con form dirty (§11.bis.6); component test cubre precarga + edición OK.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products/ProductForm`
 
-- [ ] T6.4 Render del error 409 SKU duplicado (AC-9)
+- [x] T6.4 Render del error 409 SKU duplicado (AC-9)
   - **Exit criterion**: al recibir 409 (`type: dsm:catalog/conflict`) en el alta, el FE pinta el mensaje en banner **y** bajo el campo `sku` con copy claro ("Ya existe un producto con ese SKU"); el input del usuario se preserva; integration test (MSW 409) verde.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products/ProductForm`
 
-- [ ] T6.5 Render de los errores 422 por campo (AC-5) sin escritura parcial ni pérdida de input
+- [x] T6.5 Render de los errores 422 por campo (AC-5) sin escritura parcial ni pérdida de input
   - **Exit criterion**: los `errors[]` del 422 se mapean a los campos correctos y se pintan inline con `aria-describedby`; el formulario **no** limpia el input ni aplica cambio optimista; resumen de errores arriba; integration test (MSW 422 multi-campo) verde.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products/ProductForm`
 
