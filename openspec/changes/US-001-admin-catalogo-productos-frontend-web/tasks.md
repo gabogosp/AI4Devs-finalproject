@@ -89,15 +89,15 @@ language: es
 
 > **OQ-FE-1 resuelta** (`[Resolved: 2026-07-18 — opción A]`): la Fase 4 materializa una **página mínima de acceso admin** que postea al seam del backend (ADR-0009) y persiste el JWT `role=admin`. La arquitectura de auth del FE se construye para que US-014 la endurezca (cookie `httpOnly`, refresh rotado, 2FA) **sin reescribir** el guard ni los servicios (espeja ADR-0009).
 
-- [ ] T4.1 Sesión admin + almacenamiento del JWT + interceptor de token
+- [x] T4.1 Sesión admin + almacenamiento del JWT + interceptor de token
   - **Exit criterion**: `src/features/auth/adminSession.ts` obtiene y persiste el JWT `role=admin` (según la opción confirmada en OQ-FE-1: login mínimo contra el seam, o entrada de bootstrap-token), lo expone al cliente HTTP (T3.1) y ofrece `signOut`; unit tests del flujo de sesión verdes.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/auth/adminSession`
 
-- [ ] T4.2 Página de acceso admin
+- [x] T4.2 Página de acceso admin
   - **Exit criterion**: existe la ruta de acceso admin (Client Component) que ejecuta el flujo de OQ-FE-1 y, en éxito, redirige al panel; en fallo (401) muestra error accionable sin filtrar detalle; component test verde.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/auth`
 
-- [ ] T4.3 Guard del route group `(admin)` — redirige sin sesión (AC-8)
+- [x] T4.3 Guard del route group `(admin)` — redirige sin sesión (AC-8)
   - **Exit criterion**: el route group `app/(admin)/` está gated: sin sesión admin válida redirige a la página de acceso; ninguna pantalla del panel se renderiza para anónimo; el guard NO es la autoridad (el backend gatea server-side) — es UX; test cubre "anónimo → redirect".
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/auth/guard`
 
