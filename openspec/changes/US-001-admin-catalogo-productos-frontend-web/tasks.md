@@ -139,15 +139,15 @@ language: es
 
 ## Fase 7: Productos — acciones de estado (AC-4, AC-6, AC-7)
 
-- [ ] T7.1 Acción "Publicar" (AC-4)
+- [x] T7.1 Acción "Publicar" (AC-4)
   - **Exit criterion**: acción en fila/detalle → `PATCH {status: published}`; feedback de éxito (toast `role="status"`) + refresco del estado a `published`; submit deshabilitado in-flight; component test cubre publicación OK.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products`
 
-- [ ] T7.2 Publicar incompleto → surface de "qué falta", permanece draft (AC-6)
+- [x] T7.2 Publicar incompleto → surface de "qué falta", permanece draft (AC-6)
   - **Exit criterion**: si el backend responde 422 al publicar (falta nombre/precio/stock/categoría), el FE muestra **qué falta** (mapeado de `errors[]`) y el producto **permanece** en `draft` (sin cambio optimista falso — pesimista); integration test (MSW 422 publish-incomplete) verifica que el estado en UI no cambia a published.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products`
 
-- [ ] T7.3 Acción "Archivar" con confirmación destructiva de dos pasos (AC-7)
+- [x] T7.3 Acción "Archivar" con confirmación destructiva de dos pasos (AC-7)
   - **Exit criterion**: la acción abre un modal de confirmación de dos pasos (§11.bis.5: no cierra por click-outside, escribir/confirmar) → `PATCH {status: archived}`; el producto sale del listado activo (sin delete físico); foco gestionado en el modal (focus trap, Esc, foco vuelve al trigger); component test cubre confirmación + archivado OK y cancelación.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/products`
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { AsyncState } from '@/lib/async';
 import { AppErrorException, networkError } from '@/lib/http/errors';
 import { ProductForm } from './ProductForm';
+import { ProductActions } from './ProductActions';
 import { productsService, type Product } from './productsService';
 import {
   categoriesService,
@@ -49,6 +50,7 @@ export function ProductEdit({ id }: { id: string }) {
   return (
     <section className="flex flex-col gap-6 p-6">
       <h1 className="text-2xl font-bold">Editar producto</h1>
+      <ProductActions product={state.data} />
       <ProductForm categories={categories} initial={state.data} />
     </section>
   );
