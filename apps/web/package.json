@@ -9,9 +9,10 @@
     "start": "next start",
     "lint": "eslint src app --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:e2e": "playwright test",
-    "codegen": "orval --config orval.config.ts"
+    "codegen": "orval --config orval.config.ts",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "3.9.1",
