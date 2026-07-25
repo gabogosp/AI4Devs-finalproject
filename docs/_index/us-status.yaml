@@ -5,7 +5,7 @@
 user-stories:
   - id: US-001
     slug: admin-catalogo-productos
-    status: Ready
+    status: In Progress
     priority: High
     prd-capacity: 1
     disciplines: [BE, FE, QA, INFRA]

@@ -132,6 +132,26 @@ language: es
   - **Exit criterion**: `apps/api/README.md` documenta cómo correr/testear la app; `apps/api/docs/api/openapi.yaml` (o Swagger generado) refleja los endpoints admin.
   - **Verify**: `test -f apps/api/README.md && test -f apps/api/docs/api/openapi.yaml`
 
+## Fase 9: Controller del seam de login admin (AC-8 — costura FE↔BE)
+
+> **Añadida post-hoc (2026-07-25, auditoría)**. El seam de ADR-0009 existe a nivel **service**
+> (`AdminAuthService.loginWithBootstrap` / `issueAdminToken`) pero **ningún `@Controller` expone
+> la ruta HTTP**. El FE (`adminSession.ts`) postea a `POST /v1/admin/auth/login` y **mockea esa
+> ruta en todos sus tests** (MSW + `page.route`), así que la suite del FE pasa verde contra un
+> endpoint que no existe. La ruta tampoco está en `openapi.yaml`, así que el gate de codegen no
+> puede verla (sólo protege lo declarado). Consecuencia: **el camino de login de AC-8 no funciona
+> contra el backend real**. Detectado por `/plan-qa` (OQ-QA-1, escalado a backend) y confirmado en
+> auditoría; estaba documentado sólo en un comentario de código, sin task dueña — silent drop
+> per la regla F40 del framework.
+
+- [ ] T9.1 Exponer `POST /v1/admin/auth/login` + declararlo en el contrato
+  - **Exit criterion**: un `@Controller` en `apps/api/src/auth/` expone `POST /v1/admin/auth/login` que recibe `{ bootstrapToken }`, delega en `AdminAuthService.loginWithBootstrap`, responde `200 { token }` con el JWT `role=admin`, y responde `401` (RFC 7807, sin filtrar detalle) ante token inválido. El endpoint queda declarado en `apps/api/docs/api/openapi.yaml` (con `required` en request y response, coherente con el resto del contrato) y **excluido de `AdminGuard`** (es la ruta que emite el token). Tests e2e-nest cubren 200 y 401.
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=auth && grep -q "/admin/auth/login" apps/api/docs/api/openapi.yaml`
+
+- [ ] T9.2 Retirar el mock del login en el FE y regenerar el contrato
+  - **Exit criterion**: con el endpoint declarado, `pnpm --filter @dsm/web codegen` incorpora la ruta a los artefactos generados; el comentario de gap en `adminSession.ts` se reemplaza por la referencia al contrato; el escenario `@blocked-by-backend` del change QA se desbloquea.
+  - **Verify**: `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
+
 ## Verification (suite-level)
 
 - [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test`
@@ -153,5 +173,6 @@ language: es
 | AC-6 (publicar incompleto → rechazo) | T6.1, T6.2 | en este change |
 | AC-7 (archivar, no borrar) | T6.3 | en este change |
 | AC-8 (RBAC admin) | T3.1, T3.2, T7.1 | en este change — **gated por OQ-1** |
+| AC-8 (login admin — costura HTTP) | T9.1, T9.2 | **abierto** — el service existe, falta el controller; el FE lo mockea |
 | AC-9 (SKU único) | T5.1, T5.3 | en este change |
 | AC-10 (precio histórico) | — | cubierto-por-diseño; verificable e2e recién con checkout (fuera de US-001 BE) |
