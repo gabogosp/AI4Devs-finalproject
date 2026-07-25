@@ -44,3 +44,6 @@ dist/
 build/
 .env
 .env.local
+
+# Caché de build incremental de TypeScript (no es fuente)
+*.tsbuildinfo

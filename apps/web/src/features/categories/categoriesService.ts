@@ -1,44 +1,48 @@
 import { httpRequest } from '@/lib/http/client';
+import { parseContract } from '@/lib/http/contract';
+import {
+  GetAdminCategoriesResponse,
+  PatchAdminCategoriesIdResponse,
+  PostAdminCategoriesResponse,
+} from '@/api/generated/zod';
+import type { Category, CreateCategory } from '@/api/generated/model';
 
-export interface Category {
-  id: string;
-  slug: string;
-  name: string;
-  parent_id: string | null;
-  created_at: string;
-}
-
-export interface CategoryInput {
-  name: string;
-  parent_id?: string;
-}
+/**
+ * Tipos DERIVADOS DEL CONTRATO — generados desde `apps/api/docs/api/openapi.yaml`
+ * (`frontend-standards.md` §3.1/§3.2). Nunca se declaran a mano.
+ */
+export type { Category };
+export type CategoryInput = CreateCategory;
 
 /**
  * Envuelve el cliente HTTP para `/v1/admin/categories`. NO envía `slug` (lo
  * deriva el server, AC-1).
  */
 export const categoriesService = {
-  list(signal?: AbortSignal): Promise<Category[]> {
-    return httpRequest<Category[]>('/v1/admin/categories', { signal });
+  async list(signal?: AbortSignal): Promise<Category[]> {
+    const body = await httpRequest<unknown>('/v1/admin/categories', { signal });
+    return parseContract(GetAdminCategoriesResponse, body);
   },
 
-  create(input: CategoryInput): Promise<Category> {
-    return httpRequest<Category>('/v1/admin/categories', {
+  async create(input: CategoryInput): Promise<Category> {
+    const body = await httpRequest<unknown>('/v1/admin/categories', {
       method: 'POST',
       body: {
         name: input.name,
         ...(input.parent_id ? { parent_id: input.parent_id } : {}),
       },
     });
+    return parseContract(PostAdminCategoriesResponse, body);
   },
 
-  update(id: string, input: CategoryInput): Promise<Category> {
-    return httpRequest<Category>(`/v1/admin/categories/${id}`, {
+  async update(id: string, input: CategoryInput): Promise<Category> {
+    const body = await httpRequest<unknown>(`/v1/admin/categories/${id}`, {
       method: 'PATCH',
       body: {
         name: input.name,
         ...(input.parent_id ? { parent_id: input.parent_id } : {}),
       },
     });
+    return parseContract(PatchAdminCategoriesIdResponse, body);
   },
 };

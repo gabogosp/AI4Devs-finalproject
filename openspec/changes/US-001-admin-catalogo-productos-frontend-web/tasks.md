@@ -173,6 +173,29 @@ language: es
   - **Exit criterion**: un spec Playwright estable (auto-waiting locators por rol, sin `waitForTimeout`) cubre: acceso admin → crear categoría → alta de producto en draft → publicar; corre contra `next build && next start`; verde.
   - **Verify**: `pnpm --filter @dsm/web test:e2e`
 
+## Fase 10: Codegen del contrato FE↔BE (`frontend-standards` §3.1/§3.2 — obligatorio)
+
+> **Añadida post-hoc (2026-07-25)** tras el pull del framework (G10). El plan original admitía
+> "idealmente codegen, o espejo hand-written" — framing que trata una regla obligatoria como
+> opcional y reintroduce drift silencioso. Los tipos/validación/mocks derivados del contrato
+> ahora se GENERAN; lo hand-written es solo la lógica de servicio (§3.3).
+
+- [x] T10.1 Wire del codegen (DTOs + Zod + MSW desde el OpenAPI del backend hermano)
+  - **Exit criterion**: `apps/web/orval.config.ts` genera desde `apps/api/docs/api/openapi.yaml` los DTOs (`src/api/generated/model/`), los schemas Zod (`src/api/generated/zod.ts`) y los handlers MSW; script `codegen` en `package.json`; regenerar no produce diff.
+  - **Verify**: `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
+
+- [x] T10.2 Contrato sub-especificado corregido en el OpenAPI del backend
+  - **Exit criterion**: los schemas de respuesta (`Category`, `Product`, `ProductList`, `Problem`) declaran `required`, reflejando lo que el backend realmente devuelve (`ProductResponseDto` — todos los campos presentes; `description_raw`/`image_url`/`parent_id` nullable). Sin `required` el codegen emitía todo opcional y el tipado se volvía inútil.
+  - **Verify**: `grep -q "required: \[id, slug, name, parent_id, created_at\]" apps/api/docs/api/openapi.yaml`
+
+- [x] T10.3 Espejos hand-written eliminados + validación runtime en el borde
+  - **Exit criterion**: `productsService.ts` y `categoriesService.ts` importan y re-exportan los tipos generados (ninguna `interface` del contrato declarada a mano) y validan cada respuesta con el schema Zod generado vía `parseContract` (`src/lib/http/contract.ts`); fixtures de test normalizados al contrato (ids UUID válidos — los previos habrían fallado contra la API real).
+  - **Verify**: `pnpm --filter @dsm/web test -- --run && pnpm --filter @dsm/web typecheck`
+
+- [x] T10.4 Gate de CI `frontend-codegen-fresh`
+  - **Exit criterion**: `.github/workflows/frontend-codegen-fresh.yml` reejecuta el codegen en PR y falla ante cualquier diff en `apps/web/src/api/generated` (el gate que `frontend-standards` §3.2.3 promete).
+  - **Verify**: `test -f .github/workflows/frontend-codegen-fresh.yml`
+
 ## Documentación
 
 - [x] T9.1 `apps/web/README.md` — reemplazar el placeholder
@@ -185,4 +208,5 @@ language: es
 - [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
 - [x] Build de producción OK: `pnpm --filter @dsm/web build`
 - [x] Smoke E2E verde: `pnpm --filter @dsm/web test:e2e`
-- [x] Accesibilidad (axe-core) sin violaciones en las pantallas del panel.
+- [x] Accesibilidad (axe-core) sin violaciones: componentes del panel (CategoryForm, ProductForm, CategoriesList, ProductActions) **y** pantallas completas con landmarks activos (ProductList, CategoriesPage).
+- [x] Codegen del contrato en sync: `pnpm --filter @dsm/web codegen` no produce diff.

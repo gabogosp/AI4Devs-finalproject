@@ -7,14 +7,14 @@ const API = 'http://localhost:3000';
 
 function product(over: Partial<Product> = {}): Product {
   return {
-    id: 'p1',
+    id: '11111111-1111-4111-8111-111111111111',
     sku: 'REF-001',
     name: 'Heladera',
     description_raw: null,
     price_ars_cents: 100000,
     stock: 5,
     status: 'draft',
-    category_id: 'c1',
+    category_id: '22222222-2222-4222-8222-222222222222',
     image_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
@@ -43,12 +43,12 @@ describe('productsService', () => {
   it('publish hace PATCH {status: published}', async () => {
     let body: Record<string, unknown> = {};
     server.use(
-      http.patch(`${API}/v1/admin/products/p1`, async ({ request }) => {
+      http.patch(`${API}/v1/admin/products/11111111-1111-4111-8111-111111111111`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json(product({ status: 'published' }));
       }),
     );
-    const p = await productsService.publish('p1');
+    const p = await productsService.publish('11111111-1111-4111-8111-111111111111');
     expect(body).toEqual({ status: 'published' });
     expect(p.status).toBe('published');
   });
@@ -67,7 +67,7 @@ describe('productsService', () => {
         sku: 'X',
         name: 'x',
         price_ars_cents: 1,
-        category_id: 'c1',
+        category_id: '22222222-2222-4222-8222-222222222222',
       }),
     ).rejects.toMatchObject({ appError: { kind: 'conflict' } });
   });

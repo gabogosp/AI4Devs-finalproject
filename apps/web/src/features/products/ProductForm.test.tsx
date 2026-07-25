@@ -8,14 +8,14 @@ import type { Product } from './productsService';
 import type { Category } from '@/features/categories/categoriesService';
 
 const API = 'http://localhost:3000';
-const CAT_ID = '00000000-0000-0000-0000-000000000001';
+const CAT_ID = '22222222-2222-4222-8222-222222222222';
 const categories: Category[] = [
   { id: CAT_ID, slug: 'refrigeracion', name: 'Refrigeración', parent_id: null, created_at: '2026-01-01T00:00:00.000Z' },
 ];
 
 function product(over: Partial<Product> = {}): Product {
   return {
-    id: 'p1',
+    id: '11111111-1111-4111-8111-111111111111',
     sku: 'REF-001',
     name: 'Heladera',
     description_raw: null,
@@ -120,7 +120,7 @@ describe('ProductForm (AC-2/AC-3/AC-5/AC-9)', () => {
   it('edición (AC-3): precarga, no envía sku, muestra $ con IVA', async () => {
     let body: Record<string, unknown> = {};
     server.use(
-      http.patch(`${API}/v1/admin/products/p1`, async ({ request }) => {
+      http.patch(`${API}/v1/admin/products/11111111-1111-4111-8111-111111111111`, async ({ request }) => {
         body = (await request.json()) as Record<string, unknown>;
         return HttpResponse.json(product({ price_ars_cents: 250000 }));
       }),

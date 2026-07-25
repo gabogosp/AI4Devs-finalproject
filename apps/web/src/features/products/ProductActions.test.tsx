@@ -10,14 +10,14 @@ const API = 'http://localhost:3000';
 
 function product(over: Partial<Product> = {}): Product {
   return {
-    id: 'p1',
+    id: '11111111-1111-4111-8111-111111111111',
     sku: 'REF-001',
     name: 'Heladera',
     description_raw: null,
     price_ars_cents: 100000,
     stock: 5,
     status: 'draft',
-    category_id: 'c1',
+    category_id: '22222222-2222-4222-8222-222222222222',
     image_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
@@ -28,7 +28,7 @@ function product(over: Partial<Product> = {}): Product {
 describe('ProductActions — publicar (AC-4/AC-6)', () => {
   it('publica un draft completo → status published', async () => {
     server.use(
-      http.patch(`${API}/v1/admin/products/p1`, () =>
+      http.patch(`${API}/v1/admin/products/11111111-1111-4111-8111-111111111111`, () =>
         HttpResponse.json(product({ status: 'published' })),
       ),
     );
@@ -41,7 +41,7 @@ describe('ProductActions — publicar (AC-4/AC-6)', () => {
 
   it('publicar incompleto (422) → muestra qué falta y PERMANECE draft (AC-6)', async () => {
     server.use(
-      http.patch(`${API}/v1/admin/products/p1`, () =>
+      http.patch(`${API}/v1/admin/products/11111111-1111-4111-8111-111111111111`, () =>
         HttpResponse.json(
           {
             type: 'dsm:catalog/invalid-transition',
@@ -63,7 +63,7 @@ describe('ProductActions — publicar (AC-4/AC-6)', () => {
 describe('ProductActions — archivar (AC-7, confirmación 2 pasos)', () => {
   it('exige escribir ARCHIVAR antes de confirmar; luego archiva', async () => {
     server.use(
-      http.patch(`${API}/v1/admin/products/p1`, () =>
+      http.patch(`${API}/v1/admin/products/11111111-1111-4111-8111-111111111111`, () =>
         HttpResponse.json(product({ status: 'archived' })),
       ),
     );

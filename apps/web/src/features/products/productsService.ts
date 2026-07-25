@@ -1,79 +1,70 @@
 import { httpRequest } from '@/lib/http/client';
+import { parseContract } from '@/lib/http/contract';
+import {
+  GetAdminProductsIdResponse,
+  GetAdminProductsResponse,
+  PatchAdminProductsIdResponse,
+  PostAdminProductsResponse,
+} from '@/api/generated/zod';
+import type {
+  CreateProduct,
+  Product,
+  ProductList,
+  ProductStatus,
+  UpdateProduct,
+} from '@/api/generated/model';
 
-export type ProductStatus = 'draft' | 'published' | 'archived';
-
-export interface Product {
-  id: string;
-  sku: string;
-  name: string;
-  description_raw: string | null;
-  price_ars_cents: number;
-  stock: number;
-  status: ProductStatus;
-  category_id: string;
-  image_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProductPage {
-  data: Product[];
-  pagination: { limit: number; offset: number; total: number };
-}
-
-export interface CreateProductInput {
-  sku: string;
-  name: string;
-  price_ars_cents: number;
-  stock?: number;
-  category_id: string;
-  description_raw?: string;
-  image_url?: string;
-}
-
-export type UpdateProductInput = Partial<
-  Omit<CreateProductInput, 'sku'>
->;
+/**
+ * Tipos DERIVADOS DEL CONTRATO — generados desde `apps/api/docs/api/openapi.yaml`
+ * (`frontend-standards.md` §3.1/§3.2). Se re-exportan con los nombres de dominio
+ * que usa el panel; nunca se declaran a mano.
+ */
+export type { Product, ProductStatus };
+export type ProductPage = ProductList;
+export type CreateProductInput = CreateProduct;
+export type UpdateProductInput = UpdateProduct;
 
 /** Envuelve el cliente HTTP para `/v1/admin/products`. Money en centavos (§8 E2E). */
 export const productsService = {
-  list(
+  async list(
     params: { limit: number; offset: number },
     signal?: AbortSignal,
   ): Promise<ProductPage> {
     const qs = `?limit=${params.limit}&offset=${params.offset}`;
-    return httpRequest<ProductPage>(`/v1/admin/products${qs}`, { signal });
+    const body = await httpRequest<unknown>(`/v1/admin/products${qs}`, {
+      signal,
+    });
+    return parseContract(GetAdminProductsResponse, body);
   },
 
-  get(id: string, signal?: AbortSignal): Promise<Product> {
-    return httpRequest<Product>(`/v1/admin/products/${id}`, { signal });
+  async get(id: string, signal?: AbortSignal): Promise<Product> {
+    const body = await httpRequest<unknown>(`/v1/admin/products/${id}`, {
+      signal,
+    });
+    return parseContract(GetAdminProductsIdResponse, body);
   },
 
-  create(input: CreateProductInput): Promise<Product> {
-    return httpRequest<Product>('/v1/admin/products', {
+  async create(input: CreateProductInput): Promise<Product> {
+    const body = await httpRequest<unknown>('/v1/admin/products', {
       method: 'POST',
       body: input,
     });
+    return parseContract(PostAdminProductsResponse, body);
   },
 
-  update(id: string, input: UpdateProductInput): Promise<Product> {
-    return httpRequest<Product>(`/v1/admin/products/${id}`, {
+  async update(id: string, input: UpdateProductInput): Promise<Product> {
+    const body = await httpRequest<unknown>(`/v1/admin/products/${id}`, {
       method: 'PATCH',
       body: input,
     });
+    return parseContract(PatchAdminProductsIdResponse, body);
   },
 
   publish(id: string): Promise<Product> {
-    return httpRequest<Product>(`/v1/admin/products/${id}`, {
-      method: 'PATCH',
-      body: { status: 'published' },
-    });
+    return productsService.update(id, { status: 'published' });
   },
 
   archive(id: string): Promise<Product> {
-    return httpRequest<Product>(`/v1/admin/products/${id}`, {
-      method: 'PATCH',
-      body: { status: 'archived' },
-    });
+    return productsService.update(id, { status: 'archived' });
   },
 };

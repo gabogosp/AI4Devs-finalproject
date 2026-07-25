@@ -5,7 +5,7 @@ import { categoriesService } from './categoriesService';
 
 const API = 'http://localhost:3000';
 const cat = {
-  id: '1',
+  id: '22222222-2222-4222-8222-222222222222',
   slug: 'refrigeracion',
   name: 'Refrigeración',
   parent_id: null,

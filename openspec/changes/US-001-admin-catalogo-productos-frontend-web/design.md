@@ -73,7 +73,7 @@ apps/web/                              # @dsm/web — create-next-app, App Route
 └── e2e/                               # Playwright: smoke happy-path (contra next build && next start)
 ```
 
-**Anclaje al contrato**: los tipos de dominio de `categories`/`products` se derivan del OpenAPI del backend (idealmente codegen de tipos desde `apps/api/docs/api/openapi.yaml`, o tipos hand-written espejo si el codegen no está cableado — §3.2/§3.3). El servicio es hand-written (§3.3); el mapeo DTO↔dominio (money centavos ↔ `$`) vive en el servicio (§3.4).
+**Anclaje al contrato**: TODO artefacto derivado del contrato — DTOs, validación runtime (Zod) y handlers de mock (MSW) — se **genera** desde el OpenAPI del backend hermano (`apps/api/docs/api/openapi.yaml`) vía `orval` (`apps/web/orval.config.ts`, script `pnpm --filter @dsm/web codegen`), per `frontend-standards.md` §3.1/§3.2. **No se escriben espejos a mano**: un mirror hand-written reintroduce drift silencioso FE↔BE (los mocks pasan verdes contra el contrato viejo). El gate de CI `frontend-codegen-fresh` reejecuta el codegen y falla el PR ante cualquier diff. Lo hand-written es **solo** la lógica de servicio/repositorio (§3.3); el mapeo DTO↔dominio (money centavos ↔ `$`) vive en el servicio (§3.4).
 
 ### Rutas + pantallas (App Router)
 

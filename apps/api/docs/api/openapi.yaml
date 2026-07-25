@@ -152,6 +152,7 @@ components:
         parent_id: { type: string, format: uuid, nullable: true }
     Category:
       type: object
+      required: [id, slug, name, parent_id, created_at]
       properties:
         id: { type: string, format: uuid }
         slug: { type: string }
@@ -181,6 +182,20 @@ components:
         status: { type: string, enum: [draft, published, archived] }
     Product:
       type: object
+      required:
+        [
+          id,
+          sku,
+          name,
+          description_raw,
+          price_ars_cents,
+          stock,
+          status,
+          category_id,
+          image_url,
+          created_at,
+          updated_at,
+        ]
       properties:
         id: { type: string, format: uuid }
         sku: { type: string }
@@ -195,10 +210,12 @@ components:
         updated_at: { type: string, format: date-time }
     ProductList:
       type: object
+      required: [data, pagination]
       properties:
         data: { type: array, items: { $ref: '#/components/schemas/Product' } }
         pagination:
           type: object
+          required: [limit, offset, total]
           properties:
             limit: { type: integer }
             offset: { type: integer }
@@ -206,6 +223,7 @@ components:
     Problem:
       type: object
       description: RFC 7807
+      required: [type, title, status, detail, instance]
       properties:
         type: { type: string, example: 'dsm:catalog/conflict' }
         title: { type: string }
@@ -216,6 +234,7 @@ components:
           type: array
           items:
             type: object
+            required: [field, message]
             properties:
               field: { type: string }
               message: { type: string }

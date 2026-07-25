@@ -8,7 +8,7 @@ import type { Category } from './categoriesService';
 
 const API = 'http://localhost:3000';
 const cat: Category = {
-  id: '1',
+  id: '22222222-2222-4222-8222-222222222222',
   slug: 'refrigeracion',
   name: 'Refrigeración',
   parent_id: null,
@@ -58,7 +58,7 @@ describe('CategoryForm (AC-1)', () => {
 
   it('edición → PATCH y onSaved', async () => {
     server.use(
-      http.patch(`${API}/v1/admin/categories/1`, () =>
+      http.patch(`${API}/v1/admin/categories/${cat.id}`, () =>
         HttpResponse.json({ ...cat, name: 'Refrigeración y Aire' }),
       ),
     );

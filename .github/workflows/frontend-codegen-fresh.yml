@@ -1,0 +1,53 @@
+# frontend-codegen-fresh — el gate que exige `frontend-standards.md` §3.2.3.
+#
+# Hace cumplir "CI verifica que el código generado está en sync con el spec — regenerar no
+# produce diff". Reejecuta el codegen del contrato (DTOs + Zod + MSW) y FALLA el PR si algo
+# cambió → la visión que el FE tiene del contrato driftó del `openapi.yaml` del backend, o
+# alguien editó a mano un archivo generado. Mata el drift silencioso FE↔BE del monorepo,
+# donde el FE mockea el contrato VIEJO y sus tests siguen verdes.
+#
+# Adaptado del template del framework al workspace pnpm de DSM (la app web vive en apps/web).
+name: frontend-codegen-fresh
+
+on:
+  pull_request:
+    paths:
+      - 'apps/api/docs/api/openapi.yaml'
+      - 'apps/web/src/api/generated/**'
+      - 'apps/web/orval.config.*'
+      - 'apps/web/package.json'
+      - '.github/workflows/frontend-codegen-fresh.yml'
+
+jobs:
+  codegen-in-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerar artefactos derivados del contrato (DTOs + Zod + MSW)
+        run: pnpm --filter @dsm/web codegen
+
+      - name: Fallar si la regeneración produjo diff (drift contra el contrato)
+        run: |
+          if ! git diff --quiet -- apps/web/src/api/generated; then
+            echo "::error::El código derivado del contrato está FUERA DE SYNC con openapi.yaml."
+            echo "Alguien editó a mano un archivo generado, o el contrato cambió sin regenerar."
+            echo "Corré 'pnpm --filter @dsm/web codegen' localmente y commiteá el resultado."
+            git --no-pager diff --stat -- apps/web/src/api/generated
+            exit 1
+          fi
+          echo "✓ DTOs / Zod / MSW en sync con el contrato."

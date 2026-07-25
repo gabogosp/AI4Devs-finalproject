@@ -6,6 +6,12 @@
 # Greenfield bootstrap split (railway-baseline §0): US-001 legitimately has TWO
 # infrastructure changes, distinguished by `variant` (bootstrap-local | platform-cloud)
 # per openspec-changes.schema.yaml (F39). The discipline stays the trailing folder token.
+#
+# Rama de integración (desviación consciente, per schema `branch` — F42): el framework
+# modela 1 change = 1 rama = 1 PR. Este repo integra el trabajo de US-001 (backend +
+# frontend-web) en `feature-entrega2-GOSP` por la cadencia de entregas del máster, así que
+# NO existe una rama feat/ por change. El schema es explícito: no registrar una rama nominal
+# que no existe — queda `branch: null` y la verdad la carga `pr-url` cuando se abra el PR.
 
 - name: US-001-admin-catalogo-productos-bootstrap-local-infrastructure
   us-id: US-001
@@ -54,7 +60,7 @@
   audit-derived: false
   estimate-hours: 6
   assignee: null
-  branch: feat/US-001-admin-catalogo-productos-backend
+  branch: null
   pr-url: null
   created: 2026-07-18
   completed-at: null
@@ -72,7 +78,7 @@
   audit-derived: false
   estimate-hours: 7
   assignee: null
-  branch: feat/US-001-admin-catalogo-productos-frontend-web
+  branch: null
   pr-url: null
   created: 2026-07-18
   completed-at: null

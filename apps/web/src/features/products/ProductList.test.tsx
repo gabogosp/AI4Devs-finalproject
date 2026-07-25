@@ -10,14 +10,14 @@ const API = 'http://localhost:3000';
 
 function product(i: number): Product {
   return {
-    id: `p${i}`,
+    id: `1111111${i}-1111-4111-8111-111111111111`,
     sku: `SKU-${i}`,
     name: `Producto ${i}`,
     description_raw: null,
     price_ars_cents: 100000 + i,
     stock: i,
     status: 'draft',
-    category_id: 'c1',
+    category_id: '22222222-2222-4222-8222-222222222222',
     image_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',

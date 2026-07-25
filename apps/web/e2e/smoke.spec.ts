@@ -3,7 +3,7 @@ import { test, expect, type Route } from '@playwright/test';
 // El backend no corre en este smoke: se mockea el contrato /v1/admin/* en el
 // borde de red del browser (Playwright route). La batería de aceptación real
 // (contra la API viva) es owned-by-QA (/develop-qa), no acá.
-const CAT_ID = '00000000-0000-0000-0000-000000000001';
+const CAT_ID = '22222222-2222-4222-8222-222222222222';
 
 const category = {
   id: CAT_ID,
@@ -14,7 +14,7 @@ const category = {
 };
 
 const product = (status = 'draft') => ({
-  id: 'p1',
+  id: '11111111-1111-4111-8111-111111111111',
   sku: 'REF-001',
   name: 'Heladera',
   description_raw: null,
@@ -52,7 +52,7 @@ test('happy path: acceso → categoría → producto draft → publicar', async 
         }),
   );
   // Más específica: se registra al final para tener precedencia sobre la anterior.
-  await page.route('**/v1/admin/products/p1', (r) =>
+  await page.route('**/v1/admin/products/11111111-1111-4111-8111-111111111111', (r) =>
     r.request().method() === 'PATCH'
       ? json(r, 200, product('published'))
       : json(r, 200, product()),
@@ -80,7 +80,7 @@ test('happy path: acceso → categoría → producto draft → publicar', async 
   await expect(page.getByText(/Creado en borrador/)).toBeVisible();
 
   // 4) Publicar
-  await page.goto('/productos/p1');
+  await page.goto('/productos/11111111-1111-4111-8111-111111111111');
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByTestId('product-status')).toHaveText('published');
 });
