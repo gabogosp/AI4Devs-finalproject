@@ -219,6 +219,13 @@ importers:
         version: 5.7.2
 
   qa:
+    dependencies:
+      '@dsm/db':
+        specifier: workspace:*
+        version: link:../packages/db
+      '@prisma/client':
+        specifier: 5.22.0
+        version: 5.22.0(prisma@5.22.0)
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.10.1
