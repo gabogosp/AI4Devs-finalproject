@@ -17,8 +17,8 @@
   - **Exit criterion**: `qa/package.json` existe, resuelve en el workspace pnpm, y expone los scripts `test:acceptance`, `test:e2e`, `test:functional`, `test:load`, `test:a11y`.
   - **Verify**: `pnpm --filter @dsm/qa install && node -e "const p=require('./qa/package.json'); for (const s of ['test:acceptance','test:e2e','test:functional','test:load','test:a11y']) if(!(s in (p.scripts||{}))) process.exit(1)" && pnpm --filter @dsm/qa exec cucumber-js --version` (nota: `run test:acceptance -- --help` no sirve — pnpm reenvía el `--` literal y cucumber trata `--help` como path; se verifica install + scripts + runner invocable)
 - [x] T1.2 Implementar el fixture de auth `qa/support/admin-auth.ts` (precedencia login-real → fallback JWT `role=admin` minteado con `JWT_SECRET`).
-  - **Exit criterion**: `adminAuth()` devuelve un token `role=admin` usable por Playwright, Cucumber, Newman y k6. **La ruta de login real YA existe** (`POST /v1/admin/auth/login`, backend Fase 9 — declarada en `openapi.yaml`, tag `admin-auth`), así que la precedencia resuelve por login real; el fallback de JWT minteado queda sólo como red para entornos sin `ADMIN_BOOTSTRAP_TOKEN`.
-  - **Verify**: `pnpm --filter @dsm/qa exec tsx support/admin-auth.smoke.ts` (imprime un JWT válido y su claim `role=admin`)
+  - **Exit criterion**: `adminAuthWithSource()` devuelve el token `role=admin` **y de qué rama salió**. Con `ADMIN_BOOTSTRAP_TOKEN` configurado la ruta real es **obligatoria**: si la API no responde o devuelve ≠200, se **falla ruidoso** en vez de mintear un reemplazo (`testing-standards` §14.2 prohíbe las factories que mockean en silencio una dependencia que el test debería conocer — un fallback callado dejaría toda la suite verde contra una costura de login rota). El fallback minteado queda sólo para entornos SIN credenciales, y está prohibido en modo estricto (`QA_AUTH_STRICT=true`, automático en CI).
+  - **Verify**: `pnpm --filter @dsm/qa exec tsx support/admin-auth.smoke.ts --require-real` (con la API arriba: exige la rama `real-login`, no sólo un JWT bien formado)
 - [ ] T1.3 Implementar seed determinista `qa/support/seed.ts` + builders `qa/support/builders.ts` (vía API real; SKU con prefijo único por-run).
   - **Exit criterion**: `seedCatalogo()` crea categorías/productos vía la API y devuelve sus ids; re-ejecutar no colisiona (idempotente).
   - **Verify**: `pnpm --filter @dsm/qa exec tsx support/seed.smoke.ts` (siembra y limpia sin error contra la API local)
@@ -65,8 +65,8 @@
   - **Exit criterion**: cada charter con misión, áreas, riesgos y heurísticas; marcados `execution_mode: manual` con justificación.
   - **Verify**: `test -f qa/exploratory/charters.md && grep -q "TC-031" qa/exploratory/charters.md && grep -q "TC-032" qa/exploratory/charters.md`
 - [x] T6.2 Cablear los gates de §12 del qa-plan en la CI (smoke-load en PR; aceptación/E2E/funcional nightly+pre-uat; a11y+baseline pre-release).
-  - **Exit criterion**: el workflow de CI invoca los scripts `@dsm/qa` en los triggers correctos y bloquea según §12.
-  - **Verify**: `grep -q "@dsm/qa" .github/workflows/*.yml` (los jobs de QA existen en el pipeline)
+  - **Exit criterion**: `.github/workflows/qa.yml` parsea como YAML válido; levanta el stack (Postgres + migraciones + API, y `apps/web` para las suites de browser); exige el **login real** (`QA_AUTH_STRICT`, sin fallback minteado); y cada suite está **auto-gated** por la existencia de sus archivos, de modo que el workflow **no rompe ningún PR** mientras las fases restantes se autoran y se activa sola cuando aterrizan.
+  - **Verify**: `python3 -c "import yaml,sys; d=yaml.safe_load(open('.github/workflows/qa.yml')); s=d['jobs']['qa-cross-stack']['steps']; sys.exit(0 if all('if' in x for x in s if any(k in str(x.get('run',''))+str(x.get('uses','')) for k in ['test:functional','test:acceptance','test:e2e','test:a11y','k6'])) else 1)"` (todo paso que invoca una suite está gated; un Verify de existencia — `grep -q` — no probaría el exit criterion, per F50)
 
 ## Verification (suite-level)
 

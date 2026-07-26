@@ -1,9 +1,14 @@
 name: qa-cross-stack
 
 # Gates de la suite QA cross-stack (@dsm/qa, Layer 3) — qa-plan §12.
-# - PR: smoke-load (rápido) + funcional/aceptación contra el stack levantado.
-# - nightly: aceptación + E2E + funcional completos.
-# - pre-release (tag): a11y + baseline de carga.
+# - PR: funcional + aceptación + smoke-load contra el stack levantado.
+# - nightly: + E2E y a11y completos (necesitan también apps/web arriba).
+# - pre-release (tag): + baseline de carga.
+#
+# AUTO-GATED (2026-07-26): cada paso se saltea limpio si su suite todavía no fue
+# autorada. La suite se construye por fases (T1.3 → T2.x → T3.1 → T4.x → T5.2) y
+# un workflow que invoca artefactos inexistentes rompería TODO PR mientras tanto.
+# Cada gate se activa solo en cuanto sus archivos aterrizan — sin tocar el YAML.
 on:
   pull_request:
   schedule:
@@ -28,8 +33,13 @@ jobs:
     env:
       DATABASE_URL: postgresql://dsm:dsm@localhost:5432/dsm?schema=public
       JWT_SECRET: ci-secret
+      ADMIN_AUTH_ENABLED: 'true'
       ADMIN_BOOTSTRAP_TOKEN: ci-bootstrap
       QA_API_BASE_URL: http://localhost:3000
+      QA_WEB_BASE_URL: http://localhost:3100
+      # El fallback de JWT minteado está prohibido en CI: la suite debe ejercitar
+      # el login real (testing-standards §14.2). Si el seam se rompe, CI falla.
+      QA_AUTH_STRICT: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -37,14 +47,69 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @dsm/db migrate:deploy
-      - run: pnpm --filter @dsm/api build && (pnpm --filter @dsm/api start &) && npx wait-on http://localhost:3000/health
-      # Aceptación + funcional + E2E de la suite QA (@dsm/qa)
-      - run: pnpm --filter @dsm/qa test:functional
-      - run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"
-      - if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')
-        run: pnpm --filter @dsm/qa test:e2e && pnpm --filter @dsm/qa test:a11y
-      # smoke-load en PR; baseline completa en pre-release
-      - name: k6 smoke-load
+
+      - name: Migraciones
+        run: pnpm --filter @dsm/db migrate:deploy
+
+      - name: Build + arranque de la API
+        run: |
+          pnpm --filter @dsm/api build
+          (pnpm --filter @dsm/api start &)
+          npx wait-on -t 120000 http://localhost:3000/health
+
+      # El fixture de auth es la base de todas las suites: si el login real no
+      # funciona, nada de lo de abajo tiene sentido. Se falla acá, temprano.
+      - name: Fixture de auth — exige login real
+        run: pnpm --filter @dsm/qa exec tsx support/admin-auth.smoke.ts --require-real
+
+      # ---- Suites auto-gated: se saltean hasta que sus archivos existan ----
+
+      - name: Funcional API (Newman)
+        if: hashFiles('qa/functional/*.postman_collection.json') != ''
+        run: pnpm --filter @dsm/qa test:functional
+
+      - name: Aceptación BDD (Cucumber)
+        if: hashFiles('qa/acceptance/**/*.feature') != ''
+        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"
+
+      # E2E y a11y corren en el browser contra el FE: necesitan apps/web arriba,
+      # no sólo la API (faltaba en la versión original de este workflow).
+      - name: Build + arranque del front
+        if: >-
+          (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/'))
+          && hashFiles('qa/e2e/*.config.ts') != ''
+        env:
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+          # `next start` toma el puerto de PORT. Se evita `-- -p 3100`: pnpm
+          # reenvía el `--` literal y el flag no llega (mismo tropiezo que T1.1).
+          PORT: '3100'
+        run: |
+          pnpm --filter @dsm/web build
+          (pnpm --filter @dsm/web start &)
+          npx wait-on -t 120000 http://localhost:3100
+
+      - name: E2E cross-stack (Playwright)
+        if: >-
+          (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/'))
+          && hashFiles('qa/e2e/playwright.config.ts') != ''
+        run: pnpm --filter @dsm/qa exec playwright install --with-deps chromium && pnpm --filter @dsm/qa test:e2e
+
+      - name: Accesibilidad (axe-core)
+        if: >-
+          (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/'))
+          && hashFiles('qa/e2e/playwright.a11y.config.ts') != ''
+        run: pnpm --filter @dsm/qa test:a11y
+
+      # ---- Carga: smoke en PR, baseline completa en pre-release ----
+
+      - name: Setup k6
+        if: hashFiles('qa/performance/baseline.js') != ''
         uses: grafana/setup-k6-action@v1
-      - run: k6 run --vus 2 --duration 30s qa/performance/baseline.js
+
+      - name: k6 smoke-load (PR)
+        if: github.event_name == 'pull_request' && hashFiles('qa/performance/baseline.js') != ''
+        run: k6 run --vus 2 --duration 30s qa/performance/baseline.js
+
+      - name: k6 baseline (pre-release)
+        if: startsWith(github.ref, 'refs/tags/') && hashFiles('qa/performance/baseline.js') != ''
+        run: k6 run qa/performance/baseline.js
