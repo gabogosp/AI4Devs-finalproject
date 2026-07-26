@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "description": "US-001 — Suite cross-stack owned-by-QA (Layer 3): acceptance/E2E/functional/load/a11y",
+  "dependencies": {
+    "@dsm/db": "workspace:*",
+    "@prisma/client": "5.22.0"
+  },
   "scripts": {
     "test:acceptance": "env NODE_OPTIONS=\"--import tsx\" cucumber-js --config acceptance/cucumber.mjs",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",

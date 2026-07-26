@@ -55,7 +55,7 @@
 - [x] T5.1 Implementar `qa/performance/lib/thresholds.js` (budgets atados al NFR — fuente única) + `data/seed-skus.js` (≥5.000 SKUs deterministas).
   - **Exit criterion**: `thresholds.js` exporta `p(95)<300`, `p(99)<800`, `http_req_failed rate<0.01`, `checks rate>0.99`, tagueado `endpoint:list_products`; el seed genera ≥5.000 filas.
   - **Verify**: `node -e "import('./qa/performance/lib/thresholds.js').then(t=>{if(!t.list_products)process.exit(1)}).catch(e=>{console.error(e);process.exit(1)})"` (el paquete `@dsm/qa` es ESM — `type: module` para tsx/cucumber/k6 — así que se valida con `import()` dinámico, no `require`)
-- [ ] T5.2 Escribir `baseline.js` + `stress.js` (executors de modelo abierto) con `check()` de status + `pagination.total>=5000` + `data.length<=limit`, y auth en `setup()`.
+- [x] T5.2 Escribir `baseline.js` + `stress.js` (executors de modelo abierto) con `check()` de status + `pagination.total>=5000` + `data.length<=limit`, y auth en `setup()`.
   - **Exit criterion**: TC-028 (baseline) verde contra el dataset sembrado; TC-029 (stress) corre y documenta el knee; smoke-load (1-2 VUs) reusa los mismos thresholds.
   - **Verify**: `k6 run --vus 2 --duration 30s qa/performance/baseline.js` (smoke-load exit 0)
 
