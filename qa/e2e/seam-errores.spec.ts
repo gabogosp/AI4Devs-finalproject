@@ -44,7 +44,14 @@ test.describe('Costura FE↔BE contra la API real', () => {
     await page.getByLabel(/Stock/).fill('1');
     await pickCategory(page);
     await page.getByRole('button', { name: /Crear en borrador/ }).click();
-    await expect(page.getByText(/Ya existe un producto con ese SKU/)).toBeVisible();
+    // AC-9 exige banner **y** error en el campo. El FE renderiza los dos como
+    // `role="alert"`, así que se asertan ambos explícitamente en vez de un
+    // `getByText` ambiguo (que rompe el strict mode de Playwright al matchear 2).
+    const alertas = page
+      .getByRole('alert')
+      .filter({ hasText: /Ya existe un producto con ese SKU/ });
+    await expect(alertas).toHaveCount(2);
+    await expect(alertas.first()).toBeVisible();
   });
 
   test('TC-022: sin sesión admin → redirige a /acceso (AC-8)', async ({ page }) => {

@@ -102,6 +102,12 @@ jobs:
 
       # ---- Carga: smoke en PR, baseline completa en pre-release ----
 
+      # El NFR de carga es sobre el TAMAÑO del dataset (≥5.000 SKUs): sin sembrar,
+      # el check `total >= 5000` falla. `baseline.js` sólo hace login en setup().
+      - name: Sembrar el dataset de carga (≥5.000 SKUs)
+        if: hashFiles('qa/performance/seed-load-data.ts') != ''
+        run: pnpm --filter @dsm/qa seed:load
+
       - name: Setup k6
         if: hashFiles('qa/performance/baseline.js') != ''
         uses: grafana/setup-k6-action@v1

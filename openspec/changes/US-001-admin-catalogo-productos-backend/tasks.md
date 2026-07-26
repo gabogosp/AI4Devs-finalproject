@@ -152,6 +152,28 @@ language: es
   - **Exit criterion**: con el endpoint declarado, `pnpm --filter @dsm/web codegen` incorpora la ruta a los artefactos generados; el comentario de gap en `adminSession.ts` se reemplaza por la referencia al contrato; el escenario `@blocked-by-backend` del change QA se desbloquea.
   - **Verify**: `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
 
+## Fase 10: Controles §7 del borde HTTP — CORS, rate limiting, security headers
+
+> **Añadida post-hoc (2026-07-26, auditoría)**. La E2E cross-stack (Layer 3) encontró que la API
+> **no habilita CORS** (OQ-QA-4 del change QA): en producción WEB y API son servicios Railway
+> separados (E2E §despliegue) y el panel llama a la API **desde el browser** (OQ-FE-2), así que sin
+> CORS el panel no funciona desplegado. Al auditarlo aparecieron **otros dos controles §7
+> mandatorios ausentes**: el endpoint de login no tiene rate limit ni lockout (§7.3 — es
+> literalmente la fila "Admin panel / credential-stuffing" del standard) y no hay security headers
+> (§7.1). Ninguno de los tres tuvo task en su momento.
+
+- [x] T10.1 CORS con allowlist explícita por entorno (§7.2)
+  - **Exit criterion**: `configureApp` habilita CORS con **allowlist exacta** (scheme+host+port) leída de env (`CORS_ALLOWED_ORIGINS`, lista separada por comas), validada en el esquema de env; **sin** `*`, **sin** regex/sufijo, métodos y headers acotados a los que la API usa, y `maxAge` ≤ 24h. Un origen fuera de la allowlist **no** recibe `Access-Control-Allow-Origin`. Tests e2e cubren preflight permitido y origen rechazado.
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=security`
+
+- [x] T10.2 Rate limiting + lockout en la superficie de autenticación (§7.3)
+  - **Exit criterion**: `POST /v1/admin/auth/login` está limitado por IP (ventana y límite configurables por env, default alineado al standard); al excederlo responde **429** con `Retry-After` y las cabeceras `RateLimit-*` (`api-standards` §12), sin enumerar ni filtrar si el token existe. El resto de la API no queda innecesariamente limitada. Tests e2e cubren "dentro del límite" y "excedido → 429".
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=security`
+
+- [x] T10.3 Security headers del borde (§7.1, perfil API-only)
+  - **Exit criterion**: toda respuesta lleva `X-Content-Type-Options: nosniff`, `Strict-Transport-Security`, `Referrer-Policy`, `X-Frame-Options: DENY` y CSP de perfil API-only (`default-src 'none'; frame-ancestors 'none'`); las respuestas autenticadas llevan `Cache-Control: no-store`. Se setea **una vez en el borde**, no por handler. Tests e2e asertan las cabeceras.
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=security`
+
 ## Verification (suite-level)
 
 - [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test`

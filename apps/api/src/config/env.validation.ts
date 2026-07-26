@@ -14,7 +14,24 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true'),
   ADMIN_BOOTSTRAP_TOKEN: z.string().optional(),
+
+  // §7.2 CORS — allowlist EXPLÍCITA por entorno. Orígenes completos
+  // (scheme+host+port) separados por coma; se comparan por igualdad exacta.
+  // Nunca `*` (el panel manda credenciales) ni regex/sufijo.
+  CORS_ALLOWED_ORIGINS: z.string().default('http://localhost:3000'),
+
+  // §7.3 Rate limiting de la superficie de auth (por IP).
+  AUTH_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(900_000), // 15 min
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
 });
+
+/** Parsea la allowlist de CORS a orígenes exactos, sin vacíos. */
+export function parseCorsOrigins(raw: string): string[] {
+  return raw
+    .split(',')
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
+}
 
 export type Env = z.infer<typeof envSchema>;
 

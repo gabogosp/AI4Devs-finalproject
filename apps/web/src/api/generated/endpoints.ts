@@ -12,6 +12,7 @@ import type {
   CreateCategory,
   CreateProduct,
   GetAdminProductsParams,
+  Problem,
   ProblemResponse,
   Product,
   ProductList,
@@ -46,6 +47,11 @@ export type postAdminAuthLoginResponse422 = {
   status: 422
 }
 
+export type postAdminAuthLoginResponse429 = {
+  data: Problem
+  status: 429
+}
+
 export type postAdminAuthLoginResponse503 = {
   data: ProblemResponse
   status: 503
@@ -54,7 +60,7 @@ export type postAdminAuthLoginResponse503 = {
 export type postAdminAuthLoginResponseSuccess = (postAdminAuthLoginResponse200) & {
   headers: Headers;
 };
-export type postAdminAuthLoginResponseError = (postAdminAuthLoginResponse401 | postAdminAuthLoginResponse422 | postAdminAuthLoginResponse503) & {
+export type postAdminAuthLoginResponseError = (postAdminAuthLoginResponse401 | postAdminAuthLoginResponse422 | postAdminAuthLoginResponse429 | postAdminAuthLoginResponse503) & {
   headers: Headers;
 };
 

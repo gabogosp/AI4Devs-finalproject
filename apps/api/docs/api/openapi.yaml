@@ -41,6 +41,18 @@ paths:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminLoginResponse' } } } }
         '401': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: >-
+            Rate limit de la superficie de auth excedido (security-standards §7.3).
+            Incluye `Retry-After` y las cabeceras `RateLimit-*` (api-standards §12).
+          headers:
+            Retry-After: { schema: { type: integer }, description: Segundos hasta reintentar }
+            RateLimit-Limit: { schema: { type: integer } }
+            RateLimit-Remaining: { schema: { type: integer } }
+            RateLimit-Reset: { schema: { type: integer } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '503': { $ref: '#/components/responses/Problem' }
   /admin/categories:
     post:

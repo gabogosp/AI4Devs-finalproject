@@ -1,4 +1,5 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { AuthThrottlerGuard } from './auth-throttler.guard';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-auth.dto';
 
@@ -12,6 +13,9 @@ import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-auth.dto';
  * entrega US-014, que reemplaza esta emisión preservando el contrato `role=admin`.
  */
 @Controller('v1/admin/auth')
+// §7.3 — la superficie de auth va con throttle por IP (429 + Retry-After al
+// excederlo). El brute-force del bootstrap token es el vector obvio de esta ruta.
+@UseGuards(AuthThrottlerGuard)
 export class AdminAuthController {
   constructor(private readonly auth: AdminAuthService) {}
 

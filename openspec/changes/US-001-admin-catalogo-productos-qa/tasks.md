@@ -7,7 +7,7 @@
 
 ## Pre-requisitos
 
-- [ ] L1 (backend) + L2 (frontend) verdes en sus changes de disciplina (`qa-three-layer-regression`: L3 no corre sin ellas).
+- [x] L1 (backend) + L2 (frontend) verdes en sus changes de disciplina (`qa-three-layer-regression`: L3 no corre sin ellas).
   - **Exit criterion**: `pnpm -r test` verde en `apps/api` y `apps/web`.
   - **Verify**: `pnpm -r test`
 
@@ -37,7 +37,7 @@
 
 ## Fase 3: E2E cross-stack de la costura FE↔BE (Playwright)
 
-- [ ] T3.1 Escribir los specs de mapeo de error contra la API real (422→inline, 409→banner, 401→redirect) + negative-space de publicar-incompleto y archivar-2-pasos.
+- [x] T3.1 Escribir los specs de mapeo de error contra la API real (422→inline, 409→banner, 401→redirect) + negative-space de publicar-incompleto y archivar-2-pasos.
   - **Exit criterion**: TC-020..TC-024 verdes; sin `waitForTimeout`; selectores por rol/label.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e`
 
@@ -46,7 +46,7 @@
 - [x] T4.1 Crear la colección Postman `catalogo-admin.postman_collection.json` (barrido RBAC 401/403 en toda la superficie `/v1/admin/*` + forma RFC 7807 sin fuga de esquema).
   - **Exit criterion**: TC-025..TC-027 verdes; cada endpoint admin verifica 401 sin token y 403 con rol no-admin; los errores validan el envelope y la ausencia de stack/SQL crudo.
   - **Verify**: `pnpm --filter @dsm/qa test:functional` (`newman run qa/functional/catalogo-admin.postman_collection.json`)
-- [ ] T4.2 Escribir el check de accesibilidad axe-core sobre las 4 pantallas contra la API real.
+- [x] T4.2 Escribir el check de accesibilidad axe-core sobre las 4 pantallas contra la API real.
   - **Exit criterion**: TC-030 verde con **0 violaciones nivel AA** en las 4 pantallas.
   - **Verify**: `pnpm --filter @dsm/qa test:a11y`
 
@@ -56,8 +56,8 @@
   - **Exit criterion**: `thresholds.js` exporta `p(95)<300`, `p(99)<800`, `http_req_failed rate<0.01`, `checks rate>0.99`, tagueado `endpoint:list_products`; el seed genera ≥5.000 filas.
   - **Verify**: `node -e "import('./qa/performance/lib/thresholds.js').then(t=>{if(!t.list_products)process.exit(1)}).catch(e=>{console.error(e);process.exit(1)})"` (el paquete `@dsm/qa` es ESM — `type: module` para tsx/cucumber/k6 — así que se valida con `import()` dinámico, no `require`)
 - [x] T5.2 Escribir `baseline.js` + `stress.js` (executors de modelo abierto) con `check()` de status + `pagination.total>=5000` + `data.length<=limit`, y auth en `setup()`.
-  - **Exit criterion**: TC-028 (baseline) verde contra el dataset sembrado; TC-029 (stress) corre y documenta el knee; smoke-load (1-2 VUs) reusa los mismos thresholds.
-  - **Verify**: `k6 run --vus 2 --duration 30s qa/performance/baseline.js` (smoke-load exit 0)
+  - **Exit criterion**: TC-028 (baseline) verde contra el dataset sembrado; TC-029 (stress) corre y documenta el knee; smoke-load (1-2 VUs) reusa los mismos thresholds. **El dataset se siembra de forma reproducible** (`pnpm --filter @dsm/qa seed:load`, bulk vía Prisma, idempotente): `baseline.js` sólo hace login en `setup()`, así que sin ese paso el check `total >= 5000` falla — y los e2e del backend hacen `TRUNCATE products, categories` sobre la misma base, así que el dataset hay que poder recrearlo, no sembrarlo a mano.
+  - **Verify**: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/baseline.js` (smoke-load exit 0)
 
 ## Fase 6: Exploratorio + cableado de CI
 
@@ -70,9 +70,9 @@
 
 ## Verification (suite-level)
 
-- [ ] La suite de aceptación (excluyendo sólo `@deferred`) pasa: `pnpm --filter @dsm/qa test:acceptance` (el config ya trae `tags: not @deferred`; se evita `-- --tags` por el quirk del `--` de pnpm)
-- [ ] E2E de costura pasa: `pnpm --filter @dsm/qa test:e2e`
-- [ ] Funcional API pasa: `pnpm --filter @dsm/qa test:functional`
-- [ ] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
-- [ ] Carga smoke-load exit 0: `k6 run --vus 2 --duration 30s qa/performance/baseline.js`
-- [ ] Cada AC activo (AC-1..AC-9) tiene ≥1 test-case verde, **incluido el login real por `/acceso`** (TC-019, desbloqueado por la Fase 9 del backend); AC-10 presente `@deferred`.
+- [x] La suite de aceptación (excluyendo sólo `@deferred`) pasa: `pnpm --filter @dsm/qa test:acceptance` (el config ya trae `tags: not @deferred`; se evita `-- --tags` por el quirk del `--` de pnpm)
+- [x] E2E de costura pasa: `pnpm --filter @dsm/qa test:e2e`
+- [x] Funcional API pasa: `pnpm --filter @dsm/qa test:functional`
+- [x] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
+- [x] Carga smoke-load exit 0: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/baseline.js`
+- [x] Cada AC activo (AC-1..AC-9) tiene ≥1 test-case verde, **incluido el login real por `/acceso`** (TC-019, desbloqueado por la Fase 9 del backend); AC-10 presente `@deferred`.
