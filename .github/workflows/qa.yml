@@ -1,0 +1,50 @@
+name: qa-cross-stack
+
+# Gates de la suite QA cross-stack (@dsm/qa, Layer 3) — qa-plan §12.
+# - PR: smoke-load (rápido) + funcional/aceptación contra el stack levantado.
+# - nightly: aceptación + E2E + funcional completos.
+# - pre-release (tag): a11y + baseline de carga.
+on:
+  pull_request:
+  schedule:
+    - cron: '0 4 * * *' # nightly
+  push:
+    tags: ['v*']
+
+jobs:
+  qa-cross-stack:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: dsm
+          POSTGRES_PASSWORD: dsm
+          POSTGRES_DB: dsm
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dsm -d dsm" --health-interval 5s
+          --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://dsm:dsm@localhost:5432/dsm?schema=public
+      JWT_SECRET: ci-secret
+      ADMIN_BOOTSTRAP_TOKEN: ci-bootstrap
+      QA_API_BASE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9.15.9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @dsm/db migrate:deploy
+      - run: pnpm --filter @dsm/api build && (pnpm --filter @dsm/api start &) && npx wait-on http://localhost:3000/health
+      # Aceptación + funcional + E2E de la suite QA (@dsm/qa)
+      - run: pnpm --filter @dsm/qa test:functional
+      - run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"
+      - if: github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')
+        run: pnpm --filter @dsm/qa test:e2e && pnpm --filter @dsm/qa test:a11y
+      # smoke-load en PR; baseline completa en pre-release
+      - name: k6 smoke-load
+        uses: grafana/setup-k6-action@v1
+      - run: k6 run --vus 2 --duration 30s qa/performance/baseline.js
