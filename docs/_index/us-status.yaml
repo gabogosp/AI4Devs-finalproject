@@ -2,203 +2,202 @@
 # Written on US creation + status transitions (read-only for consumers).
 # Source of truth: docs/user-stories/US-*.md frontmatter + §6 Dependencias.
 # Conforma a us-status.schema.yaml: id corto (US-NNN) + slug; prd-capacity; blocked_by (DAG).
-user-stories:
-  - id: US-001
-    slug: admin-catalogo-productos
-    status: In Progress
-    priority: High
-    prd-capacity: 1
-    disciplines: [BE, FE, QA, INFRA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    in-progress-at: 2026-07-11        # first plan invocation (infrastructure-developer)
-    blocked_by: []
-  - id: US-002
-    slug: storefront-navegacion-categorias
-    status: Ready
-    priority: High
-    prd-capacity: 1
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001]
-  - id: US-003
-    slug: ficha-producto-pdp
-    status: Ready
-    priority: High
-    prd-capacity: 1
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001]
-  - id: US-004
-    slug: busqueda-semantica
-    status: Ready
-    priority: High
-    prd-capacity: 2
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-005]
-  - id: US-005
-    slug: enriquecimiento-ia-embeddings
-    status: Ready
-    priority: High
-    prd-capacity: 3
-    disciplines: [BE, QA, INFRA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001, US-006]
-  - id: US-006
-    slug: import-masivo-inventario
-    status: Ready
-    priority: Medium
-    prd-capacity: 7
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001]
-  - id: US-007
-    slug: carrito-compra
-    status: Ready
-    priority: High
-    prd-capacity: 4
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-003]
-  - id: US-008
-    slug: checkout-guest
-    status: Ready
-    priority: High
-    prd-capacity: 4
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-007]
-  - id: US-009
-    slug: pago-mercadopago
-    status: Ready
-    priority: High
-    prd-capacity: 4
-    disciplines: [BE, QA, INFRA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-008]
-  - id: US-010
-    slug: orden-webhook-stock
-    status: Ready
-    priority: High
-    prd-capacity: 6
-    disciplines: [BE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-009]
-  - id: US-011
-    slug: notificaciones-email
-    status: Ready
-    priority: High
-    prd-capacity: 6
-    disciplines: [BE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-010, US-012]
-  - id: US-012
-    slug: panel-ordenes-dueno
-    status: Ready
-    priority: High
-    prd-capacity: 5
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-010]
-  - id: US-013
-    slug: cancelacion-reembolso
-    status: Ready
-    priority: Medium
-    prd-capacity: 11
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-010, US-012]
-  - id: US-014
-    slug: registro-login
-    status: Ready
-    priority: Medium
-    prd-capacity: 8
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001]
-  - id: US-015
-    slug: historial-compras
-    status: Ready
-    priority: Medium
-    prd-capacity: 8
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-014, US-010]
-  - id: US-016
-    slug: panel-metricas
-    status: Ready
-    priority: Medium
-    prd-capacity: 9
-    disciplines: [BE, FE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-010]
-  - id: US-017
-    slug: paginas-legales-consentimiento
-    status: Ready
-    priority: High
-    prd-capacity: 10
-    disciplines: [FE, BE, QA]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001]
-  - id: US-018
-    slug: contacto-whatsapp
-    status: Ready
-    priority: Medium
-    prd-capacity: 12
-    disciplines: [FE]
-    parent-prd: docs/product/prd.md
-    linear-issue-id: null
-    created: 2026-06-15
-    ready-at: 2026-06-15
-    blocked_by: [US-001]
+- id: US-001
+  slug: admin-catalogo-productos
+  status: In Progress
+  priority: High
+  prd-capacity: 1
+  disciplines: [BE, FE, QA, INFRA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  in-progress-at: 2026-07-11        # first plan invocation (infrastructure-developer)
+  blocked_by: []
+- id: US-002
+  slug: storefront-navegacion-categorias
+  status: Ready
+  priority: High
+  prd-capacity: 1
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001]
+- id: US-003
+  slug: ficha-producto-pdp
+  status: Ready
+  priority: High
+  prd-capacity: 1
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001]
+- id: US-004
+  slug: busqueda-semantica
+  status: Ready
+  priority: High
+  prd-capacity: 2
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-005]
+- id: US-005
+  slug: enriquecimiento-ia-embeddings
+  status: Ready
+  priority: High
+  prd-capacity: 3
+  disciplines: [BE, QA, INFRA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001, US-006]
+- id: US-006
+  slug: import-masivo-inventario
+  status: Ready
+  priority: Medium
+  prd-capacity: 7
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001]
+- id: US-007
+  slug: carrito-compra
+  status: Ready
+  priority: High
+  prd-capacity: 4
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-003]
+- id: US-008
+  slug: checkout-guest
+  status: Ready
+  priority: High
+  prd-capacity: 4
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-007]
+- id: US-009
+  slug: pago-mercadopago
+  status: Ready
+  priority: High
+  prd-capacity: 4
+  disciplines: [BE, QA, INFRA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-008]
+- id: US-010
+  slug: orden-webhook-stock
+  status: Ready
+  priority: High
+  prd-capacity: 6
+  disciplines: [BE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-009]
+- id: US-011
+  slug: notificaciones-email
+  status: Ready
+  priority: High
+  prd-capacity: 6
+  disciplines: [BE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-010, US-012]
+- id: US-012
+  slug: panel-ordenes-dueno
+  status: Ready
+  priority: High
+  prd-capacity: 5
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-010]
+- id: US-013
+  slug: cancelacion-reembolso
+  status: Ready
+  priority: Medium
+  prd-capacity: 11
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-010, US-012]
+- id: US-014
+  slug: registro-login
+  status: Ready
+  priority: Medium
+  prd-capacity: 8
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001]
+- id: US-015
+  slug: historial-compras
+  status: Ready
+  priority: Medium
+  prd-capacity: 8
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-014, US-010]
+- id: US-016
+  slug: panel-metricas
+  status: Ready
+  priority: Medium
+  prd-capacity: 9
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-010]
+- id: US-017
+  slug: paginas-legales-consentimiento
+  status: Ready
+  priority: High
+  prd-capacity: 10
+  disciplines: [FE, BE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001]
+- id: US-018
+  slug: contacto-whatsapp
+  status: Ready
+  priority: Medium
+  prd-capacity: 12
+  disciplines: [FE]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-06-15
+  ready-at: 2026-06-15
+  blocked_by: [US-001]

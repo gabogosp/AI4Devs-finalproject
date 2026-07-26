@@ -1,51 +1,50 @@
 # Materialized index of PRD §2.1 capabilities → US coverage.
 # Source of truth: docs/product/prd.md §2.1.
-capabilities:
-  - id: CAP-1
-    title: Catálogo y navegación por categorías
-    priority: Must
-    us-coverage: [US-001-admin-catalogo-productos, US-002-storefront-navegacion-categorias, US-003-ficha-producto-pdp]
-  - id: CAP-2
-    title: Búsqueda semántica con IA
-    priority: Must
-    us-coverage: [US-004-busqueda-semantica]
-  - id: CAP-3
-    title: Enriquecimiento de descripciones con IA
-    priority: Must
-    us-coverage: [US-005-enriquecimiento-ia-embeddings]
-  - id: CAP-4
-    title: Ficha, carrito y checkout guest con MercadoPago (+ pago simulado DSM)
-    priority: Must
-    us-coverage: [US-007-carrito-compra, US-008-checkout-guest, US-009-pago-mercadopago]
-  - id: CAP-5
-    title: Fulfillment — retiro en sucursal + panel de órdenes del dueño
-    priority: Must
-    us-coverage: [US-012-panel-ordenes-dueno]
-  - id: CAP-6
-    title: Registro de orden, ajuste de stock y notificaciones
-    priority: Must
-    us-coverage: [US-010-orden-webhook-stock, US-011-notificaciones-email]
-  - id: CAP-7
-    title: Importación masiva de inventario (CSV/Excel)
-    priority: Should
-    us-coverage: [US-006-import-masivo-inventario]
-  - id: CAP-8
-    title: Cuentas de cliente registradas
-    priority: Should
-    us-coverage: [US-014-registro-login, US-015-historial-compras]
-  - id: CAP-9
-    title: Panel de métricas del dueño
-    priority: Should
-    us-coverage: [US-016-panel-metricas]
-  - id: CAP-10
-    title: Páginas legales + consentimiento
-    priority: Must
-    us-coverage: [US-017-paginas-legales-consentimiento]
-  - id: CAP-11
-    title: Cancelación / reembolso de orden
-    priority: Should
-    us-coverage: [US-013-cancelacion-reembolso]
-  - id: CAP-12
-    title: Canal de contacto / soporte (WhatsApp)
-    priority: Should
-    us-coverage: [US-018-contacto-whatsapp]
+- id: CAP-1
+  title: Catálogo y navegación por categorías
+  priority: Must
+  us-coverage: [US-001-admin-catalogo-productos, US-002-storefront-navegacion-categorias, US-003-ficha-producto-pdp]
+- id: CAP-2
+  title: Búsqueda semántica con IA
+  priority: Must
+  us-coverage: [US-004-busqueda-semantica]
+- id: CAP-3
+  title: Enriquecimiento de descripciones con IA
+  priority: Must
+  us-coverage: [US-005-enriquecimiento-ia-embeddings]
+- id: CAP-4
+  title: Ficha, carrito y checkout guest con MercadoPago (+ pago simulado DSM)
+  priority: Must
+  us-coverage: [US-007-carrito-compra, US-008-checkout-guest, US-009-pago-mercadopago]
+- id: CAP-5
+  title: Fulfillment — retiro en sucursal + panel de órdenes del dueño
+  priority: Must
+  us-coverage: [US-012-panel-ordenes-dueno]
+- id: CAP-6
+  title: Registro de orden, ajuste de stock y notificaciones
+  priority: Must
+  us-coverage: [US-010-orden-webhook-stock, US-011-notificaciones-email]
+- id: CAP-7
+  title: Importación masiva de inventario (CSV/Excel)
+  priority: Should
+  us-coverage: [US-006-import-masivo-inventario]
+- id: CAP-8
+  title: Cuentas de cliente registradas
+  priority: Should
+  us-coverage: [US-014-registro-login, US-015-historial-compras]
+- id: CAP-9
+  title: Panel de métricas del dueño
+  priority: Should
+  us-coverage: [US-016-panel-metricas]
+- id: CAP-10
+  title: Páginas legales + consentimiento
+  priority: Must
+  us-coverage: [US-017-paginas-legales-consentimiento]
+- id: CAP-11
+  title: Cancelación / reembolso de orden
+  priority: Should
+  us-coverage: [US-013-cancelacion-reembolso]
+- id: CAP-12
+  title: Canal de contacto / soporte (WhatsApp)
+  priority: Should
+  us-coverage: [US-018-contacto-whatsapp]

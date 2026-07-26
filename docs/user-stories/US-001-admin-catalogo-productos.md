@@ -4,7 +4,7 @@ id: US-001
 slug: admin-catalogo-productos
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: L
 story_points_traditional: 13
