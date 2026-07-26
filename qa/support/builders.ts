@@ -1,6 +1,7 @@
 // Builders de test data con defaults deterministas. El único valor no-determinista
-// es el prefijo de corrida del SKU/slug (idempotencia entre runs), nunca aserido.
-const RUN = process.env.QA_RUN_PREFIX ?? 'QA';
+// es el prefijo de corrida del SKU/slug (idempotencia entre runs — cada corrida
+// usa un prefijo único para no colisionar con el residuo de la anterior), nunca aserido.
+const RUN = process.env.QA_RUN_PREFIX ?? `QA${Date.now()}`;
 
 export interface CategoriaInput {
   name: string;

@@ -19,7 +19,7 @@
 - [x] T1.2 Implementar el fixture de auth `qa/support/admin-auth.ts` (precedencia login-real → fallback JWT `role=admin` minteado con `JWT_SECRET`).
   - **Exit criterion**: `adminAuthWithSource()` devuelve el token `role=admin` **y de qué rama salió**. Con `ADMIN_BOOTSTRAP_TOKEN` configurado la ruta real es **obligatoria**: si la API no responde o devuelve ≠200, se **falla ruidoso** en vez de mintear un reemplazo (`testing-standards` §14.2 prohíbe las factories que mockean en silencio una dependencia que el test debería conocer — un fallback callado dejaría toda la suite verde contra una costura de login rota). El fallback minteado queda sólo para entornos SIN credenciales, y está prohibido en modo estricto (`QA_AUTH_STRICT=true`, automático en CI).
   - **Verify**: `pnpm --filter @dsm/qa exec tsx support/admin-auth.smoke.ts --require-real` (con la API arriba: exige la rama `real-login`, no sólo un JWT bien formado)
-- [ ] T1.3 Implementar seed determinista `qa/support/seed.ts` + builders `qa/support/builders.ts` (vía API real; SKU con prefijo único por-run).
+- [x] T1.3 Implementar seed determinista `qa/support/seed.ts` + builders `qa/support/builders.ts` (vía API real; SKU con prefijo único por-run).
   - **Exit criterion**: `seedCatalogo()` crea categorías/productos vía la API y devuelve sus ids; re-ejecutar no colisiona (idempotente).
   - **Verify**: `pnpm --filter @dsm/qa exec tsx support/seed.smoke.ts` (siembra y limpia sin error contra la API local)
 
@@ -43,7 +43,7 @@
 
 ## Fase 4: Funcional API (Newman) + Accesibilidad (axe-core)
 
-- [ ] T4.1 Crear la colección Postman `catalogo-admin.postman_collection.json` (barrido RBAC 401/403 en toda la superficie `/v1/admin/*` + forma RFC 7807 sin fuga de esquema).
+- [x] T4.1 Crear la colección Postman `catalogo-admin.postman_collection.json` (barrido RBAC 401/403 en toda la superficie `/v1/admin/*` + forma RFC 7807 sin fuga de esquema).
   - **Exit criterion**: TC-025..TC-027 verdes; cada endpoint admin verifica 401 sin token y 403 con rol no-admin; los errores validan el envelope y la ausencia de stack/SQL crudo.
   - **Verify**: `pnpm --filter @dsm/qa test:functional` (`newman run qa/functional/catalogo-admin.postman_collection.json`)
 - [ ] T4.2 Escribir el check de accesibilidad axe-core sobre las 4 pantallas contra la API real.
