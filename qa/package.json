@@ -5,7 +5,7 @@
   "type": "module",
   "description": "US-001 — Suite cross-stack owned-by-QA (Layer 3): acceptance/E2E/functional/load/a11y",
   "scripts": {
-    "test:acceptance": "cucumber-js --config acceptance/cucumber.mjs",
+    "test:acceptance": "env NODE_OPTIONS=\"--import tsx\" cucumber-js --config acceptance/cucumber.mjs",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "test:a11y": "playwright test -c e2e/playwright.a11y.config.ts",
     "test:functional": "newman run functional/catalogo-admin.postman_collection.json --env-var baseUrl=${QA_API_BASE_URL:-http://localhost:3000} --env-var jwtSecret=${JWT_SECRET:-dev-secret}",

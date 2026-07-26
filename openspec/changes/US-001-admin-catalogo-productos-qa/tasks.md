@@ -25,15 +25,15 @@
 
 ## Fase 2: Aceptación BDD (Cucumber.js + Playwright)
 
-- [ ] T2.1 Escribir los `.feature` (Happy H-1..H-5, Corner C-1..C-4) y sus step defs, reusando `world.ts`/`adminAuth`/`seed`.
+- [x] T2.1 Escribir los `.feature` (Happy H-1..H-5, Corner C-1..C-4) y sus step defs, reusando `world.ts`/`adminAuth`/`seed`.
   - **Exit criterion**: TC-001..TC-009 verdes contra la API viva; runner en modo `strict` (sin steps pending).
-  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@critical-path or @regression" --profile happy-corner`
-- [ ] T2.2 Escribir los `.feature` Negative (N-1/2/3, N-4, N-5, N-8, N-6, N-7) y step defs, con negative-space (sin escritura parcial, sin doble efecto, RBAC).
+  - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@happy or @corner"` (tsx vía --import; el `--loader` está deprecado en Node 23) (exec directo: `run -- --tags` rompe por el quirk del `--` de pnpm, ver T1.1)
+- [x] T2.2 Escribir los `.feature` Negative (N-1/2/3, N-4, N-5, N-8, N-6, N-7) y step defs, con negative-space (sin escritura parcial, sin doble efecto, RBAC).
   - **Exit criterion**: TC-010..TC-015 verdes; N-1/2/3 asertan que el producto **no se crea** y N-5 que **no crea un segundo** con el SKU.
-  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@acceptance and @regression" --profile negative`
-- [ ] T2.3 Escribir los cross-feature (X-1, X-2, **X-6**) y marcar X-5 `@deferred` sin ejecutarlo.
+  - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@negative"`
+- [x] T2.3 Escribir los cross-feature (X-1, X-2, **X-6**) y marcar X-5 `@deferred` sin ejecutarlo.
   - **Exit criterion**: TC-016/TC-017 verdes cross-stack (FE→API real); **TC-019 (X-6, login real por `/acceso`) verde** — desbloqueado 2026-07-25, el backend expone `POST /v1/admin/auth/login` (change backend, Fase 9), así que el fixture `adminAuth` usa la rama de login REAL, no el fallback; TC-018 (`@deferred`) presente y excluido por tag.
-  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@critical-path and not @deferred"`
+  - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@critical-path and not @deferred"`
 
 ## Fase 3: E2E cross-stack de la costura FE↔BE (Playwright)
 
@@ -70,7 +70,7 @@
 
 ## Verification (suite-level)
 
-- [ ] La suite de aceptación (excluyendo sólo `@deferred`) pasa: `pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"`
+- [ ] La suite de aceptación (excluyendo sólo `@deferred`) pasa: `pnpm --filter @dsm/qa test:acceptance` (el config ya trae `tags: not @deferred`; se evita `-- --tags` por el quirk del `--` de pnpm)
 - [ ] E2E de costura pasa: `pnpm --filter @dsm/qa test:e2e`
 - [ ] Funcional API pasa: `pnpm --filter @dsm/qa test:functional`
 - [ ] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
