@@ -1,0 +1,48 @@
+# consumer-contract-check — the consumer side of the contract loop (F48, Spekode).
+#
+# G10 / frontend-codegen-fresh protects what the contract DECLARES (contract →
+# generated client, kept in sync). This gate protects the other direction: it
+# fails if the consumer makes a RAW HTTP call (fetch / axios / XMLHttpRequest …)
+# OUTSIDE the generated client. The generated client is a build artifact of the
+# contract, so routing every call through it makes consuming an undeclared
+# endpoint structurally impossible — closing the gap where the FE invents a route
+# the backend never declared, all tests mock it, and the suite stays green while
+# the real call 404s.
+#
+# Config: genuine non-contract traffic (analytics, third-party SDKs, the codegen
+# custom mutator) is exempted by listing its path in `.consumer-contract-allow`
+# at the repo root (one glob/substring per line, '#' comments). The generated
+# client (`**/generated/**`, `*.gen.*`) and tests/mocks are always exempt.
+#
+# Self-gating + path-filtered: only a Node/web frontend repo has package.json, so
+# this is inert (skips) everywhere else — safe to ship to any repo.
+name: consumer-contract-check
+
+on:
+  pull_request:
+    paths:
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.mjs'
+      - '.consumer-contract-allow'
+
+jobs:
+  consumer-contract:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('package.json') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }   # spekode/ mount carries the script
+
+      - name: Every HTTP call goes through the generated client (F48)
+        run: |
+          # The script lives in the mounted kernel; it auto-resolves the client
+          # source dirs (src/ app/ apps/ packages/) and skips (never false-green)
+          # when there is nothing to scan.
+          if [ -x spekode/scripts/check-consumer-contract.sh ]; then
+            spekode/scripts/check-consumer-contract.sh
+          else
+            echo "::notice::spekode/scripts/check-consumer-contract.sh not found — is the kernel mounted at spekode/?"
+          fi

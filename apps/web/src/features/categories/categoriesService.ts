@@ -1,5 +1,9 @@
-import { httpRequest } from '@/lib/http/client';
 import { parseContract } from '@/lib/http/contract';
+import {
+  getAdminCategories,
+  patchAdminCategoriesId,
+  postAdminCategories,
+} from '@/api/generated/endpoints';
 import {
   GetAdminCategoriesResponse,
   PatchAdminCategoriesIdResponse,
@@ -14,35 +18,32 @@ import type { Category, CreateCategory } from '@/api/generated/model';
 export type { Category };
 export type CategoryInput = CreateCategory;
 
+/** Sólo envía lo que el contrato declara; el `slug` lo deriva el server (AC-1). */
+function payload(input: CategoryInput): CreateCategory {
+  return {
+    name: input.name,
+    ...(input.parent_id ? { parent_id: input.parent_id } : {}),
+  };
+}
+
 /**
- * Envuelve el cliente HTTP para `/v1/admin/categories`. NO envía `slug` (lo
- * deriva el server, AC-1).
+ * Lógica de servicio de categorías (`frontend-standards` §3.3). La red va por
+ * las **operaciones generadas** (F48); la respuesta se valida en el borde con
+ * los schemas Zod generados.
  */
 export const categoriesService = {
   async list(signal?: AbortSignal): Promise<Category[]> {
-    const body = await httpRequest<unknown>('/v1/admin/categories', { signal });
-    return parseContract(GetAdminCategoriesResponse, body);
+    const res = await getAdminCategories({ signal });
+    return parseContract(GetAdminCategoriesResponse, res.data);
   },
 
   async create(input: CategoryInput): Promise<Category> {
-    const body = await httpRequest<unknown>('/v1/admin/categories', {
-      method: 'POST',
-      body: {
-        name: input.name,
-        ...(input.parent_id ? { parent_id: input.parent_id } : {}),
-      },
-    });
-    return parseContract(PostAdminCategoriesResponse, body);
+    const res = await postAdminCategories(payload(input));
+    return parseContract(PostAdminCategoriesResponse, res.data);
   },
 
   async update(id: string, input: CategoryInput): Promise<Category> {
-    const body = await httpRequest<unknown>(`/v1/admin/categories/${id}`, {
-      method: 'PATCH',
-      body: {
-        name: input.name,
-        ...(input.parent_id ? { parent_id: input.parent_id } : {}),
-      },
-    });
-    return parseContract(PatchAdminCategoriesIdResponse, body);
+    const res = await patchAdminCategoriesId(id, payload(input));
+    return parseContract(PatchAdminCategoriesIdResponse, res.data);
   },
 };

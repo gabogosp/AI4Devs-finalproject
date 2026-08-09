@@ -26,6 +26,12 @@ export default defineConfig({
       client: 'fetch',
       baseUrl: '/v1',
       mock: { generators: [{ type: 'msw' }] },
+      // F48 — las operaciones generadas delegan en nuestro mutator, así todo
+      // llamado sale del cliente generado (que sólo puede nombrar endpoints del
+      // contrato) sin perder los cross-cutting del panel (§8).
+      override: {
+        mutator: { path: './src/lib/http/client.ts', name: 'customFetch' },
+      },
     },
   },
 

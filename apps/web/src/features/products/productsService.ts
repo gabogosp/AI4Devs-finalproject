@@ -1,5 +1,10 @@
-import { httpRequest } from '@/lib/http/client';
 import { parseContract } from '@/lib/http/contract';
+import {
+  getAdminProducts,
+  getAdminProductsId,
+  patchAdminProductsId,
+  postAdminProducts,
+} from '@/api/generated/endpoints';
 import {
   GetAdminProductsIdResponse,
   GetAdminProductsResponse,
@@ -24,40 +29,35 @@ export type ProductPage = ProductList;
 export type CreateProductInput = CreateProduct;
 export type UpdateProductInput = UpdateProduct;
 
-/** Envuelve el cliente HTTP para `/v1/admin/products`. Money en centavos (§8 E2E). */
+/**
+ * Lógica de servicio para el catálogo (`frontend-standards` §3.3 — lo único
+ * hand-written). La red va por las **operaciones generadas** (F48): el cliente
+ * generado sólo puede nombrar endpoints que el contrato declara, así que una
+ * ruta fuera de contrato es estructuralmente imposible. La respuesta se valida
+ * en el borde con los schemas Zod generados. Money en centavos (§8 E2E).
+ */
 export const productsService = {
   async list(
     params: { limit: number; offset: number },
     signal?: AbortSignal,
   ): Promise<ProductPage> {
-    const qs = `?limit=${params.limit}&offset=${params.offset}`;
-    const body = await httpRequest<unknown>(`/v1/admin/products${qs}`, {
-      signal,
-    });
-    return parseContract(GetAdminProductsResponse, body);
+    const res = await getAdminProducts(params, { signal });
+    return parseContract(GetAdminProductsResponse, res.data);
   },
 
   async get(id: string, signal?: AbortSignal): Promise<Product> {
-    const body = await httpRequest<unknown>(`/v1/admin/products/${id}`, {
-      signal,
-    });
-    return parseContract(GetAdminProductsIdResponse, body);
+    const res = await getAdminProductsId(id, { signal });
+    return parseContract(GetAdminProductsIdResponse, res.data);
   },
 
   async create(input: CreateProductInput): Promise<Product> {
-    const body = await httpRequest<unknown>('/v1/admin/products', {
-      method: 'POST',
-      body: input,
-    });
-    return parseContract(PostAdminProductsResponse, body);
+    const res = await postAdminProducts(input);
+    return parseContract(PostAdminProductsResponse, res.data);
   },
 
   async update(id: string, input: UpdateProductInput): Promise<Product> {
-    const body = await httpRequest<unknown>(`/v1/admin/products/${id}`, {
-      method: 'PATCH',
-      body: input,
-    });
-    return parseContract(PatchAdminProductsIdResponse, body);
+    const res = await patchAdminProductsId(id, input);
+    return parseContract(PatchAdminProductsIdResponse, res.data);
   },
 
   publish(id: string): Promise<Product> {

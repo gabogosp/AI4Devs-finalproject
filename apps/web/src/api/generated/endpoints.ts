@@ -32,6 +32,7 @@ import type {
   RequestHandlerOptions
 } from 'msw';
 
+import { customFetch } from '../../lib/http/client';
 export type postAdminAuthLoginResponse200 = {
   data: AdminLoginResponse
   status: 200
@@ -78,23 +79,16 @@ export const getPostAdminAuthLoginUrl = () => {
  * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular. US-014 la reemplaza preservando el contrato `role=admin`.
  * @summary Login admin — intercambia el bootstrap token por un JWT (AC-8)
  */
-export const postAdminAuthLogin = async (adminLogin: AdminLogin, options?: RequestInit): Promise<postAdminAuthLoginResponse> => {
+export const postAdminAuthLogin = async (adminLogin: AdminLogin, options?: Parameters<typeof customFetch>[1]): Promise<postAdminAuthLoginResponse> => {
 
-  const res = await fetch(getPostAdminAuthLoginUrl(),
+  return customFetch<postAdminAuthLoginResponse>(getPostAdminAuthLoginUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(adminLogin)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: postAdminAuthLoginResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as postAdminAuthLoginResponse
-}
+);}
 
 
 
@@ -144,23 +138,16 @@ export const getPostAdminCategoriesUrl = () => {
  * Crea una categoría; el slug se deriva del nombre (único).
  * @summary Crear categoría (AC-1)
  */
-export const postAdminCategories = async (createCategory: CreateCategory, options?: RequestInit): Promise<postAdminCategoriesResponse> => {
+export const postAdminCategories = async (createCategory: CreateCategory, options?: Parameters<typeof customFetch>[1]): Promise<postAdminCategoriesResponse> => {
 
-  const res = await fetch(getPostAdminCategoriesUrl(),
+  return customFetch<postAdminCategoriesResponse>(getPostAdminCategoriesUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(createCategory)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: postAdminCategoriesResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as postAdminCategoriesResponse
-}
+);}
 
 
 
@@ -200,23 +187,16 @@ export const getGetAdminCategoriesUrl = () => {
  * Devuelve todas las categorías.
  * @summary Listar categorías (AC-1)
  */
-export const getAdminCategories = async ( options?: RequestInit): Promise<getAdminCategoriesResponse> => {
+export const getAdminCategories = async ( options?: Parameters<typeof customFetch>[1]): Promise<getAdminCategoriesResponse> => {
 
-  const res = await fetch(getGetAdminCategoriesUrl(),
+  return customFetch<getAdminCategoriesResponse>(getGetAdminCategoriesUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getAdminCategoriesResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAdminCategoriesResponse
-}
+);}
 
 
 
@@ -262,23 +242,16 @@ export const getPatchAdminCategoriesIdUrl = (id: string,) => {
  * @summary Editar categoría (AC-1)
  */
 export const patchAdminCategoriesId = async (id: string,
-    updateCategory: UpdateCategory, options?: RequestInit): Promise<patchAdminCategoriesIdResponse> => {
+    updateCategory: UpdateCategory, options?: Parameters<typeof customFetch>[1]): Promise<patchAdminCategoriesIdResponse> => {
 
-  const res = await fetch(getPatchAdminCategoriesIdUrl(id),
+  return customFetch<patchAdminCategoriesIdResponse>(getPatchAdminCategoriesIdUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(updateCategory)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: patchAdminCategoriesIdResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as patchAdminCategoriesIdResponse
-}
+);}
 
 
 
@@ -328,23 +301,16 @@ export const getPostAdminProductsUrl = () => {
  * Alta en estado draft; SKU único; validación por campo (422).
  * @summary Crear producto en draft (AC-2, AC-5, AC-9)
  */
-export const postAdminProducts = async (createProduct: CreateProduct, options?: RequestInit): Promise<postAdminProductsResponse> => {
+export const postAdminProducts = async (createProduct: CreateProduct, options?: Parameters<typeof customFetch>[1]): Promise<postAdminProductsResponse> => {
 
-  const res = await fetch(getPostAdminProductsUrl(),
+  return customFetch<postAdminProductsResponse>(getPostAdminProductsUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(createProduct)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: postAdminProductsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as postAdminProductsResponse
-}
+);}
 
 
 
@@ -391,23 +357,16 @@ export const getGetAdminProductsUrl = (params?: GetAdminProductsParams,) => {
  * Listado paginado del panel (limit/offset).
  * @summary Listar productos (paginado, NFR)
  */
-export const getAdminProducts = async (params?: GetAdminProductsParams, options?: RequestInit): Promise<getAdminProductsResponse> => {
+export const getAdminProducts = async (params?: GetAdminProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<getAdminProductsResponse> => {
 
-  const res = await fetch(getGetAdminProductsUrl(params),
+  return customFetch<getAdminProductsResponse>(getGetAdminProductsUrl(params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getAdminProductsResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAdminProductsResponse
-}
+);}
 
 
 
@@ -452,23 +411,16 @@ export const getGetAdminProductsIdUrl = (id: string,) => {
  * Devuelve un producto por id.
  * @summary Obtener producto (AC-3)
  */
-export const getAdminProductsId = async (id: string, options?: RequestInit): Promise<getAdminProductsIdResponse> => {
+export const getAdminProductsId = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<getAdminProductsIdResponse> => {
 
-  const res = await fetch(getGetAdminProductsIdUrl(id),
+  return customFetch<getAdminProductsIdResponse>(getGetAdminProductsIdUrl(id),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: getAdminProductsIdResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAdminProductsIdResponse
-}
+);}
 
 
 
@@ -524,23 +476,16 @@ export const getPatchAdminProductsIdUrl = (id: string,) => {
  * @summary Editar o cambiar estado (AC-3, AC-4, AC-6, AC-7)
  */
 export const patchAdminProductsId = async (id: string,
-    updateProduct: UpdateProduct, options?: RequestInit): Promise<patchAdminProductsIdResponse> => {
+    updateProduct: UpdateProduct, options?: Parameters<typeof customFetch>[1]): Promise<patchAdminProductsIdResponse> => {
 
-  const res = await fetch(getPatchAdminProductsIdUrl(id),
+  return customFetch<patchAdminProductsIdResponse>(getPatchAdminProductsIdUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(updateProduct)
   }
-)
-
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
-
-  const data: patchAdminProductsIdResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as patchAdminProductsIdResponse
-}
+);}
 
 
 export const getPostAdminAuthLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})

@@ -1,0 +1,13 @@
+# Rutas exentas del gate `check-consumer-contract` (F48).
+#
+# La regla es que todo llamado HTTP salga del cliente GENERADO, porque éste sólo
+# puede nombrar endpoints que el contrato declara — así una ruta fuera de
+# contrato se vuelve estructuralmente imposible. La excepción legítima es el
+# punto donde ese cliente aterriza en la red.
+
+# Mutator de orval (`orval.config.ts` → override.mutator). Es el ÚNICO fetch
+# crudo del frontend: las operaciones generadas delegan acá, y acá viven los
+# cross-cutting del panel (Authorization, traceparent, timeout, traducción del
+# envelope RFC 7807) per `frontend-standards` §8. No construye URLs propias —
+# recibe la que armó el cliente generado desde el contrato.
+apps/web/src/lib/http/client.ts

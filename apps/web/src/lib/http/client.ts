@@ -2,12 +2,23 @@ import { publicEnv } from '../env';
 import { getAuthToken } from './authToken';
 import { AppErrorException, mapProblemToAppError, networkError } from './errors';
 
-export interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
-  body?: unknown;
-  signal?: AbortSignal;
-  timeoutMs?: number;
-}
+/**
+ * **Mutator del cliente generado** (orval `override.mutator`) y único punto de
+ * red del panel (`frontend-standards` §8).
+ *
+ * Por qué es el mutator y no un cliente paralelo (F48): el cliente **generado**
+ * es un artefacto del contrato, así que no puede nombrar un endpoint que el
+ * contrato no declara. Enrutando todo por él, una ruta fuera de contrato se
+ * vuelve estructuralmente imposible — que es exactamente cómo se coló
+ * `POST /v1/admin/auth/login` cuando el backend no lo exponía. Las operaciones
+ * generadas delegan acá, así que los cross-cutting (Authorization, traceparent,
+ * timeout, traducción RFC 7807) se conservan intactos.
+ *
+ * Éste es el ÚNICO `fetch` crudo del frontend y está declarado como tal en
+ * `.consumer-contract-allow`.
+ */
+
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 function hex(len: number): string {
   let out = '';
@@ -23,36 +34,37 @@ function traceparent(): string {
 }
 
 /**
- * Único punto de red del panel (frontend-standards §8). Inyecta Authorization
- * cuando hay sesión, propaga `traceparent`, aplica timeout, y traduce el envelope
- * RFC 7807 a `AppErrorException`. Ningún componente llama `fetch` directo.
+ * Mutator: recibe la URL que construyó el cliente generado (siempre derivada
+ * del contrato) y ejecuta la llamada con los cross-cutting del panel.
+ *
+ * `T` es el **sobre completo** que declara la operación generada
+ * (`{ data, status }`), no sólo el payload — por eso se construye y castea acá.
  */
-export async function httpRequest<T>(
-  path: string,
-  opts: RequestOptions = {},
+export async function customFetch<T>(
+  url: string,
+  init: RequestInit = {},
 ): Promise<T> {
-  const url = `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${path}`;
+  const absolute = url.startsWith('http')
+    ? url
+    : `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${url}`;
+
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? 15000);
-  if (opts.signal) {
-    opts.signal.addEventListener('abort', () => controller.abort());
+  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  if (init.signal) {
+    init.signal.addEventListener('abort', () => controller.abort());
   }
 
-  const headers: Record<string, string> = {
-    'content-type': 'application/json',
-    traceparent: traceparent(),
-  };
+  const headers = new Headers(init.headers);
+  if (!headers.has('content-type')) {
+    headers.set('content-type', 'application/json');
+  }
+  headers.set('traceparent', traceparent());
   const token = getAuthToken();
-  if (token) headers.authorization = `Bearer ${token}`;
+  if (token) headers.set('authorization', `Bearer ${token}`);
 
   let res: Response;
   try {
-    res = await fetch(url, {
-      method: opts.method ?? 'GET',
-      headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      signal: controller.signal,
-    });
+    res = await fetch(absolute, { ...init, headers, signal: controller.signal });
   } catch {
     throw new AppErrorException(networkError());
   } finally {
@@ -69,6 +81,9 @@ export async function httpRequest<T>(
     throw new AppErrorException(mapProblemToAppError(res.status, body));
   }
 
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  const text = [204, 205, 304].includes(res.status) ? '' : await res.text();
+  const data = text ? JSON.parse(text) : undefined;
+  return { data, status: res.status, headers: res.headers } as T;
 }
+
+export default customFetch;
