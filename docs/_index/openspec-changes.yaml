@@ -25,7 +25,7 @@
   estimate-hours: 10
   assignee: null
   branch: feat/US-001-admin-catalogo-productos-bootstrap-local-infrastructure
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/2
+  pr-url: null  # PR #2 cerrado; modelo de rama de integración (sin PR por-cambio) — ships vía feature-entrega2-GOSP → main
   created: 2026-07-11
   completed-at: null
   archived-at: null
