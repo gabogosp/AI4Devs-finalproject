@@ -1,0 +1,281 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Catálogo (CAP-1)
+  version: 1.0.0
+  description: Contrato VIVO de la capacidad, acumulado por /archive-change. Superficie de administración
+    entregada por US-001. Las rutas públicas del storefront se suman al archivar US-002 y US-003.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+- url: /v1
+  description: Base URL versionada
+tags:
+- name: admin-auth
+  description: Seam de login admin (AC-8, ADR-0009)
+- name: admin-categories
+  description: Gestión de categorías (AC-1)
+- name: admin-products
+  description: Gestión de productos (AC-2..AC-9)
+- name: health
+  description: Liveness / readiness
+security:
+- adminBearer: []
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con claim role=admin (seam ADR-0009)
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Problem:
+      description: Error RFC 7807
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    AdminLogin:
+      type: object
+      required:
+      - bootstrapToken
+      properties:
+        bootstrapToken:
+          type: string
+          minLength: 1
+    AdminLoginResponse:
+      type: object
+      required:
+      - token
+      properties:
+        token:
+          type: string
+          description: JWT con claim role=admin
+    CreateCategory:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+    UpdateCategory:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+    Category:
+      type: object
+      required:
+      - id
+      - slug
+      - name
+      - parent_id
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    CreateProduct:
+      type: object
+      required:
+      - sku
+      - name
+      - price_ars_cents
+      - category_id
+      properties:
+        sku:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+        description_raw:
+          type: string
+          nullable: true
+        price_ars_cents:
+          type: integer
+          minimum: 1
+          description: Centavos ARS (IVA incluido)
+        stock:
+          type: integer
+          minimum: 0
+          default: 0
+        category_id:
+          type: string
+          format: uuid
+        image_url:
+          type: string
+          nullable: true
+    UpdateProduct:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        description_raw:
+          type: string
+          nullable: true
+        price_ars_cents:
+          type: integer
+          minimum: 1
+        stock:
+          type: integer
+          minimum: 0
+        category_id:
+          type: string
+          format: uuid
+        image_url:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+          - archived
+    Product:
+      type: object
+      required:
+      - id
+      - sku
+      - name
+      - description_raw
+      - price_ars_cents
+      - stock
+      - status
+      - category_id
+      - image_url
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        sku:
+          type: string
+        name:
+          type: string
+        description_raw:
+          type: string
+          nullable: true
+        price_ars_cents:
+          type: integer
+        stock:
+          type: integer
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+          - archived
+        category_id:
+          type: string
+          format: uuid
+        image_url:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ProductList:
+      type: object
+      required:
+      - data
+      - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        pagination:
+          type: object
+          required:
+          - limit
+          - offset
+          - total
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+    Problem:
+      type: object
+      description: RFC 7807
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
+      properties:
+        type:
+          type: string
+          example: dsm:catalog/conflict
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            required:
+            - field
+            - message
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+paths:
+  /admin/auth/login:
+    $ref: ./openapi/paths/admin-auth-login.yaml
+  /admin/categories:
+    $ref: ./openapi/paths/admin-categories.yaml
+  /admin/categories/{id}:
+    $ref: ./openapi/paths/admin-categories-id.yaml
+  /admin/products:
+    $ref: ./openapi/paths/admin-products.yaml
+  /admin/products/{id}:
+    $ref: ./openapi/paths/admin-products-id.yaml

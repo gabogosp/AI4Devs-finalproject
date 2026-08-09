@@ -17,7 +17,7 @@
   us-id: US-001
   discipline: infrastructure
   variant: bootstrap-local
-  status: in-progress
+  status: archived
   parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
   linear-task-id: null
   audit-baseline: null
@@ -27,9 +27,9 @@
   branch: feat/US-001-admin-catalogo-productos-bootstrap-local-infrastructure
   pr-url: null  # PR #2 cerrado; modelo de rama de integración (sin PR por-cambio) — ships vía feature-entrega2-GOSP → main
   created: 2026-07-11
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-bootstrap-local-infrastructure
 
 - name: US-019-provision-plataforma-cloud-infrastructure
   us-id: US-019
@@ -53,7 +53,7 @@
   us-id: US-001
   discipline: backend
   variant: null
-  status: in-progress
+  status: archived
   parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
   linear-task-id: null
   audit-baseline: null
@@ -63,15 +63,15 @@
   branch: null
   pr-url: null
   created: 2026-07-18
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-backend
 
 - name: US-001-admin-catalogo-productos-frontend-web
   us-id: US-001
   discipline: frontend-web
   variant: null
-  status: in-progress
+  status: archived
   parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
   linear-task-id: null
   audit-baseline: null
@@ -81,15 +81,15 @@
   branch: null
   pr-url: null
   created: 2026-07-18
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-frontend-web
 
 - name: US-001-admin-catalogo-productos-qa
   us-id: US-001
   discipline: qa
   variant: null
-  status: in-progress
+  status: archived
   parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
   linear-task-id: null
   audit-baseline: null
@@ -99,6 +99,6 @@
   branch: null
   pr-url: null
   created: 2026-07-25
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-qa

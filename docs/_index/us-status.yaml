@@ -4,7 +4,7 @@
 # Conforma a us-status.schema.yaml: id corto (US-NNN) + slug; prd-capacity; blocked_by (DAG).
 - id: US-001
   slug: admin-catalogo-productos
-  status: In Progress
+  status: Done
   priority: High
   prd-capacity: 1
   disciplines: [BE, FE, QA, INFRA]
@@ -13,6 +13,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-07-11        # first plan invocation (infrastructure-developer)
+  done-at: 2026-08-09               # 4/4 changes de disciplina archivados
   blocked_by: []
 - id: US-002
   slug: storefront-navegacion-categorias

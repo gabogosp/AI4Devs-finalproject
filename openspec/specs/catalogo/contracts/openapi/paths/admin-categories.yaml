@@ -1,0 +1,44 @@
+post:
+  tags:
+  - admin-categories
+  summary: Crear categoría (AC-1)
+  description: Crea una categoría; el slug se deriva del nombre (único).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/CreateCategory'
+  responses:
+    '201':
+      description: Creada
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Category'
+    '401':
+      $ref: '#/components/responses/Problem'
+    '403':
+      $ref: '#/components/responses/Problem'
+    '409':
+      $ref: '#/components/responses/Problem'
+    '422':
+      $ref: '#/components/responses/Problem'
+get:
+  tags:
+  - admin-categories
+  summary: Listar categorías (AC-1)
+  description: Devuelve todas las categorías.
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Category'
+    '401':
+      $ref: '#/components/responses/Problem'
+    '403':
+      $ref: '#/components/responses/Problem'

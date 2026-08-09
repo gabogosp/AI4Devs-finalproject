@@ -4,7 +4,7 @@ id: US-001
 slug: admin-catalogo-productos
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: High
 estimate-tshirt: L
 story_points_traditional: 13
@@ -143,17 +143,20 @@ And el catálogo refleja el precio nuevo solo para ventas futuras
 
 | Disciplina | Task id | Estimado (h) | Owner | Estado |
 |---|---|---|---|---|
-| INFRA | INFRA-US-001 | 16-24h | TBD | Todo |
-| BE | BE-US-001 | 10-16h | TBD | Todo |
-| FE | FE-US-001 | 12-16h | TBD | Todo |
-| QA | QA-US-001 | 6-8h | TBD | Todo |
+| INFRA | INFRA-US-001 | 16-24h | — | **Done** (bootstrap local; la nube es US-019) |
+| BE | BE-US-001 | 10-16h | — | **Done** |
+| FE | FE-US-001 | 12-16h | — | **Done** |
+| QA | QA-US-001 | 6-8h | — | **Done** |
 
 - INFRA: bootstrap **local** (monorepo + toolchain de workspace, `docker-compose` con Postgres+pgvector y Redis, `.env.example`, targets locales, gate de CI) + esquema de catálogo (tablas `products`, `categories`, migraciones, constraints SKU único / stock ≥ 0) — fuente única de verdad del esquema. La **provisión de la nube** es US-019 (ver §6).
 - BE: endpoints CRUD de productos y categorías + transición de estado (borrador → publicado / archivado) + validaciones + tests.
 - FE: panel del dueño — listado (TanStack Table) + formularios de alta/edición + acciones publicar/archivar, según design-system.
 - QA: plan de pruebas + automatización de AC (CRUD, reglas de publicación, autorización admin).
 
-> Las tasks code-generating (INFRA/BE/FE) abren su openspec change en `openspec/changes/US-001-admin-catalogo-productos-{discipline}/`. La task QA vive en `tasks/US-001/qa-deliverable.md`.
+> Las cuatro disciplinas —**incluida QA**— abrieron su openspec change. QA **no** es un deliverable
+> no-code: `/plan-qa` produce un change con `qa-plan.md` que `/develop-qa` ejecuta como código
+> (Cucumber, Playwright, Newman, k6). Los cuatro están archivados en
+> `openspec/changes/archive/US-001-admin-catalogo-productos-{discipline}/`.
 
 ## 8. Diseño
 

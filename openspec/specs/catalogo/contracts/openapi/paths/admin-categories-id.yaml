@@ -1,0 +1,26 @@
+patch:
+  tags:
+  - admin-categories
+  summary: Editar categoría (AC-1)
+  description: Actualiza el nombre/parent de una categoría.
+  parameters:
+  - $ref: '#/components/parameters/Id'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/UpdateCategory'
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Category'
+    '401':
+      $ref: '#/components/responses/Problem'
+    '403':
+      $ref: '#/components/responses/Problem'
+    '404':
+      $ref: '#/components/responses/Problem'
