@@ -1,13 +1,13 @@
 ---
 tracker-id: null
 tracker-source: null
-parent-us: US-001
+parent-us: US-019
 discipline: infrastructure
-variant: platform-cloud
+variant: null
 language: es
 ---
 
-# US-001 Platform cloud — provisioning Railway + Neon + Cloudflare R2, secretos, autodeploy y runbook
+# US-019 Platform cloud — provisioning Railway + Neon + Cloudflare R2, secretos, autodeploy y runbook
 
 ## Why
 

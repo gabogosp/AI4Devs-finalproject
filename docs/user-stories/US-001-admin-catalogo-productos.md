@@ -136,7 +136,8 @@ And el catálogo refleja el precio nuevo solo para ventas futuras
 ## 6. Dependencias
 
 - **Bloquea a**: US-002, US-003, US-005, US-006 (todo el catálogo se apoya en el modelo y los datos de productos/categorías).
-- **Bloqueada por**: — (esta US incluye el bootstrap de plataforma: Railway + Neon + pgvector + Redis + CI — disciplina INFRA).
+- **Bloqueada por**: — (esta US incluye el bootstrap **local** de plataforma: monorepo + `docker-compose` con Postgres/pgvector + Redis + esquema de catálogo + CI — disciplina INFRA).
+- **Re-alcance 2026-08-09**: la **provisión de la nube** (Railway/Neon/Cloudflare, secretos, DNS/TLS, autodeploy, observabilidad, runbook) salió de esta US a **US-019**. Motivo: `railway-baseline` §0 la define como pista paralela fuera del camino crítico, *gated* en cuentas y billing; mantenerla acá dejaba a US-001 —y a las 17 US que dependen de ella— esperando un trámite de facturación en vez de trabajo de producto. El trabajo no se reduce: cambia de unidad de planificación. Ver US-019 §10 y el gap F53.
 
 ## 7. Tasks asociadas (gruesas, una por disciplina afectada)
 
@@ -147,7 +148,7 @@ And el catálogo refleja el precio nuevo solo para ventas futuras
 | FE | FE-US-001 | 12-16h | TBD | Todo |
 | QA | QA-US-001 | 6-8h | TBD | Todo |
 
-- INFRA: bootstrap de plataforma (proyecto Railway, Neon + extensión pgvector, Redis, pipeline CI) + esquema de catálogo (tablas `products`, `categories`, migraciones, constraints SKU único / stock ≥ 0).
+- INFRA: bootstrap **local** (monorepo + toolchain de workspace, `docker-compose` con Postgres+pgvector y Redis, `.env.example`, targets locales, gate de CI) + esquema de catálogo (tablas `products`, `categories`, migraciones, constraints SKU único / stock ≥ 0) — fuente única de verdad del esquema. La **provisión de la nube** es US-019 (ver §6).
 - BE: endpoints CRUD de productos y categorías + transición de estado (borrador → publicado / archivado) + validaciones + tests.
 - FE: panel del dueño — listado (TanStack Table) + formularios de alta/edición + acciones publicar/archivar, según design-system.
 - QA: plan de pruebas + automatización de AC (CRUD, reglas de publicación, autorización admin).

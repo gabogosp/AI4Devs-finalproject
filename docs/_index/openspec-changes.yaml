@@ -31,12 +31,12 @@
   archived-at: null
   archive-path: null
 
-- name: US-001-admin-catalogo-productos-platform-cloud-infrastructure
-  us-id: US-001
+- name: US-019-provision-plataforma-cloud-infrastructure
+  us-id: US-019
   discipline: infrastructure
-  variant: platform-cloud
+  variant: null
   status: draft
-  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  parent-us: docs/user-stories/US-019-provision-plataforma-cloud.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false

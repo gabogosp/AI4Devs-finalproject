@@ -201,3 +201,13 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   blocked_by: [US-001]
+- id: US-019
+  slug: provision-plataforma-cloud
+  status: Ready
+  priority: Medium
+  disciplines: [INFRA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-08-09
+  ready-at: 2026-08-09
+  blocked_by: []          # gated en dependencias externas (cuentas/billing), no en otra US

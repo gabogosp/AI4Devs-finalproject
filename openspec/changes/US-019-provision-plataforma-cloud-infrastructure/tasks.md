@@ -1,11 +1,11 @@
 ---
-parent-us: US-001
+parent-us: US-019
 discipline: infrastructure
 variant: platform-cloud
 language: es
 ---
 
-# US-001 Platform cloud — Tasks
+# US-019 Platform cloud — Tasks
 
 > Cada task es closure-grade: `Exit criterion:` observable + `Verify:` con el comando exacto. Muchas verificaciones usan la Railway CLI (`railway`), la Neon CLI (`neonctl`) y `wrangler` (Cloudflare); donde no hay comando, el `Verify:` nombra el chequeo humano explícito en el dashboard. Este change corre en paralelo con `bootstrap-local` y solo arranca cuando resuelven sus gates externos.
 

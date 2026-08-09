@@ -1,11 +1,11 @@
 ---
-parent-us: US-001
+parent-us: US-019
 discipline: infrastructure
 variant: platform-cloud
 language: es
 ---
 
-# US-001 Platform cloud — Design
+# US-019 Platform cloud — Design
 
 ## Context
 

@@ -24,3 +24,4 @@ order:
   - { id: US-011, layer: 7, cycle: 5, on_critical_path: true,  blocked_by: [US-010, US-012], unblocked_now: false, disciplines: [BE, QA] }
   - { id: US-013, layer: 7, cycle: 5, on_critical_path: false, blocked_by: [US-010, US-012], unblocked_now: false, disciplines: [BE, FE, QA] }
   - { id: US-018, layer: 1, cycle: 6, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [FE] }
+  - { id: US-019, layer: 0, cycle: 1, on_critical_path: false, blocked_by: [],              unblocked_now: true,  disciplines: [INFRA] }
