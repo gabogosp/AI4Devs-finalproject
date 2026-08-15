@@ -67,7 +67,7 @@ language: es
 
 ## Fase 8: Cobertura e2e de ACs de estado/stock/precio (AC-3/AC-4/AC-6/AC-9)
 
-- [ ] T8.1 e2e de disponibilidad, imagen nula y precio vigente
+- [x] T8.1 e2e de disponibilidad, imagen nula y precio vigente
   - **Exit criterion**: la suite e2e cubre — producto con `stock>0` → `in_stock:true` (AC-3); producto publicado con `stock=0` → `200` con `in_stock:false` (AC-4, visible pero no comprable); producto sin imagen → `image_url:null` (AC-6); tras `PATCH` admin del precio, una relectura de la ficha devuelve el `price_ars_cents` nuevo (AC-9).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront-acceptance` (e2e-nest: los cuatro escenarios pasan contra Postgres real de Testcontainers)
 
