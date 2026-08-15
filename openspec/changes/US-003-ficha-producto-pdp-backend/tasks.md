@@ -25,7 +25,7 @@ language: es
 
 ## Fase 2: DTO público + mapper orientado a ficha/SEO (AC-2/AC-3/AC-4/AC-5/AC-6)
 
-- [ ] T2.1 `StorefrontProductDto` + `from()` (shape público, sin campos admin)
+- [x] T2.1 `StorefrontProductDto` + `from()` (shape público, sin campos admin)
   - **Pattern**: DTO de respuesta con `static from(p: Product & { category: Category }): StorefrontProductDto` que deriva `in_stock: p.stock > 0` y mapea `description: p.description_raw` — `per backend-node-standards.md §4 — DTO de respuesta explícito, sin exponer la entidad ORM`.
   - **Exit criterion**: `apps/api/src/storefront/dto/storefront-product.dto.ts` expone exactamente `{ sku, name, description, price_ars_cents, currency: 'ARS', image_url, in_stock, category: { name, slug } }`; `in_stock` = `stock > 0` (AC-3/AC-4); `description` = `description_raw` (AC-5 — con comentario de que US-005 antepondrá `description_enriched`); `image_url` se pasa tal cual incluyendo `null` (AC-6); **no** incluye `id`, `stock` numérico, `status`, `created_at`, `updated_at` (OQ-BE-3).
   - **Verify**: `pnpm --filter @dsm/api test -- storefront-product` (unit: `stock=0`→`in_stock:false`, `stock=5`→`in_stock:true`; `image_url=null` passthrough; el objeto no contiene las claves `id`/`stock`/`status`/`created_at`)
