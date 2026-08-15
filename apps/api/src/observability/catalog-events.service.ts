@@ -4,6 +4,7 @@ export type CatalogEventName =
   | 'product.created'
   | 'product.published'
   | 'product.archived'
+  | 'product.viewed'
   | 'category.created';
 
 /**
@@ -19,7 +20,9 @@ export class CatalogEventsService {
   emit(
     name: CatalogEventName,
     entityId: string,
-    adminUserId = 'admin',
+    // `null` para eventos de superficie pública anónima (US-003 `product.viewed`):
+    // no hay actor admin, así que NO se registra un `'admin'` falso ni PII.
+    adminUserId: string | null = 'admin',
     traceId?: string,
   ): void {
     this.counters.set(name, (this.counters.get(name) ?? 0) + 1);

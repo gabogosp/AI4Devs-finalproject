@@ -1,8 +1,9 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Headers, Param, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { StorefrontService } from './storefront.service';
 import { StorefrontProductDto } from './dto/storefront-product.dto';
 import { StorefrontThrottlerGuard } from './storefront-throttler.guard';
+import { CatalogEventsService } from '../observability/catalog-events.service';
 
 /**
  * Superficie **pública** del storefront (US-003) — la primera de `@dsm/api` sin
@@ -17,11 +18,22 @@ import { StorefrontThrottlerGuard } from './storefront-throttler.guard';
 @UseGuards(StorefrontThrottlerGuard)
 @SkipThrottle({ auth: true })
 export class StorefrontProductsController {
-  constructor(private readonly storefront: StorefrontService) {}
+  constructor(
+    private readonly storefront: StorefrontService,
+    private readonly events: CatalogEventsService,
+  ) {}
 
   @Get(':sku')
-  async getBySku(@Param('sku') sku: string): Promise<StorefrontProductDto> {
+  async getBySku(
+    @Param('sku') sku: string,
+    @Headers('traceparent') traceparent?: string,
+  ): Promise<StorefrontProductDto> {
     const product = await this.storefront.getPublishedProduct(sku);
+    // US §9 / E2E §18: evento de negocio de la ficha. Lectura anónima →
+    // `admin_user_id: null` (sin PII). El `entity_id` va al LOG, nunca como
+    // dimensión de la métrica `pdp_viewed_total` (cardinalidad §3.3). Un 404
+    // lanza en la línea anterior, así que no se emite.
+    this.events.emit('product.viewed', product.id, null, traceparent);
     return StorefrontProductDto.from(product);
   }
 }

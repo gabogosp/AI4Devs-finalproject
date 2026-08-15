@@ -60,7 +60,7 @@ language: es
 
 ## Fase 7: Observabilidad — evento `product.viewed` (US §9, E2E §18)
 
-- [ ] T7.1 Emitir `product.viewed` en cada fetch OK de ficha
+- [x] T7.1 Emitir `product.viewed` en cada fetch OK de ficha
   - **Pattern**: agregar `'product.viewed'` a `CatalogEventName` y emitir `this.events.emit('product.viewed', product.id)` tras un fetch OK; contador `pdp_viewed_total` — `per observability-patterns §3.3 — el id de producto va al log, NUNCA como dimensión de métrica (cardinalidad)`. Sin PII (lectura anónima); no se pasa `admin_user_id` (o se pasa `null`, no `'admin'`).
   - **Exit criterion**: un `GET /v1/products/{sku}` de un producto publicado emite el evento `product.viewed` (log pino estructurado con `entity_id` + `trace_id`, sin PII) e incrementa el contador; un `404` **no** lo emite. La métrica no lleva `product_id`/`sku` como dimensión.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront-events` (unit/e2e: fetch de publicado → `count('product.viewed')` incrementa y el log trae `entity_id`; un 404 no incrementa el contador)
