@@ -6,6 +6,7 @@ import { HealthModule } from './health/health.module';
 import { CatalogEventsModule } from './observability/catalog-events.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
+import { StorefrontModule } from './storefront/storefront.module';
 import { AuthModule } from './auth/auth.module';
 
 /**
@@ -23,6 +24,7 @@ import { AuthModule } from './auth/auth.module';
     AuthModule,
     CategoriesModule,
     ProductsModule,
+    StorefrontModule,
   ],
   controllers: [],
   providers: [],

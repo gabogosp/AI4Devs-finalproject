@@ -39,7 +39,7 @@ language: es
 
 ## Fase 4: Controller público + módulo (AC-1)
 
-- [ ] T4.1 `StorefrontProductsController` `GET /v1/products/{sku}` + `StorefrontModule`
+- [x] T4.1 `StorefrontProductsController` `GET /v1/products/{sku}` + `StorefrontModule`
   - **Pattern**: `@Controller('v1/products')` **sin** `@UseGuards(AdminGuard)`; `@Get(':sku')` → `StorefrontProductDto.from(await this.storefront.getPublishedProduct(sku))`. `StorefrontModule` importa `ProductsModule` (exporta `ProductsRepository`) y registra `StorefrontProductsController` + `StorefrontService`; se importa en `AppModule` — `per backend-node-standards.md §2 — módulo de feature con su controller/service`.
   - **Exit criterion**: existe la ruta pública `GET /v1/products/{sku}` **sin auth**; un producto publicado → `200` con el shape de `StorefrontProductDto`; draft/archived/inexistente → `404` RFC 7807; el módulo queda cableado en `AppModule`. La ruta admin `GET /v1/admin/products/{id}` (US-001) sigue gateada e intacta.
   - **Verify**: `pnpm --filter @dsm/api test -- e2e-storefront-product` (e2e-nest supertest: publicado→200 con `name`/`price_ars_cents`/`in_stock`/`category.slug`; draft→404; archived→404; sku inexistente→404; **sin** header Authorization)
