@@ -32,7 +32,7 @@ language: es
 
 ## Fase 3: Servicio de storefront — use-case de lectura pública (AC-7/AC-8)
 
-- [ ] T3.1 `StorefrontService.getPublishedProduct(sku)` → 404 si no existe/oculto
+- [x] T3.1 `StorefrontService.getPublishedProduct(sku)` → 404 si no existe/oculto
   - **Pattern**: `const p = await this.repo.findPublishedBySku(sku); if (!p) throw new NotFoundError('Producto no encontrado'); return p;` — `per backend-node-standards.md §6 — error de dominio tipado, el filtro global lo mapea a RFC 7807 404`. El mensaje es genérico (no revela si el producto existe pero está oculto).
   - **Exit criterion**: `apps/api/src/storefront/storefront.service.ts` con `getPublishedProduct(sku)` que devuelve el producto publicado o lanza `NotFoundError` (→ 404 `dsm:catalog/not-found`) de forma idéntica para draft/archived/inexistente; sin ramas que distingan el motivo (no enumeration leak).
   - **Verify**: `pnpm --filter @dsm/api test -- storefront.service` (unit con repo mockeado: repo→`null` lanza `NotFoundError`; repo→producto lo devuelve; el mensaje es idéntico en los tres casos ocultos)
