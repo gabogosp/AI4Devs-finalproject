@@ -23,6 +23,11 @@ export const envSchema = z.object({
   // §7.3 Rate limiting de la superficie de auth (por IP).
   AUTH_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(900_000), // 15 min
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+
+  // §7.3 Rate limiting de la superficie pública del storefront (por IP). Más
+  // laxa que auth: es lectura anónima, no un vector de brute-force.
+  STOREFRONT_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000), // 1 min
+  STOREFRONT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
 });
 
 /** Parsea la allowlist de CORS a orígenes exactos, sin vacíos. */

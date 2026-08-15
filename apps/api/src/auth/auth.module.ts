@@ -29,6 +29,15 @@ import { AuthThrottlerGuard } from './auth-throttler.guard';
           ttl: config.get<number>('AUTH_RATE_LIMIT_TTL_MS', 900_000),
           limit: config.get<number>('AUTH_RATE_LIMIT_MAX', 5),
         },
+        // §7.3 — throttler nombrado de la superficie pública del storefront
+        // (US-003). El `ThrottlerModule` es global y se registra una sola vez,
+        // así que el array de throttlers vive acá; cada controller scopea el
+        // suyo con `@SkipThrottle` del otro.
+        {
+          name: 'storefront',
+          ttl: config.get<number>('STOREFRONT_RATE_LIMIT_TTL_MS', 60_000),
+          limit: config.get<number>('STOREFRONT_RATE_LIMIT_MAX', 60),
+        },
       ],
     }),
   ],

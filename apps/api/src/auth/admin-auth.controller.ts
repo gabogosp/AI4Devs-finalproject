@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AuthThrottlerGuard } from './auth-throttler.guard';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-auth.dto';
@@ -15,7 +16,10 @@ import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-auth.dto';
 @Controller('v1/admin/auth')
 // §7.3 — la superficie de auth va con throttle por IP (429 + Retry-After al
 // excederlo). El brute-force del bootstrap token es el vector obvio de esta ruta.
+// `@SkipThrottle({ storefront: true })` deja fuera el throttler público de
+// US-003: esta ruta sólo la limita el throttler `auth` (semántica intacta).
 @UseGuards(AuthThrottlerGuard)
+@SkipThrottle({ storefront: true })
 export class AdminAuthController {
   constructor(private readonly auth: AdminAuthService) {}
 

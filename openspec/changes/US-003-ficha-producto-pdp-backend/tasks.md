@@ -46,7 +46,7 @@ language: es
 
 ## Fase 5: Rate-limit del surface público (§7.3)
 
-- [ ] T5.1 Throttler nombrado `storefront` por IP + 429 con cabeceras
+- [x] T5.1 Throttler nombrado `storefront` por IP + 429 con cabeceras
   - **Pattern**: extender el array de `ThrottlerModule.forRootAsync` (hoy en `AuthModule`, throttler `auth`) con un segundo throttler `{ name: 'storefront', ttl: STOREFRONT_RATE_LIMIT_TTL_MS, limit: STOREFRONT_RATE_LIMIT_MAX }` y aplicar al controller un guard que emita `RateLimit-*`/`Retry-After` (mirror de `AuthThrottlerGuard`) — `per security-standards.md §7.3 — rate-limit del surface público` y `api-standards.md §12 — cabeceras de rate-limit`. Nuevas env `STOREFRONT_RATE_LIMIT_TTL_MS` (default `60000`) y `STOREFRONT_RATE_LIMIT_MAX` (default `60`) en `env.validation.ts` (Zod, validadas al arranque §7).
   - **Exit criterion**: `GET /v1/products/{sku}` está limitado por IP (default 60/min, configurable por env validada); superar el límite → `429` con `Retry-After` y `RateLimit-Limit`/`RateLimit-Remaining`/`RateLimit-Reset`; el `429` sale en envelope RFC 7807 (vía el filtro global). El surface admin de US-001 conserva su throttler `auth` sin cambios.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront-security` (e2e: N peticiones dentro del límite→200; la N+1→429 con `Retry-After`; el body del 429 es `application/problem+json`)

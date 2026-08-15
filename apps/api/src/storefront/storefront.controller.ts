@@ -1,6 +1,8 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { StorefrontService } from './storefront.service';
 import { StorefrontProductDto } from './dto/storefront-product.dto';
+import { StorefrontThrottlerGuard } from './storefront-throttler.guard';
 
 /**
  * Superficie **pública** del storefront (US-003) — la primera de `@dsm/api` sin
@@ -10,6 +12,10 @@ import { StorefrontProductDto } from './dto/storefront-product.dto';
  * (Fases 5/6), no acá.
  */
 @Controller('v1/products')
+// §7.3 — throttle por IP de la superficie pública. `@SkipThrottle({ auth: true })`
+// deja fuera el throttler estricto de auth: acá sólo aplica el `storefront`.
+@UseGuards(StorefrontThrottlerGuard)
+@SkipThrottle({ auth: true })
 export class StorefrontProductsController {
   constructor(private readonly storefront: StorefrontService) {}
 
