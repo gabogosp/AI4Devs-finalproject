@@ -45,6 +45,26 @@ pgvector) y hacen `TRUNCATE` entre casos; corren en serie (`maxWorkers: 1`).
 | PATCH | `/v1/admin/products/{id}` | AC-3, AC-4, AC-6, AC-7 |
 | GET | `/health` · `/ready` | liveness / readiness |
 
+### Superficie pública del storefront (US-003)
+
+La **primera ruta sin auth** del servicio — la ficha de producto (PDP) que el
+storefront SSR consume:
+
+| Método | Ruta | AC |
+|---|---|---|
+| GET | `/v1/products/{sku}` | AC-1/AC-2 (ficha pública indexable de un producto `published`) |
+
+- **Sin `AdminGuard`.** Devuelve un producto sólo si está `published`;
+  draft/archived/inexistente → **404** RFC 7807 uniforme (AC-7/AC-8, sin
+  enumeration leak). Identificador público: `sku` (interino; la URL por `slug` es
+  OQ-BE-1, infra-owned).
+- **Rate-limit por IP** (§7.3): throttler `storefront`
+  (`STOREFRONT_RATE_LIMIT_TTL_MS`/`STOREFRONT_RATE_LIMIT_MAX`, default 60/min);
+  al excederlo, **429** con `Retry-After` + `RateLimit-*`.
+- **Caché acotada** (AC-9): `Cache-Control: public, max-age=60,
+  stale-while-revalidate=30` — habilita CDN sin servir un precio desactualizado
+  indefinidamente. El surface admin conserva `no-store`.
+
 Contrato completo: [`docs/api/openapi.yaml`](./docs/api/openapi.yaml). Errores en
 envelope RFC 7807 con `type` `dsm:catalog/*`.
 

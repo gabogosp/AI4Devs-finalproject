@@ -18,6 +18,8 @@ tags:
     description: Gestión de categorías (AC-1)
   - name: admin-products
     description: Gestión de productos (AC-2..AC-9)
+  - name: storefront-products
+    description: Superficie pública de lectura del storefront (ficha de producto, US-003)
   - name: health
     description: Liveness / readiness
 security:
@@ -151,6 +153,37 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
+  /products/{sku}:
+    get:
+      operationId: storefrontGetProduct
+      tags: [storefront-products]
+      summary: Ficha pública de producto publicado (US-003 AC-1/AC-2)
+      description: >-
+        Ruta PÚBLICA `GET /v1/products/{sku}` SIN auth (la primera del servicio).
+        Devuelve un producto sólo si está `published`; draft/archived/inexistente →
+        404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `sku`
+        (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP
+        (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
+      security: []
+      parameters:
+        - { name: sku, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Ficha del producto publicado (campos SEO-relevantes)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30 (AC-9)'
+          content: { application/json: { schema: { $ref: '#/components/schemas/StorefrontProduct' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: Rate limit por IP excedido (§7.3). Incluye Retry-After y RateLimit-*.
+          headers:
+            Retry-After: { schema: { type: integer } }
+            RateLimit-Limit: { schema: { type: integer } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
 components:
   securitySchemes:
     adminBearer:
@@ -251,6 +284,39 @@ components:
         image_url: { type: string, nullable: true }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    StorefrontProduct:
+      type: object
+      description: 'Ficha pública (US-003): sólo campos SEO; sin id/stock/status/timestamps.'
+      required: [sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
+      properties:
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+          description: 'description_raw; US-005 antepondrá la enriquecida.'
+        price_ars_cents:
+          type: integer
+          description: 'Centavos ARS, IVA incluido (AC-9).'
+        currency:
+          type: string
+          enum: [ARS]
+        image_url:
+          type: string
+          nullable: true
+        in_stock:
+          type: boolean
+          description: 'Derivado de stock mayor a 0 (AC-3/AC-4); sin exponer el nivel.'
+        category:
+          type: object
+          required: [name, slug]
+          properties:
+            name:
+              type: string
+            slug:
+              type: string
     ProductList:
       type: object
       required: [data, pagination]
