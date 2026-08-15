@@ -53,7 +53,7 @@ language: es
 
 ## Fase 6: Caché acotada del surface público (AC-9)
 
-- [ ] T6.1 `Cache-Control` público acotado para `/v1/products/*` en el borde
+- [x] T6.1 `Cache-Control` público acotado para `/v1/products/*` en el borde
   - **Pattern**: en `configureApp` (bootstrap), junto al `no-store` de `/v1/admin`, setear para paths que empiezan con `/v1/products` `Cache-Control: public, max-age=60, stale-while-revalidate=30` — `per api-standards.md §12 / E2E §17 — CDN de catálogo con frescura acotada`. Se setea **una vez en el borde**, no por handler.
   - **Exit criterion**: la respuesta de `GET /v1/products/{sku}` lleva `Cache-Control: public, max-age=60, stale-while-revalidate=30` (valor de OQ-BE-2, propuesto); **no** lleva `no-store`; una edición de precio (US-001 `PATCH /v1/admin/products/{id}`) se refleja en la siguiente lectura tras expirar la ventana (AC-9: nunca precio desactualizado indefinidamente). El surface admin conserva `no-store`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront-cache` (e2e: la respuesta pública trae `Cache-Control` con `max-age=60` y sin `no-store`; una ruta `/v1/admin/*` sigue con `no-store`)
