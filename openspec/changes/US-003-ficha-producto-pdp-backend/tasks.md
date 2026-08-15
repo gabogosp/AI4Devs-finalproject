@@ -73,7 +73,7 @@ language: es
 
 ## Fase 9: Contrato OpenAPI + documentación del servicio
 
-- [ ] T9.1 Contrato del endpoint público (draft) + lint
+- [x] T9.1 Contrato del endpoint público (draft) + lint
   - **Pattern**: `contracts/openapi/storefront-get-product.yaml` autocontenido (OpenAPI 3.0.3) con `paths./v1/products/{sku}.get`, `components.schemas.StorefrontProduct` + `Problem`, respuestas `200/404/429` con `type` `dsm:catalog/*` y `example` — `per api-contract-completeness — 1 yaml por endpoint + catálogo de errores RFC 7807`.
   - **Exit criterion**: el yaml valida (OpenAPI 3.x) y coincide con la implementación (path `GET /v1/products/{sku}`, shape de `StorefrontProduct`, catálogo de errores `404` `dsm:catalog/not-found` y `429`). Queda anotado que al archivar se agrega como path file al contrato vivo `openspec/specs/catalogo/contracts/openapi.yaml`.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-003-ficha-producto-pdp-backend/contracts/openapi/storefront-get-product.yaml`

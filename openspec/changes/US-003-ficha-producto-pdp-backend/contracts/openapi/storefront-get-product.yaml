@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: "storefront-get-product — Ficha pública de producto (PDP)"
+  version: "v1"
+  description: |
+    Endpoint PÚBLICO (sin auth) de la ficha de producto (US-003 AC-1/AC-2).
+    Devuelve un producto SÓLO si está `published`; draft/archived/inexistente →
+    404 uniforme (sin enumeration leak, AC-7/AC-8). Identificador público: `sku`
+    (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP
+    (§7.3) y caché acotada (AC-9).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+tags:
+  - name: storefront-products
+    description: Superficie pública de lectura del storefront (ficha de producto).
+
+paths:
+  /v1/products/{sku}:
+    get:
+      operationId: storefrontGetProduct
+      tags: [storefront-products]
+      summary: Obtener la ficha pública de un producto publicado por su sku
+      description: |
+        Lectura pública (sin auth) de un producto `published` por su `sku`.
+        Oculto o inexistente → 404 uniforme. Respuesta cacheable de forma acotada.
+      parameters:
+        - name: sku
+          in: path
+          required: true
+          description: SKU del producto (identificador público interino).
+          schema: { type: string }
+      responses:
+        '200':
+          description: Ficha del producto publicado (campos SEO-relevantes).
+          headers:
+            Cache-Control:
+              description: Caché acotada para CDN (AC-9); nunca precio desactualizado indefinidamente.
+              schema: { type: string, example: "public, max-age=60, stale-while-revalidate=30" }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StorefrontProduct' }
+              example:
+                sku: "REF-001"
+                name: "Heladera No-Frost 300L"
+                description: "Heladera con freezer superior, bajo consumo."
+                price_ars_cents: 100000
+                currency: "ARS"
+                image_url: "https://cdn.dsm.example.com/ref-001.jpg"
+                in_stock: true
+                category: { name: "Refrigeración", slug: "refrigeracion" }
+        '404': { $ref: '#/components/responses/ProductNotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+components:
+  schemas:
+    StorefrontProduct:
+      type: object
+      required: [sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
+      properties:
+        sku: { type: string }
+        name: { type: string }
+        description:
+          type: string
+          nullable: true
+          description: Descripción base (`description_raw`); US-005 antepondrá la enriquecida.
+        price_ars_cents:
+          type: integer
+          description: Precio en centavos de ARS, IVA incluido (AC-9).
+        currency: { type: string, enum: [ARS] }
+        image_url: { type: string, nullable: true, description: null → placeholder en el FE (AC-6). }
+        in_stock: { type: boolean, description: "`stock > 0` (AC-3/AC-4); sin exponer el nivel." }
+        category:
+          type: object
+          required: [name, slug]
+          properties:
+            name: { type: string }
+            slug: { type: string }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+  responses:
+    ProductNotFound:
+      description: Producto inexistente u oculto (draft/archived) — idéntico para el público (AC-7/AC-8).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/not-found", title: "Not Found", status: 404, detail: "Producto no encontrado" }
+    TooManyRequests:
+      description: Rate-limit por IP excedido (§7.3). Trae Retry-After y RateLimit-*.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/http-429", title: "Too Many Requests", status: 429 }
