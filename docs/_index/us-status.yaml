@@ -28,7 +28,7 @@
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 1
   disciplines: [BE, FE, QA]
@@ -36,6 +36,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-15
   blocked_by: [US-001]
 - id: US-004
   slug: busqueda-semantica

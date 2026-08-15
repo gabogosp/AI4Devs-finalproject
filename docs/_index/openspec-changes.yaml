@@ -85,6 +85,24 @@
   archived-at: 2026-08-09
   archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-frontend-web
 
+- name: US-003-ficha-producto-pdp-backend
+  us-id: US-003
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-15
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-001-admin-catalogo-productos-qa
   us-id: US-001
   discipline: qa
