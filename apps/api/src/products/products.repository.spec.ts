@@ -68,4 +68,28 @@ describe('ProductsRepository (products.repository, integration)', () => {
       repo.create({ ...base('REF-004'), stock: -5 }),
     ).rejects.toBeTruthy();
   });
+
+  describe('findPublishedBySku (US-003 lectura pública)', () => {
+    it('producto publicado → lo devuelve con su categoría', async () => {
+      await repo.create({ ...base('PUB-001'), status: 'published' });
+      const found = await repo.findPublishedBySku('PUB-001');
+      expect(found).not.toBeNull();
+      expect(found?.sku).toBe('PUB-001');
+      expect(found?.category.slug).toBe('refrigeracion');
+    });
+
+    it('producto draft → null (AC-7)', async () => {
+      await repo.create({ ...base('DRA-001'), status: 'draft' });
+      expect(await repo.findPublishedBySku('DRA-001')).toBeNull();
+    });
+
+    it('producto archived → null (AC-7)', async () => {
+      await repo.create({ ...base('ARC-001'), status: 'archived' });
+      expect(await repo.findPublishedBySku('ARC-001')).toBeNull();
+    });
+
+    it('sku inexistente → null (AC-8)', async () => {
+      expect(await repo.findPublishedBySku('NOPE-999')).toBeNull();
+    });
+  });
 });

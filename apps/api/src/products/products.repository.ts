@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Product } from '@dsm/db';
+import { Category, Prisma, Product } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ConflictError,
@@ -71,6 +71,22 @@ export class ProductsRepository {
 
   findById(id: string): Promise<Product | null> {
     return this.prisma.product.findUnique({ where: { id } });
+  }
+
+  /**
+   * Lectura pública del storefront (US-003 AC-1/AC-7/AC-8): sólo productos
+   * `published`, con su categoría. Devuelve `null` (no lanza) para cualquier
+   * no-match — draft, archived o inexistente colapsan al mismo `null`, así el
+   * service decide un 404 idéntico (sin enumeration leak). El identificador
+   * público es `sku` (interino; la URL por `slug` es OQ-BE-1, infra-owned).
+   */
+  findPublishedBySku(
+    sku: string,
+  ): Promise<(Product & { category: Category }) | null> {
+    return this.prisma.product.findFirst({
+      where: { sku, status: 'published' },
+      include: { category: true },
+    });
   }
 
   async update(id: string, data: UpdateProductData): Promise<Product> {
