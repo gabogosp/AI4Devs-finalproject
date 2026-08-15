@@ -12,9 +12,9 @@ language: es
 > **Estimación dual**: **3 h AI-asistido** / **6 h tradicional** (coherente con `story_points_ai_assisted: 2` de la US acotado a BE y con el estimado §7 de la US "BE-US-003 3-5h"; ~0.45× per Peng 2023). Es un surface de lectura que reutiliza todo el borde HTTP de US-001.
 
 ## Pre-requisitos
-- [ ] **US-001 backend archivado**: `apps/api` corre con `ProductsRepository`, `HttpProblemFilter` (RFC 7807 `dsm:catalog/*`), `CatalogEventsService`, throttler `@nestjs/throttler`, helmet/CORS (§7.1/§7.2). Verificado: `pnpm --filter @dsm/api typecheck`.
-- [ ] **OQ-BE-1 reconocida** (proposal §Open questions) `[Open]`: la URL por `slug` requiere columna nueva **infra-owned**; este change usa `sku` como identificador público interino y **no** agrega esquema. Si durante la ejecución se decidiera agregar `slug`, se **detiene y se escala** (no se materializa acá).
-- [ ] **OQ-BE-2 / OQ-BE-3 reconocidas**: caché acotada `max-age=60` propuesta (confirmable); respuesta expone `in_stock`, no `stock` numérico.
+- [x] **US-001 backend archivado**: `apps/api` corre con `ProductsRepository`, `HttpProblemFilter` (RFC 7807 `dsm:catalog/*`), `CatalogEventsService`, throttler `@nestjs/throttler`, helmet/CORS (§7.1/§7.2). Verificado: `pnpm --filter @dsm/api typecheck`.
+- [x] **OQ-BE-1 reconocida** (proposal §Open questions) `[Deferred]`: la URL por `slug` requiere columna nueva **infra-owned**; este change usa `sku` como identificador público interino y **no** agrega esquema. Si durante la ejecución se decidiera agregar `slug`, se **detiene y se escala** (no se materializa acá).
+- [x] **OQ-BE-2 / OQ-BE-3 reconocidas**: caché acotada `max-age=60` propuesta (confirmable); respuesta expone `in_stock`, no `stock` numérico.
 
 ## Fase 1: Repositorio — lectura de producto publicado (AC-1/AC-7/AC-8)
 
@@ -84,12 +84,12 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Todos los unit tests pasan: `pnpm --filter @dsm/api test`
-- [ ] Integration (Testcontainers, Postgres real con esquema `@dsm/db`) pasan: `pnpm --filter @dsm/api test -- --group=integration` (requiere Docker)
-- [ ] E2E-nest (supertest) pasan: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] Contract lint OpenAPI pasa: `npx @stoplight/spectral-cli lint openspec/changes/US-003-ficha-producto-pdp-backend/contracts/openapi/storefront-get-product.yaml`
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test` (28 suites / 112 tests verdes)
+- [x] Integration (Postgres real con esquema `@dsm/db`, docker-compose :55432) pasan: incluidas en `pnpm --filter @dsm/api test` (specs `*.repository.spec.ts`). Nota: el runner del repo reutiliza el Postgres de docker-compose, no Testcontainers efímero (deviación consciente documentada en `test/jest.setup.js`); mismo motor + esquema `@dsm/db`. No hay flag `--group`.
+- [x] E2E-nest (supertest) pasan: `pnpm --filter @dsm/api test:e2e` (17 suites / 62 tests verdes)
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck` (exit 0/0)
+- [x] Contract lint OpenAPI pasa: `npx @stoplight/spectral-cli lint openspec/changes/US-003-ficha-producto-pdp-backend/contracts/openapi/storefront-get-product.yaml` (0 errores)
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test` (exit 0; web 55 + api 112 tests)
 
 ## Trazabilidad AC → tasks
 
