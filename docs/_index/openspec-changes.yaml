@@ -120,3 +120,20 @@
   completed-at: 2026-08-09
   archived-at: 2026-08-09
   archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-qa
+- name: US-003-ficha-producto-pdp-qa
+  us-id: US-003
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
