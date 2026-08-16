@@ -82,6 +82,30 @@ language: es
   - **Exit criterion**: `apps/api/docs/api/openapi.yaml` incorpora `GET /v1/products/{sku}` (tag `storefront-products`, schema `StorefrontProduct`, respuestas 200/404/429) coherente con el resto del contrato; `apps/api/README.md` documenta el nuevo surface público (endpoint, rate-limit, caché).
   - **Verify**: `grep -q "/v1/products/{sku}" apps/api/docs/api/openapi.yaml && grep -q "storefront" apps/api/README.md`
 
+## Fase 10: URL pública por `slug` (AC-1 — OQ-BE-1 resuelta)
+
+> **Añadida 2026-08-16** tras resolver OQ-BE-1: el PO decide materializar `products.slug` **antes**
+> de construir la PDP, porque el SEO es el objetivo de negocio del PRD y cambiar la URL después de
+> indexar cuesta 301s + re-crawl. El propio proposal anticipó que el churn es mínimo: cambia el
+> `where` del repositorio y el nombre del path param; service/controller/mapper no cambian.
+>
+> **Nota de disciplina**: el esquema vive en `packages/db`, que fue INFRA en US-001. US-003 no
+> declara INFRA, así que la migración se ejecuta acá por ser el consumidor y el único change abierto
+> de la US. Es una desviación consciente del ownership; si el equipo prefiere, se mueve a un change
+> de infra sin cambiar el contenido de estas tasks.
+
+- [ ] T10.1 Migración aditiva `products.slug` en `@dsm/db`
+  - **Exit criterion**: `packages/db` gana `slug String @unique` en `Product`, espejando el precedente `categories.slug`; migración Prisma aplicada; **backfill** derivado del `name` (kebab, normalizado, desambiguado con sufijo ante colisión) para las filas existentes; ninguna fila queda con `slug` nulo o duplicado.
+  - **Verify**: `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=storefront`
+
+- [ ] T10.2 El slug se deriva server-side al crear y al editar el nombre
+  - **Exit criterion**: el alta de producto deriva el `slug` del `name` (nunca se acepta del cliente, igual que en categorías, AC-1 de US-001); una colisión se resuelve de forma determinista; editar el nombre **no** rompe la URL ya indexada (el slug existente se conserva salvo decisión explícita). Unit tests cubren derivación, colisión y estabilidad ante edición.
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=products.service`
+
+- [ ] T10.3 La ruta pública pasa a `GET /v1/products/{slug}` + contrato
+  - **Exit criterion**: la ficha pública se resuelve por `slug`; draft/archived/inexistente siguen devolviendo el **mismo** 404 uniforme (sin enumeration leak); el `openapi.yaml` declara el path param `slug` y el contrato vivo de la capacidad se regenera; los 6 specs e2e-nest del storefront siguen verdes contra el identificador nuevo.
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront && grep -q "products/{slug}" apps/api/docs/api/openapi.yaml`
+
 ## Verification (suite-level)
 
 - [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test` (28 suites / 112 tests verdes)

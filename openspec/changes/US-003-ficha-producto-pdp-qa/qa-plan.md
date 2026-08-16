@@ -320,13 +320,13 @@ Reusa `qa/performance/lib/thresholds.js` como fuente única de budgets (nuevo ta
 | # | Qué | Estado | Dueño / disparador |
 |---|---|---|---|
 | B-1 | **FE-US-003 no está planificado**: toda la capa L3 de este plan necesita la PDP renderizada. | **Bloquea la ejecución**, no la planificación | `/plan-frontend-web-ticket US-003` → luego `/develop-qa US-003` |
-| B-2 | **AC-1 "URL amigable (slug)" no es verificable**: el backend entregó `sku` como identificador público interino; la columna `products.slug` es **OQ-BE-1**, infra-owned. | Los TC asertan la ficha por el identificador vigente; la cláusula de slug queda **sin cubrir** | OQ-BE-1 (infra). Al resolverse, TC-301 suma la aserción de URL |
+| B-2 | ~~AC-1 "URL amigable" no verificable~~ — **resuelto 2026-08-16 (D-1)**: el PO decide materializar `products.slug` antes de la PDP (Fase 10 del change de backend). | **Desbloqueado**: TC-301 asierta la URL por slug; AC-1 queda cubierto completo | — |
 | B-3 | **AC-5 depende de US-005** (enriquecimiento IA). | X-1 escrito y `@deferred` | US-005 |
 | B-4 | **AC-3 sólo verifica que la acción se ofrezca**; que la compra funcione es US-007. | Acotado a propósito | US-007 |
 
-**B-2 es el que conviene mirar**: US-003 no puede declarar AC-1 completo mientras la URL sea por
-`sku`. No es un fallo del backend —lo escaló correctamente en vez de agregar esquema en silencio—
-pero sí es una **cláusula de AC sin cobertura**, y debe quedar visible en el cierre de la US.
+**B-2 quedó resuelto**: el PO optó por materializar el slug antes de construir la PDP, así que AC-1
+se cubre completo. El backend hizo lo correcto al escalarlo en vez de agregar esquema en silencio;
+la decisión de producto llegó y lo cerró.
 
 ## 7. Quality gates
 
@@ -349,5 +349,5 @@ pero sí es una **cláusula de AC sin cobertura**, y debe quedar visible en el c
 
 - **OQ-QA-1** `[Deferred: la ejecución de este plan espera a FE-US-003 — owner: FE, revisit: al
   planificar/desarrollar la PDP]` El plan es completo y ejecutable en cuanto exista la superficie.
-- **OQ-QA-2** `[Deferred: la aserción de URL amigable espera OQ-BE-1 (columna slug) — owner: infra,
-  revisit: al materializar la columna]` Ver B-2.
+- **OQ-QA-2** `[Resolved: 2026-08-16 — D-1: `products.slug` se materializa en la Fase 10 del change
+  de backend, antes de la PDP. TC-301 asierta la URL por slug; AC-1 cubierto completo.]`

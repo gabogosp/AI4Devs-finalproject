@@ -61,7 +61,7 @@ language: es
 ## Fase 5: Carga
 
 - [ ] T5.1 Escenario k6 de la ficha pública
-  - **Exit criterion**: TC-330 verde — `qa/performance/storefront-product.js` contra `GET /v1/products/{sku}` con el dataset de `seed:load`; budget `p95 < 300ms` tomado de `thresholds.js` bajo el tag `endpoint:storefront_product` (fuente única, no duplicado en el spec); `setup()` **sin** login, porque la superficie es anónima.
+  - **Exit criterion**: TC-330 verde — `qa/performance/storefront-product.js` contra `GET /v1/products/{slug}` con el dataset de `seed:load`; budget `p95 < 300ms` tomado de `thresholds.js` bajo el tag `endpoint:storefront_product` (fuente única, no duplicado en el spec); `setup()` **sin** login, porque la superficie es anónima.
   - **Verify**: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/storefront-product.js`
 
 ## Fase 6: Exploratorio
@@ -76,4 +76,4 @@ language: es
 - [ ] E2E SSR/SEO verde: `pnpm --filter @dsm/qa test:e2e`
 - [ ] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
 - [ ] Carga p95 bajo presupuesto: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/storefront-product.js`
-- [ ] Cada AC activo (AC-1 a AC-4, AC-6 a AC-9) tiene ≥1 test-case verde; **AC-5 presente `@deferred`**; la cláusula "URL amigable (slug)" de AC-1 queda **declarada sin cubrir** hasta OQ-BE-1 (ver proposal §Open questions — no es un olvido, es un diferido con dueño).
+- [ ] Cada AC activo (AC-1 a AC-4, AC-6 a AC-9) tiene ≥1 test-case verde; **AC-5 presente `@deferred`** (US-005). La cláusula "URL amigable" de AC-1 **sí se cubre**: el slug se materializa en la Fase 10 del change de backend (decisión D-1).

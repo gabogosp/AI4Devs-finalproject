@@ -40,7 +40,7 @@ API real y certifica los AC de punta a punta.
 - **Aceptación BDD** (Cucumber + Playwright): los AC en Gherkin legibles por el dueño — con stock /
   sin stock / sin imagen / draft indistinguible de inexistente.
 - **Accesibilidad** (axe-core): las dos variantes de la ficha, con imagen y con placeholder.
-- **Carga** (k6): `GET /v1/products/{sku}` contra el NFR p95 < 300 ms, reusando el dataset sembrado.
+- **Carga** (k6): `GET /v1/products/{slug}` contra el NFR p95 < 300 ms, reusando el dataset sembrado.
 - **Charters de exploratorio**: preview al compartir en redes y comportamiento de caché bajo CDN —
   dos cosas donde automatizar daría falsa confianza.
 
