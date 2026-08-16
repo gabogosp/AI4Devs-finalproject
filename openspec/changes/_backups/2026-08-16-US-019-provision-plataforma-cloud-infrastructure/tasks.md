@@ -7,36 +7,23 @@ language: es
 
 # US-019 Platform cloud — Tasks
 
-> Cada task es closure-grade: `Exit criterion:` observable + `Verify:` con el comando exacto. Muchas verificaciones usan la Railway CLI (`railway`), la Neon CLI (`neonctl`) y `wrangler` (Cloudflare); donde no hay comando, el `Verify:` nombra el chequeo humano explícito en el dashboard.
->
-> **Re-plan 2026-08-16 (local-first, decisión PO)**: el orden se reestructuró para que lo que vive en el repo (config-as-code + runbook) se ejecute PRIMERO sin credenciales de nube, y todo el provisioning cloud quede gated al final. Mapeo con el plan anterior: T0.1 ← ex-T2.1, T0.2 ← ex-T5.1, T2.1 ← ex-T2.2; el ex-T2.3 (DNS custom) pasa a deferral documentado. Backup del plan previo en `openspec/changes/_backups/2026-08-16-US-019-provision-plataforma-cloud-infrastructure/`.
+> Cada task es closure-grade: `Exit criterion:` observable + `Verify:` con el comando exacto. Muchas verificaciones usan la Railway CLI (`railway`), la Neon CLI (`neonctl`) y `wrangler` (Cloudflare); donde no hay comando, el `Verify:` nombra el chequeo humano explícito en el dashboard. Este change corre en paralelo con `bootstrap-local` y solo arranca cuando resuelven sus gates externos.
 
-## Fase 0: Local-first — artefactos en el repo (sin credenciales de nube)
-
-- [ ] T0.1 Añadir config-as-code Railway por servicio (`apps/web`, `apps/api`) — sin Terraform
-  - **Exit criterion**: `apps/api/railway.json` y `apps/web/railway.json` existen con build/start/healthcheck/restart tomados del AS-BUILT (api: `nest build`/`nest start` + healthcheck `/health` ya implementado en `apps/api/src/health/`; web: `next build`/`next start`); no hay ningún `.tf` en el repo (fuera de `spekode/`). `apps/worker` NO lleva config todavía — **Deferred: US-005** (la app worker es solo README; su `railway.json` se autoriza cuando BE la scaffoldee).
-  - **Verify**: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))" && grep -q '"healthcheckPath"' apps/api/railway.json && ! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .`
-
-- [ ] T0.2 Redactar el esqueleto del runbook del servicio (obligatorio — operations-standards)
-  - **Exit criterion**: existe `docs/services/dsm-ecommerce/runbook.md` con secciones deploy/rollback, restore Neon PITR (RTO ≤ 4h), rotación de secretos, cola BullMQ atascada, webhook MP, app caída, y SLO 99.5% + salud vigilada (fuente E2E §18.5).
-  - **Verify**: `test -f docs/services/dsm-ecommerce/runbook.md && for s in 'Rollback' 'Restore' 'Rotar secretos' 'BullMQ' 'webhook' 'SLO'; do grep -qi "$s" docs/services/dsm-ecommerce/runbook.md || exit 1; done`
-
-## Gates externos (bloquean SOLO las fases cloud 1–4 — se resuelven al final, enfoque local-first)
-
-- [ ] Cuentas creadas con billing en ARS resuelto. *(Estado 2026-08-16: **Cloudflare ✓, Neon ✓** creadas; **Railway y Sentry pendientes** de crear.)*
+## Pre-requisitos (gates externos — este change no arranca sin ellos)
+- [ ] Cuentas creadas: Railway, Neon, Cloudflare (con billing en ARS resuelto).
 - [x] **Q-3 resuelta** (2026-07-15): región **US-East** + consentimiento informado en registro/política de privacidad (US-017).
 - [x] **Q-2 resuelta** (2026-07-15): **free tiers primero** — staging en Neon Free (`pgvector`+HNSW incluidos; restore mínimo y autosuspend aceptados) + Railway; upgrade a plan pago (PITR real) es gate previo al primer deploy productivo, verificado por `/plan-deployment`.
 - [x] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local-infrastructure` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube). *(Verificado 2026-08-16: archivado el 2026-08-09 en `openspec/changes/archive/`; `packages/db` presente en el branch de entrega.)*
 - [ ] Railway CLI (`railway`), Neon CLI (`neonctl`) y `wrangler` instaladas y autenticadas. *(2026-08-16: instaladas — railway 5.41.2, neonctl 3.4.0, wrangler 4.123.0 — pero **sin autenticar**: `railway login` / `neonctl auth` / `wrangler login` pendientes del usuario.)*
 
-## Fase 1: Provisioning de la plataforma (cloud — gated)
+## Fase 1: Provisioning de la plataforma
 
 - [ ] T1.1 Crear el proyecto Railway con entornos `staging` y `production`
   - **Exit criterion**: existe un proyecto Railway con ambos entornos.
   - **Verify**: `railway environment` lista `staging` y `production` para el proyecto vinculado (`railway status` muestra el proyecto).
 
 - [ ] T1.2 Crear los servicios `web`, `api`, `worker` en el proyecto Railway
-  - **Exit criterion**: los tres servicios existen en el proyecto (aún sin build — las apps las scaffoldea BE/FE; `web`/`api` toman el `railway.json` de T0.1, `worker` queda vacío hasta US-005).
+  - **Exit criterion**: los tres servicios existen en el proyecto (aún sin build — las apps las scaffoldea BE/FE).
   - **Verify**: `railway service list` (o dashboard) muestra `web`, `api`, `worker`. Chequeo humano si la CLI no lista: dashboard → proyecto → 3 servicios visibles.
 
 - [ ] T1.3 Añadir el add-on gestionado Redis
@@ -51,17 +38,21 @@ language: es
   - **Exit criterion**: existe un bucket R2 `dsm-product-images` (staging + production o prefijos por entorno).
   - **Verify**: `wrangler r2 bucket list` incluye `dsm-product-images` (o chequeo humano en el dashboard de Cloudflare R2).
 
-## Fase 2: Secretos y dominio (cloud — gated)
+## Fase 2: Config como código, secretos y DNS/TLS
 
-- [ ] T2.1 Cargar los secretos de este change como Railway service variables (por entorno)
+- [ ] T2.1 Añadir `railway.json`/`railway.toml` por servicio en el repo (sin Terraform)
+  - **Exit criterion**: cada servicio tiene su config de build/start/healthcheck/restart en el repo; no hay ningún `.tf` en el repo (fuera de `spekode/`).
+  - **Verify**: `test -f railway.json -o -f railway.toml` && `! find . -name '*.tf' -not -path './spekode/*' | grep -q .`
+
+- [ ] T2.2 Cargar los secretos de este change como Railway service variables (por entorno)
   - **Exit criterion**: `DATABASE_URL` (Neon), `REDIS_URL` y `SENTRY_DSN` están seteadas en Railway para `staging`; los slots `JWT_SECRET`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_KEY` existen (placeholder, los cargan sus US).
   - **Verify**: `railway variables --environment staging` lista `DATABASE_URL`, `REDIS_URL`, `SENTRY_DSN`; y `git grep -Ei 'postgres://[^ ]*:[^ ]*@|redis://[^ ]*:[^ ]*@|SENTRY_DSN=https' -- . ':(exclude).env.example'` NO devuelve secretos reales comiteados.
 
-- [ ] T2.2 Dominio custom + DNS Cloudflare + TLS — **Deferred: /plan-deployment** (decisión PO 2026-08-16: no hay dominio aún)
-  - **Exit criterion**: los servicios exponen sus subdominios Railway (`*.up.railway.app`) con TLS de Railway; el CNAME en Cloudflare hacia el dominio custom queda **diferido** hasta que exista dominio (se registra/delega antes del primer deploy productivo; lo verifica `/plan-deployment`). Deferral documentado — no es un drop silencioso.
-  - **Verify**: chequeo humano — dashboard Railway muestra dominio `*.up.railway.app` con TLS activo por servicio; este task se marca `[x]` con esa evidencia y la anotación del deferral.
+- [ ] T2.3 Configurar DNS en Cloudflare hacia el dominio Railway con TLS automático
+  - **Exit criterion**: el CNAME del dominio custom apunta al dominio Railway; TLS activo (cert gestionado).
+  - **Verify**: `dig +short CNAME <dominio> | grep -q railway` && (una vez haya app) `curl -sI https://<dominio> | grep -qE 'HTTP/.* (200|301|302)'`; si aún placeholder, chequeo humano: Cloudflare DNS muestra el CNAME y Railway muestra el dominio custom con TLS "issued".
 
-## Fase 3: Aplicar el esquema a la nube (staging — gated)
+## Fase 3: Aplicar el esquema a la nube (staging)
 
 - [ ] T3.1 Aplicar las migraciones de `packages/db` contra el Neon de staging
   - **Exit criterion**: el esquema del catálogo (`categories`, `products`, extensión `vector`) existe en Neon staging, idéntico al validado en local (paridad AS-BUILT: `products` con 8 columnas).
@@ -71,7 +62,7 @@ language: es
   - **Exit criterion**: en Neon staging, `products.sku` es UNIQUE (`products_sku_key`), existen los CHECK `products_price_check`/`products_stock_check`/`products_status_check` y el índice `products_category_id_status_idx`.
   - **Verify**: `psql "$NEON_STAGING_URL" -c "\d products" | grep -q 'products_sku_key' && psql "$NEON_STAGING_URL" -tAc "SELECT conname FROM pg_constraint WHERE conrelid='products'::regclass AND contype='c';" | grep -Eq 'products_(price|stock|status)_check' && psql "$NEON_STAGING_URL" -c "\d products" | grep -q 'products_category_id_status_idx'`
 
-## Fase 4: Autodeploy y observabilidad (cloud — gated)
+## Fase 4: Autodeploy y observabilidad
 
 - [ ] T4.1 Conectar la integración GitHub de Railway con el mapeo rama → entorno
   - **Exit criterion**: `main` está mapeado a production y `staging` a staging; el gate de CI (workflow `ci.yml` de `bootstrap-local`) es requisito antes del deploy.
@@ -85,11 +76,16 @@ language: es
   - **Exit criterion**: existe una regla de alerta de Sentry que notifica ante un pico de errores, apuntando al runbook.
   - **Verify**: chequeo humano — Sentry → Alerts: regla activa; su descripción/link referencia `docs/services/dsm-ecommerce/runbook.md`.
 
+## Fase 5: Runbook del servicio nuevo (obligatorio — operations-standards)
+
+- [ ] T5.1 Redactar el esqueleto del runbook del servicio
+  - **Exit criterion**: existe `docs/services/dsm-ecommerce/runbook.md` con secciones deploy/rollback, restore Neon PITR (RTO ≤ 4h), rotación de secretos, cola BullMQ atascada, webhook MP, app caída, y SLO 99.5% + salud vigilada (fuente E2E §18.5).
+  - **Verify**: `test -f docs/services/dsm-ecommerce/runbook.md && for s in 'Rollback' 'Restore' 'Rotar secretos' 'BullMQ' 'webhook' 'SLO'; do grep -qi "$s" docs/services/dsm-ecommerce/runbook.md || exit 1; done`
+
 ## Verificación (suite-level)
 
-- [ ] Sin Terraform en el repo (anti-pattern del baseline): `! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .`
+- [ ] Sin Terraform en el repo (anti-pattern del baseline): `! find . -name '*.tf' -not -path './spekode/*' | grep -q .`
 - [ ] Sin secretos comiteados: `git grep -Ei 'postgres://[^ ]*:[^ ]*@|APP_USR-|AIza[A-Za-z0-9]{20}|sk_live' -- . ':(exclude).env.example'` no devuelve nada.
-- [ ] Config Railway válida en repo: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))"`.
+- [ ] `pgvector` disponible en Neon: `psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`.
+- [ ] Esquema en la nube = esquema local (8 columnas en products): `psql "$NEON_STAGING_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'"` = `8`.
 - [ ] Runbook presente: `test -f docs/services/dsm-ecommerce/runbook.md`.
-- [ ] `pgvector` disponible en Neon (cloud — gated): `psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`.
-- [ ] Esquema en la nube = esquema local (cloud — gated; 8 columnas en products): `psql "$NEON_STAGING_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'"` = `8`.

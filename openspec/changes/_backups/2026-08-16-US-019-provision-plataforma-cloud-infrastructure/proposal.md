@@ -15,8 +15,6 @@ language: es
 
 Se separa de `bootstrap-local` por mandato del baseline Railway §0: local y nube tienen urgencia, dependencias y dueño distintos. Este change está **gated en dependencias externas** (cuentas Railway/Neon/Cloudflare, billing en ARS) y **no** está en el camino crítico de desbloquear a las disciplinas. El **primer deploy vivo** (prueba de autodeploy, DNS/TLS en vivo, checklist pre-prod) lo planifica `/plan-deployment` cuando exista una app scaffoldeada — no acá.
 
-> **Re-plan 2026-08-16 (`--regenerate`, decisión PO: local-first)**: el orden de `tasks.md` se reestructuró — **Fase 0** (config-as-code Railway en repo + runbook, cero credenciales de nube) se ejecuta primero; todo el provisioning cloud (Fases 1–4) queda gated al final, cuando el usuario cree las cuentas faltantes y autentique las CLIs. Estado de gates al re-plan: Cloudflare y Neon creadas; Railway y Sentry pendientes; CLIs instaladas sin autenticar; change gemelo `bootstrap-local` mergeado. El **dominio custom** no existe aún → DNS/TLS custom pasa a **deferral documentado** (T2.2 → `/plan-deployment`); mientras tanto se usan los subdominios `*.up.railway.app` con TLS de Railway. El `railway.json` de `worker` se difiere a **US-005** (la app worker aún no está scaffoldeada). Las decisiones de arquitectura del design NO cambian. Backup del plan previo: `openspec/changes/_backups/2026-08-16-US-019-provision-plataforma-cloud-infrastructure/`.
-
 ## What changes
 
 - **Proyecto Railway único** con los servicios `web` (Next.js SSR), `api` (NestJS) y `worker` (BullMQ), más el add-on gestionado **Redis**, en entornos `staging` y `production` (E2E §13). Config vía `railway.json`/`railway.toml` en el repo — **no Terraform** (Railway es PaaS).

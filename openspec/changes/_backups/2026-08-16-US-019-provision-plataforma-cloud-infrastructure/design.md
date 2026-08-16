@@ -13,8 +13,6 @@ Baseline de infra: **Railway PaaS** (ADR-0001). **No hay Terraform** en este bas
 
 El esquema del catálogo es autorizado y validado en `bootstrap-local` contra el Postgres de docker-compose (única fuente de verdad). Acá solo se **aplica** a la nube (`prisma migrate deploy`) — confirmación posterior, nunca la primera validación.
 
-**Re-plan 2026-08-16 (local-first)**: sin cambio de arquitectura; solo cambia el **orden de ejecución** — los artefactos que viven en el repo (config-as-code Railway para `apps/web`/`apps/api` con el AS-BUILT real: api `nest build`/`nest start` + healthcheck `/health`, web `next build`/`next start`; runbook) van primero como Fase 0 sin credenciales, y el provisioning cloud queda gated al final. Dos deferrals documentados: (1) **dominio custom + DNS Cloudflare** → `/plan-deployment` (no hay dominio aún — decisión PO 2026-08-16; interim: subdominios `*.up.railway.app` con TLS Railway); (2) **`railway.json` de `worker`** → US-005 (la app worker es solo un placeholder README).
-
 ## Goals
 
 - Proyecto Railway con `web`/`api`/`worker` + Redis, en `staging` y `production`.
