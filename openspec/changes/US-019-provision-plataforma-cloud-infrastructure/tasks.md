@@ -13,8 +13,8 @@ language: es
 - [ ] Cuentas creadas: Railway, Neon, Cloudflare (con billing en ARS resuelto).
 - [x] **Q-3 resuelta** (2026-07-15): región **US-East** + consentimiento informado en registro/política de privacidad (US-017).
 - [x] **Q-2 resuelta** (2026-07-15): **free tiers primero** — staging en Neon Free (`pgvector`+HNSW incluidos; restore mínimo y autosuspend aceptados) + Railway; upgrade a plan pago (PITR real) es gate previo al primer deploy productivo, verificado por `/plan-deployment`.
-- [ ] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local-infrastructure` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube).
-- [ ] Railway CLI (`railway`), Neon CLI (`neonctl`) y `wrangler` instaladas y autenticadas.
+- [x] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local-infrastructure` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube). *(Verificado 2026-08-16: archivado el 2026-08-09 en `openspec/changes/archive/`; `packages/db` presente en el branch de entrega.)*
+- [ ] Railway CLI (`railway`), Neon CLI (`neonctl`) y `wrangler` instaladas y autenticadas. *(2026-08-16: instaladas — railway 5.41.2, neonctl 3.4.0, wrangler 4.123.0 — pero **sin autenticar**: `railway login` / `neonctl auth` / `wrangler login` pendientes del usuario.)*
 
 ## Fase 1: Provisioning de la plataforma
 
