@@ -111,11 +111,16 @@ global a `404 dsm:catalog/not-found` (§6).
 
 ### Caché acotada (AC-9)
 
-En el borde (`configureApp`/bootstrap), junto al `no-store` de `/v1/admin`, los paths
-`/v1/products*` reciben `Cache-Control: public, max-age=60, stale-while-revalidate=30`
+La ficha pública lleva `Cache-Control: public, max-age=60, stale-while-revalidate=30`
 (**OQ-BE-2**, propuesto). Habilita CDN de catálogo (E2E §17) **acotando la frescura**: un
 cambio de precio vía `PATCH /v1/admin/products/{id}` se propaga en ≤60s — nunca un precio
-viejo indefinido. Se setea **una vez en el borde**, no por handler.
+viejo indefinido.
+
+Se aplica vía `StorefrontCacheInterceptor` **sólo en respuestas 2xx del controller** — NO en
+el middleware de borde. (Hallazgo **M1** del audit: el borde corre antes del routing y no ve el
+status, así que estampaba el header también en 404/429, permitiendo a un CDN compartido cachear
+un error y volver la mitigación de DoS un vector. El interceptor no corre ante excepción, así
+que 404/429 viajan sin header cacheable.) El `no-store` de `/v1/admin` sí queda en el borde.
 
 ### Rate-limit del surface público (§7.3)
 

@@ -49,4 +49,12 @@ describe('Storefront caché acotada (e2e-storefront-cache, AC-9)', () => {
     const res = await request(app.getHttpServer()).get('/v1/admin/categories');
     expect(res.headers['cache-control']).toBe('no-store');
   });
+
+  it('M1: un 404 NO lleva Cache-Control cacheable (sólo 2xx)', async () => {
+    const res = await request(app.getHttpServer()).get('/v1/products/NOPE-404');
+    expect(res.status).toBe(404);
+    // El interceptor no corre ante excepción → no hay header público que un CDN
+    // pudiera cachear.
+    expect(res.headers['cache-control'] ?? '').not.toContain('max-age=60');
+  });
 });

@@ -28,19 +28,17 @@ export function configureApp(app: INestApplication): void {
     }),
   );
 
-  // Política de caché por superficie, seteada UNA vez en el borde (no por handler):
-  // - §7.1 — las respuestas autenticadas de `/v1/admin` NO se cachean.
-  // - AC-9 (US-003) — la ficha pública `/v1/products` se cachea de forma ACOTADA:
-  //   `max-age=60` habilita CDN (E2E §17) pero garantiza que un cambio de precio
-  //   se propague en ≤60s (nunca sirve un precio desactualizado indefinidamente).
-  //   Valor de OQ-BE-2 (propuesto).
+  // §7.1 — las respuestas autenticadas de `/v1/admin` NO se cachean (incluidos sus
+  // errores). Seteo único en el borde.
+  //
+  // La caché ACOTADA de la ficha pública `/v1/products` (AC-9) NO se setea acá:
+  // este middleware corre ANTES del routing y no ve el status, así que estampaba
+  // el header también en 404/429 (hallazgo M1 del audit — un CDN compartido podría
+  // cachear un error). Se mueve a `StorefrontCacheInterceptor`, que sólo corre en
+  // respuestas 2xx del controller público.
   app.use((req: { path?: string; url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => {
     const path = req.path ?? req.url ?? '';
-    if (path.startsWith('/v1/admin')) {
-      res.setHeader('Cache-Control', 'no-store');
-    } else if (path.startsWith('/v1/products')) {
-      res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=30');
-    }
+    if (path.startsWith('/v1/admin')) res.setHeader('Cache-Control', 'no-store');
     next();
   });
 

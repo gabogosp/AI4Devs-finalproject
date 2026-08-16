@@ -65,8 +65,12 @@ describe('Storefront rate-limit (e2e-storefront-security, §7.3)', () => {
     expect(blocked.status).toBe(429);
     expect(blocked.headers['retry-after']).toBeDefined();
     expect(blocked.headers['ratelimit-limit']).toBeDefined();
-    // El body del 429 sale como RFC 7807 (application/problem+json vía el filtro).
+    // El body del 429 sale como RFC 7807 (envelope vía el filtro).
     expect(blocked.body).toHaveProperty('type');
     expect(blocked.body).toHaveProperty('status', 429);
+    // m2: el title del 429 es el correcto (no el genérico "Error").
+    expect(blocked.body.title).toBe('Too Many Requests');
+    // M1: un 429 no lleva header cacheable (el interceptor sólo corre en 2xx).
+    expect(blocked.headers['cache-control'] ?? '').not.toContain('max-age=60');
   });
 });
