@@ -17,7 +17,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     adminSession.restore();
     if (!adminSession.isAuthenticated()) {
-      router.replace('/acceso');
+      router.replace('/admin/acceso');
     } else {
       setAuthorized(true);
     }

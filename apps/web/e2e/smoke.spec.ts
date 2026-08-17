@@ -59,18 +59,18 @@ test('happy path: acceso → categoría → producto draft → publicar', async 
   );
 
   // 1) Acceso admin
-  await page.goto('/acceso');
+  await page.goto('/admin/acceso');
   await page.getByLabel(/Token de acceso/).fill('seed-token');
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await expect(page).toHaveURL(/\/productos/);
+  await expect(page).toHaveURL(/\/admin\/productos/);
 
   // 2) Crear categoría
-  await page.goto('/categorias');
+  await page.goto('/admin/categorias');
   await page.getByLabel(/Nombre/).fill('Refrigeración');
   await page.getByRole('button', { name: 'Crear' }).click();
 
   // 3) Alta de producto en borrador
-  await page.goto('/productos/nuevo');
+  await page.goto('/admin/productos/nuevo');
   await page.getByLabel(/SKU/).fill('REF-001');
   await page.getByLabel(/Nombre/).fill('Heladera');
   await page.getByLabel(/Precio/).fill('1000');
@@ -80,7 +80,7 @@ test('happy path: acceso → categoría → producto draft → publicar', async 
   await expect(page.getByText(/Creado en borrador/)).toBeVisible();
 
   // 4) Publicar
-  await page.goto('/productos/11111111-1111-4111-8111-111111111111');
+  await page.goto('/admin/productos/11111111-1111-4111-8111-111111111111');
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(page.getByTestId('product-status')).toHaveText('published');
 });

@@ -22,7 +22,7 @@ describe('AdminGuard (route group admin, AC-8)', () => {
         <div>PANEL</div>
       </AdminGuard>,
     );
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/acceso'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/admin/acceso'));
     expect(screen.queryByText('PANEL')).not.toBeInTheDocument();
   });
 

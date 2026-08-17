@@ -31,7 +31,7 @@ describe('AdminAccessForm (acceso admin)', () => {
     render(<AdminAccessForm />);
     await userEvent.type(screen.getByLabelText(/Token de acceso/), 'seed-token');
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
-    expect(push).toHaveBeenCalledWith('/productos');
+    expect(push).toHaveBeenCalledWith('/admin/productos');
   });
 
   it('token inválido (401) → muestra error accionable, no redirige', async () => {

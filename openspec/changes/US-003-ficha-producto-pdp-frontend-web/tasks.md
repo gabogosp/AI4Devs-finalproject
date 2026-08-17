@@ -57,12 +57,12 @@ sitemap/robots del storefront → `Deferred: US-002`.
 
 ## Pre-requisitos
 
-- [ ] **P1** — `docs/product/design-system.md` en estado `Approved` (gate de `fe-design-without-figma`
+- [x] **P1** — `docs/product/design-system.md` en estado `Approved` (gate de `fe-design-without-figma`
   §5). Verificado en planning.
-- [ ] **P2** — Suite verde antes de empezar (la Fase 0 es un refactor: se necesita la red de
+- [x] **P2** — Suite verde antes de empezar (la Fase 0 es un refactor: se necesita la red de
   seguridad previa, per `refactoring-discipline`).
   - **Verify**: `pnpm --filter @dsm/web test -- --run && pnpm --filter @dsm/web build`
-- [ ] **P3** — El contrato publicado expone la ficha **por slug**: `apps/api/docs/api/openapi.yaml`
+- [x] **P3** — El contrato publicado expone la ficha **por slug**: `apps/api/docs/api/openapi.yaml`
   declara `operationId: storefrontGetProduct` con path param `slug`, y el cliente generado ya lo
   refleja. (Riesgo de secuencia D1: la Fase 10 del change backend sigue abierta y su edición del
   contrato podría no estar commiteada — si este check falla, **parar** y coordinar con backend, no
@@ -77,7 +77,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
 > (`refactoring-discipline`): invariante = comportamiento del panel y del guard; criterio de éxito =
 > la suite y el smoke quedan verdes cambiando **solo URLs**, ningún assert de comportamiento.
 
-- [ ] **T0.1** ADR-0010 — convención de namespace: raíz pública para el storefront, `/admin/*` para el panel (0.25 h)
+- [x] **T0.1** ADR-0010 — convención de namespace: raíz pública para el storefront, `/admin/*` para el panel (0.25 h)
   - **Pattern**: ADR en `docs/architecture/decisions/0010-url-namespace-storefront-vs-admin.md` con
     el formato canónico (`# ADR 0010: …`, `> **Status**: Accepted`, `> **Date**`, `Contexto /
     Decisión / Alternativas / Consecuencias`) — per `documentation-standards.md` §8.2/§8.3, mismo
@@ -90,7 +90,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     convención; `design.md` D0 lo referencia.
   - **Verify**: `test -f docs/architecture/decisions/0010-url-namespace-storefront-vs-admin.md && grep -q "Status.*Accepted" docs/architecture/decisions/0010-url-namespace-storefront-vs-admin.md && grep -q "/admin" docs/architecture/decisions/0010-url-namespace-storefront-vs-admin.md`
 
-- [ ] **T0.2** Mudar el panel a `/admin/*` (rutas + guard + redirecciones + tests + smoke) (0.5 h)
+- [x] **T0.2** Mudar el panel a `/admin/*` (rutas + guard + redirecciones + tests + smoke) (0.5 h)
   - **Pattern**:
     ```text
     # Move de rutas — el route group NO cambia el path; el path lo cambia el segmento (next-standards §1)

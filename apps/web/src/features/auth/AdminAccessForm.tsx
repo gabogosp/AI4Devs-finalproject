@@ -24,7 +24,7 @@ export function AdminAccessForm() {
     setLoading(true);
     try {
       await adminSession.login(token);
-      router.push('/productos');
+      router.push('/admin/productos');
     } catch (err) {
       setError(
         err instanceof AppErrorException && err.appError.kind === 'unauthorized'
