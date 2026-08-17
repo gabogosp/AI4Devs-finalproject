@@ -5,10 +5,17 @@ import {
   World,
   type IWorldOptions,
 } from '@cucumber/cucumber';
-import { request, type APIRequestContext } from '@playwright/test';
+import {
+  chromium,
+  request,
+  type APIRequestContext,
+  type Browser,
+  type Page,
+} from '@playwright/test';
 import { adminAuth } from '../../support/admin-auth';
 
 const BASE = process.env.QA_API_BASE_URL ?? 'http://localhost:3000';
+const WEB = process.env.QA_WEB_BASE_URL ?? 'http://localhost:3100';
 
 /**
  * World de la aceptación cross-stack (API-level: Playwright APIRequestContext
@@ -19,6 +26,27 @@ export class CatalogWorld extends World {
   anon!: APIRequestContext;
   token = '';
   state: Record<string, unknown> = {};
+
+  /** Browser perezoso: sólo los escenarios de UI lo levantan (US-003+). */
+  private browser?: Browser;
+  page?: Page;
+
+  /** Abre una ruta del storefront en un browser real. */
+  async visitar(ruta: string): Promise<Page> {
+    if (!this.page) {
+      this.browser = await chromium.launch();
+      const ctx = await this.browser.newContext({ baseURL: WEB });
+      this.page = await ctx.newPage();
+    }
+    await this.page.goto(ruta);
+    return this.page;
+  }
+
+  async cerrarBrowser(): Promise<void> {
+    await this.browser?.close();
+    this.browser = undefined;
+    this.page = undefined;
+  }
 
   constructor(options: IWorldOptions) {
     super(options);
@@ -38,6 +66,7 @@ Before(async function (this: CatalogWorld) {
 });
 
 After(async function (this: CatalogWorld) {
+  await this.cerrarBrowser();
   await this.admin?.dispose();
   await this.anon?.dispose();
 });

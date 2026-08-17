@@ -45,10 +45,10 @@ language: es
 
 ## Fase 3: Aceptación BDD (Cucumber + Playwright)
 
-- [ ] T3.1 Features de happy path y corner (AC-1, AC-3, AC-4, AC-6)
+- [x] T3.1 Features de happy path y corner (AC-1, AC-3, AC-4, AC-6)
   - **Exit criterion**: TC-310..TC-313 verdes contra el stack real; runner en modo `strict` (sin steps pending). C-1 asierta que con stock cero **no** se ofrece agregar al carrito y **sí** el canal de contacto.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@happy or @corner"`
-- [ ] T3.2 Features negative + el diferido de AC-5
+- [x] T3.2 Features negative + el diferido de AC-5
   - **Exit criterion**: TC-314 verde — draft e inexistente son **indistinguibles** para el visitante (mismo status y mismo cuerpo). TC-315 (X-1, descripción enriquecida) presente y excluido por `@deferred`.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@negative and not @deferred"`
 
