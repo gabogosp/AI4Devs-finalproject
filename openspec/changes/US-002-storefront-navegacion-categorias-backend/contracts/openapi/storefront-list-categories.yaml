@@ -1,0 +1,104 @@
+openapi: 3.0.3
+info:
+  title: "storefront-list-categories — Árbol público de categorías"
+  version: "v1"
+  description: |
+    Endpoint PÚBLICO (sin auth) del árbol de navegación (US-002 AC-1). Dos
+    niveles: rubros con sus subrubros directos, ambos ordenados por nombre.
+    Cambia poco, así que lleva TTL propio de 300s (decisión D5). Rate-limit por
+    IP heredado del storefront (§7.3).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+tags:
+  - name: storefront-categories
+    description: Superficie pública de navegación por categorías.
+
+paths:
+  /v1/categories:
+    get:
+      operationId: storefrontListCategories
+      tags: [storefront-categories]
+      summary: Listar el árbol de categorías de dos niveles
+      description: |
+        Devuelve los rubros (categorías sin padre) con sus subrubros. No emite
+        el evento `category.viewed` — sólo el detalle lo hace (decisión D4).
+      security: []
+      parameters:
+        - name: traceparent
+          in: header
+          required: false
+          description: Contexto de traza W3C para correlacionar logs.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Árbol de navegación.
+          headers:
+            Cache-Control:
+              description: TTL propio del árbol (D5).
+              schema:
+                { type: string, example: "public, max-age=300, stale-while-revalidate=60" }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CategoryTree' }
+              example:
+                data:
+                  - slug: "ferreteria"
+                    name: "Ferretería"
+                    children:
+                      - { slug: "herramientas", name: "Herramientas" }
+                  - slug: "refrigeracion"
+                    name: "Refrigeración"
+                    children:
+                      - { slug: "compresores", name: "Compresores" }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+components:
+  schemas:
+    CategoryRef:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+    CategoryTreeNode:
+      type: object
+      description: Rubro con sus subrubros. No expone `parent` — la jerarquía la da el anidamiento.
+      required: [slug, name, children]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    CategoryTree:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryTreeNode' }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+  responses:
+    TooManyRequests:
+      description: Rate-limit por IP excedido (§7.3). Trae Retry-After y RateLimit-*.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/http-429", title: "Too Many Requests", status: 429 }

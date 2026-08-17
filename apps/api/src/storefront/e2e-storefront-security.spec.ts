@@ -75,4 +75,33 @@ describe('Storefront rate-limit (e2e-storefront-security, §7.3)', () => {
     // M1: un 429 no lleva header cacheable (el interceptor sólo corre en 2xx).
     expect(blocked.headers['cache-control'] ?? '').not.toContain('max-age=60');
   });
+
+  it('el throttler heredado también cubre las rutas de categorías (US-002 T5.1)', async () => {
+    // El guard se declara por controller: sin este assert, un controller nuevo
+    // podría quedar sin rate-limit y la suite seguiría verde.
+    const get = () => request(app.getHttpServer()).get('/v1/categories');
+
+    for (let i = 0; i < LIMIT; i += 1) {
+      expect((await get()).status).toBe(200);
+    }
+
+    const blocked = await get();
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers['retry-after']).toBeDefined();
+    expect(blocked.body).toHaveProperty('status', 429);
+    expect(blocked.headers['cache-control'] ?? '').not.toContain('max-age');
+  });
+
+  it('el listado por categoría también queda bajo el límite', async () => {
+    const get = () =>
+      request(app.getHttpServer()).get(
+        '/v1/categories/refrigeracion/products',
+      );
+
+    for (let i = 0; i < LIMIT; i += 1) {
+      expect((await get()).status).toBe(200);
+    }
+
+    expect((await get()).status).toBe(429);
+  });
 });

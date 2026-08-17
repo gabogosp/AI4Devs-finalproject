@@ -5,7 +5,8 @@ export type CatalogEventName =
   | 'product.published'
   | 'product.archived'
   | 'product.viewed'
-  | 'category.created';
+  | 'category.created'
+  | 'category.viewed';
 
 /**
  * Eventos de negocio del catálogo (E2E §18, KPI PRD §1.4). Se emiten como log

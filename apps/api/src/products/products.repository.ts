@@ -105,6 +105,30 @@ export class ProductsRepository {
     });
   }
 
+  /**
+   * Listado público por categorías (US-002 AC-3/AC-7/AC-8). Recibe varios ids
+   * porque un rubro agrega los productos de sus subrubros (decisión D1); un
+   * subrubro pasa un solo id. Sólo `published`: draft/archived nunca aparecen,
+   * ni en `data` ni en `total`. El tie-break por `id` hace el orden total, así
+   * el offset es determinista y dos páginas consecutivas no se solapan.
+   */
+  async findPublishedByCategoryIds(
+    ids: string[],
+    page: Pagination,
+  ): Promise<{ data: Product[]; total: number }> {
+    const where = { category_id: { in: ids }, status: 'published' };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        skip: page.offset,
+        take: page.limit,
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+    return { data, total };
+  }
+
   async update(id: string, data: UpdateProductData): Promise<Product> {
     try {
       return await this.prisma.product.update({ where: { id }, data });

@@ -20,6 +20,8 @@ tags:
     description: Gestión de productos (AC-2..AC-9)
   - name: storefront-products
     description: Superficie pública de lectura del storefront (ficha de producto, US-003)
+  - name: storefront-categories
+    description: Superficie pública de navegación por categorías (US-002)
   - name: health
     description: Liveness / readiness
 security:
@@ -189,6 +191,89 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+  /categories:
+    get:
+      operationId: storefrontListCategories
+      tags: [storefront-categories]
+      summary: Árbol público de categorías de dos niveles (US-002 AC-1)
+      description: >-
+        Ruta PÚBLICA SIN auth. Rubros (sin padre) con sus subrubros directos,
+        ambos ordenados por nombre. TTL propio de 300s (decisión D5) porque el
+        árbol cambia poco. No emite `category.viewed` (sólo el detalle, D4).
+      security: []
+      responses:
+        '200':
+          description: Árbol de navegación
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=300, stale-while-revalidate=60 (D5)'
+          content: { application/json: { schema: { $ref: '#/components/schemas/CategoryTree' } } }
+        '429': { $ref: '#/components/responses/Problem' }
+  /categories/{slug}:
+    get:
+      operationId: storefrontGetCategory
+      tags: [storefront-categories]
+      summary: Detalle público de una categoría (US-002 AC-1/AC-2/AC-9)
+      description: >-
+        Ruta PÚBLICA SIN auth. Trae `parent` para el breadcrumb y `children`
+        para los subrubros. Slug inexistente → 404 (nunca un 200 vacío, que
+        sería una página fantasma indexable). Único endpoint que emite el evento
+        `category.viewed` (D4, insumo del panel US-016).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+      responses:
+        '200':
+          description: Categoría con su padre y sus subrubros
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30'
+          content: { application/json: { schema: { $ref: '#/components/schemas/StorefrontCategory' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+  /categories/{slug}/products:
+    get:
+      operationId: storefrontListCategoryProducts
+      tags: [storefront-categories]
+      summary: Listado paginado de productos publicados de una categoría (US-002 AC-3)
+      description: >-
+        Ruta PÚBLICA SIN auth. Sólo `published` (AC-8: draft/archived nunca
+        aparecen, ni en `data` ni en `total`). Un RUBRO agrega los productos de
+        sus subrubros directos; un SUBRUBRO lista sólo los propios (decisión
+        D1). Paginación offset con `total` (D3), `limit` 1..100 default 20 — el
+        catálogo completo nunca se transfiere de una (AC-7). Orden estable
+        `name ASC, id ASC`. Categoría existente sin publicados → 200 con `data`
+        vacía (AC-6); categoría inexistente → 404 (AC-9).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Página de productos publicados (puede ser vacía)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30'
+          content: { application/json: { schema: { $ref: '#/components/schemas/StorefrontProductPage' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
 components:
   securitySchemes:
     adminBearer:
@@ -293,6 +378,76 @@ components:
         image_url: { type: string, nullable: true }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    CategoryRef:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+    CategoryTreeNode:
+      type: object
+      description: 'Rubro con sus subrubros; sin `parent` (la jerarquía la da el anidamiento).'
+      required: [slug, name, children]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    CategoryTree:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryTreeNode' }
+    StorefrontCategory:
+      type: object
+      description: 'Categoría pública (US-002): sin id, parent_id ni timestamps.'
+      required: [slug, name, parent, children]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        parent:
+          type: object
+          nullable: true
+          description: 'Rubro padre para el breadcrumb; null si ya es raíz.'
+          required: [slug, name]
+          properties:
+            slug: { type: string }
+            name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    StorefrontProductListItem:
+      type: object
+      description: 'Item de grilla (US-002): sin id, stock numérico, status ni timestamps.'
+      required: [slug, name, price_ars_cents, currency, image_url, in_stock]
+      properties:
+        slug:
+          type: string
+          description: 'Enlaza a la ficha `/v1/products/{slug}`.'
+        name: { type: string }
+        price_ars_cents: { type: integer }
+        currency: { type: string, enum: [ARS] }
+        image_url: { type: string, nullable: true }
+        in_stock: { type: boolean }
+    StorefrontProductPage:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/StorefrontProductListItem' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total:
+              type: integer
+              description: 'Publicados que matchean el filtro, no los de la página.'
     StorefrontProduct:
       type: object
       description: 'Ficha pública (US-003): sólo campos SEO; sin id/stock/status/timestamps.'

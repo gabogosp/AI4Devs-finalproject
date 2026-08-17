@@ -129,7 +129,7 @@
   us-id: US-002
   discipline: backend
   variant: null
-  status: draft
+  status: in progress
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null

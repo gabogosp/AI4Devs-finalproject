@@ -19,6 +19,15 @@ export interface UpdateCategoryData {
   parent_id?: string | null;
 }
 
+/** Rubro con sus subrubros (árbol público, US-002 AC-1). */
+export type CategoryWithChildren = Category & { children: Category[] };
+
+/** Categoría con su familia: padre para el breadcrumb + hijos (US-002 AC-2). */
+export type CategoryWithFamily = Category & {
+  parent: Category | null;
+  children: Category[];
+};
+
 /**
  * Único punto de acceso al ORM para `categories` (§5). Traduce códigos Prisma a
  * errores de dominio; ningún service llama al client directo.
@@ -46,6 +55,31 @@ export class CategoriesRepository {
 
   findById(id: string): Promise<Category | null> {
     return this.prisma.category.findUnique({ where: { id } });
+  }
+
+  /**
+   * Árbol público de dos niveles (US-002 AC-1): rubros (sin padre) con sus
+   * subrubros. Ambos niveles ordenados por nombre — el orden de `created_at`
+   * que usa el listado admin no sirve para navegar.
+   */
+  findRoots(): Promise<CategoryWithChildren[]> {
+    return this.prisma.category.findMany({
+      where: { parent_id: null },
+      include: { children: { orderBy: { name: 'asc' } } },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /**
+   * Categoría pública por slug con su familia (US-002 AC-2/AC-9): `parent` para
+   * el breadcrumb (null si es rubro) y `children` para los subrubros. Devuelve
+   * `null` (no lanza) si el slug no existe: el 404 lo decide el service.
+   */
+  findBySlugWithFamily(slug: string): Promise<CategoryWithFamily | null> {
+    return this.prisma.category.findUnique({
+      where: { slug },
+      include: { parent: true, children: { orderBy: { name: 'asc' } } },
+    });
   }
 
   async update(id: string, data: UpdateCategoryData): Promise<Category> {

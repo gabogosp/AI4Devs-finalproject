@@ -40,4 +40,88 @@ describe('CategoriesRepository (categories.repository, integration)', () => {
     const all = await repo.findMany();
     expect(all).toHaveLength(1);
   });
+
+  describe('lecturas públicas del storefront (US-002 T1.1)', () => {
+    // Se siembra en orden NO alfabético a propósito: si el repositorio no
+    // ordenara, el test pasaría por casualidad con datos ya ordenados.
+    const seedArbol = async () => {
+      const refrigeracion = await repo.create({
+        name: 'Refrigeración',
+        slug: 'refrigeracion',
+      });
+      const ferreteria = await repo.create({
+        name: 'Ferretería',
+        slug: 'ferreteria',
+      });
+      await repo.create({
+        name: 'Compresores',
+        slug: 'compresores',
+        parent_id: refrigeracion.id,
+      });
+      await repo.create({
+        name: 'Aislantes',
+        slug: 'aislantes',
+        parent_id: refrigeracion.id,
+      });
+      await repo.create({
+        name: 'Tornillos',
+        slug: 'tornillos',
+        parent_id: ferreteria.id,
+      });
+      await repo.create({
+        name: 'Herramientas',
+        slug: 'herramientas',
+        parent_id: ferreteria.id,
+      });
+      return { refrigeracion, ferreteria };
+    };
+
+    it('findRoots: sólo rubros, con sus hijos, ambos niveles por nombre ASC', async () => {
+      await seedArbol();
+
+      const roots = await repo.findRoots();
+
+      expect(roots.map((r) => r.slug)).toEqual(['ferreteria', 'refrigeracion']);
+      // Ningún subrubro se cuela como raíz.
+      expect(roots.every((r) => r.parent_id === null)).toBe(true);
+      expect(roots[0].children.map((c) => c.slug)).toEqual([
+        'herramientas',
+        'tornillos',
+      ]);
+      expect(roots[1].children.map((c) => c.slug)).toEqual([
+        'aislantes',
+        'compresores',
+      ]);
+    });
+
+    it('findBySlugWithFamily de un subrubro: trae su padre', async () => {
+      await seedArbol();
+
+      const sub = await repo.findBySlugWithFamily('compresores');
+
+      expect(sub?.parent?.slug).toBe('refrigeracion');
+      expect(sub?.children).toEqual([]);
+    });
+
+    it('findBySlugWithFamily de un rubro: parent null + hijos ordenados', async () => {
+      await seedArbol();
+
+      const rubro = await repo.findBySlugWithFamily('refrigeracion');
+
+      expect(rubro?.parent).toBeNull();
+      expect(rubro?.children.map((c) => c.slug)).toEqual([
+        'aislantes',
+        'compresores',
+      ]);
+    });
+
+    it('findBySlugWithFamily de un slug inexistente: null, no lanza (AC-9)', async () => {
+      await seedArbol();
+
+      // Devolver null y no lanzar es lo que deja al service decidir el 404.
+      await expect(
+        repo.findBySlugWithFamily('no-existe'),
+      ).resolves.toBeNull();
+    });
+  });
 });
