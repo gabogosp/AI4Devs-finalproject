@@ -9,8 +9,6 @@ language: es
 
 > Cada task es closure-grade: `Exit criterion:` observable + `Verify:` con el comando exacto. Muchas verificaciones usan la Railway CLI (`railway`), la Neon CLI (`neonctl`) y `wrangler` (Cloudflare); donde no hay comando, el `Verify:` nombra el chequeo humano explícito en el dashboard.
 >
-> **Re-plan 2026-08-17 (`--regenerate`, corrección de `Verify:` defectuoso)**: dos `Verify:` basados en `git grep` (T2.1 y el check suite-level de secretos) se matcheaban a sí mismos y no podían dar verde nunca; se les añadió `':(exclude)*.md'` al pathspec. Gap de framework registrado como **F57**. Las tasks ya cerradas (T0.1, T0.2) conservan su estado y su AS-BUILT. Backup: `openspec/changes/_backups/2026-08-17-US-019-…/`.
->
 > **Re-plan 2026-08-16 (local-first, decisión PO)**: el orden se reestructuró para que lo que vive en el repo (config-as-code + runbook) se ejecute PRIMERO sin credenciales de nube, y todo el provisioning cloud quede gated al final. Mapeo con el plan anterior: T0.1 ← ex-T2.1, T0.2 ← ex-T5.1, T2.1 ← ex-T2.2; el ex-T2.3 (DNS custom) pasa a deferral documentado. Backup del plan previo en `openspec/changes/_backups/2026-08-16-US-019-provision-plataforma-cloud-infrastructure/`.
 
 ## Fase 0: Local-first — artefactos en el repo (sin credenciales de nube)
@@ -59,7 +57,7 @@ language: es
 
 - [ ] T2.1 Cargar los secretos de este change como Railway service variables (por entorno)
   - **Exit criterion**: `DATABASE_URL` (Neon), `REDIS_URL` y `SENTRY_DSN` están seteadas en Railway para `staging`; los slots `JWT_SECRET`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_KEY` existen (placeholder, los cargan sus US).
-  - **Verify**: `railway variables --environment staging` lista `DATABASE_URL`, `REDIS_URL`, `SENTRY_DSN`; y `git grep -Ei 'postgres://[^ ]*:[^ ]*@|redis://[^ ]*:[^ ]*@|SENTRY_DSN=https' -- . ':(exclude).env.example' ':(exclude)*.md'` NO devuelve secretos reales comiteados. *(Exclusión de `*.md` por F57 — el escáner no se escanea a sí mismo: sin ella el patrón matchea su propia cita en este `tasks.md` y en los backups del plan.)*
+  - **Verify**: `railway variables --environment staging` lista `DATABASE_URL`, `REDIS_URL`, `SENTRY_DSN`; y `git grep -Ei 'postgres://[^ ]*:[^ ]*@|redis://[^ ]*:[^ ]*@|SENTRY_DSN=https' -- . ':(exclude).env.example'` NO devuelve secretos reales comiteados.
 
 - [ ] T2.2 Dominio custom + DNS Cloudflare + TLS — **Deferred: /plan-deployment** (decisión PO 2026-08-16: no hay dominio aún)
   - **Exit criterion**: los servicios exponen sus subdominios Railway (`*.up.railway.app`) con TLS de Railway; el CNAME en Cloudflare hacia el dominio custom queda **diferido** hasta que exista dominio (se registra/delega antes del primer deploy productivo; lo verifica `/plan-deployment`). Deferral documentado — no es un drop silencioso.
@@ -92,8 +90,8 @@ language: es
 ## Verificación (suite-level)
 
 - [x] Sin Terraform en el repo (anti-pattern del baseline): `! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .` *(verde 2026-08-16)*
-- [x] Sin secretos comiteados: `git grep -Ei 'postgres://[^ ]*:[^ ]*@|APP_USR-|AIza[A-Za-z0-9]{20}|sk_live' -- . ':(exclude).env.example' ':(exclude)*.md'` no devuelve nada. *(verde 2026-08-17)*
-  - **Corregido en el re-plan 2026-08-17 (F57)**: la forma anterior omitía `':(exclude)*.md'` y el patrón se matcheaba a sí mismo citado en este `tasks.md` y en los backups del plan → nunca podía dar verde. Con la exclusión: **0 hits, sin secretos reales**; los únicos `.env*` trackeados son `.env.example` y `apps/web/.env.example`, con `.env`/`.env.local` gitigneados. Gap registrado como **F57** en `FRAMEWORK-GAPS.md`.
+- [ ] Sin secretos comiteados: `git grep -Ei 'postgres://[^ ]*:[^ ]*@|APP_USR-|AIza[A-Za-z0-9]{20}|sk_live' -- . ':(exclude).env.example'` no devuelve nada.
+  - ⚠️ **Verify defectuoso — auto-match (detectado 2026-08-16, pendiente de decisión del usuario)**: el patrón se matchea a sí mismo citado en los `tasks.md` de este change y de los backups, así que **nunca puede dar verde**. Scan estricto excluyendo `*.md` → **0 hits: no hay secretos reales**; los únicos `.env*` trackeados son `.env.example` y `apps/web/.env.example`, y `.env`/`.env.local` están gitigneados. Forma corregida propuesta: añadir `':(exclude)*.md'` al pathspec.
 - [x] Config Railway válida en repo: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))"` *(verde 2026-08-16)*
 - [x] Runbook presente: `test -f docs/services/dsm-ecommerce/runbook.md` *(verde 2026-08-16)*
 - [ ] `pgvector` disponible en Neon (cloud — gated): `psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`.
