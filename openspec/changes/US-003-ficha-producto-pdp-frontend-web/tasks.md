@@ -252,7 +252,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     **sin** imagen y **inexistente** (404 → no explota).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront`
 
-- [ ] **T3.3** JSON-LD `schema.org/Product` con serialización segura (0.5 h)
+- [x] **T3.3** JSON-LD `schema.org/Product` con serialización segura (0.5 h)
   - **Pattern**:
     ```tsx
     // Nombre/descripción los escribe el dueño → input NO confiable.

@@ -1,4 +1,5 @@
 import { formatArs } from '@/lib/format/currency';
+import { ProductJsonLd } from './ProductJsonLd';
 import type { StorefrontProduct } from './storefrontService';
 
 /**
@@ -11,6 +12,8 @@ import type { StorefrontProduct } from './storefrontService';
 export function ProductDetail({ product }: { product: StorefrontProduct }) {
   return (
     <article className="mx-auto flex max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:gap-10 lg:p-8">
+      <ProductJsonLd product={product} />
+
       <div className="flex w-full flex-col gap-4 lg:w-1/2">
         <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
           {product.name}
