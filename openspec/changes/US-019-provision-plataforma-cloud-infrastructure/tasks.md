@@ -18,7 +18,8 @@ language: es
   - **Exit criterion**: `apps/api/railway.json` y `apps/web/railway.json` existen con build/start/healthcheck/restart tomados del AS-BUILT (api: `nest build`/`nest start` + healthcheck `/health` ya implementado en `apps/api/src/health/`; web: `next build`/`next start`); no hay ningún `.tf` en el repo (fuera de `spekode/`). `apps/worker` NO lleva config todavía — **Deferred: US-005** (la app worker es solo README; su `railway.json` se autoriza cuando BE la scaffoldee).
   - **Verify**: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))" && grep -q '"healthcheckPath"' apps/api/railway.json && ! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .`
 
-- [ ] T0.2 Redactar el esqueleto del runbook del servicio (obligatorio — operations-standards)
+- [x] T0.2 Redactar el esqueleto del runbook del servicio (obligatorio — operations-standards)
+  - **AS-BUILT 2026-08-16**: sigue la estructura obligatoria de `operations-standards` §5.3 (8 secciones: vista rápida, mapa, operaciones comunes, respuesta a alertas, problemas conocidos, recuperación, escalamiento, última actualización). Los datos que aún no existen (URLs de dashboards Railway/Sentry, rotación de on-call) quedan como `[pendiente: T…]` explícitos en vez de inventados.
   - **Exit criterion**: existe `docs/services/dsm-ecommerce/runbook.md` con secciones deploy/rollback, restore Neon PITR (RTO ≤ 4h), rotación de secretos, cola BullMQ atascada, webhook MP, app caída, y SLO 99.5% + salud vigilada (fuente E2E §18.5).
   - **Verify**: `test -f docs/services/dsm-ecommerce/runbook.md && for s in 'Rollback' 'Restore' 'Rotar secretos' 'BullMQ' 'webhook' 'SLO'; do grep -qi "$s" docs/services/dsm-ecommerce/runbook.md || exit 1; done`
 

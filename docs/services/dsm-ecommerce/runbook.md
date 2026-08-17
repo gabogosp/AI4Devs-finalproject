@@ -1,0 +1,140 @@
+---
+service: dsm-ecommerce
+tier: 2
+status: Skeleton
+owner: dev de guardia (equipo DSM)
+source: US-019 platform-cloud (T0.2) — E2E §18, §18.5
+language: es
+last-updated: 2026-08-16
+---
+
+# Runbook — dsm-ecommerce
+
+> **Para quién es**: el operador técnico de guardia a las 3 AM. Cada entrada responde una sola pregunta: *"me sonó el pager, ¿qué hago?"*. No es documentación de arquitectura (eso es `docs/product/design-e2e.md`) ni referencia de API (eso es el OpenAPI en `openspec/specs/`).
+>
+> **Estado: esqueleto autorizado en US-019** (`operations-standards` §5.1 — todo servicio nuevo tiene runbook desde que se aprovisiona). Los valores marcados `[pendiente: T…]` se completan cuando la task de provisioning correspondiente cierre; el tuning de on-call e incidentes lo refina `/plan-deployment`. **No inventar** un valor para llenar un hueco: si está `[pendiente]`, es que todavía no existe.
+
+## 1. Vista rápida
+
+| Campo | Valor |
+|---|---|
+| **Servicio** | `dsm-ecommerce` — e-commerce con búsqueda por IA (catálogo, carrito, checkout MercadoPago, enriquecimiento por IA) |
+| **Tier** | 2 — **SLO 99.5% mensual** (E2E §17; coherente con Railway single-AZ) |
+| **Componentes** | `web` (Next.js SSR) · `api` (NestJS) · `worker` (BullMQ) — proyecto Railway único, entornos `staging` + `production` |
+| **Datos** | Neon PostgreSQL 16 + `pgvector` (US-East) · Redis (add-on Railway) · Cloudflare R2 (imágenes) |
+| **Operador de negocio** | Dueño/Pedro — opera **solo desde el panel web**, no toca infraestructura (ver §3.1) |
+| **Operador técnico** | Dev de guardia — deploys, secretos, incidentes, restores |
+| **Dashboards** | Railway (logs + métricas) · Sentry (errores) — URLs `[pendiente: T4.2]` |
+| **Alertas** | Sentry → email/Slack, spike de errores `[pendiente: T4.3]` |
+| **Repo** | este monorepo (`apps/web`, `apps/api`, `apps/worker`, `packages/db`) |
+| **Config de deploy** | `apps/api/railway.json`, `apps/web/railway.json` (config-as-code; **sin Terraform** — Railway es PaaS) |
+
+## 2. Mapa del servicio
+
+```
+Cloudflare (DNS + CDN + R2)
+   └─ TLS ─▶ Railway (staging | production)
+               ├─ web    (Next.js SSR) ──▶ api
+               ├─ api    (NestJS) ───────▶ Neon Postgres + pgvector (TLS)
+               │                       └─▶ Redis (add-on)
+               └─ worker (BullMQ) ──────▶ Redis · Neon · Gemini · R2
+```
+
+**Dependencias externas** (una caída acá degrada, no tumba): MercadoPago (pagos) · Google Gemini (enriquecimiento + búsqueda semántica) · Resend (emails) · Cloudflare R2 (imágenes).
+
+**Consumidores aguas abajo**: ninguno — `dsm-ecommerce` es el sistema de punta a punta.
+
+## 3. Operaciones comunes
+
+### 3.1 Qué hace el operador de negocio (sin soporte técnico)
+
+Todo desde el panel: cargar/actualizar catálogo (CSV/Excel + progreso de enriquecimiento), procesar venta (`new` → preparar → `ready` → `delivered`), cancelar/reembolsar (reintegra stock + refund MP), ver métricas, y producto sin stock (editar stock o `status=archived`). **Si el pedido del operador es uno de estos, no es un incidente técnico.**
+
+### 3.2 Deploy
+
+Push a la rama → la CI (`.github/workflows/ci.yml`) debe pasar → Railway despliega por su integración GitHub: `main` → production, `staging` → staging `[pendiente: T4.1]`.
+
+### 3.3 Rollback
+
+**Rollback = redeploy del último commit verde**, no un revert a mano bajo presión.
+
+1. Railway → servicio afectado → *Deployments* → localizar el último deployment verde previo.
+2. *Redeploy* sobre ese deployment.
+3. Verificar salud: `curl -sf https://<host-api>/health` (liveness) y `curl -sf https://<host-api>/ready` (readiness — incluye DB).
+4. Si el deploy malo aplicó una migración de datos, el rollback de código **no** la revierte → ir a §6.2.
+
+### 3.4 Reiniciar / escalar
+
+Reinicio: Railway reinicia solo por health check fallado; forzar con *Restart* en el servicio. Escalado: ajustar recursos/réplicas del servicio en Railway (single-AZ, sin autoscaling configurado a esta escala — E2E §21).
+
+### 3.5 Rotar secretos
+
+Aplica a `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_KEY`, `JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`.
+
+1. Rotar el valor en el proveedor (MP / Google / Resend / Neon / Cloudflare).
+2. Railway → entorno (`staging` o `production`) → servicio → *Variables* → actualizar el valor.
+3. Redeploy del servicio (las variables se aplican al arranque).
+4. Verificar `/ready` y, para MP, un webhook de prueba.
+
+> ⚠️ **Rotar `JWT_SECRET` invalida todas las sesiones activas** — los usuarios quedan deslogueados. Hacerlo en ventana de bajo tráfico salvo que sea respuesta a una filtración (ahí es inmediato).
+>
+> Los secretos **nunca** van al repo ni a la imagen (`security-standards` §5; `.env.production` en git está prohibido). Si un secreto se filtró en un commit: rotar primero, limpiar historia después.
+
+## 4. Respuesta a alertas
+
+| Síntoma / alerta | Severidad | Qué significa | Acción inmediata |
+|---|---|---|---|
+| **Spike de errores en Sentry** `[pendiente: T4.3]` | Alta | Tasa de excepciones por encima de lo normal en `web`/`api`/`worker` | Abrir el issue en Sentry → identificar release → si el spike arranca con un deploy, **rollback** (§3.3). Si no, seguir por el componente afectado abajo. |
+| **App caída / health check falla** | Alta | Railway no obtiene 200 en `/health` | Railway reinicia solo. Si persiste tras 2 reintentos: revisar logs del servicio en Railway, y redeploy del último build verde (§3.3). |
+| **`/ready` devuelve 503** | Alta | El proceso vive pero **la DB no responde** | Verificar Neon (estado del proyecto, autosuspend en free tier despierta en el primer query). Si Neon está caído, es incidente de proveedor → §7. |
+| **Webhook MP no llega / órdenes atascadas en `pending_payment`** | Alta | El pago se cobró pero la orden no avanzó | Reconciliar consultando el estado a la API de MP (operación **idempotente**) y reintentar el decremento de stock. Nunca marcar la orden a mano sin confirmar el pago en MP. |
+| **Cola BullMQ atascada** | Media | Jobs encolados sin drenar (enriquecimiento/emails) | Revisar jobs fallidos / dead-letter en el dashboard de la cola; verificar que Redis esté up y que el `worker` esté corriendo; reprocesar los fallidos. |
+| **Gemini caído / rate-limited** | Baja | Búsqueda semántica y enriquecimiento degradados | **Sin acción**: la búsqueda degrada a full-text automáticamente y los jobs reintentan con backoff. Si persiste, subir cuota. |
+| **Resend caído** | Baja | No salen emails transaccionales | Los jobs reintentan; verificar estado del proveedor. No bloquea la compra. |
+
+## 5. Problemas conocidos
+
+| Problema | Estado | Mitigación |
+|---|---|---|
+| **Neon free tier en staging**: autosuspend + ventana de restore mínima | Activo (Q-2) | Aceptado para staging. El primer query tras suspensión tarda más. El upgrade a plan pago con PITR real es **gate previo al primer deploy productivo** (`/plan-deployment`). |
+| **Sin sink de retención de logs** | Activo (Q-E, diferido) | Sentry cubre errores; los logs de Railway rotan. Sin auditoría de logs a largo plazo — deuda consciente. |
+| **Sin dominio custom** | Activo (2026-08-16) | Se usan los subdominios `*.up.railway.app` con TLS de Railway. DNS/TLS custom en Cloudflare → `/plan-deployment`. |
+| **`worker` sin config de deploy** | Activo | `apps/worker` es placeholder; su `railway.json` llega con US-005. |
+
+## 6. Procedimientos de recuperación
+
+### 6.1 Caída total
+
+1. Confirmar alcance: ¿`web`, `api` o ambos? ¿Neon/Redis arriba? (`/health` vs `/ready` distinguen proceso vs dependencia.)
+2. Si arranca con un deploy → **rollback** (§3.3).
+3. Si es el proveedor (Railway/Neon/Cloudflare) → §7 y comunicar al dueño; no hay failover multi-región (decisión ADR-0001).
+
+### 6.2 Restore de datos — **RTO ≤ 4h, RPO ≤ 24h** (E2E §17)
+
+Para corrupción o borrado de datos.
+
+1. **Frenar la escritura**: pausar el `worker` y, si hace falta, poner `api` fuera de servicio para no escribir sobre datos corruptos.
+2. **Elegir el punto**: Neon → *Restore* → PITR al timestamp previo al incidente (o el snapshot más cercano).
+   > En **staging free tier** la ventana de restore es mínima (§5). El PITR completo existe con el plan pago.
+3. **Restaurar** y actualizar `DATABASE_URL` en Railway si el restore produce un endpoint nuevo.
+4. **Redeploy** de `api` y `worker`.
+5. **Smoke test del loop**: buscar un producto → compra simulada → preparar la orden. Sin ese paso el restore no está confirmado.
+6. Registrar en el post-mortem qué se perdió entre el punto de restore y el incidente.
+
+### 6.3 Costos desbocados
+
+Revisar consumo en Railway / Neon / Cloudflare / Gemini. Sospechosos habituales: loop de reintentos en el `worker` (jobs que fallan y reencolan) y llamadas a Gemini sin backoff. Frenar el `worker`, corregir, reanudar.
+
+## 7. Escalamiento
+
+| Cuándo | A quién |
+|---|---|
+| Incidente > 1h sin ruta clara, o pérdida de datos confirmada | Dueño del producto (Pedro) — impacto de negocio y decisión de comunicar a clientes |
+| Caída de proveedor (Railway / Neon / Cloudflare / MP) | Soporte del proveedor + status page; comunicar al dueño |
+| Filtración de secreto | Rotar **primero** (§3.5), avisar al dueño después |
+
+**On-call**: `[pendiente — equipo de una persona; rotación formal se define en /plan-deployment]`.
+
+## 8. Última actualización
+
+**2026-08-16** — esqueleto creado en US-019 T0.2 (fuente: E2E §18.5). Próxima revisión obligatoria: al cerrar las fases cloud de US-019 (T4.1–T4.3, para completar dashboards/alertas) y en `/plan-deployment` (on-call, checklist pre-prod, dominio/TLS).
