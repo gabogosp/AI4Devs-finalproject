@@ -108,6 +108,7 @@ export const PostAdminProductsBody = zod.object({
 export const PostAdminProductsResponse = zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
+  "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
   "name": zod.string(),
   "description_raw": zod.string().nullable(),
   "price_ars_cents": zod.number().int(),
@@ -140,6 +141,7 @@ export const GetAdminProductsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
+  "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
   "name": zod.string(),
   "description_raw": zod.string().nullable(),
   "price_ars_cents": zod.number().int(),
@@ -169,6 +171,7 @@ export const GetAdminProductsIdParams = zod.object({
 export const GetAdminProductsIdResponse = zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
+  "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
   "name": zod.string(),
   "description_raw": zod.string().nullable(),
   "price_ars_cents": zod.number().int(),
@@ -208,6 +211,7 @@ export const PatchAdminProductsIdBody = zod.object({
 export const PatchAdminProductsIdResponse = zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
+  "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
   "name": zod.string(),
   "description_raw": zod.string().nullable(),
   "price_ars_cents": zod.number().int(),

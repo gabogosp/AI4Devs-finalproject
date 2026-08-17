@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AppErrorException } from '@/lib/http/errors';
 import { track } from '@/lib/observability/events';
+import { revalidateProductSafely } from '@/features/storefront/revalidateSafely';
 import {
   productsService,
   type Product,
@@ -41,6 +42,8 @@ export function ProductActions({
       setStatus(updated.status); // solo cambia si el backend confirmó
       setMessage('Producto publicado.');
       track('product_published', { product_id: product.id });
+      // La ficha pública debe reflejar el cambio ya, no en 1 h (AC-9).
+      revalidateProductSafely(updated.slug);
       onChanged?.(updated);
     } catch (err) {
       if (
@@ -68,6 +71,7 @@ export function ProductActions({
       setConfirmOpen(false);
       setMessage('Producto archivado.');
       track('product_archived', { product_id: product.id });
+      revalidateProductSafely(updated.slug);
       onChanged?.(updated);
     } catch {
       setMessage('No se pudo archivar.');

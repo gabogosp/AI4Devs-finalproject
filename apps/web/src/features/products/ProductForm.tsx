@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Field, Input, Select } from '@/components/ui/Field';
 import { AppErrorException } from '@/lib/http/errors';
+import { revalidateProductSafely } from '@/features/storefront/revalidateSafely';
 import { formatArs } from '@/lib/format/currency';
 import type { Category } from '@/features/categories/categoriesService';
 import {
@@ -84,6 +85,10 @@ export function ProductForm({
         : await productsService.create({ ...common, sku: values.sku });
       if (!isEdit) {
         setSuccess('Creado en borrador — no visible hasta publicar.');
+      } else {
+        // Editar puede haber cambiado el precio: la ficha pública debe
+        // mostrarlo de inmediato (AC-9).
+        revalidateProductSafely(saved.slug);
       }
       onSaved?.(saved);
     } catch (err) {

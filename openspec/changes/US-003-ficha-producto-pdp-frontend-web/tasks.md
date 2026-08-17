@@ -280,7 +280,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     existe ningún otro uso de `dangerouslySetInnerHTML` en el código de la app.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront && ! grep -rn "dangerouslySetInnerHTML" apps/web/src apps/web/app | grep -vi "ld+json\|jsonLd" | grep -q .`
 
-- [ ] **T3.4** Server Action `revalidateProduct(slug)` + puente desde el flujo de mutación del panel (AC-9) (0.5 h)
+- [x] **T3.4** Server Action `revalidateProduct(slug)` + puente desde el flujo de mutación del panel (AC-9) (0.5 h)
   - **Pattern**:
     ```ts
     // src/features/storefront/revalidate.ts

@@ -10,6 +10,8 @@ import type { ProductStatus } from './productStatus';
 export interface Product {
   id: string;
   sku: string;
+  /** URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}). */
+  slug: string;
   name: string;
   /** @nullable */
   description_raw: string | null;

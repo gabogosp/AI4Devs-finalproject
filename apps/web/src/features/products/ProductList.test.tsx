@@ -12,6 +12,7 @@ function product(i: number): Product {
   return {
     id: `1111111${i}-1111-4111-8111-111111111111`,
     sku: `SKU-${i}`,
+    slug: `producto-${i}`,
     name: `Producto ${i}`,
     description_raw: null,
     price_ars_cents: 100000 + i,
