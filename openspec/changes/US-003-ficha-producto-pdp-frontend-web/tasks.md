@@ -37,7 +37,7 @@ Cobertura no-AC del design.md (F51): cliente isomorfo → T1.2; codegen → T1.1
 
 ## Fase 1: Contrato + cliente isomorfo
 
-- [ ] T1.1 Regenerar los artefactos del contrato (DTOs + Zod + MSW) con `storefrontGetProduct` (0.25 h)
+- [x] T1.1 Regenerar los artefactos del contrato (DTOs + Zod + MSW) con `storefrontGetProduct` (0.25 h)
   - **Pattern**: `pnpm --filter @dsm/web codegen` sobre `apps/api/docs/api/openapi.yaml` (config existente `orval.config.ts`) — per `frontend-standards.md` §3.1/§3.2 — artefactos del contrato SIEMPRE generados, nunca hand-written; `openapi-client-codegen` (regenerar, no editar).
   - **Exit criterion**: `src/api/generated/endpoints.ts` exporta la operación `storefrontGetProduct` (y `zod.ts` su schema; los handlers MSW generados la incluyen); volver a correr el codegen no produce diff (gate `frontend-codegen-fresh` se mantiene verde).
   - **Verify**: `pnpm --filter @dsm/web codegen && grep -q "storefrontGetProduct" apps/web/src/api/generated/endpoints.ts && grep -qi "storefrontGetProduct\|StorefrontProduct" apps/web/src/api/generated/zod.ts && git diff --quiet -- apps/web/src/api/generated`

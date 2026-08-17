@@ -16,6 +16,7 @@ import type {
   ProblemResponse,
   Product,
   ProductList,
+  StorefrontProduct,
   UpdateCategory,
   UpdateProduct
 } from './model';
@@ -488,6 +489,55 @@ export const patchAdminProductsId = async (id: string,
 );}
 
 
+
+export type storefrontGetProductResponse200 = {
+  data: StorefrontProduct
+  status: 200
+}
+
+export type storefrontGetProductResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type storefrontGetProductResponse429 = {
+  data: Problem
+  status: 429
+}
+
+export type storefrontGetProductResponseSuccess = (storefrontGetProductResponse200) & {
+  headers: Headers;
+};
+export type storefrontGetProductResponseError = (storefrontGetProductResponse404 | storefrontGetProductResponse429) & {
+  headers: Headers;
+};
+
+export type storefrontGetProductResponse = (storefrontGetProductResponseSuccess | storefrontGetProductResponseError)
+
+export const getStorefrontGetProductUrl = (sku: string,) => {
+
+
+
+
+  return `/v1/products/${sku}`
+}
+
+/**
+ * Ruta PÚBLICA `GET /v1/products/{sku}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `sku` (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
+ * @summary Ficha pública de producto publicado (US-003 AC-1/AC-2)
+ */
+export const storefrontGetProduct = async (sku: string, options?: Parameters<typeof customFetch>[1]): Promise<storefrontGetProductResponse> => {
+
+  return customFetch<storefrontGetProductResponse>(getStorefrontGetProductUrl(sku),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 export const getPostAdminAuthLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
 export const getPostAdminCategoriesResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
@@ -503,6 +553,8 @@ export const getGetAdminProductsResponseMock = (overrideResponse: Partial<Extrac
 export const getGetAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getPatchAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
 
 
 export const getPostAdminAuthLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
@@ -600,6 +652,18 @@ export const getPatchAdminProductsIdMockHandler = (overrideResponse?: Product | 
       })
   }, options)
 }
+
+export const getStorefrontGetProductMockHandler = (overrideResponse?: StorefrontProduct | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<StorefrontProduct> | StorefrontProduct), options?: RequestHandlerOptions) => {
+  return http.get('*/products/:sku', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStorefrontGetProductResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getPostAdminAuthLoginMockHandler(),
   getPostAdminCategoriesMockHandler(),
@@ -608,5 +672,6 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getPostAdminProductsMockHandler(),
   getGetAdminProductsMockHandler(),
   getGetAdminProductsIdMockHandler(),
-  getPatchAdminProductsIdMockHandler()
+  getPatchAdminProductsIdMockHandler(),
+  getStorefrontGetProductMockHandler()
 ]

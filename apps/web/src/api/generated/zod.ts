@@ -218,3 +218,26 @@ export const PatchAdminProductsIdResponse = zod.object({
   "created_at": zod.string().datetime({"offset":true}),
   "updated_at": zod.string().datetime({"offset":true})
 })
+
+
+/**
+ * Ruta PÚBLICA `GET /v1/products/{sku}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `sku` (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
+ * @summary Ficha pública de producto publicado (US-003 AC-1/AC-2)
+ */
+export const StorefrontGetProductParams = zod.object({
+  "sku": zod.string()
+})
+
+export const StorefrontGetProductResponse = zod.object({
+  "sku": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullable().describe('description_raw; US-005 antepondrá la enriquecida.'),
+  "price_ars_cents": zod.number().int().describe('Centavos ARS, IVA incluido (AC-9).'),
+  "currency": zod.enum(['ARS']),
+  "image_url": zod.string().nullable(),
+  "in_stock": zod.boolean().describe('Derivado de stock mayor a 0 (AC-3\/AC-4); sin exponer el nivel.'),
+  "category": zod.object({
+  "name": zod.string(),
+  "slug": zod.string()
+})
+}).describe('Ficha pública (US-003): sólo campos SEO; sin id\/stock\/status\/timestamps.')
