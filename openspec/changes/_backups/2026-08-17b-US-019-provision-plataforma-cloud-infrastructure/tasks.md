@@ -9,8 +9,6 @@ language: es
 
 > Cada task es closure-grade: `Exit criterion:` observable + `Verify:` con el comando exacto. Muchas verificaciones usan la Railway CLI (`railway`), la Neon CLI (`neonctl`) y `wrangler` (Cloudflare); donde no hay comando, el `Verify:` nombra el chequeo humano explícito en el dashboard.
 >
-> **Re-plan 2026-08-17b (`--regenerate`, paridad de esquema dinámica)**: T3.1/T3.2 y el check suite-level afirmaban **8 columnas** en `products` — el AS-BUILT de US-001. El esquema autorizado en `packages/db` ya tiene **12** (US-003 sumó `description_raw`/`image_url`/`updated_at` en `20260716230030` y `slug` en `20260816120000`) más el índice `products_slug_key`, así que esas aserciones habrían dado rojo por obsolescencia, no por un problema real. Se reemplazó el número fijo por una comparación **dinámica contra `schema.prisma`** (`prisma migrate diff --exit-code`) + una lista de CHECK/índices **derivada de las migraciones** (lo que `migrate diff` no ve). Ground truth confirmado contra la base local por la sesión de backend: 12 columnas, `products_pkey`/`products_sku_key`/`products_slug_key`/`products_category_id_status_idx`, FK `products_category_id_fkey`, 3 CHECK, 0 slugs nulos ni duplicados.
->
 > **Re-plan 2026-08-17 (`--regenerate`, corrección de `Verify:` defectuoso)**: dos `Verify:` basados en `git grep` (T2.1 y el check suite-level de secretos) se matcheaban a sí mismos y no podían dar verde nunca; se les añadió `':(exclude)*.md'` al pathspec. Gap de framework registrado como **F57**. Las tasks ya cerradas (T0.1, T0.2) conservan su estado y su AS-BUILT. Backup: `openspec/changes/_backups/2026-08-17-US-019-…/`.
 >
 > **Re-plan 2026-08-16 (local-first, decisión PO)**: el orden se reestructuró para que lo que vive en el repo (config-as-code + runbook) se ejecute PRIMERO sin credenciales de nube, y todo el provisioning cloud quede gated al final. Mapeo con el plan anterior: T0.1 ← ex-T2.1, T0.2 ← ex-T5.1, T2.1 ← ex-T2.2; el ex-T2.3 (DNS custom) pasa a deferral documentado. Backup del plan previo en `openspec/changes/_backups/2026-08-16-US-019-provision-plataforma-cloud-infrastructure/`.
@@ -70,12 +68,12 @@ language: es
 ## Fase 3: Aplicar el esquema a la nube (staging — gated)
 
 - [ ] T3.1 Aplicar las migraciones de `packages/db` contra el Neon de staging
-  - **Exit criterion**: el esquema del catálogo (`categories`, `products`, extensión `vector`) existe en Neon staging **sin drift contra el datamodel autorizado** en `packages/db/prisma/schema.prisma`. La aserción es **dinámica**: no fija un número de columnas, compara contra la fuente de verdad tal como esté al momento de correr.
-  - **Verify**: `DATABASE_URL="$NEON_STAGING_URL" pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/db exec prisma migrate diff --from-url "$NEON_STAGING_URL" --to-schema-datamodel prisma/schema.prisma --exit-code` — exit **0** = sin drift (verde); exit **2** = la nube difiere del datamodel (rojo); exit 1 = error de conexión.
+  - **Exit criterion**: el esquema del catálogo (`categories`, `products`, extensión `vector`) existe en Neon staging, idéntico al validado en local (paridad AS-BUILT: `products` con 8 columnas).
+  - **Verify**: `DATABASE_URL="$NEON_STAGING_URL" pnpm --filter @dsm/db migrate:deploy && psql "$NEON_STAGING_URL" -c "\dt" | grep -Eq 'products|categories' && psql "$NEON_STAGING_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'" | grep -qx 8`
 
-- [ ] T3.2 Confirmar en la nube los CHECK e índices que Prisma NO modela
-  - **Exit criterion**: cada CHECK constraint y cada índice que las migraciones de `packages/db` declaran en SQL crudo existe en Neon staging. Son justo lo que `migrate diff` (T3.1) **no** puede ver —Prisma no representa CHECK constraints en el datamodel—, así que este task cubre el hueco. La lista esperada se **deriva de las migraciones**, no se hardcodea: hoy son los CHECK `products_price_check`/`products_stock_check`/`products_status_check` y los índices `products_sku_key`/`products_slug_key`/`products_category_id_status_idx`, y crece sola con cada migración nueva.
-  - **Verify**: `for c in $(grep -rhoE 'CONSTRAINT "products_[a-z_]+_check"' packages/db/prisma/migrations/*/migration.sql | grep -oE 'products_[a-z_]+_check' | sort -u); do psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_constraint WHERE conrelid='products'::regclass AND conname='$c'" | grep -qx 1 || { echo "FALTA constraint $c"; exit 1; }; done && for i in $(grep -rhoE 'INDEX "products_[a-z_]+"' packages/db/prisma/migrations/*/migration.sql | grep -oE 'products_[a-z_]+' | sort -u); do psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_indexes WHERE tablename='products' AND indexname='$i'" | grep -qx 1 || { echo "FALTA indice $i"; exit 1; }; done`
+- [ ] T3.2 Confirmar constraints e índices en la nube (paridad con local)
+  - **Exit criterion**: en Neon staging, `products.sku` es UNIQUE (`products_sku_key`), existen los CHECK `products_price_check`/`products_stock_check`/`products_status_check` y el índice `products_category_id_status_idx`.
+  - **Verify**: `psql "$NEON_STAGING_URL" -c "\d products" | grep -q 'products_sku_key' && psql "$NEON_STAGING_URL" -tAc "SELECT conname FROM pg_constraint WHERE conrelid='products'::regclass AND contype='c';" | grep -Eq 'products_(price|stock|status)_check' && psql "$NEON_STAGING_URL" -c "\d products" | grep -q 'products_category_id_status_idx'`
 
 ## Fase 4: Autodeploy y observabilidad (cloud — gated)
 
@@ -99,4 +97,4 @@ language: es
 - [x] Config Railway válida en repo: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))"` *(verde 2026-08-16)*
 - [x] Runbook presente: `test -f docs/services/dsm-ecommerce/runbook.md` *(verde 2026-08-16)*
 - [ ] `pgvector` disponible en Neon (cloud — gated): `psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`.
-- [ ] Esquema en la nube = datamodel autorizado, **sin número hardcodeado** (cloud — gated): `pnpm --filter @dsm/db exec prisma migrate diff --from-url "$NEON_STAGING_URL" --to-schema-datamodel prisma/schema.prisma --exit-code` sale **0**.
+- [ ] Esquema en la nube = esquema local (cloud — gated; 8 columnas en products): `psql "$NEON_STAGING_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'"` = `8`.
