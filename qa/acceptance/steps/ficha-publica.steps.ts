@@ -91,14 +91,24 @@ Then('ve el indicador {string}', async function (
   await expect(this.page!.getByText(texto, { exact: true })).toBeVisible();
 });
 
-Then('se ofrece la acción de agregar al carrito', async function (
+Then('la ficha presenta la acción de agregar al carrito', async function (
   this: CatalogWorld,
 ) {
-  const boton = this.page!.getByRole('button', { name: /Agregar al carrito/i });
-  await expect(boton).toBeVisible();
-  // AC-3 pide que la acción se OFREZCA: un botón deshabilitado no la ofrece
-  // (decisión D-2 — va activo contra el seam que US-007 reemplaza).
-  await expect(boton).toBeEnabled();
+  // AC-3 con la lectura que fijó el PO el 2026-08-17 (D6 sobre D-2): la ficha
+  // PRESENTA la acción; ser operable llega con US-007.
+  await expect(
+    this.page!.getByRole('button', { name: /Agregar al carrito/i }),
+  ).toBeVisible();
+});
+
+Then('esa acción todavía no es operable', async function (this: CatalogWorld) {
+  // El seam está listo pero sin destino: un botón activo que no hace nada da
+  // peor señal que uno visiblemente pendiente (design-system §7.14).
+  // Cuando US-007 conecte el carrito, este paso se invierte — y que falle
+  // entonces es CORRECTO: avisa que el seam ya tiene destino.
+  await expect(
+    this.page!.getByRole('button', { name: /Agregar al carrito/i }),
+  ).toBeDisabled();
 });
 
 Then('no se ofrece la acción de agregar al carrito', async function (

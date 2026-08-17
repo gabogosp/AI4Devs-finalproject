@@ -14,16 +14,15 @@ Característica: Ficha pública de producto (US-003)
     Entonces ve su nombre y su precio en pesos
     Y ve el indicador de disponibilidad "En stock"
 
-  # BLOQUEADO POR DECISIÓN, no por defecto. Conflicto entre dos decisiones
-  # documentadas: D-2 (PO, US-003 §10) dice que el CTA va ACTIVO contra un seam;
-  # D6 (design.md del change de FE) lo dejó DESHABILITADO, argumentando que un
-  # botón activo sin destino erosiona la confianza (design-system §7.14).
-  # La aserción NO se debilita: queda escrita como la pide AC-3 + D-2 y se
-  # excluye por tag hasta que el PO resuelva cuál de las dos vale.
-  @happy @blocked-by-decision
-  Escenario: H-3 — Un producto con stock ofrece iniciar la compra
+  # Resuelto 2026-08-17: el PO zanjó el conflicto D-2 vs D6 a favor de D6 — el
+  # CTA se PRESENTA pero todavía no es operable, porque un botón activo sin
+  # destino da peor señal que uno visiblemente pendiente (design-system §7.14).
+  # La acción se vuelve operable en US-007, que reemplaza el seam.
+  @happy
+  Escenario: H-3 — Un producto con stock presenta la acción de compra
     Cuando un visitante abre la ficha del producto publicado
-    Entonces se ofrece la acción de agregar al carrito
+    Entonces la ficha presenta la acción de agregar al carrito
+    Y esa acción todavía no es operable
 
   @corner
   Escenario: C-1 — Sin stock: visible pero no comprable

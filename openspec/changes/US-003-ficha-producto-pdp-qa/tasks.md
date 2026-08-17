@@ -54,9 +54,12 @@ language: es
 
 ## Fase 4: Accesibilidad
 
-- [ ] T4.1 axe-core sobre las dos variantes de la ficha
+- [ ] T4.1 axe-core sobre las dos variantes de la ficha — **BLOQUEADA POR DEFECTO** (ver abajo)
   - **Exit criterion**: TC-320 verde con **0 violaciones nivel AA** en la ficha con imagen y en la ficha con placeholder; la segunda verifica que el placeholder lleva `alt` descriptivo (requisito del AC-6).
   - **Verify**: `pnpm --filter @dsm/qa test:a11y`
+  - **DEFECTO HALLADO (2026-08-17)**: la ficha **sin stock** falla `color-contrast` WCAG 2.1 AA. El badge usa `text-gray-500` (`#6b7280`) sobre `bg-gray-100` (`#f3f4f6`) → **4.39:1**, contra el 4.5:1 exigido para texto normal. Está a un pelo, y por eso no se ve a ojo. 6/7 specs de a11y verdes; TC-320c queda **rojo a propósito**: es código de producción y QA no lo parchea. La aserción **no se debilita**.
+    - Componente: `apps/web/src/features/storefront/ProductPurchase.tsx`, el `<span>` del badge "Sin stock".
+    - Nota: el test de a11y del propio FE cubre *"el estado se comunica con texto, no sólo con color"* y pasa — el contraste **no es medible en jsdom**, sólo en un browser real. Es exactamente el split L2/L3 funcionando.
 
 ## Fase 5: Carga
 

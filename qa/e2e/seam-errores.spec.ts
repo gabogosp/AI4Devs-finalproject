@@ -2,12 +2,12 @@ import { test, expect, type Page } from '@playwright/test';
 
 const BOOTSTRAP = process.env.ADMIN_BOOTSTRAP_TOKEN || 'qa-bootstrap';
 
-// Login REAL por la página /acceso (X-6 desbloqueado por backend Fase 9).
+// Login REAL por la página /admin/acceso (X-6 desbloqueado por backend Fase 9).
 async function login(page: Page): Promise<void> {
-  await page.goto('/acceso');
+  await page.goto('/admin/acceso');
   await page.getByLabel(/Token de acceso/).fill(BOOTSTRAP);
   await page.getByRole('button', { name: 'Entrar' }).click();
-  await page.waitForURL(/\/productos/);
+  await page.waitForURL(/\/admin\/productos/);
 }
 
 async function pickCategory(page: Page): Promise<void> {
@@ -28,7 +28,7 @@ test.describe('Costura FE↔BE contra la API real', () => {
     await login(page);
     const sku = `E2E-${Date.now()}`;
     // Alta 1 (ok)
-    await page.goto('/productos/nuevo');
+    await page.goto('/admin/productos/nuevo');
     await page.getByLabel(/SKU/).fill(sku);
     await page.getByLabel(/Nombre/).fill('Heladera E2E');
     await page.getByLabel(/Precio/).fill('1000');
@@ -37,7 +37,7 @@ test.describe('Costura FE↔BE contra la API real', () => {
     await page.getByRole('button', { name: /Crear en borrador/ }).click();
     await expect(page.getByText(/Creado en borrador/)).toBeVisible();
     // Alta 2 con el mismo SKU → 409 → banner
-    await page.goto('/productos/nuevo');
+    await page.goto('/admin/productos/nuevo');
     await page.getByLabel(/SKU/).fill(sku);
     await page.getByLabel(/Nombre/).fill('Duplicada');
     await page.getByLabel(/Precio/).fill('2000');
@@ -55,14 +55,14 @@ test.describe('Costura FE↔BE contra la API real', () => {
   });
 
   test('TC-022: sin sesión admin → redirige a /acceso (AC-8)', async ({ page }) => {
-    await page.goto('/productos');
+    await page.goto('/admin/productos');
     await page.waitForURL(/\/acceso/);
     await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
   });
 
   test('TC-024: validación por campo se muestra inline (AC-5)', async ({ page }) => {
     await login(page);
-    await page.goto('/productos/nuevo');
+    await page.goto('/admin/productos/nuevo');
     await page.getByLabel(/SKU/).fill(`E2E-${Date.now()}`);
     await page.getByLabel(/Precio/).fill('0'); // inválido
     await pickCategory(page);
