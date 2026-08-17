@@ -203,7 +203,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
 > **borraron** para dejar el build verde mientras se resolvía D0; se reconstruyen acá bajo el
 > namespace ya decidido.
 
-- [ ] **T3.1** `app/(storefront)/productos/[slug]/page.tsx` — Server Component + 404 real + boundaries del segmento (0.75 h)
+- [x] **T3.1** `app/(storefront)/productos/[slug]/page.tsx` — Server Component + 404 real + boundaries del segmento (0.75 h)
   - **Pattern**:
     ```tsx
     // Server Component async (SIN "use client") — next-standards §2/§3
