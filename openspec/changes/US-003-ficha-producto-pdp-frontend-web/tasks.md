@@ -42,7 +42,7 @@ Cobertura no-AC del design.md (F51): cliente isomorfo → T1.2; codegen → T1.1
   - **Exit criterion**: `src/api/generated/endpoints.ts` exporta la operación `storefrontGetProduct` (y `zod.ts` su schema; los handlers MSW generados la incluyen); volver a correr el codegen no produce diff (gate `frontend-codegen-fresh` se mantiene verde).
   - **Verify**: `pnpm --filter @dsm/web codegen && grep -q "storefrontGetProduct" apps/web/src/api/generated/endpoints.ts && grep -qi "storefrontGetProduct\|StorefrontProduct" apps/web/src/api/generated/zod.ts && git diff --quiet -- apps/web/src/api/generated`
 
-- [ ] T1.2 Cliente HTTP isomorfo: `customFetch` ejecutable en Server Components sin romper la caché de datos de Next (0.5 h)
+- [x] T1.2 Cliente HTTP isomorfo: `customFetch` ejecutable en Server Components sin romper la caché de datos de Next (0.5 h)
   - **Pattern**:
     ```ts
     // src/lib/http/client.ts — sigue siendo el ÚNICO punto de red (F48)

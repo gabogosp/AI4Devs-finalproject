@@ -16,9 +16,25 @@ import { AppErrorException, mapProblemToAppError, networkError } from './errors'
  *
  * Éste es el ÚNICO `fetch` crudo del frontend y está declarado como tal en
  * `.consumer-contract-allow`.
+ *
+ * **Isomorfo** (US-003): el storefront lo ejecuta también desde Server
+ * Components. En servidor no se inyectan `authorization` (superficie pública)
+ * ni `traceparent`: un header aleatorio por render entra en la clave de la Data
+ * Cache de Next y anularía `revalidate`/`tags`. Las opciones de caché del caller
+ * (`next`, `cache`) se reenvían al `fetch` subyacente — la política de caché la
+ * declara cada servicio, nunca este mutator (next-standards §3).
  */
 
 const DEFAULT_TIMEOUT_MS = 15_000;
+
+/**
+ * `RequestInit` + las extensiones de caché de Next. Es el tipo que ve el cliente
+ * generado (`options?: Parameters<typeof customFetch>[1]`), así que un servicio
+ * puede declarar `{ next: { revalidate, tags } }` con tipos.
+ */
+export type FetchInit = RequestInit & {
+  next?: { revalidate?: number | false; tags?: string[] };
+};
 
 function hex(len: number): string {
   let out = '';
@@ -42,8 +58,10 @@ function traceparent(): string {
  */
 export async function customFetch<T>(
   url: string,
-  init: RequestInit = {},
+  init: FetchInit = {},
 ): Promise<T> {
+  const isServer = typeof window === 'undefined';
+
   const absolute = url.startsWith('http')
     ? url
     : `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${url}`;
@@ -58,9 +76,13 @@ export async function customFetch<T>(
   if (!headers.has('content-type')) {
     headers.set('content-type', 'application/json');
   }
-  headers.set('traceparent', traceparent());
-  const token = getAuthToken();
-  if (token) headers.set('authorization', `Bearer ${token}`);
+  // Sólo en el browser: el token es de la sesión del panel y el traceparent es
+  // aleatorio por llamada — en servidor rompería la clave de la Data Cache.
+  if (!isServer) {
+    headers.set('traceparent', traceparent());
+    const token = getAuthToken();
+    if (token) headers.set('authorization', `Bearer ${token}`);
+  }
 
   let res: Response;
   try {
