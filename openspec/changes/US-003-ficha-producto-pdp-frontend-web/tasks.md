@@ -393,7 +393,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
 
 ## Fase 6: A11y + E2E (SSR / 404 / invalidación reales)
 
-- [ ] **T6.1** Accesibilidad — axe sin violaciones en los tres estados de la ficha (0.5 h)
+- [x] **T6.1** Accesibilidad — axe sin violaciones en los tres estados de la ficha (0.5 h)
   - **Pattern**: jest-axe sobre el render de `ProductDetail` en (a) con stock, (b) sin stock, (c) sin
     imagen → 0 violaciones; asserts adicionales: `h1` único, `alt` descriptivo, badge con texto,
     enlace WhatsApp con nombre accesible — per design-system §11 (WCAG 2.1 AA) +
