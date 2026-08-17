@@ -1,6 +1,7 @@
 import { formatArs } from '@/lib/format/currency';
 import { ProductJsonLd } from './ProductJsonLd';
 import { ProductImage } from './ProductImage';
+import { ProductPurchase } from './ProductPurchase';
 import type { StorefrontProduct } from './storefrontService';
 
 /**
@@ -37,6 +38,8 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
           </p>
           <p className="text-xs text-gray-500">IVA incluido</p>
         </div>
+
+        <ProductPurchase inStock={product.in_stock} productName={product.name} />
 
         {product.description && (
           <div className="flex flex-col gap-2">

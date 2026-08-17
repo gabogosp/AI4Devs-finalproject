@@ -351,7 +351,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     env y sin `hostname: '**'`; tests cubren los tres casos (válida / null / onError).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/ProductImage && pnpm --filter @dsm/web build && ! grep -n "hostname: *'\*\*'" apps/web/next.config.mjs`
 
-- [ ] **T4.3** Estados de compra: CTA `accent` con seam (AC-3) vs "Sin stock" + WhatsApp (AC-4) (0.5 h)
+- [x] **T4.3** Estados de compra: CTA `accent` con seam (AC-3) vs "Sin stock" + WhatsApp (AC-4) (0.5 h)
   - **Pattern**: `in_stock: true` → `Button` variante `accent` "Agregar al carrito" (§7.1)
     **deshabilitado** con seam `onAddToCart` para US-007 (OQ-FE-2; estado disabled del §7.1).
     `in_stock: false` → badge "Sin stock" (§7.7: pill con **texto** + color, el color nunca es único
