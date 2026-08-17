@@ -106,6 +106,28 @@ language: es
   - **Exit criterion**: la ficha pública se resuelve por `slug`; draft/archived/inexistente siguen devolviendo el **mismo** 404 uniforme (sin enumeration leak); el `openapi.yaml` declara el path param `slug` y el contrato vivo de la capacidad se regenera; los 6 specs e2e-nest del storefront siguen verdes contra el identificador nuevo.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront && grep -q "products/{slug}" apps/api/docs/api/openapi.yaml`
 
+## Fase 11: `slug` en el contrato admin (pedido de FE-US-003) — 0.2 h
+
+> **Añadida 2026-08-17**. La Fase 10 expuso `slug` en la superficie pública pero no en la
+> admin. FE-US-003 necesita el slug tras mutar en el panel para invalidar la caché de la
+> ficha (`revalidateTag('product:{slug}')`, OQ-FE-4 opción C ratificada por el PO). No puede
+> derivarlo con `kebab(name)`: el slug se conserva al renombrar y lleva sufijo ante colisión,
+> así que la derivación en cliente acertaría sólo en el caso feliz y fallaría en silencio
+> justo en los dos casos que importan. Aditivo: ningún consumidor rompe por un campo nuevo.
+
+- [x] T11.1 `slug` en `ProductResponseDto` y en el schema `Product` del contrato
+  - **Pattern**: `slug: p.slug` en `ProductResponseDto.from()` (mismo mapper que ya usan
+    create/list/get/patch — no hay que tocar handlers) + `slug` en `required` y `properties`
+    del schema `Product` de `apps/api/docs/api/openapi.yaml` — `per api-standards.md §5 — el
+    contrato declara todo campo que la respuesta emite`. La derivación no cambia: sigue
+    siendo server-side (T10.2), acá sólo se expone.
+  - **Exit criterion**: toda respuesta admin de producto (POST/GET/PATCH) incluye `slug` con
+    el valor real de la fila, no uno derivado del `name`: un segundo producto con el mismo
+    nombre devuelve el sufijo de desambiguación, y renombrar un producto devuelve el slug
+    original. El schema `Product` del `openapi.yaml` lo declara como requerido y el contrato
+    valida como OpenAPI 3.x.
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-products-create && npx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml` (los dos escenarios de colisión y renombrado pasan contra Postgres real; contract lint 0 errores)
+
 ## Verification (suite-level)
 
 - [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test` (30 suites / 128 tests verdes)
@@ -130,5 +152,6 @@ language: es
 | AC-9 (precio vigente) | T6.1, T8.1 | en este change — lectura viva + caché acotada |
 | — (rate-limit surface público §7.3) | T5.1 | en este change — declaración de diseño, no AC (F51) |
 | — (evento `product.viewed`, US §9) | T7.1 | en este change — insumo panel US-016 |
+| — (`slug` en el contrato admin para invalidación del panel) | T11.1 | en este change — pedido de FE-US-003, declaración de contrato, no AC |
 | — (columna `products.slug` + backfill, design §Persistencia) | T10.1 | en este change — declaración de datos, no AC (F40) |
 | — (slug nunca aceptado del cliente ni recalculado al editar, design §Persistencia) | T10.2 | en este change — declaración de diseño, no AC (F51) |

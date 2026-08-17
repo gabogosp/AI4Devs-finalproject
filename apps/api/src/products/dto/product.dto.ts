@@ -92,6 +92,13 @@ export class ListProductsQueryDto {
 export class ProductResponseDto {
   id!: string;
   sku!: string;
+  /**
+   * URL amigable de la ficha pública (US-003 Fase 10). El panel la necesita para
+   * invalidar la caché del storefront tras una mutación (`product:{slug}`): no
+   * puede derivarla del `name`, porque el slug se conserva al renombrar y lleva
+   * sufijo ante colisión.
+   */
+  slug!: string;
   name!: string;
   description_raw!: string | null;
   price_ars_cents!: number;
@@ -106,6 +113,7 @@ export class ProductResponseDto {
     return {
       id: p.id,
       sku: p.sku,
+      slug: p.slug,
       name: p.name,
       description_raw: p.description_raw,
       price_ars_cents: p.price_ars_cents,

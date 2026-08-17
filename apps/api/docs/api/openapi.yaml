@@ -267,6 +267,7 @@ components:
         [
           id,
           sku,
+          slug,
           name,
           description_raw,
           price_ars_cents,
@@ -280,6 +281,9 @@ components:
       properties:
         id: { type: string, format: uuid }
         sku: { type: string }
+        slug:
+          type: string
+          description: 'URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'
         name: { type: string }
         description_raw: { type: string, nullable: true }
         price_ars_cents: { type: integer }
