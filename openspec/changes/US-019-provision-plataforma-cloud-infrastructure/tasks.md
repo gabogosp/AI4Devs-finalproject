@@ -89,9 +89,10 @@ language: es
 
 ## Verificación (suite-level)
 
-- [ ] Sin Terraform en el repo (anti-pattern del baseline): `! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .`
+- [x] Sin Terraform en el repo (anti-pattern del baseline): `! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .` *(verde 2026-08-16)*
 - [ ] Sin secretos comiteados: `git grep -Ei 'postgres://[^ ]*:[^ ]*@|APP_USR-|AIza[A-Za-z0-9]{20}|sk_live' -- . ':(exclude).env.example'` no devuelve nada.
-- [ ] Config Railway válida en repo: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))"`.
-- [ ] Runbook presente: `test -f docs/services/dsm-ecommerce/runbook.md`.
+  - ⚠️ **Verify defectuoso — auto-match (detectado 2026-08-16, pendiente de decisión del usuario)**: el patrón se matchea a sí mismo citado en los `tasks.md` de este change y de los backups, así que **nunca puede dar verde**. Scan estricto excluyendo `*.md` → **0 hits: no hay secretos reales**; los únicos `.env*` trackeados son `.env.example` y `apps/web/.env.example`, y `.env`/`.env.local` están gitigneados. Forma corregida propuesta: añadir `':(exclude)*.md'` al pathspec.
+- [x] Config Railway válida en repo: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))"` *(verde 2026-08-16)*
+- [x] Runbook presente: `test -f docs/services/dsm-ecommerce/runbook.md` *(verde 2026-08-16)*
 - [ ] `pgvector` disponible en Neon (cloud — gated): `psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`.
 - [ ] Esquema en la nube = esquema local (cloud — gated; 8 columnas en products): `psql "$NEON_STAGING_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products'"` = `8`.
