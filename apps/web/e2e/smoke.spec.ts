@@ -16,6 +16,7 @@ const category = {
 const product = (status = 'draft') => ({
   id: '11111111-1111-4111-8111-111111111111',
   sku: 'REF-001',
+  slug: 'heladera',
   name: 'Heladera',
   description_raw: null,
   price_ars_cents: 100000,

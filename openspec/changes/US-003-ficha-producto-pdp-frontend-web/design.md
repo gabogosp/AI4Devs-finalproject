@@ -161,6 +161,29 @@ edición del contrato está **sin commitear**. La *forma* está decidida, pero e
 (T1.1) refleja esa forma. Si el backend cambiara la forma, el impacto es una regeneración del
 codegen y el rename del parámetro de ruta, no un rediseño.
 
+### D1.bis — La ficha NO lleva `loading.tsx`: un skeleton la haría devolver 200 en vez de 404
+
+**Hallazgo de ejecución (2026-08-17), medido, no teórico.** Un `loading.tsx` colocado en el
+segmento `productos/[slug]` envuelve la página en una boundary de Suspense. Next entonces
+**transmite**: descarga el shell (el skeleton) apenas puede, con **status 200 ya comprometido**, y
+sólo después corre el componente. Cuando el fetch devuelve 404 y la página llama a `notFound()`,
+el status ya no se puede cambiar — el 404 llega como fallback de streaming
+(`<template data-dgst="NEXT_HTTP_ERROR_FALLBACK;404">`) dentro de una respuesta **200**.
+
+Es exactamente el soft-200 que AC-7/AC-8 prohíben: un buscador indexaría la página de error como
+contenido válido. Verificado aislando cada archivo del segmento con build y servidor limpios:
+`not-found.tsx` → 404 correcto; `+ error.tsx` → 404 correcto; `+ loading.tsx` → **200**.
+
+**Decisión**: el segmento de la ficha **no** lleva `loading.tsx`. Además de ser lo que exige el AC,
+es lo coherente con el propósito de la página: es SSR **para SEO**, así que se quiere el HTML
+completo en la respuesta inicial, no un skeleton transmitido que el crawler ve primero. El costo es
+bajo — el fetch tiene p95 < 300 ms y está cacheado por ISR, así que la ventana que cubriría el
+skeleton es mínima. `error.tsx` y `not-found.tsx` **sí** se conservan: no comprometen el status.
+
+**Consecuencia para el resto del storefront**: cualquier ruta futura cuyo 404 deba ser real (la
+grilla por categoría de US-002, por ejemplo) hereda la misma restricción. Un `loading.tsx` sólo es
+seguro en rutas que **siempre** responden 200.
+
 ### D2 — Data fetching y frescura del precio (AC-9): caché por tag + invalidación on-demand desde el panel (OQ-FE-4 opción C)
 
 Fetch en el Server Component vía el servicio (next-standards §3: fetch en RSC, caché **explícita**

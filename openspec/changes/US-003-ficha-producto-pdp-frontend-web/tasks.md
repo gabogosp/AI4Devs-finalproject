@@ -223,8 +223,9 @@ sitemap/robots del storefront → `Deferred: US-002`.
     (skeleton con la forma de la ficha, no spinner). Copy de 404/error: design-system §10.2.
   - **Exit criterion**: la ruta renderiza server-side la ficha de un producto publicado; un
     `AppError.notFound` del servicio ejecuta `notFound()` (el status 404 real se prueba en T6.2);
-    existen `loading.tsx` (skeleton con la forma de la ficha) y `error.tsx` (reintento + reporte a
-    Sentry) en el segmento; tests de la page cubren **éxito** (renderiza el nombre) y **404**
+    existe `error.tsx` (reintento + reporte a Sentry) en el segmento y **no** existe `loading.tsx`
+    (design.md D1.bis: un skeleton transmite el shell con 200 y vuelve imposible el 404 real —
+    medido en ejecución); tests de la page cubren **éxito** (renderiza el nombre) y **404**
     (invoca `notFound`, con `next/navigation` espiado) y **error no-404** (propaga, no lo traga).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront && pnpm --filter @dsm/web build`
 
@@ -404,7 +405,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     fallan si se rompen (verificado invirtiendo temporalmente el assert durante el desarrollo).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/a11y`
 
-- [ ] **T6.2** Smoke E2E — SSR indexable + 404 real, contra stub del contrato como `webServer` (1 h)
+- [x] **T6.2** Smoke E2E — SSR indexable + 404 real, contra stub del contrato como `webServer` (1 h)
   - **Pattern**:
     ```js
     // apps/web/e2e/support/api-stub.mjs — node:http sin dependencias (design.md D10).
