@@ -128,10 +128,10 @@ Scenario: N-2 — Una ficha inexistente devuelve 404, no un 200 vacío
 
 @negative @critical-path
 Scenario: N-3 — El precio mostrado nunca es uno vencido por caché
-  Given un producto publicado visible en su ficha
-  When el dueño actualiza su precio desde el panel
-  And un visitante vuelve a abrir la ficha pasada la ventana de caché declarada
-  Then la ficha muestra el precio nuevo
+  Given un producto publicado visible en su ficha con su precio cacheado
+  When el dueño actualiza su precio desde la UI del panel
+  And un visitante vuelve a abrir la ficha
+  Then la ficha muestra el precio nuevo sin esperar el vencimiento de la caché
 
 @negative
 Scenario: N-4 — El 404 no distingue "no existe" de "no publicado"
@@ -196,7 +196,7 @@ Scenario: X-1 — La ficha usa la descripción enriquecida cuando existe (AC-5)
   test_layer: 3
   target_tooling: Playwright
   gherkin_scenario: "N-3 — precio vigente"
-  name: Pdp_TrasCambioDePrecioEnPanel_LaFichaMuestraElPrecioNuevo
+  name: Pdp_TrasEditarPrecioEnLaUiDelPanel_LaFichaMuestraElPrecioNuevoSinEsperar
 
 - id: TC-306
   scenario: S-6

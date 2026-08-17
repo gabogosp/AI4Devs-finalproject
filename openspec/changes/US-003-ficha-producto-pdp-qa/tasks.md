@@ -21,25 +21,25 @@ language: es
 
 ## Fase 1: Datos de test de la ficha pública
 
-- [ ] T1.1 Extender el seed con los estados que esta US necesita
+- [x] T1.1 Extender el seed con los estados que esta US necesita
   - **Exit criterion**: `seedFichaPublica()` en `qa/support/seed.ts` crea, vía API admin, un producto publicado **con** stock e imagen, uno publicado **sin stock**, uno publicado **sin imagen** y uno **archivado**; devuelve sus identificadores; re-ejecutar no colisiona (prefijo por-run).
   - **Verify**: `pnpm --filter @dsm/qa exec tsx support/seed-ficha.smoke.ts` (siembra los cuatro estados y los reporta sin error)
 
 ## Fase 2: E2E de la costura SSR/SEO (Playwright)
 
-- [ ] T2.1 Asertar SSR real sobre el HTML sin JavaScript (AC-2)
+- [x] T2.1 Asertar SSR real sobre el HTML sin JavaScript (AC-2)
   - **Exit criterion**: TC-302 verde — con JS **deshabilitado** en el contexto, el HTML servido ya contiene nombre y precio del producto. Un test que pasara con la página hidratada no vale: la aserción corre sobre el HTML crudo.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-302"`
-- [ ] T2.2 Asertar JSON-LD y metadatos propios de la ficha (AC-2)
+- [x] T2.2 Asertar JSON-LD y metadatos propios de la ficha (AC-2)
   - **Exit criterion**: TC-303 verde — el `<script type="application/ld+json">` parsea, es `@type: Product`, y su precio y disponibilidad coinciden con los que devuelve la API; `title` y `meta description` son propios del producto, no genéricos del sitio.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-303"`
-- [ ] T2.3 Ficha completa y 404 sin fuga de contenido (AC-1, AC-7, AC-8)
+- [x] T2.3 Ficha completa y 404 sin fuga de contenido (AC-1, AC-7, AC-8)
   - **Exit criterion**: TC-301 verde (nombre, precio ARS, categoría, disponibilidad) y TC-304 verde — draft, archivado e inexistente devuelven 404 y el HTML **no** contiene el nombre del producto ni se ofrece como indexable.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-301|TC-304"`
-- [ ] T2.4 Precio vigente cruzando panel → ficha (AC-9)
-  - **Exit criterion**: TC-305 verde — lee el precio en la ficha, lo cambia vía API admin (fixture de auth de US-001), espera la ventana de caché declarada por el backend, relee y asierta el precio nuevo. No asierta "inmediatamente": eso no probaría nada contra `max-age=60`.
+- [x] T2.4 Precio vigente cruzando panel → ficha (AC-9)
+  - **Exit criterion**: TC-305 verde — lee el precio en la ficha, lo edita **por la UI del panel** (`/admin/productos/{id}`) y relee: el precio nuevo aparece **sin espera temporal**. Corregido 2026-08-17: el FE implementó revalidación **on-demand** (`revalidateProduct` disparado desde el panel) sobre una Data Cache de 1 h, así que esperar TTL probaría el safety-net, no el circuito. Editar por **API directa NO invalida** — el camino tiene que ser la UI, si no el test mide otra cosa.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-305"`
-- [ ] T2.5 LCP bajo el presupuesto del NFR
+- [x] T2.5 LCP bajo el presupuesto del NFR
   - **Exit criterion**: TC-306 verde — LCP medido en la ficha **< 2.5 s**; el umbral sale del NFR de la US, no hardcodeado en el spec.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-306"`
 

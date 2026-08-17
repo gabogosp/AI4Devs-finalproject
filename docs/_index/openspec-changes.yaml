@@ -164,7 +164,7 @@
   us-id: US-003
   discipline: qa
   variant: null
-  status: draft
+  status: in progress
   parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
   linear-task-id: null
   audit-baseline: null
