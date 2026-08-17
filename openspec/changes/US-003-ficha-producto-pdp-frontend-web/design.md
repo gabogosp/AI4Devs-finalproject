@@ -59,22 +59,64 @@ resuelva: cambia el nombre del param del segmento y `/productos/{sku}` responde 
 (SEO preservado; el canonical ya se emite absoluto desde `NEXT_PUBLIC_SITE_URL`, así que el
 día de la migración el canonical cambia con la misma edición). **Alternativas**: bloquear
 por slug (detiene el critical path) o slug sintético client-side (duplica canónicas) —
-descartadas; decisión final del usuario en **OQ-FE-1 `[PENDIENTE-DECISIÓN]`**.
+descartadas; decisión del usuario en **OQ-FE-1 `[Resolved: 2026-08-16 — opción A]`**.
 
-### D2 — Data fetching y frescura del precio (AC-9): Server Component + `next: { revalidate: 60 }`
+### D2 — Data fetching y frescura del precio (AC-9): caché por tag + invalidación on-demand desde el panel (OQ-FE-4 opción C, decisión del usuario 2026-08-16)
 
 Fetch en el Server Component vía el servicio (next-standards §3: fetch en RSC, caché
-**explícita** por fetch — nunca implícita). Recomendación (OQ-FE-4 `[PENDIENTE-DECISIÓN]`,
-opción A): `next: { revalidate: 60 }`, espejo del TTL que el backend declaró (OQ-BE-2).
-Resultado: ISR — la ficha se sirve cacheada y se regenera a lo sumo cada 60s; un cambio de
-precio en el panel se ve en ≤ ~60–90s (peor caso: revalidate FE + max-age BE solapados),
-**nunca** un precio viejo indefinido — que es exactamente lo que AC-9 prohíbe. El 404 de un
-sku inexistente también queda acotado a 60s (un producto publicado después aparece solo).
-**Alternativas**: `no-store` (precio al segundo, pierde ISR — viable si el negocio lo pide)
-y `revalidateTag` on-demand desde el panel (frescura inmediata pero acopla panel↔storefront
-y agrega infraestructura — YAGNI v1). No hay `generateStaticParams` (los sku no se conocen
-al build; ISR on-demand cubre el catálogo). Sin `force-dynamic`: la ruta es estática con
-revalidación, lo que además sostiene p95 < 300ms y el budget LCP (E2E §17).
+**explícita** por fetch — nunca implícita), con **tag por producto**:
+
+```ts
+// storefrontService — la política de caché se declara en el servicio, no en el mutator
+storefrontGetProduct(sku, { next: { revalidate: 3600, tags: [`product:${sku}`] } });
+```
+
+- **Tag naming**: `product:{sku}` — 1 tag por producto; el `sku` es el identificador
+  público del contrato (D1). Cuando OQ-BE-1 migre a slug, el tag migra con el mismo edit.
+- **Invalidación on-demand** (la parte que da frescura inmediata): una **Server Action**
+  `revalidateProduct(sku)` en `src/features/storefront/revalidate.ts` (`'use server'`),
+  que ejecuta `revalidateTag('product:'+sku)` **y** `revalidatePath('/productos/'+sku)`.
+  Ambas a propósito: `revalidateTag` purga la Data Cache del fetch tageado;
+  `revalidatePath` purga además la entrada del Full Route Cache de esa URL — cubre el caso
+  **publicar un producto cuya ficha ya se cacheó como 404** (el render de `notFound()` no
+  siempre deja una entrada tageada en la Data Cache, así que el tag solo no garantiza
+  purgarlo; el path sí).
+- **Quién la invoca — el puente panel→storefront**: el panel muta vía la API NestJS
+  **desde el browser** (cliente generado + Bearer, decisión OQ-FE-2 de US-001), así que no
+  hay código server-side de Next en el camino de la mutación. El puente elegido es la
+  Server Action importada por el flujo de mutación de productos del panel
+  (`productsService` / acciones de fila): tras un `PATCH`/`POST` **exitoso** de producto
+  (edición de datos/precio, publicar, archivar), el cliente invoca
+  `revalidateProduct(sku)` (fire-and-forget con reporte a Sentry si falla — la mutación ya
+  se confirmó; un fallo de invalidación lo cubre el safety-net). Se elige Server Action y
+  no un Route Handler porque: (a) no introduce un `fetch` crudo en código de app (F48 — la
+  invocación de una action es RPC de Next, no HTTP escrito a mano, y no necesita entrada en
+  `.consumer-contract-allow`); (b) es el mecanismo que next-standards §4 prescribe para
+  mutaciones server-side de la propia app; (c) POST same-origin con la postura CSRF
+  built-in (§8.bis).
+- **Seguridad de la action** (next-standards §4 — "treat Server Actions as public
+  endpoints"): valida el input con Zod (`sku` acotado a `[A-Za-z0-9._-]{1,64}`) y su único
+  efecto es purgar caché — idempotente y benigno; el peor abuso posible es forzar
+  re-fetches al origen, que ya está protegido por el throttler `storefront` del BE (§7.3).
+  No requiere compartir el secreto JWT del BE con la app Next.
+- **Safety-net `revalidate: 3600`** (next-standards §3 — preferir estática + revalidación):
+  cubre mutaciones que NO pasan por el panel — el import masivo de US-006 (futuro),
+  operaciones directas sobre la DB, o una invalidación que falló. Peor caso absoluto: 1h de
+  dato viejo, **nunca indefinido** (AC-9). `Deferred: US-006 — el flujo de import debe
+  invocar la misma invalidación por cada sku afectado; hasta entonces lo cubre el safety-net`.
+- **Nota de coordinación FE↔BE**: la inmediatez asume que el fetch SSR llega **directo al
+  origen** de la API (topología actual: Next → API en Railway, sin CDN intermedio). Si
+  US-019 interpone un CDN que respete el `Cache-Control: max-age=60` del BE (OQ-BE-2), la
+  re-generación podría leer una respuesta cacheada hasta ~60–90s vieja — revisar en el
+  deployment planning de US-019 (bypass del CDN para el fetch server-side, o invalidación
+  del CDN junto con el tag).
+
+No hay `generateStaticParams` (los sku no se conocen al build; ISR on-demand cubre el
+catálogo). Sin `force-dynamic`: la ruta es estática con revalidación + purga dirigida, lo
+que sostiene p95 < 300ms y el budget LCP (E2E §17). **Alternativas descartadas**:
+(A — recomendación original del planner) ISR `revalidate: 60` alineado al TTL del BE —
+descartada por decisión del usuario 2026-08-16 (aceptaba ~60–90s de precio viejo);
+(B) `cache: 'no-store'` — precio al segundo pero pierde ISR/SEO y paga origen por vista.
 
 ### D3 — Choke point del contrato (F48): cliente generado + `customFetch` isomorfo
 
@@ -153,10 +195,10 @@ stateDiagram-v2
 El estado inicial no tiene loading en el cliente (es SSR); el skeleton del segmento cubre
 las navegaciones suaves futuras (resilience #12: forma real, no spinner).
 
-### D8 — Observabilidad (E2E §18; OQ-FE-5 `[PENDIENTE-DECISIÓN]`)
+### D8 — Observabilidad (E2E §18; OQ-FE-5 `[Resolved: 2026-08-16 — opción A]`)
 
-El BE emite `product.viewed` por hit al origen; con ISR (D2) el origen ve ~1 request/60s
-por sku → subcuenta. Recomendación (opción A): evento cliente `pdp_shown` (`sku`,
+El BE emite `product.viewed` por hit al origen; con la caché por tag (D2) el origen solo ve
+los re-fetches post-invalidación/safety-net → subcuenta. Decisión: evento cliente `pdp_shown` (`sku`,
 `in_stock`, `screen_name` — `sku` como propiedad de evento/analytics, **no** dimensión de
 métrica, per observability-patterns §3.3; sin PII, lectura anónima) extendiendo el catálogo
 tipado de `src/lib/observability/events.ts`. Web Vitals de la ficha ya reportan vía la
@@ -192,21 +234,26 @@ archivar: `openspec/specs/catalogo/requirements.md` suma los requisitos FE de la
 
 ## Trade-offs
 
-- **ISR 60s vs precio al segundo (D2)**: se acepta hasta ~60–90s de precio viejo a cambio
-  de ISR (SEO/LCP/carga de origen). Coherente con la decisión del BE; reversible cambiando
-  una opción de fetch si OQ-FE-4 se ratifica distinto.
+- **Invalidación on-demand vs ISR simple (D2, decisión del usuario)**: frescura inmediata
+  del precio a cambio de acoplar el flujo de mutación del panel al storefront (una Server
+  Action compartida) y de una pieza más a testear. Mitigado: la action es idempotente y
+  benigna, el safety-net de 1h cubre cualquier camino que no la invoque, y el acople es un
+  import de un módulo — no un contrato HTTP nuevo.
 - **`sku` en la URL (D1)**: URL menos "amigable" que un slug hoy, a cambio de no bloquear el
   critical path en una columna infra-owned; migración 301 planificada.
 - **CTA deshabilitado (D6)**: ficha visualmente completa y honesta vs un botón activo sin
   lógica; US-007 lo habilita inyectando el handler (cero re-layout).
 - **Smoke E2E con API real** (no `page.route`): el fetch SSR es server-side — el mock de
-  browser no lo intercepta; se paga el seed por API a cambio de verificar el SSR de verdad.
+  browser no lo intercepta; se paga el seed por API a cambio de verificar el SSR de verdad
+  y, con la edición vía panel, el circuito completo de invalidación (AC-9 end-to-end).
 
 ## Open questions
 
-Ver `proposal.md` §Open questions: OQ-FE-1 (URL), OQ-FE-2 (CTA), OQ-FE-3 (número WhatsApp),
-OQ-FE-4 (frescura del precio), OQ-FE-5 (fuente del conteo de vistas). Las cuatro marcadas
-`[PENDIENTE-DECISIÓN]` ejecutan la recomendación salvo decisión distinta del usuario.
+Ver `proposal.md` §Open questions. Ratificación del usuario 2026-08-16: OQ-FE-1 (URL por
+`sku`, opción A), OQ-FE-2 (CTA deshabilitado con seam, opción A), OQ-FE-4 (**opción C —
+invalidación on-demand**, no la recomendada) y OQ-FE-5 (evento `pdp_shown` + `product.viewed`,
+opción A) quedan `[Resolved]`. Pendiente solo OQ-FE-3 (número real de WhatsApp — dato del
+cliente, no bloquea).
 
 ## References
 
