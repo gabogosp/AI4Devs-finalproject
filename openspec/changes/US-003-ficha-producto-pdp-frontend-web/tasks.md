@@ -315,7 +315,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
 
 ## Fase 4: Componentes de la ficha (design-system §7 — sin Figma)
 
-- [ ] **T4.1** `ProductDetail` — jerarquía fija + PriceTag + categoría + descripción (0.5 h)
+- [x] **T4.1** `ProductDetail` — jerarquía fija + PriceTag + categoría + descripción (0.5 h)
   - **Pattern**: jerarquía de lectura **imagen → nombre (`h1` único) → precio → disponibilidad →
     CTA** per design-system §7.3; precio con el helper existente `src/lib/format/currency.ts`
     (`$ 12.500`, mismo helper server/client — §7.4, evita hydration mismatch) en `text-3xl`/bold +

@@ -7,14 +7,17 @@ import type { StorefrontProduct } from './storefrontService';
  * servidor para que Google lo indexe (AC-2).
  *
  * Jerarquía de lectura del design-system §7.3: imagen → nombre → precio →
- * disponibilidad → CTA.
+ * disponibilidad → CTA. El orden del DOM la respeta aunque el layout sea de dos
+ * columnas en desktop.
  */
 export function ProductDetail({ product }: { product: StorefrontProduct }) {
   return (
     <article className="mx-auto flex max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:gap-10 lg:p-8">
       <ProductJsonLd product={product} />
 
-      <div className="flex w-full flex-col gap-4 lg:w-1/2">
+      <div className="flex w-full flex-col gap-5 lg:w-1/2">
+        <p className="text-sm text-muted">{product.category.name}</p>
+
         <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
           {product.name}
         </h1>
@@ -25,6 +28,20 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
           </p>
           <p className="text-xs text-gray-500">IVA incluido</p>
         </div>
+
+        {product.description && (
+          <div className="flex flex-col gap-2">
+            <h2 className="text-base font-semibold text-foreground">
+              Descripción
+            </h2>
+            {/* Texto plano: la descripción la escribe el dueño (o la genera la
+                IA en US-005) y nunca se interpreta como HTML. Los saltos de
+                línea se respetan con whitespace-pre-line. */}
+            <p className="whitespace-pre-line text-foreground">
+              {product.description}
+            </p>
+          </div>
+        )}
       </div>
     </article>
   );
