@@ -330,7 +330,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     precio (falla si el precio se muestra en centavos o sin separador de miles).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/ProductDetail`
 
-- [ ] **T4.2** `ProductImage` — `next/image` con `priority`/`sizes` + fallback placeholder (AC-6, LCP) (0.5 h)
+- [x] **T4.2** `ProductImage` — `next/image` con `priority`/`sizes` + fallback placeholder (AC-6, LCP) (0.5 h)
   - **Pattern**:
     ```tsx
     // Hoja client mínima (necesita onError) — next-standards §2 ("use client" en hojas)

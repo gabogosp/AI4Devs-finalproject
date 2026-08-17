@@ -20,6 +20,17 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    // Host de imágenes por env, nunca un comodín que acepte cualquier dominio:
+    // eso convertiría al optimizador de Next en un proxy abierto que cualquiera
+    // puede usar para servir imágenes de terceros a costa nuestra.
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: process.env.NEXT_PUBLIC_IMAGE_CDN_HOST ?? 'localhost',
+      },
+    ],
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

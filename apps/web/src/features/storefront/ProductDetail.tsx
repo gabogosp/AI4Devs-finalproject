@@ -1,5 +1,6 @@
 import { formatArs } from '@/lib/format/currency';
 import { ProductJsonLd } from './ProductJsonLd';
+import { ProductImage } from './ProductImage';
 import type { StorefrontProduct } from './storefrontService';
 
 /**
@@ -14,6 +15,14 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
   return (
     <article className="mx-auto flex max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:gap-10 lg:p-8">
       <ProductJsonLd product={product} />
+
+      <div className="w-full lg:w-1/2">
+        <ProductImage
+          src={product.image_url}
+          name={product.name}
+          categoryName={product.category.name}
+        />
+      </div>
 
       <div className="flex w-full flex-col gap-5 lg:w-1/2">
         <p className="text-sm text-muted">{product.category.name}</p>
