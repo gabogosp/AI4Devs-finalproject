@@ -34,6 +34,7 @@ describe('Storefront aceptación (e2e-storefront-acceptance)', () => {
     prisma.product.create({
       data: {
         sku: 'AC-001',
+        slug: 'heladera-aceptacion',
         name: 'Heladera',
         description_raw: 'No-frost',
         price_ars_cents: 100000,
@@ -44,8 +45,8 @@ describe('Storefront aceptación (e2e-storefront-acceptance)', () => {
       },
     });
 
-  const get = (sku = 'AC-001') =>
-    request(app.getHttpServer()).get(`/v1/products/${sku}`);
+  const get = (slug = 'heladera-aceptacion') =>
+    request(app.getHttpServer()).get(`/v1/products/${slug}`);
 
   it('AC-3: stock>0 → in_stock:true', async () => {
     await seed({ stock: 7 });

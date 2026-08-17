@@ -28,6 +28,7 @@ describe('Storefront evento product.viewed (e2e-storefront-events)', () => {
       await prisma.product.create({
         data: {
           sku: 'EVT-001',
+          slug: 'heladera-evento',
           name: 'Heladera',
           price_ars_cents: 100000,
           stock: 5,
@@ -45,7 +46,9 @@ describe('Storefront evento product.viewed (e2e-storefront-events)', () => {
     const spy = jest.spyOn(events, 'emit');
     const before = events.count('product.viewed');
 
-    const res = await request(app.getHttpServer()).get('/v1/products/EVT-001');
+    const res = await request(app.getHttpServer()).get(
+      '/v1/products/heladera-evento',
+    );
     expect(res.status).toBe(200);
 
     // entity_id = id interno del producto; admin_user_id = null (sin PII).

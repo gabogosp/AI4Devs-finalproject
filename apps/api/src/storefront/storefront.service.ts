@@ -16,9 +16,9 @@ export class StorefrontService {
   constructor(private readonly repo: ProductsRepository) {}
 
   async getPublishedProduct(
-    sku: string,
+    slug: string,
   ): Promise<Product & { category: Category }> {
-    const product = await this.repo.findPublishedBySku(sku);
+    const product = await this.repo.findPublishedBySlug(slug);
     if (!product) {
       throw new NotFoundError('Producto no encontrado');
     }

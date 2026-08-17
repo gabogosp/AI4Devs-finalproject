@@ -15,10 +15,10 @@ import { CatalogEventsService } from '../observability/catalog-events.service';
 
 /**
  * Superficie **pública** del storefront (US-003) — la primera de `@dsm/api` sin
- * `AdminGuard`. Devuelve la ficha de un producto publicado por su `sku`
- * (identificador interino; la URL por `slug` es OQ-BE-1, infra-owned). El
- * rate-limit por IP (§7.3) y la caché acotada (AC-9) se aplican en el borde
- * (Fases 5/6), no acá.
+ * `AdminGuard`. Devuelve la ficha de un producto publicado por su `slug` (URL
+ * amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10). El rate-limit por
+ * IP (§7.3) y la caché acotada (AC-9) se aplican en el borde (Fases 5/6), no
+ * acá.
  */
 @Controller('v1/products')
 // §7.3 — throttle por IP de la superficie pública. `@SkipThrottle({ auth: true })`
@@ -33,12 +33,12 @@ export class StorefrontProductsController {
     private readonly events: CatalogEventsService,
   ) {}
 
-  @Get(':sku')
-  async getBySku(
-    @Param('sku') sku: string,
+  @Get(':slug')
+  async getBySlug(
+    @Param('slug') slug: string,
     @Headers('traceparent') traceparent?: string,
   ): Promise<StorefrontProductDto> {
-    const product = await this.storefront.getPublishedProduct(sku);
+    const product = await this.storefront.getPublishedProduct(slug);
     // US §9 / E2E §18: evento de negocio de la ficha. Lectura anónima →
     // `admin_user_id: null` (sin PII). El `entity_id` va al LOG, nunca como
     // dimensión de la métrica `pdp_viewed_total` (cardinalidad §3.3). Un 404

@@ -34,8 +34,8 @@
 - name: US-019-provision-plataforma-cloud-infrastructure
   us-id: US-019
   discipline: infrastructure
-  variant: null
-  status: draft
+  variant: platform-cloud
+  status: in progress
   parent-us: docs/user-stories/US-019-provision-plataforma-cloud.md
   linear-task-id: null
   audit-baseline: null
@@ -112,7 +112,25 @@
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  estimate-hours: 6
+  estimate-hours: 7  # +1 sobre el plan original: OQ-FE-4 opción C (invalidación on-demand) ratificada 2026-08-16
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-002-storefront-navegacion-categorias-backend
+  us-id: US-002
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 9
   assignee: null
   branch: null
   pr-url: null
@@ -148,6 +166,23 @@
   audit-baseline: null
   audit-derived: false
   estimate-hours: 6
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+- name: US-002-storefront-navegacion-categorias-qa
+  us-id: US-002
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 7
   assignee: null
   branch: null
   pr-url: null

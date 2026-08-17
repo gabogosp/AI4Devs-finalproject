@@ -53,6 +53,7 @@ describe('Throttlers auth/storefront independientes (e2e-throttler-independence)
     await prisma.product.create({
       data: {
         sku: 'IND-001',
+        slug: 'heladera-independiente',
         name: 'Heladera',
         price_ars_cents: 100000,
         stock: 5,
@@ -66,7 +67,7 @@ describe('Throttlers auth/storefront independientes (e2e-throttler-independence)
   });
 
   const getProduct = () =>
-    request(app.getHttpServer()).get('/v1/products/IND-001');
+    request(app.getHttpServer()).get('/v1/products/heladera-independiente');
   const login = () =>
     request(app.getHttpServer())
       .post('/v1/admin/auth/login')

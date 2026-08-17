@@ -5,7 +5,11 @@ import {
   Pagination,
   ProductsRepository,
 } from './products.repository';
-import { NotFoundError } from '../common/errors/domain-errors';
+import {
+  NotFoundError,
+  ValidationError,
+} from '../common/errors/domain-errors';
+import { slugify } from '../common/slug';
 import {
   assertPublishable,
   assertValidTransition,
@@ -30,8 +34,39 @@ export class ProductsService {
   constructor(private readonly repo: ProductsRepository) {}
 
   /** AC-2: alta en estado draft; AC-9: SKU único garantizado por DB→ConflictError. */
-  create(input: Omit<CreateProductData, 'status'>): Promise<Product> {
-    return this.repo.create({ ...input, status: 'draft' });
+  async create(
+    input: Omit<CreateProductData, 'status' | 'slug'>,
+  ): Promise<Product> {
+    const slug = await this.deriveUniqueSlug(input.name, input.sku);
+    return this.repo.create({ ...input, slug, status: 'draft' });
+  }
+
+  /**
+   * URL amigable derivada del `name` (nunca aceptada del cliente — misma regla
+   * que categorías, US-001 AC-1). La colisión se resuelve con sufijo ordinal
+   * determinista: el primer "heladera" se queda con `heladera`, el siguiente
+   * es `heladera-2`. Se cuenta desde el set ya tomado, no desde un random, así
+   * el resultado es reproducible.
+   */
+  private async deriveUniqueSlug(name: string, sku: string): Promise<string> {
+    // Un nombre sin caracteres alfanuméricos ("###") no produce base; el `sku`
+    // es el fallback (mismo criterio que el backfill de la migración T10.1).
+    const base = slugify(name) || slugify(sku);
+    if (!base) {
+      throw new ValidationError(
+        'El nombre no permite derivar una URL amigable',
+        [{ field: 'name', message: 'no permite derivar una URL amigable' }],
+      );
+    }
+    const taken = new Set(await this.repo.findSlugsByPrefix(base));
+    if (!taken.has(base)) {
+      return base;
+    }
+    let ordinal = 2;
+    while (taken.has(`${base}-${ordinal}`)) {
+      ordinal += 1;
+    }
+    return `${base}-${ordinal}`;
   }
 
   list(page: Pagination): Promise<{ data: Product[]; total: number }> {
@@ -46,7 +81,12 @@ export class ProductsService {
     return product;
   }
 
-  /** AC-3: edición de campos (precio/stock/descripción/categoría/imagen). */
+  /**
+   * AC-3: edición de campos (precio/stock/descripción/categoría/imagen).
+   * El `slug` NO se recalcula al cambiar el `name`: la URL ya pudo indexarse y
+   * regenerarla la rompería (301 + re-crawl). Cambiar la URL de un producto es
+   * una decisión explícita, no un efecto colateral de renombrarlo.
+   */
   async update(id: string, input: UpdateProductInput): Promise<Product> {
     await this.get(id); // 404 si no existe (antes de tocar la DB)
     return this.repo.update(id, input);

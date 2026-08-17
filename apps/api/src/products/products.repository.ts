@@ -11,10 +11,12 @@ import {
   PRISMA_FK_VIOLATION,
   PRISMA_RECORD_NOT_FOUND,
   PRISMA_UNIQUE_VIOLATION,
+  uniqueTargetIncludes,
 } from '../common/prisma-errors';
 
 export interface CreateProductData {
   sku: string;
+  slug: string;
   name: string;
   description_raw?: string | null;
   price_ars_cents: number;
@@ -41,6 +43,7 @@ export class ProductsRepository {
       return await this.prisma.product.create({
         data: {
           sku: data.sku,
+          slug: data.slug,
           name: data.name,
           description_raw: data.description_raw ?? null,
           price_ars_cents: data.price_ars_cents,
@@ -74,17 +77,30 @@ export class ProductsRepository {
   }
 
   /**
+   * Slugs ya tomados que arrancan con `base` — insumo de la desambiguación
+   * determinista del service (US-003 T10.2). El filtro por prefijo acota el
+   * set al mínimo necesario en lugar de traer la tabla entera.
+   */
+  async findSlugsByPrefix(base: string): Promise<string[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { slug: { startsWith: base } },
+      select: { slug: true },
+    });
+    return rows.map((r) => r.slug);
+  }
+
+  /**
    * Lectura pública del storefront (US-003 AC-1/AC-7/AC-8): sólo productos
    * `published`, con su categoría. Devuelve `null` (no lanza) para cualquier
    * no-match — draft, archived o inexistente colapsan al mismo `null`, así el
    * service decide un 404 idéntico (sin enumeration leak). El identificador
-   * público es `sku` (interino; la URL por `slug` es OQ-BE-1, infra-owned).
+   * público es el `slug` (OQ-BE-1 resuelta en T10.1: URL amigable indexable).
    */
-  findPublishedBySku(
-    sku: string,
+  findPublishedBySlug(
+    slug: string,
   ): Promise<(Product & { category: Category }) | null> {
     return this.prisma.product.findFirst({
-      where: { sku, status: 'published' },
+      where: { slug, status: 'published' },
       include: { category: true },
     });
   }
@@ -99,6 +115,15 @@ export class ProductsRepository {
 
   private translate(error: unknown): unknown {
     if (isPrismaError(error, PRISMA_UNIQUE_VIOLATION)) {
+      // `products` tiene dos únicos (sku y slug): sin mirar el target, una
+      // colisión de slug se reportaría como "SKU duplicado" y confundiría al
+      // operador. El slug lo deriva el server (T10.2), así que su colisión es
+      // una carrera, no un error de input.
+      if (uniqueTargetIncludes(error, 'slug')) {
+        return new ConflictError('URL de producto duplicada', [
+          { field: 'slug', message: 'URL de producto duplicada' },
+        ]);
+      }
       return new ConflictError('SKU duplicado', [
         { field: 'sku', message: 'SKU duplicado' },
       ]);

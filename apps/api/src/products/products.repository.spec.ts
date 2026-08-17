@@ -29,6 +29,7 @@ describe('ProductsRepository (products.repository, integration)', () => {
 
   const base = (sku: string) => ({
     sku,
+    slug: sku.toLowerCase(),
     name: 'Heladera',
     price_ars_cents: 100000,
     stock: 5,

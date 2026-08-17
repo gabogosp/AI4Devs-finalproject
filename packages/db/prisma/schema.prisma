@@ -26,6 +26,7 @@ model Category {
 model Product {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sku             String   @unique
+  slug            String   @unique
   name            String
   description_raw String?
   price_ars_cents Int

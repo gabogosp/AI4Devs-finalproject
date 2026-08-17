@@ -40,6 +40,7 @@ describe('Storefront rate-limit (e2e-storefront-security, §7.3)', () => {
     await prisma.product.create({
       data: {
         sku: 'RL-001',
+        slug: 'heladera-rate-limit',
         name: 'Heladera',
         price_ars_cents: 100000,
         stock: 5,
@@ -53,7 +54,8 @@ describe('Storefront rate-limit (e2e-storefront-security, §7.3)', () => {
   });
 
   it('excederse en la ficha pública → 429 con Retry-After en problem+json', async () => {
-    const get = () => request(app.getHttpServer()).get('/v1/products/RL-001');
+    const get = () =>
+      request(app.getHttpServer()).get('/v1/products/heladera-rate-limit');
 
     // Dentro del límite: 200.
     for (let i = 0; i < LIMIT; i += 1) {

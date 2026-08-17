@@ -7,6 +7,8 @@ import { Category, Product } from '@dsm/db';
  * timestamps) — OQ-BE-3 (no filtrar inventario ni gestión).
  */
 export class StorefrontProductDto {
+  /** AC-1: identificador público y URL amigable de la ficha (`/producto/{slug}`). */
+  slug!: string;
   sku!: string;
   name!: string;
   /**
@@ -24,6 +26,7 @@ export class StorefrontProductDto {
 
   static from(p: Product & { category: Category }): StorefrontProductDto {
     return {
+      slug: p.slug,
       sku: p.sku,
       name: p.name,
       description: p.description_raw,

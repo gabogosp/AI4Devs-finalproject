@@ -23,6 +23,7 @@ describe('Storefront caché acotada (e2e-storefront-cache, AC-9)', () => {
     await prisma.product.create({
       data: {
         sku: 'CACHE-001',
+        slug: 'heladera-cache',
         name: 'Heladera',
         price_ars_cents: 100000,
         stock: 5,
@@ -36,7 +37,9 @@ describe('Storefront caché acotada (e2e-storefront-cache, AC-9)', () => {
   });
 
   it('la ficha pública lleva Cache-Control acotado (max-age=60, sin no-store)', async () => {
-    const res = await request(app.getHttpServer()).get('/v1/products/CACHE-001');
+    const res = await request(app.getHttpServer()).get(
+      '/v1/products/heladera-cache',
+    );
     expect(res.status).toBe(200);
     const cc = res.headers['cache-control'];
     expect(cc).toContain('public');

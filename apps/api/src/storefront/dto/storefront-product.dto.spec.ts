@@ -14,6 +14,7 @@ describe('StorefrontProductDto.from', () => {
   const base = (over: Partial<Product> = {}): Product & { category: Category } => ({
     id: 'prod-1',
     sku: 'REF-001',
+    slug: 'heladera',
     name: 'Heladera',
     description_raw: 'Heladera no-frost 300L',
     price_ars_cents: 100000,

@@ -8,6 +8,7 @@ describe('StorefrontService.getPublishedProduct', () => {
   const published: Product & { category: Category } = {
     id: 'prod-1',
     sku: 'REF-001',
+    slug: 'heladera',
     name: 'Heladera',
     description_raw: 'desc',
     price_ars_cents: 100000,

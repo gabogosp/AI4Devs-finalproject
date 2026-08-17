@@ -17,7 +17,7 @@
   blocked_by: []
 - id: US-002
   slug: storefront-navegacion-categorias
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 1
   disciplines: [BE, FE, QA]
@@ -25,6 +25,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-16
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
@@ -205,11 +206,12 @@
   blocked_by: [US-001]
 - id: US-019
   slug: provision-plataforma-cloud
-  status: Ready
+  status: In Progress
   priority: Medium
   disciplines: [INFRA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null
   created: 2026-08-09
   ready-at: 2026-08-09
+  in-progress-at: 2026-08-16
   blocked_by: []          # gated en dependencias externas (cuentas/billing), no en otra US
