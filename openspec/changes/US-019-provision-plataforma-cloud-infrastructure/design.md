@@ -47,6 +47,7 @@ Neon: PostgreSQL 16 + pgvector, US-East, free tier en staging → PITR con upgra
 - **Region**: **US-East** (E2E §13; menor costo/latencia aceptable a MercadoPago AR). Q-3 resuelta 2026-07-15: la Ley 25.326 no exige residencia local; la transferencia internacional se cubre con consentimiento informado en registro/política de privacidad (US-017).
 - **Multi-AZ**: no (plan económico; aceptable para 99.5% — ADR-0001).
 - **Entornos**: `staging` + `production` como Railway environments; se promueve staging → production. PR ephemeral envs opcionales (diferidos).
+- **CDN — respetar el `Cache-Control` del origen, no sobreescribirlo** *(anotado 2026-08-17, dato de la sesión de backend)*: la app estampa TTL por endpoint (árbol de categorías `max-age=300`, resto del storefront `max-age=60`) y **sólo en respuestas 2xx**, de modo que un CDN compartido nunca cachea un 404/422/429. Este change deja Cloudflare en su comportamiento por defecto (honrar los headers del origen) y **no** configura reglas de caché propias: una page rule con TTL fijo pisaría esa política y podría servir errores cacheados o datos vencidos. Si en el futuro se necesita una regla de caché en el edge, es una decisión que se coordina con el dueño del endpoint, no un default de infra.
 
 ### Config como código (no Terraform)
 
