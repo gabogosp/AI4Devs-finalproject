@@ -107,12 +107,16 @@
   us-id: US-003
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in progress  # T1.1/T1.2/T2.1 commiteadas; ejecución detenida y plan regenerado 2026-08-17
   parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  estimate-hours: 7  # +1 sobre el plan original: OQ-FE-4 opción C (invalidación on-demand) ratificada 2026-08-16
+  # Plan REGENERADO 2026-08-17 (respaldo: openspec/changes/_backups/2026-08-17-1-US-003-ficha-producto-pdp-frontend-web).
+  # 7 → 9 h: +1.25 h Fase 0 (namespace de rutas OQ-FE-6 — panel a /admin/* + ADR-0010) y +0.75 h por
+  # desdoblar el E2E en smoke SSR/404 (stub de contrato) y circuito de invalidación AC-9.
+  # De las 9 h, 1.25 h ya están ejecutadas y commiteadas → restan ~7.75 h.
+  estimate-hours: 9
   assignee: null
   branch: null
   pr-url: null
