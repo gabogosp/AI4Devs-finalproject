@@ -210,18 +210,34 @@ Es el **primer endpoint sin auth**; el análisis se centra en el surface anónim
 
 ## Deployment considerations
 
-- Cambio aditivo sin migración → **rolling deploy** trivial. Dos env nuevas con default seguro
-  (`STOREFRONT_RATE_LIMIT_TTL_MS=60000`, `STOREFRONT_RATE_LIMIT_MAX=60`); si faltan, el default
-  aplica (validado por Zod al arranque, no rompe boot).
+- **Requiere migración** (Fase 10, ver §Persistencia) — actualiza la afirmación original de
+  "cambio aditivo sin migración", que valía antes de resolverse OQ-BE-1. El orden es
+  `prisma migrate deploy` **antes** de que arranque la versión nueva del API: el código nuevo
+  lee `products.slug` y fallaría contra un esquema sin la columna. La migración en sí es
+  segura hacia atrás (la versión vieja ignora una columna que no conoce), así que un rolling
+  deploy sirve igual.
+- **Aviso de despliegue (levantado por la sesión de US-019, 2026-08-17)**: `prisma migrate
+  deploy` aplica **todas** las migraciones pendientes de `packages/db` de una vez, no las de
+  una US. El primer deploy a un entorno nuevo materializa el esquema completo (12 columnas en
+  `products`), no un subconjunto por US. Cualquier plan que asuma deferral de columnas
+  por-US a nivel de migración está equivocado en este stack.
+- **Cambio incompatible en la ruta pública**: `GET /v1/products/{sku}` deja de existir en favor
+  de `{slug}`. No hay consumidores externos (pre-lanzamiento) y el único cliente es
+  `FE-US-003`, que ya migró; por eso no se dejó ruta de compatibilidad. Si el endpoint llegara
+  a estar publicado antes del cutover, haría falta servir ambas y deprecar la vieja.
+- Dos env nuevas con default seguro (`STOREFRONT_RATE_LIMIT_TTL_MS=60000`,
+  `STOREFRONT_RATE_LIMIT_MAX=60`); si faltan, el default aplica (validado por Zod al arranque,
+  no rompe boot).
 - La política de `Cache-Control` asume un CDN/reverse-proxy que respete `stale-while-revalidate`
   (E2E §17); sin CDN el header es inocuo (el browser lo respeta igual).
-- No requiere coordinación con FE-US-003 más allá del contrato del endpoint (path + shape).
+- Coordinación con FE-US-003: además del contrato (path + shape), el cutover de identificador
+  debe ir junto — API y FE en el mismo release.
 
 ## ADR triggers heredados del E2E
 
-- Ninguno nuevo. El seam de RBAC admin (ADR-0009, US-001) no se toca. La eventual columna
-  `products.slug` (OQ-BE-1), si se resuelve agregándola, es una migración aditiva trivial que
-  **no** requiere ADR (mirror de `categories.slug`); `data-architect` Mode B **no** se invoca.
+- Ninguno nuevo. El seam de RBAC admin (ADR-0009, US-001) no se toca. La columna
+  `products.slug` (OQ-BE-1, materializada en la Fase 10) es una migración aditiva trivial que
+  **no** requiere ADR (mirror de `categories.slug`); `data-architect` Mode B **no** se invocó.
 
 ## Open questions
 
