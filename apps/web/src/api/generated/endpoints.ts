@@ -514,21 +514,21 @@ export type storefrontGetProductResponseError = (storefrontGetProductResponse404
 
 export type storefrontGetProductResponse = (storefrontGetProductResponseSuccess | storefrontGetProductResponseError)
 
-export const getStorefrontGetProductUrl = (sku: string,) => {
+export const getStorefrontGetProductUrl = (slug: string,) => {
 
 
 
 
-  return `/v1/products/${sku}`
+  return `/v1/products/${slug}`
 }
 
 /**
- * Ruta PÚBLICA `GET /v1/products/{sku}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `sku` (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
+ * Ruta PÚBLICA `GET /v1/products/{slug}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `slug` (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el `slug` lo deriva el servidor del `name`, nunca se acepta del cliente). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
  * @summary Ficha pública de producto publicado (US-003 AC-1/AC-2)
  */
-export const storefrontGetProduct = async (sku: string, options?: Parameters<typeof customFetch>[1]): Promise<storefrontGetProductResponse> => {
+export const storefrontGetProduct = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<storefrontGetProductResponse> => {
 
-  return customFetch<storefrontGetProductResponse>(getStorefrontGetProductUrl(sku),
+  return customFetch<storefrontGetProductResponse>(getStorefrontGetProductUrl(slug),
   {
     ...options,
     method: 'GET'
@@ -554,7 +554,7 @@ export const getGetAdminProductsIdResponseMock = (overrideResponse: Partial<Extr
 
 export const getPatchAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
+export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
 
 
 export const getPostAdminAuthLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
@@ -654,7 +654,7 @@ export const getPatchAdminProductsIdMockHandler = (overrideResponse?: Product | 
 }
 
 export const getStorefrontGetProductMockHandler = (overrideResponse?: StorefrontProduct | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<StorefrontProduct> | StorefrontProduct), options?: RequestHandlerOptions) => {
-  return http.get('*/products/:sku', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+  return http.get('*/products/:slug', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

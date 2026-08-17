@@ -9,17 +9,11 @@ import type { StorefrontProduct } from '@/api/generated/model';
 export type { StorefrontProduct };
 
 /**
- * Safety-net de la ficha: aunque falle la invalidación on-demand, ninguna ficha
- * sirve un precio más viejo que esto (AC-9 — nunca indefinido). La frescura
- * inmediata la da `revalidateProduct` (design.md D2, OQ-FE-4 opción C).
- */
-export const PRODUCT_REVALIDATE_SECONDS = 3600;
-
-/**
  * Naming del tag de caché por producto — **única fuente**. La Server Action de
  * invalidación importa este helper para no duplicar el string (design.md D2).
+ * La identidad pública del producto es el `slug` (design.md D1).
  */
-export const productTag = (sku: string): string => `product:${sku}`;
+export const productTag = (slug: string): string => `product:${slug}`;
 
 /**
  * Lógica de servicio del storefront (`frontend-standards` §3.3 — lo único
@@ -27,19 +21,19 @@ export const productTag = (sku: string): string => `product:${sku}`;
  * valida en el borde con el schema Zod generado.
  *
  * La política de caché se declara **acá**, no en el mutator: fetch etiquetado
- * con `product:{sku}` para que la mutación del panel lo invalide puntualmente
+ * con `product:{slug}` para que la mutación del panel lo invalide puntualmente
  * (next-standards §3 — caché explícita, tag lo que pensás revalidar).
  */
 export const storefrontService = {
-  async getProductBySku(sku: string): Promise<StorefrontProduct> {
-    const res = await storefrontGetProduct(sku, {
-      next: {
-        revalidate: PRODUCT_REVALIDATE_SECONDS,
-        tags: [productTag(sku)],
-      },
+  async getProductBySlug(slug: string): Promise<StorefrontProduct> {
+    const res = await storefrontGetProduct(slug, {
+      // Safety-net: aunque falle la invalidación on-demand, ninguna ficha sirve
+      // un precio más viejo que 1h (AC-9 — nunca indefinido). La frescura
+      // inmediata la da `revalidateProduct` (design.md D2).
+      next: { revalidate: 3600, tags: [productTag(slug)] },
     });
     return parseContract(StorefrontGetProductResponse, res.data);
   },
 };
 
-export const getProductBySku = storefrontService.getProductBySku;
+export const getProductBySlug = storefrontService.getProductBySlug;

@@ -12,6 +12,8 @@ import type { StorefrontProductCurrency } from './storefrontProductCurrency';
  * Ficha pública (US-003): sólo campos SEO; sin id/stock/status/timestamps.
  */
 export interface StorefrontProduct {
+  /** URL amigable canónica de la ficha (AC-1). */
+  slug: string;
   sku: string;
   name: string;
   /**

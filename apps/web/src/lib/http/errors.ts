@@ -56,3 +56,14 @@ export class AppErrorException extends Error {
     this.name = 'AppErrorException';
   }
 }
+
+/**
+ * Type-guard para ramificar por tipo de error sin inspeccionar strings. Con
+ * `kind`, estrecha a ese caso (p.ej. `notFound` → `notFound()` de Next).
+ */
+export function isAppError(error: unknown, kind?: AppError['kind']): error is AppErrorException {
+  return (
+    error instanceof AppErrorException &&
+    (kind === undefined || error.appError.kind === kind)
+  );
+}

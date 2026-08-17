@@ -221,14 +221,18 @@ export const PatchAdminProductsIdResponse = zod.object({
 
 
 /**
- * Ruta PÚBLICA `GET /v1/products/{sku}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `sku` (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
+ * Ruta PÚBLICA `GET /v1/products/{slug}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `slug` (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el `slug` lo deriva el servidor del `name`, nunca se acepta del cliente). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
  * @summary Ficha pública de producto publicado (US-003 AC-1/AC-2)
  */
+export const storefrontGetProductPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
 export const StorefrontGetProductParams = zod.object({
-  "sku": zod.string()
+  "slug": zod.string().regex(storefrontGetProductPathSlugRegExp).describe('URL amigable del producto (kebab-case, derivada del nombre).')
 })
 
 export const StorefrontGetProductResponse = zod.object({
+  "slug": zod.string().describe('URL amigable canónica de la ficha (AC-1).'),
   "sku": zod.string(),
   "name": zod.string(),
   "description": zod.string().nullable().describe('description_raw; US-005 antepondrá la enriquecida.'),

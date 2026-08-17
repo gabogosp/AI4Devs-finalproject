@@ -50,16 +50,36 @@ reutilizarán.
 
 ## Approach — decisiones
 
-### D1 — URL pública: `/productos/[sku]` (interino consciente, hereda OQ-BE-1)
+### D1 — URL pública: `/productos/[slug]` (URL amigable definitiva, OQ-BE-1 resuelta)
 
-El contrato solo ofrece lookup por `sku`; `products.slug` es una columna infra-owned
-diferida por el backend (OQ-BE-1). Ruta interina `/productos/{sku}` bajo el route group
-`app/(storefront)/` (App Router per next-standards §1). Migración sin churn cuando OQ-BE-1
-resuelva: cambia el nombre del param del segmento y `/productos/{sku}` responde 301 al slug
-(SEO preservado; el canonical ya se emite absoluto desde `NEXT_PUBLIC_SITE_URL`, así que el
-día de la migración el canonical cambia con la misma edición). **Alternativas**: bloquear
-por slug (detiene el critical path) o slug sintético client-side (duplica canónicas) —
-descartadas; decisión del usuario en **OQ-FE-1 `[Resolved: 2026-08-16 — opción A]`**.
+El contrato expone la ficha por **`slug`** (`GET /v1/products/{slug}`, kebab-case derivado
+del `name` server-side — nunca aceptado del cliente) y `StorefrontProduct` lo incluye como
+campo. Ruta `/productos/{slug}` bajo el route group `app/(storefront)/` (App Router per
+next-standards §1), con el canonical absoluto desde `NEXT_PUBLIC_SITE_URL`.
+
+> ⚠️ **BLOQUEANTE detectado en ejecución (2026-08-17) — el namespace de rutas está sin
+> resolver.** El panel de US-001 ya ocupa el espacio de URLs público: `/productos` (listado),
+> `/productos/[id]` (edición), `/productos/nuevo`, `/categorias` y `/`. Poner la ficha en
+> `/productos/{slug}` **no compila**: Next rechaza dos parámetros dinámicos distintos en la
+> misma posición (`You cannot use different slug names for the same dynamic path
+> ('id' !== 'slug')`), y aunque coincidieran los nombres, dos route groups no pueden resolver
+> la misma ruta. Esto no es un detalle de este change: US-002 (catálogo público) va a necesitar
+> `/productos` y `/categorias` para el storefront. La decisión —mover el panel a `/admin/*` vs
+> darle otra ruta a la ficha— excede el alcance de US-003 FE porque toca superficie entregada
+> de US-001, así que el desarrollo se detuvo y el plan se regenera. Radio medido de la mudanza
+> del panel: `router.push('/productos')` tras login + su test + 4 referencias en el smoke E2E.
+
+**Historia de la decisión** (relevante porque cambió durante la ejecución): el plan original
+fijó una ruta **interina** `/productos/{sku}` porque `products.slug` no existía y era una
+columna infra-owned diferida por el backend (OQ-BE-1), con un 301 previsto para el día de la
+migración. Mientras se ejecutaba T3.1, el backend resolvió OQ-BE-1 en la Fase 10 de su change
+— materializando `products.slug` **antes** de construir la PDP, con el argumento de que el SEO
+es el objetivo de negocio del PRD y cambiar la URL después de indexar cuesta 301s + re-crawl.
+Eso eliminó la premisa del interino, así que la ruta arranca ya en su forma definitiva y **no
+hace falta ningún 301**. **Alternativas descartadas**: bloquear el FE hasta que la Fase 10
+cerrara; sostener el interino por `sku` y migrar después (pagaba justo el re-crawl que la
+Fase 10 evita). Decisión del usuario en **OQ-FE-1 `[Resolved: 2026-08-17 — repivotada a
+slug]`**.
 
 ### D2 — Data fetching y frescura del precio (AC-9): caché por tag + invalidación on-demand desde el panel (OQ-FE-4 opción C, decisión del usuario 2026-08-16)
 
