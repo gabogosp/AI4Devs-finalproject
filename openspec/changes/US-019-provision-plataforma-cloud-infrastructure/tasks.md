@@ -13,7 +13,8 @@ language: es
 
 ## Fase 0: Local-first — artefactos en el repo (sin credenciales de nube)
 
-- [ ] T0.1 Añadir config-as-code Railway por servicio (`apps/web`, `apps/api`) — sin Terraform
+- [x] T0.1 Añadir config-as-code Railway por servicio (`apps/web`, `apps/api`) — sin Terraform
+  - **AS-BUILT 2026-08-16**: contexto de build = **raíz del workspace pnpm** (`@dsm/api` depende de `@dsm/db`, así que el build corre `pnpm --filter @dsm/db generate` antes de `nest build`); en Railway se setea root directory = repo root y config path = `apps/{api,web}/railway.json`. `apps/web` queda **sin `healthcheckPath`**: no existe ruta de health en la app Next.js y no se inventa una (aplica el chequeo TCP por defecto de Railway) — si FE agrega `/api/health`, se wirea acá. `startCommand` usa `nest start`/`next start` tal como el plan lo autoriza; el arranque prod-grade (`node dist/main`) es refinamiento de `/plan-deployment`.
   - **Exit criterion**: `apps/api/railway.json` y `apps/web/railway.json` existen con build/start/healthcheck/restart tomados del AS-BUILT (api: `nest build`/`nest start` + healthcheck `/health` ya implementado en `apps/api/src/health/`; web: `next build`/`next start`); no hay ningún `.tf` en el repo (fuera de `spekode/`). `apps/worker` NO lleva config todavía — **Deferred: US-005** (la app worker es solo README; su `railway.json` se autoriza cuando BE la scaffoldee).
   - **Verify**: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))" && grep -q '"healthcheckPath"' apps/api/railway.json && ! find . -name '*.tf' -not -path './spekode/*' -not -path './node_modules/*' | grep -q .`
 
