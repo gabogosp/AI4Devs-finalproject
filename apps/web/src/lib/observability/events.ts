@@ -3,7 +3,11 @@ export type BusinessEvent =
   | 'product_created'
   | 'product_published'
   | 'product_archived'
-  | 'category_created';
+  | 'category_created'
+  // Storefront público: una vista de ficha. El backend no la ve por cada
+  // visita (la caché por tag le ahorra el request), así que su `product.viewed`
+  // subcuenta — OQ-FE-5.
+  | 'pdp_shown';
 
 export interface EventProps {
   operator_id?: string;
@@ -21,6 +25,17 @@ export function setEventSink(next: Sink): void {
   sink = next;
 }
 
+/**
+ * Eventos de la superficie PÚBLICA: los emite un visitante anónimo, no un
+ * operador. Sin esta distinción, el `operator_id: 'admin'` por defecto
+ * etiquetaría cada vista de ficha como acción del dueño y ensuciaría las
+ * métricas de US-016.
+ */
+const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
+  'pdp_shown',
+]);
+
 export function track(event: BusinessEvent, props: EventProps = {}): void {
-  sink(event, { operator_id: 'admin', ...props });
+  const base: EventProps = PUBLIC_EVENTS.has(event) ? {} : { operator_id: 'admin' };
+  sink(event, { ...base, ...props });
 }

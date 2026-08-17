@@ -371,7 +371,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
 
 ## Fase 5: Observabilidad (US §9, E2E §18)
 
-- [ ] **T5.1** Evento cliente `pdp_shown` (sin PII) + tipado del catálogo de eventos (0.25 h)
+- [x] **T5.1** Evento cliente `pdp_shown` (sin PII) + tipado del catálogo de eventos (0.25 h)
   - **Pattern**:
     ```ts
     // src/lib/observability/events.ts — extender la unión existente

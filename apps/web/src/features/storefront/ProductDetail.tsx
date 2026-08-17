@@ -2,6 +2,7 @@ import { formatArs } from '@/lib/format/currency';
 import { ProductJsonLd } from './ProductJsonLd';
 import { ProductImage } from './ProductImage';
 import { ProductPurchase } from './ProductPurchase';
+import { ProductViewTracker } from './ProductViewTracker';
 import type { StorefrontProduct } from './storefrontService';
 
 /**
@@ -16,6 +17,11 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
   return (
     <article className="mx-auto flex max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:gap-10 lg:p-8">
       <ProductJsonLd product={product} />
+      <ProductViewTracker
+        slug={product.slug}
+        sku={product.sku}
+        inStock={product.in_stock}
+      />
 
       <div className="w-full lg:w-1/2">
         <ProductImage
