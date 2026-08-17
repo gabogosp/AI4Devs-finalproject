@@ -61,7 +61,7 @@ Cobertura no-AC del design.md (F51): cliente isomorfo → T1.2; codegen → T1.1
 
 ## Fase 2: Servicio de storefront
 
-- [ ] T2.1 `storefrontService.getProductBySku` sobre el cliente generado + validación Zod + `AppError` (0.5 h)
+- [x] T2.1 `storefrontService.getProductBySku` sobre el cliente generado + validación Zod + `AppError` (0.5 h)
   - **Pattern**:
     ```ts
     // src/features/storefront/storefrontService.ts — hand-written SOLO la lógica (§3.3)
