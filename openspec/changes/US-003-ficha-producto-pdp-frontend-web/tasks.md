@@ -439,7 +439,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     stub y el server de Next arrancan vía `webServer` sin docker; el smoke de US-001 sigue verde.
   - **Verify**: `pnpm --filter @dsm/web test:e2e`
 
-- [ ] **T6.3** E2E del circuito de invalidación AC-9 (precio nuevo **inmediato** tras editar en el panel) (0.75 h)
+- [x] **T6.3** E2E del circuito de invalidación AC-9 (precio nuevo **inmediato** tras editar en el panel) (0.75 h)
   - **Pattern**:
     ```ts
     // 1) Cargar la ficha → la Data Cache queda poblada con el precio viejo.

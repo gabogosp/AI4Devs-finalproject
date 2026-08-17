@@ -15,9 +15,16 @@ const PORT = Number(process.env.API_STUB_PORT ?? 4010);
 
 const CATEGORY_ID = '22222222-2222-4222-8222-222222222222';
 const PRODUCT_ID = '11111111-1111-4111-8111-111111111111';
+/** Producto exclusivo del spec de invalidación: aislarlo evita fallas cruzadas. */
+const MUTABLE_ID = '33333333-3333-4333-8333-333333333333';
 
-/** Estado en memoria: se muta con los PATCH del panel, como haría la API real. */
-const products = new Map([
+const ID_TO_SLUG = new Map([
+  [PRODUCT_ID, 'heladera-exhibidora'],
+  [MUTABLE_ID, 'ventilador-de-techo'],
+]);
+
+/** Catálogo inicial. `reset()` lo reconstruye entero (fixture limpio por corrida). */
+const initialCatalog = () => new Map([
   [
     'heladera-exhibidora',
     {
@@ -30,6 +37,20 @@ const products = new Map([
       image_url: null,
       in_stock: true,
       category: { name: 'Refrigeración', slug: 'refrigeracion' },
+    },
+  ],
+  [
+    'ventilador-de-techo',
+    {
+      slug: 'ventilador-de-techo',
+      sku: 'VEN-020',
+      name: 'Ventilador de techo',
+      description: 'Ventilador de techo con tres velocidades.',
+      price_ars_cents: 1250000,
+      currency: 'ARS',
+      image_url: null,
+      in_stock: true,
+      category: { name: 'Ventilación', slug: 'ventilacion' },
     },
   ],
   [
@@ -48,11 +69,15 @@ const products = new Map([
   ],
 ]);
 
+/** Estado en memoria: se muta con los PATCH del panel, como haría la API real. */
+let products = initialCatalog();
+
 /** Vista admin del mismo producto (el panel consume otro DTO). */
 function adminProduct(slug) {
   const p = products.get(slug);
+  const id = [...ID_TO_SLUG].find(([, s]) => s === slug)?.[0] ?? PRODUCT_ID;
   return {
-    id: PRODUCT_ID,
+    id,
     sku: p.sku,
     slug: p.slug,
     name: p.name,
@@ -107,6 +132,13 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return json(res, 204, {});
   if (path === '/health') return json(res, 200, { ok: true });
 
+  // Reset del estado: los E2E que mutan lo llaman al empezar, así cada corrida
+  // parte del mismo punto y el spec es idempotente (playwright-stability).
+  if (req.method === 'POST' && path === '/__reset') {
+    products = initialCatalog();
+    return json(res, 200, { ok: true });
+  }
+
   // Ficha pública por slug (AC-1/AC-7/AC-8): 404 uniforme para lo no publicado.
   const publicMatch = path.match(/^\/v1\/products\/([^/]+)$/);
   if (req.method === 'GET' && publicMatch) {
@@ -135,19 +167,21 @@ const server = createServer(async (req, res) => {
       pagination: { limit: 20, offset: 0, total: 1 },
     });
   }
-  if (req.method === 'GET' && path === `/v1/admin/products/${PRODUCT_ID}`) {
-    return json(res, 200, adminProduct('heladera-exhibidora'));
+  const adminMatch = path.match(/^\/v1\/admin\/products\/([0-9a-f-]+)$/);
+  if (req.method === 'GET' && adminMatch && ID_TO_SLUG.has(adminMatch[1])) {
+    return json(res, 200, adminProduct(ID_TO_SLUG.get(adminMatch[1])));
   }
-  if (req.method === 'PATCH' && path === `/v1/admin/products/${PRODUCT_ID}`) {
+  if (req.method === 'PATCH' && adminMatch && ID_TO_SLUG.has(adminMatch[1])) {
+    const slug = ID_TO_SLUG.get(adminMatch[1]);
     const body = await readBody(req);
-    const product = products.get('heladera-exhibidora');
+    const product = products.get(slug);
     // La mutación se refleja en la ficha pública desde el próximo GET: es lo
     // que permite probar que la invalidación —y no un TTL— hizo el trabajo.
     if (typeof body.price_ars_cents === 'number') {
       product.price_ars_cents = body.price_ars_cents;
     }
     if (typeof body.name === 'string') product.name = body.name;
-    return json(res, 200, adminProduct('heladera-exhibidora'));
+    return json(res, 200, adminProduct(slug));
   }
 
   return notFound(res);
