@@ -31,6 +31,8 @@ language: es
 
 ## Gates externos (bloquean SOLO las fases cloud 1–4 — se resuelven al final, enfoque local-first)
 
+> **Ejecución fuera de orden autorizada por el PO (2026-08-17)**: los gates son **por proveedor**, no monolíticos. Las cuentas de **Neon y Cloudflare ya existen**, y cuatro tasks no tocan Railway en absoluto — **T1.4** (Neon + `pgvector`), **T1.5** (bucket R2), **T3.1** y **T3.2** (aplicar y verificar el esquema en la nube). Se ejecutan **antes** que T1.1–T1.3/T2.1, que sí dependen de la cuenta Railway (pendiente de crear, junto con Sentry para T4.2/T4.3). Orden real de ejecución: T0.1 → T0.2 → **T1.4 → T1.5 → T3.1 → T3.2** → (gate Railway) → T1.1 → T1.2 → T1.3 → T2.1 → T2.2 → (gate Sentry) → T4.1 → T4.2 → T4.3. Ninguna task se saltea; sólo cambia el orden. Sentry **no** se difiere: sigue en el change.
+
 - [ ] Cuentas creadas con billing en ARS resuelto. *(Estado 2026-08-16: **Cloudflare ✓, Neon ✓** creadas; **Railway y Sentry pendientes** de crear.)*
 - [x] **Q-3 resuelta** (2026-07-15): región **US-East** + consentimiento informado en registro/política de privacidad (US-017).
 - [x] **Q-2 resuelta** (2026-07-15): **free tiers primero** — staging en Neon Free (`pgvector`+HNSW incluidos; restore mínimo y autosuspend aceptados) + Railway; upgrade a plan pago (PITR real) es gate previo al primer deploy productivo, verificado por `/plan-deployment`.
