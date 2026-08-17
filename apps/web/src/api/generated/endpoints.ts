@@ -9,6 +9,7 @@ import type {
   AdminLogin,
   AdminLoginResponse,
   Category,
+  CategoryTree,
   CreateCategory,
   CreateProduct,
   GetAdminProductsParams,
@@ -16,7 +17,10 @@ import type {
   ProblemResponse,
   Product,
   ProductList,
+  StorefrontCategory,
+  StorefrontListCategoryProductsParams,
   StorefrontProduct,
+  StorefrontProductPage,
   UpdateCategory,
   UpdateProduct
 } from './model';
@@ -538,6 +542,162 @@ export const storefrontGetProduct = async (slug: string, options?: Parameters<ty
 );}
 
 
+
+export type storefrontListCategoriesResponse200 = {
+  data: CategoryTree
+  status: 200
+}
+
+export type storefrontListCategoriesResponse429 = {
+  data: ProblemResponse
+  status: 429
+}
+
+export type storefrontListCategoriesResponseSuccess = (storefrontListCategoriesResponse200) & {
+  headers: Headers;
+};
+export type storefrontListCategoriesResponseError = (storefrontListCategoriesResponse429) & {
+  headers: Headers;
+};
+
+export type storefrontListCategoriesResponse = (storefrontListCategoriesResponseSuccess | storefrontListCategoriesResponseError)
+
+export const getStorefrontListCategoriesUrl = () => {
+
+
+
+
+  return `/v1/categories`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. Rubros (sin padre) con sus subrubros directos, ambos ordenados por nombre. TTL propio de 300s (decisión D5) porque el árbol cambia poco. No emite `category.viewed` (sólo el detalle, D4).
+ * @summary Árbol público de categorías de dos niveles (US-002 AC-1)
+ */
+export const storefrontListCategories = async ( options?: Parameters<typeof customFetch>[1]): Promise<storefrontListCategoriesResponse> => {
+
+  return customFetch<storefrontListCategoriesResponse>(getStorefrontListCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type storefrontGetCategoryResponse200 = {
+  data: StorefrontCategory
+  status: 200
+}
+
+export type storefrontGetCategoryResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type storefrontGetCategoryResponse429 = {
+  data: ProblemResponse
+  status: 429
+}
+
+export type storefrontGetCategoryResponseSuccess = (storefrontGetCategoryResponse200) & {
+  headers: Headers;
+};
+export type storefrontGetCategoryResponseError = (storefrontGetCategoryResponse404 | storefrontGetCategoryResponse429) & {
+  headers: Headers;
+};
+
+export type storefrontGetCategoryResponse = (storefrontGetCategoryResponseSuccess | storefrontGetCategoryResponseError)
+
+export const getStorefrontGetCategoryUrl = (slug: string,) => {
+
+
+
+
+  return `/v1/categories/${slug}`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. Trae `parent` para el breadcrumb y `children` para los subrubros. Slug inexistente → 404 (nunca un 200 vacío, que sería una página fantasma indexable). Único endpoint que emite el evento `category.viewed` (D4, insumo del panel US-016).
+ * @summary Detalle público de una categoría (US-002 AC-1/AC-2/AC-9)
+ */
+export const storefrontGetCategory = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<storefrontGetCategoryResponse> => {
+
+  return customFetch<storefrontGetCategoryResponse>(getStorefrontGetCategoryUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type storefrontListCategoryProductsResponse200 = {
+  data: StorefrontProductPage
+  status: 200
+}
+
+export type storefrontListCategoryProductsResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type storefrontListCategoryProductsResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type storefrontListCategoryProductsResponse429 = {
+  data: ProblemResponse
+  status: 429
+}
+
+export type storefrontListCategoryProductsResponseSuccess = (storefrontListCategoryProductsResponse200) & {
+  headers: Headers;
+};
+export type storefrontListCategoryProductsResponseError = (storefrontListCategoryProductsResponse404 | storefrontListCategoryProductsResponse422 | storefrontListCategoryProductsResponse429) & {
+  headers: Headers;
+};
+
+export type storefrontListCategoryProductsResponse = (storefrontListCategoryProductsResponseSuccess | storefrontListCategoryProductsResponseError)
+
+export const getStorefrontListCategoryProductsUrl = (slug: string,
+    params?: StorefrontListCategoryProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/categories/${slug}/products?${stringifiedParams}` : `/v1/categories/${slug}/products`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. Sólo `published` (AC-8: draft/archived nunca aparecen, ni en `data` ni en `total`). Un RUBRO agrega los productos de sus subrubros directos; un SUBRUBRO lista sólo los propios (decisión D1). Paginación offset con `total` (D3), `limit` 1..100 default 20 — el catálogo completo nunca se transfiere de una (AC-7). Orden estable `name ASC, id ASC`. Categoría existente sin publicados → 200 con `data` vacía (AC-6); categoría inexistente → 404 (AC-9).
+ * @summary Listado paginado de productos publicados de una categoría (US-002 AC-3)
+ */
+export const storefrontListCategoryProducts = async (slug: string,
+    params?: StorefrontListCategoryProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<storefrontListCategoryProductsResponse> => {
+
+  return customFetch<storefrontListCategoryProductsResponse>(getStorefrontListCategoryProductsUrl(slug,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 export const getPostAdminAuthLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
 export const getPostAdminCategoriesResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
@@ -555,6 +715,12 @@ export const getGetAdminProductsIdResponseMock = (overrideResponse: Partial<Extr
 export const getPatchAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
+
+export const getStorefrontListCategoriesResponseMock = (overrideResponse: Partial<Extract<CategoryTree, object>> = {}): CategoryTree => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), children: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})}))})), ...overrideResponse})
+
+export const getStorefrontGetCategoryResponseMock = (overrideResponse: Partial<Extract<StorefrontCategory, object>> = {}): StorefrontCategory => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent: faker.helpers.arrayElement([faker.helpers.arrayElement([{slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})},null,]), null]), children: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
+
+export const getStorefrontListCategoryProductsResponseMock = (overrideResponse: Partial<Extract<StorefrontProductPage, object>> = {}): StorefrontProductPage => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean()})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
 
 export const getPostAdminAuthLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
@@ -664,6 +830,42 @@ export const getStorefrontGetProductMockHandler = (overrideResponse?: Storefront
       })
   }, options)
 }
+
+export const getStorefrontListCategoriesMockHandler = (overrideResponse?: CategoryTree | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CategoryTree> | CategoryTree), options?: RequestHandlerOptions) => {
+  return http.get('*/categories', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStorefrontListCategoriesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getStorefrontGetCategoryMockHandler = (overrideResponse?: StorefrontCategory | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<StorefrontCategory> | StorefrontCategory), options?: RequestHandlerOptions) => {
+  return http.get('*/categories/:slug', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStorefrontGetCategoryResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getStorefrontListCategoryProductsMockHandler = (overrideResponse?: StorefrontProductPage | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<StorefrontProductPage> | StorefrontProductPage), options?: RequestHandlerOptions) => {
+  return http.get('*/categories/:slug/products', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStorefrontListCategoryProductsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getPostAdminAuthLoginMockHandler(),
   getPostAdminCategoriesMockHandler(),
@@ -673,5 +875,8 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getGetAdminProductsMockHandler(),
   getGetAdminProductsIdMockHandler(),
   getPatchAdminProductsIdMockHandler(),
-  getStorefrontGetProductMockHandler()
+  getStorefrontGetProductMockHandler(),
+  getStorefrontListCategoriesMockHandler(),
+  getStorefrontGetCategoryMockHandler(),
+  getStorefrontListCategoryProductsMockHandler()
 ]

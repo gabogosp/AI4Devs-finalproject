@@ -464,7 +464,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
 
 ## Fase 7: Documentación
 
-- [ ] **T7.1** README de `apps/web` + `.env.example` — namespace, storefront y nuevas env públicas (0.25 h)
+- [x] **T7.1** README de `apps/web` + `.env.example` — namespace, storefront y nuevas env públicas (0.25 h)
   - **Pattern**: per `documentation-standards.md` §11.1 (README cuando cambian config/env/rutas).
     Documentar: el **mapa de rutas** post-D0 (público raíz vs `/admin/*`, con puntero a ADR-0010) y
     las env públicas `NEXT_PUBLIC_SITE_URL` (canonical/OG/JSON-LD), `NEXT_PUBLIC_WHATSAPP_PHONE`
@@ -478,19 +478,19 @@ sitemap/robots del storefront → `Deferred: US-002`.
 
 ## Verification (suite-level)
 
-- [ ] Unit + component + integración verdes: `pnpm --filter @dsm/web test -- --run`
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción OK (sin colisión de rutas; la ficha compila como Server Component con ISR):
+- [x] Unit + component + integración verdes: `pnpm --filter @dsm/web test -- --run`
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`
+- [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
+- [x] Build de producción OK (sin colisión de rutas; la ficha compila como Server Component con ISR):
   `pnpm --filter @dsm/web build`
-- [ ] E2E verde (smoke de US-001 con las URLs nuevas + SSR + 404 real + invalidación AC-9):
+- [x] E2E verde (smoke de US-001 con las URLs nuevas + SSR + 404 real + invalidación AC-9):
   `pnpm --filter @dsm/web test:e2e`
-- [ ] Codegen del contrato en sync (gate `frontend-codegen-fresh`):
+- [x] Codegen del contrato en sync (gate `frontend-codegen-fresh`):
   `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
-- [ ] Sin `fetch` crudo fuera del cliente (F48): el único `fetch` de la app sigue en
+- [x] Sin `fetch` crudo fuera del cliente (F48): el único `fetch` de la app sigue en
   `src/lib/http/client.ts` (allowlist `.consumer-contract-allow`); el stub de E2E es servidor de
   test, no cliente de la app.
-- [ ] Reconciliación contra el `design.md` completo (F51): D0–D10 construidas o con `Deferred:`
+- [x] Reconciliación contra el `design.md` completo (F51): D0–D10 construidas o con `Deferred:`
   documentado (US-002 / US-006 / OQ-FE-3).
-- [ ] Índice actualizado: `docs/_index/openspec-changes.yaml` refleja `status` y `estimate-hours` de
+- [x] Índice actualizado: `docs/_index/openspec-changes.yaml` refleja `status` y `estimate-hours` de
   este change.

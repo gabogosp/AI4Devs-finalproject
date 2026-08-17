@@ -249,3 +249,85 @@ export const StorefrontGetProductResponse = zod.object({
   "slug": zod.string()
 })
 }).describe('Ficha pública (US-003): sólo campos SEO; sin id\/stock\/status\/timestamps.')
+
+
+/**
+ * Ruta PÚBLICA SIN auth. Rubros (sin padre) con sus subrubros directos, ambos ordenados por nombre. TTL propio de 300s (decisión D5) porque el árbol cambia poco. No emite `category.viewed` (sólo el detalle, D4).
+ * @summary Árbol público de categorías de dos niveles (US-002 AC-1)
+ */
+export const StorefrontListCategoriesResponse = zod.object({
+  "data": zod.array(zod.object({
+  "slug": zod.string(),
+  "name": zod.string(),
+  "children": zod.array(zod.object({
+  "slug": zod.string(),
+  "name": zod.string()
+}))
+}).describe('Rubro con sus subrubros; sin `parent` (la jerarquía la da el anidamiento).'))
+})
+
+
+/**
+ * Ruta PÚBLICA SIN auth. Trae `parent` para el breadcrumb y `children` para los subrubros. Slug inexistente → 404 (nunca un 200 vacío, que sería una página fantasma indexable). Único endpoint que emite el evento `category.viewed` (D4, insumo del panel US-016).
+ * @summary Detalle público de una categoría (US-002 AC-1/AC-2/AC-9)
+ */
+export const storefrontGetCategoryPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
+export const StorefrontGetCategoryParams = zod.object({
+  "slug": zod.string().regex(storefrontGetCategoryPathSlugRegExp)
+})
+
+export const StorefrontGetCategoryResponse = zod.object({
+  "slug": zod.string(),
+  "name": zod.string(),
+  "parent": zod.object({
+  "slug": zod.string(),
+  "name": zod.string()
+}).nullable().describe('Rubro padre para el breadcrumb; null si ya es raíz.'),
+  "children": zod.array(zod.object({
+  "slug": zod.string(),
+  "name": zod.string()
+}))
+}).describe('Categoría pública (US-002): sin id, parent_id ni timestamps.')
+
+
+/**
+ * Ruta PÚBLICA SIN auth. Sólo `published` (AC-8: draft/archived nunca aparecen, ni en `data` ni en `total`). Un RUBRO agrega los productos de sus subrubros directos; un SUBRUBRO lista sólo los propios (decisión D1). Paginación offset con `total` (D3), `limit` 1..100 default 20 — el catálogo completo nunca se transfiere de una (AC-7). Orden estable `name ASC, id ASC`. Categoría existente sin publicados → 200 con `data` vacía (AC-6); categoría inexistente → 404 (AC-9).
+ * @summary Listado paginado de productos publicados de una categoría (US-002 AC-3)
+ */
+export const storefrontListCategoryProductsPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
+export const StorefrontListCategoryProductsParams = zod.object({
+  "slug": zod.string().regex(storefrontListCategoryProductsPathSlugRegExp)
+})
+
+export const storefrontListCategoryProductsQueryLimitDefault = 20;
+export const storefrontListCategoryProductsQueryLimitMax = 100;
+
+export const storefrontListCategoryProductsQueryOffsetDefault = 0;
+export const storefrontListCategoryProductsQueryOffsetMin = 0;
+
+
+
+export const StorefrontListCategoryProductsQueryParams = zod.object({
+  "limit": zod.number().int().min(1).max(storefrontListCategoryProductsQueryLimitMax).default(storefrontListCategoryProductsQueryLimitDefault),
+  "offset": zod.number().int().min(storefrontListCategoryProductsQueryOffsetMin).default(storefrontListCategoryProductsQueryOffsetDefault)
+})
+
+export const StorefrontListCategoryProductsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "slug": zod.string().describe('Enlaza a la ficha `\/v1\/products\/{slug}`.'),
+  "name": zod.string(),
+  "price_ars_cents": zod.number().int(),
+  "currency": zod.enum(['ARS']),
+  "image_url": zod.string().nullable(),
+  "in_stock": zod.boolean()
+}).describe('Item de grilla (US-002): sin id, stock numérico, status ni timestamps.')),
+  "pagination": zod.object({
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "total": zod.number().int().describe('Publicados que matchean el filtro, no los de la página.')
+})
+})
