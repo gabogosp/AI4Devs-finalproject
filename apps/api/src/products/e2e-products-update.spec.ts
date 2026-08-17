@@ -34,6 +34,7 @@ describe('Products edición (e2e-products-update, AC-3)', () => {
       await prisma.product.create({
         data: {
           sku: 'REF-001',
+          slug: 'heladera-update',
           name: 'Heladera',
           price_ars_cents: 100000,
           stock: 3,

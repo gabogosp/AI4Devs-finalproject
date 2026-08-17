@@ -29,14 +29,14 @@ describe('StorefrontService.getPublishedProduct', () => {
 
   const makeService = (result: (Product & { category: Category }) | null) => {
     const repo = {
-      findPublishedBySku: jest.fn().mockResolvedValue(result),
+      findPublishedBySlug: jest.fn().mockResolvedValue(result),
     } as unknown as ProductsRepository;
     return { service: new StorefrontService(repo), repo };
   };
 
   it('repo devuelve el producto → lo retorna', async () => {
     const { service } = makeService(published);
-    await expect(service.getPublishedProduct('REF-001')).resolves.toBe(published);
+    await expect(service.getPublishedProduct('heladera')).resolves.toBe(published);
   });
 
   it('repo devuelve null → lanza NotFoundError (→ 404)', async () => {

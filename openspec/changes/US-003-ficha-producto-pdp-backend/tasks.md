@@ -94,32 +94,32 @@ language: es
 > de la US. Es una desviación consciente del ownership; si el equipo prefiere, se mueve a un change
 > de infra sin cambiar el contenido de estas tasks.
 
-- [ ] T10.1 Migración aditiva `products.slug` en `@dsm/db`
+- [x] T10.1 Migración aditiva `products.slug` en `@dsm/db`
   - **Exit criterion**: `packages/db` gana `slug String @unique` en `Product`, espejando el precedente `categories.slug`; migración Prisma aplicada; **backfill** derivado del `name` (kebab, normalizado, desambiguado con sufijo ante colisión) para las filas existentes; ninguna fila queda con `slug` nulo o duplicado.
   - **Verify**: `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=storefront`
 
-- [ ] T10.2 El slug se deriva server-side al crear y al editar el nombre
+- [x] T10.2 El slug se deriva server-side al crear y al editar el nombre
   - **Exit criterion**: el alta de producto deriva el `slug` del `name` (nunca se acepta del cliente, igual que en categorías, AC-1 de US-001); una colisión se resuelve de forma determinista; editar el nombre **no** rompe la URL ya indexada (el slug existente se conserva salvo decisión explícita). Unit tests cubren derivación, colisión y estabilidad ante edición.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=products.service`
 
-- [ ] T10.3 La ruta pública pasa a `GET /v1/products/{slug}` + contrato
+- [x] T10.3 La ruta pública pasa a `GET /v1/products/{slug}` + contrato
   - **Exit criterion**: la ficha pública se resuelve por `slug`; draft/archived/inexistente siguen devolviendo el **mismo** 404 uniforme (sin enumeration leak); el `openapi.yaml` declara el path param `slug` y el contrato vivo de la capacidad se regenera; los 6 specs e2e-nest del storefront siguen verdes contra el identificador nuevo.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=storefront && grep -q "products/{slug}" apps/api/docs/api/openapi.yaml`
 
 ## Verification (suite-level)
 
-- [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test` (28 suites / 112 tests verdes)
+- [x] Todos los unit tests pasan: `pnpm --filter @dsm/api test` (30 suites / 128 tests verdes)
 - [x] Integration (Postgres real con esquema `@dsm/db`, docker-compose :55432) pasan: incluidas en `pnpm --filter @dsm/api test` (specs `*.repository.spec.ts`). Nota: el runner del repo reutiliza el Postgres de docker-compose, no Testcontainers efímero (deviación consciente documentada en `test/jest.setup.js`); mismo motor + esquema `@dsm/db`. No hay flag `--group`.
-- [x] E2E-nest (supertest) pasan: `pnpm --filter @dsm/api test:e2e` (17 suites / 62 tests verdes)
+- [x] E2E-nest (supertest) pasan: `pnpm --filter @dsm/api test:e2e` (18 suites / 66 tests verdes)
 - [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck` (exit 0/0)
 - [x] Contract lint OpenAPI pasa: `npx @stoplight/spectral-cli lint openspec/changes/US-003-ficha-producto-pdp-backend/contracts/openapi/storefront-get-product.yaml` (0 errores)
-- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test` (exit 0; web 55 + api 112 tests)
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test` (exit 0; web 55 + api 128 tests)
 
 ## Trazabilidad AC → tasks
 
 | AC | Tasks | Estado |
 |---|---|---|
-| AC-1 (ver ficha publicada) | T1.1, T2.1, T3.1, T4.1 | en este change — **URL por slug diferida a OQ-BE-1 (infra); interino `sku`** |
+| AC-1 (ver ficha publicada + URL amigable) | T1.1, T2.1, T3.1, T4.1, T10.1, T10.2, T10.3 | en este change — **completo**: OQ-BE-1 resuelta, la ficha se resuelve por `slug` derivado server-side |
 | AC-2 (SEO / campos indexables) | T2.1, T4.1 | en este change — BE expone campos; SSR/JSON-LD son FE |
 | AC-3 (con stock → comprable) | T2.1, T8.1 | en este change — `in_stock:true`; disparador de carrito es US-007 |
 | AC-4 (sin stock → visible, no comprable) | T2.1, T8.1 | en este change — `in_stock:false`; indicador/WhatsApp son FE/US-018 |
@@ -130,3 +130,5 @@ language: es
 | AC-9 (precio vigente) | T6.1, T8.1 | en este change — lectura viva + caché acotada |
 | — (rate-limit surface público §7.3) | T5.1 | en este change — declaración de diseño, no AC (F51) |
 | — (evento `product.viewed`, US §9) | T7.1 | en este change — insumo panel US-016 |
+| — (columna `products.slug` + backfill, design §Persistencia) | T10.1 | en este change — declaración de datos, no AC (F40) |
+| — (slug nunca aceptado del cliente ni recalculado al editar, design §Persistencia) | T10.2 | en este change — declaración de diseño, no AC (F51) |

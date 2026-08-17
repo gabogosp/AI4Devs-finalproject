@@ -132,9 +132,25 @@ el `429` sale en envelope RFC 7807 vía el filtro global. El throttler `auth` de
 
 ### Persistencia
 
-Sin migración. Consulta de lectura única: `findFirst({ where: { sku, status: 'published' },
-include: { category: true } })`. `sku` es único → a lo sumo una fila. El join de categoría es
+Consulta de lectura única: `findFirst({ where: { slug, status: 'published' },
+include: { category: true } })`. `slug` es único → a lo sumo una fila. El join de categoría es
 1:1 por `category_id` (no-nullable en el esquema AS-BUILT). Sin transacción (lectura simple).
+
+**Migración (Fase 10, OQ-BE-1 resuelta 2026-08-16)** — actualiza la afirmación original de este
+change ("sin migración"), que valía mientras el identificador público era el `sku`:
+
+- `products.slug TEXT NOT NULL UNIQUE`, espejo del precedente `categories.slug`.
+- Aditiva en tres pasos porque la tabla ya tiene filas: `ADD COLUMN` nullable → backfill
+  derivado del `name` → `SET NOT NULL` + índice único. Migración
+  `20260816120000_add_product_slug`.
+- Backfill determinista: normaliza el `name` con el mismo criterio que `slugify()` de la app
+  (sin acentos vía `translate`, minúsculas, no-alfanumérico → `-`), desambigua la colisión con
+  sufijo ordinal por orden estable `(created_at, id)` y cae al `sku` si el nombre no tiene
+  ningún carácter alfanumérico. Sin extensiones nuevas (no depende de `unaccent`).
+- Sin índices adicionales: el único de `slug` es el que sirve al lookup público, y el
+  `(category_id, status)` existente sigue cubriendo el listado de US-002.
+- El `slug` **nunca** se acepta del cliente (se deriva en el service) ni se recalcula al editar
+  el `name` — regenerarlo rompería una URL ya indexada.
 
 ### Observabilidad — evento `product.viewed`
 

@@ -5,9 +5,10 @@ info:
   description: |
     Endpoint PÚBLICO (sin auth) de la ficha de producto (US-003 AC-1/AC-2).
     Devuelve un producto SÓLO si está `published`; draft/archived/inexistente →
-    404 uniforme (sin enumeration leak, AC-7/AC-8). Identificador público: `sku`
-    (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP
-    (§7.3) y caché acotada (AC-9).
+    404 uniforme (sin enumeration leak, AC-7/AC-8). Identificador público: `slug`
+    (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el servidor lo
+    deriva del `name`, nunca se acepta del cliente). Rate-limit por IP (§7.3) y
+    caché acotada (AC-9).
 servers:
   - url: https://api.dsm.example.com
     description: PROD (Railway, single-region US-East per ADR-0001)
@@ -19,20 +20,20 @@ tags:
     description: Superficie pública de lectura del storefront (ficha de producto).
 
 paths:
-  /v1/products/{sku}:
+  /v1/products/{slug}:
     get:
       operationId: storefrontGetProduct
       tags: [storefront-products]
-      summary: Obtener la ficha pública de un producto publicado por su sku
+      summary: Obtener la ficha pública de un producto publicado por su slug
       description: |
-        Lectura pública (sin auth) de un producto `published` por su `sku`.
+        Lectura pública (sin auth) de un producto `published` por su `slug`.
         Oculto o inexistente → 404 uniforme. Respuesta cacheable de forma acotada.
       parameters:
-        - name: sku
+        - name: slug
           in: path
           required: true
-          description: SKU del producto (identificador público interino).
-          schema: { type: string }
+          description: URL amigable del producto (kebab-case, derivada del nombre).
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
       responses:
         '200':
           description: Ficha del producto publicado (campos SEO-relevantes).
@@ -44,6 +45,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/StorefrontProduct' }
               example:
+                slug: "heladera-no-frost-300l"
                 sku: "REF-001"
                 name: "Heladera No-Frost 300L"
                 description: "Heladera con freezer superior, bajo consumo."
@@ -59,8 +61,9 @@ components:
   schemas:
     StorefrontProduct:
       type: object
-      required: [sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
+      required: [slug, sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
       properties:
+        slug: { type: string, description: URL amigable canónica de la ficha (AC-1). }
         sku: { type: string }
         name: { type: string }
         description:

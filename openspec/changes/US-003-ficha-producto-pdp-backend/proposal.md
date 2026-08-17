@@ -15,7 +15,7 @@ La ficha de producto (PDP) es el punto de conversión del descubrimiento (browse
 
 El sustrato ya existe y **no se re-arquitectura**: `@dsm/db` tiene la tabla `products` con todas las columnas que la ficha necesita (`name`, `description_raw`, `price_ars_cents`, `stock`, `status`, `image_url`, `category_id`) y `categories` con `slug`. US-001 dejó el borde HTTP endurecido (helmet §7.1, CORS allowlist §7.2, ValidationPipe 422, filtro RFC 7807 `dsm:catalog/*`, throttler `@nestjs/throttler`, `CatalogEventsService`). Este change entrega el **comportamiento** de lectura pública: un repositorio de lectura filtrado por `status='published'`, un mapper de respuesta orientado a la ficha/SEO (sin campos de administración), un controller público con rate-limit por IP (§7.3) y una política de caché acotada que respeta el precio vigente (AC-9).
 
-La superficie pública es **read-only** y **no crea ninguna tabla ni columna** desde la vista del backend. Hay **una** decisión de datos que sí implica esquema — la URL amigable por *slug* de producto (AC-1) — que se **escala como open question** (OQ-BE-1) por ser una columna nueva propiedad de infra/`@dsm/db`, no de este change (ver §Open questions). El endpoint de este change es entregable **hoy** contra el esquema AS-BUILT usando el `sku` (único, estable) como identificador público interino.
+La superficie pública es **read-only**. La única decisión de datos que implica esquema — la URL amigable por *slug* de producto (AC-1) — se escaló como OQ-BE-1 y el PO la **resolvió el 2026-08-16**: se materializa en la **Fase 10** de este change (columna aditiva `products.slug` en `@dsm/db`, derivada server-side del `name`). El identificador público del endpoint es el `slug`; el `sku` sigue expuesto en el cuerpo de la respuesta (campo SEO de `schema.org/Product`), pero ya no es la ruta.
 
 ## What changes
 
@@ -45,7 +45,7 @@ La superficie pública es **read-only** y **no crea ninguna tabla ni columna** d
 
 ## Out of scope
 
-- **Columna `products.slug`** y su backfill/derivación — cambio de esquema **infra-owned** (`@dsm/db`), escalado en OQ-BE-1; este change **no** agrega esquema silenciosamente. Interino: `sku` como identificador público.
+- ~~**Columna `products.slug`** y su backfill/derivación~~ — **entró al alcance** el 2026-08-16 al resolverse OQ-BE-1 (Fase 10). La desviación de ownership (esquema de `@dsm/db` fue INFRA en US-001) queda documentada en la nota de la Fase 10 de `tasks.md`.
 - **La acción de agregar al carrito y su lógica** → US-007. Este change sólo expone `in_stock`.
 - **SSR, metadatos HTML, JSON-LD, sitemap, placeholder de imagen, indicador "Sin stock", enlace WhatsApp** → FE (`FE-US-003`) / US-018.
 - **`description_enriched` / enriquecimiento IA / embeddings** → US-005. El mapper usa `description_raw`.

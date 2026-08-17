@@ -10,11 +10,13 @@ const categories = [
   { slug: "electricidad", name: "Electricidad" },
 ];
 
+// El `slug` va explícito (no derivado acá) para que el dato de demo sea estable
+// entre corridas: la derivación server-side vive en el service de la API.
 const products = [
-  { sku: "REF-001", name: "Compresor 1/4 HP", price_ars_cents: 8500000, stock: 12, category: "refrigeracion" },
-  { sku: "REF-002", name: "Gas refrigerante R134a 1kg", price_ars_cents: 2200000, stock: 30, category: "refrigeracion" },
-  { sku: "FER-001", name: "Taladro percutor 650W", price_ars_cents: 4500000, stock: 8, category: "ferreteria" },
-  { sku: "ELE-001", name: "Cable unipolar 2.5mm x100m", price_ars_cents: 3800000, stock: 20, category: "electricidad" },
+  { sku: "REF-001", slug: "compresor-1-4-hp", name: "Compresor 1/4 HP", price_ars_cents: 8500000, stock: 12, category: "refrigeracion" },
+  { sku: "REF-002", slug: "gas-refrigerante-r134a-1kg", name: "Gas refrigerante R134a 1kg", price_ars_cents: 2200000, stock: 30, category: "refrigeracion" },
+  { sku: "FER-001", slug: "taladro-percutor-650w", name: "Taladro percutor 650W", price_ars_cents: 4500000, stock: 8, category: "ferreteria" },
+  { sku: "ELE-001", slug: "cable-unipolar-2-5mm-x100m", name: "Cable unipolar 2.5mm x100m", price_ars_cents: 3800000, stock: 20, category: "electricidad" },
 ];
 
 async function main() {

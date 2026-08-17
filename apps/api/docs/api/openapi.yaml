@@ -153,20 +153,25 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
-  /products/{sku}:
+  /products/{slug}:
     get:
       operationId: storefrontGetProduct
       tags: [storefront-products]
       summary: Ficha pública de producto publicado (US-003 AC-1/AC-2)
       description: >-
-        Ruta PÚBLICA `GET /v1/products/{sku}` SIN auth (la primera del servicio).
+        Ruta PÚBLICA `GET /v1/products/{slug}` SIN auth (la primera del servicio).
         Devuelve un producto sólo si está `published`; draft/archived/inexistente →
-        404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `sku`
-        (interino; la URL por `slug` es OQ-BE-1, infra-owned). Rate-limit por IP
+        404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `slug`
+        (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el `slug` lo
+        deriva el servidor del `name`, nunca se acepta del cliente). Rate-limit por IP
         (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
       security: []
       parameters:
-        - { name: sku, in: path, required: true, schema: { type: string } }
+        - name: slug
+          in: path
+          required: true
+          description: 'URL amigable del producto (kebab-case, derivada del nombre).'
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
       responses:
         '200':
           description: Ficha del producto publicado (campos SEO-relevantes)
@@ -287,8 +292,11 @@ components:
     StorefrontProduct:
       type: object
       description: 'Ficha pública (US-003): sólo campos SEO; sin id/stock/status/timestamps.'
-      required: [sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
+      required: [slug, sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
       properties:
+        slug:
+          type: string
+          description: 'URL amigable canónica de la ficha (AC-1).'
         sku:
           type: string
         name:

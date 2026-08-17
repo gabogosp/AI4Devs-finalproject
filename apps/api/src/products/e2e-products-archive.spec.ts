@@ -35,6 +35,7 @@ describe('Products archivar (e2e-products-archive, AC-7)', () => {
     const p = await prisma.product.create({
       data: {
         sku: 'REF-ARCH',
+        slug: 'heladera-arch',
         name: 'Heladera',
         price_ars_cents: 100000,
         stock: 5,
@@ -56,6 +57,7 @@ describe('Products archivar (e2e-products-archive, AC-7)', () => {
     const p = await prisma.product.create({
       data: {
         sku: 'REF-ARCH2',
+        slug: 'ventilador-arch2',
         name: 'Ventilador',
         price_ars_cents: 50000,
         stock: 2,

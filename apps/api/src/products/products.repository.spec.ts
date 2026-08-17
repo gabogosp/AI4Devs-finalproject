@@ -70,10 +70,10 @@ describe('ProductsRepository (products.repository, integration)', () => {
     ).rejects.toBeTruthy();
   });
 
-  describe('findPublishedBySku (US-003 lectura pública)', () => {
+  describe('findPublishedBySlug (US-003 lectura pública)', () => {
     it('producto publicado → lo devuelve con su categoría', async () => {
       await repo.create({ ...base('PUB-001'), status: 'published' });
-      const found = await repo.findPublishedBySku('PUB-001');
+      const found = await repo.findPublishedBySlug('pub-001');
       expect(found).not.toBeNull();
       expect(found?.sku).toBe('PUB-001');
       expect(found?.category.slug).toBe('refrigeracion');
@@ -81,16 +81,43 @@ describe('ProductsRepository (products.repository, integration)', () => {
 
     it('producto draft → null (AC-7)', async () => {
       await repo.create({ ...base('DRA-001'), status: 'draft' });
-      expect(await repo.findPublishedBySku('DRA-001')).toBeNull();
+      expect(await repo.findPublishedBySlug('dra-001')).toBeNull();
     });
 
     it('producto archived → null (AC-7)', async () => {
       await repo.create({ ...base('ARC-001'), status: 'archived' });
-      expect(await repo.findPublishedBySku('ARC-001')).toBeNull();
+      expect(await repo.findPublishedBySlug('arc-001')).toBeNull();
     });
 
-    it('sku inexistente → null (AC-8)', async () => {
-      expect(await repo.findPublishedBySku('NOPE-999')).toBeNull();
+    it('slug inexistente → null (AC-8)', async () => {
+      expect(await repo.findPublishedBySlug('no-existe-999')).toBeNull();
+    });
+  });
+
+  describe('findSlugsByPrefix (T10.2 — insumo de desambiguación)', () => {
+    it('devuelve sólo los slugs que arrancan con el prefijo', async () => {
+      await repo.create({ ...base('HEL-001'), slug: 'heladera' });
+      await repo.create({ ...base('HEL-002'), slug: 'heladera-2' });
+      await repo.create({ ...base('VEN-001'), slug: 'ventilador' });
+
+      const found = await repo.findSlugsByPrefix('heladera');
+
+      expect(found.sort()).toEqual(['heladera', 'heladera-2']);
+    });
+
+    it('sin coincidencias → array vacío', async () => {
+      await repo.create({ ...base('VEN-002'), slug: 'ventilador-techo' });
+      expect(await repo.findSlugsByPrefix('heladera')).toEqual([]);
+    });
+  });
+
+  it('slug duplicado → ConflictError que apunta a slug, no a sku', async () => {
+    await repo.create({ ...base('DUP-001'), slug: 'mismo-slug' });
+
+    await expect(
+      repo.create({ ...base('DUP-002'), slug: 'mismo-slug' }),
+    ).rejects.toMatchObject({
+      fieldErrors: [{ field: 'slug', message: 'URL de producto duplicada' }],
     });
   });
 });

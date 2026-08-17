@@ -19,6 +19,7 @@ describe('Products listado paginado (e2e-products-list, NFR)', () => {
     await prisma.product.createMany({
       data: Array.from({ length: 120 }, (_, i) => ({
         sku: `SKU-${String(i).padStart(4, '0')}`,
+        slug: `producto-${i}`,
         name: `Producto ${i}`,
         price_ars_cents: 1000 + i,
         stock: i,

@@ -35,6 +35,7 @@ describe('Products publicar (e2e-products-publish, AC-4/AC-6)', () => {
     const p = await prisma.product.create({
       data: {
         sku: 'REF-OK',
+        slug: 'heladera-ok',
         name: 'Heladera',
         price_ars_cents: 100000,
         stock: 5,
@@ -51,6 +52,7 @@ describe('Products publicar (e2e-products-publish, AC-4/AC-6)', () => {
     const p = await prisma.product.create({
       data: {
         sku: 'REF-BAD',
+        slug: 'producto-bad',
         name: '',
         price_ars_cents: 100000,
         stock: 5,
