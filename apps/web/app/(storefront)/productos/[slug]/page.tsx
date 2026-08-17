@@ -1,7 +1,23 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getProductBySlug } from '@/features/storefront/storefrontService';
 import { ProductDetail } from '@/features/storefront/ProductDetail';
+import { productMetadata } from '@/features/storefront/metadata';
 import { isAppError } from '@/lib/http/errors';
+
+/**
+ * Metadatos por ficha (AC-2). El `fetch` de Next memoiza por URL + opciones, así
+ * que esta llamada y la de la page se deduplican en un solo request.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug).catch(() => null);
+  return productMetadata(product);
+}
 
 /**
  * Ficha pública de producto (US-003). Server Component: el HTML sale del

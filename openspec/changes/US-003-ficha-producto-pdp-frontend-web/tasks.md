@@ -228,7 +228,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     (invoca `notFound`, con `next/navigation` espiado) y **error no-404** (propaga, no lo traga).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront && pnpm --filter @dsm/web build`
 
-- [ ] **T3.2** `generateMetadata` — title/description/canonical/Open Graph por ficha (0.5 h)
+- [x] **T3.2** `generateMetadata` — title/description/canonical/Open Graph por ficha (0.5 h)
   - **Pattern**:
     ```tsx
     export async function generateMetadata({ params }): Promise<Metadata> {
