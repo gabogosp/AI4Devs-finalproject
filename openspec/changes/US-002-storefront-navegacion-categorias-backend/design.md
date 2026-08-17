@@ -45,7 +45,7 @@ el patrón de acceso al volumen declarado (≥5.000 SKUs, ~50 concurrentes — E
 - **SSR/metadatos/sitemap/JSON-LD/estados visuales** → FE-US-002 (AC-4/AC-10 son FE;
   el BE habilita los datos). `Deferred: FE-US-002 — split declarado en proposal §ACs`.
 - **Filtros/ordenamientos alternativos** → PRD §2.2 roadmap. Un solo orden estable.
-- **Columna `products.slug`** → OQ-BE-1 (US-003), infra-owned; el enlace usa `sku`.
+- **Columna `products.slug`** → ya creada por US-003 backend (Fase 10); acá sólo se lee.
 - **Caché Redis de listados** (mencionada como opción en E2E §17) → rechazada por ahora
   (ver Trade-offs). **Admin de categorías** → US-001, intacto. **Carrito** → US-007.
 - Batería de aceptación Playwright + SEO/SSR + a11y → `QA-US-002`.
@@ -93,7 +93,7 @@ Rate-limit heredado: throttler `storefront` 60/min/IP (`security-standards.md` �
 
 // dto/storefront-product-list.dto.ts — item de grilla (ProductCard)
 {
-  sku: string;                 // enlace a la ficha US-003 (interino OQ-BE-1)
+  slug: string;                // enlace a la ficha US-003 (`GET /v1/products/{slug}`)
   name: string;
   price_ars_cents: number;     // money en centavos (api-standards §5.5); IVA incl.
   currency: 'ARS';
@@ -253,7 +253,7 @@ y el listado **no** emiten (D4 — un evento por vista de página).
 ## Open questions
 
 - **OQ-BE-1 (heredada de US-003)** `[Deferred — owner: Arquitecto/infra]`: URL de ficha
-  por `slug` de producto; el enlace del listado usa `sku` interino. Sin impacto nuevo.
+  por `slug` de producto: resuelta el 2026-08-16 (US-003 Fase 10). El enlace del listado usa `slug`.
 
 ## References
 

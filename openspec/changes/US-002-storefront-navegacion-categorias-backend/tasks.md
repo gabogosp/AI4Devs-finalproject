@@ -13,7 +13,7 @@ language: es
 
 ## Pre-requisitos
 - [ ] **Base de US-001 + US-003 presente**: `StorefrontModule` con `StorefrontThrottlerGuard`, `StorefrontCacheInterceptor`, `CatalogEventsService`, `HttpProblemFilter` (RFC 7807 `dsm:catalog/*`) y repositorios exportables. Verificado: `pnpm --filter @dsm/api typecheck` (exit 0) y existencia de `apps/api/src/storefront/storefront.module.ts`.
-- [ ] **OQ-BE-1 reconocida** `[Deferred — infra]`: el enlace a ficha usa `sku`; ninguna task agrega `products.slug`.
+- [ ] **OQ-BE-1 resuelta (2026-08-16)**: `products.slug` ya existe (US-003 Fase 10, migración `20260816120000_add_product_slug`). El enlace a ficha usa `slug`; ninguna task de este change agrega esquema.
 
 ## Fase 1: Repositorio de categorías — lecturas públicas (AC-1/AC-2/AC-9) — 0.5 h
 
@@ -33,7 +33,7 @@ language: es
 
 - [ ] T3.1 `StorefrontCategoryDto`, `StorefrontProductListItemDto`, `ListStorefrontProductsQueryDto`
   - **Pattern**: DTOs de respuesta con `static from(...)` (sin exponer la entidad ORM) y query DTO class-validator `@Type(() => Number) @IsInt() @Min(1) @Max(100) limit = 20;` / `@Min(0) offset = 0;` validado por el `ValidationPipe` global (whitelist, 422) — `per backend-node-standards.md §4 — todo input de controller es un DTO validado en el borde` y `api-standards.md §6.1 — limit default 20, max 100`.
-  - **Exit criterion**: `StorefrontCategoryDto` expone exactamente `{ slug, name, parent: {slug,name}|null, children: [{slug,name}] }` (el árbol omite `parent`); `StorefrontProductListItemDto` expone exactamente `{ sku, name, price_ars_cents, currency: 'ARS', image_url, in_stock }` con `in_stock = stock > 0` e `image_url` passthrough incluyendo `null`; ninguno incluye `id`, `stock` numérico, `status` ni timestamps; el query DTO aplica defaults 20/0 y rechaza `limit` fuera de 1..100 y `offset < 0`.
+  - **Exit criterion**: `StorefrontCategoryDto` expone exactamente `{ slug, name, parent: {slug,name}|null, children: [{slug,name}] }` (el árbol omite `parent`); `StorefrontProductListItemDto` expone exactamente `{ slug, name, price_ars_cents, currency: 'ARS', image_url, in_stock }` con `in_stock = stock > 0` e `image_url` passthrough incluyendo `null`; ninguno incluye `id`, `stock` numérico, `status` ni timestamps; el query DTO aplica defaults 20/0 y rechaza `limit` fuera de 1..100 y `offset < 0`.
   - **Verify**: `pnpm --filter @dsm/api test -- storefront-category-dto storefront-product-list` (unit: shapes exactos por `Object.keys`; `stock=0`→`in_stock:false`, `stock=3`→`true`; `image_url=null` passthrough; transformación/validación del query DTO: `limit='150'` inválido, `limit='50'` → number 50, sin params → 20/0)
 
 ## Fase 4: Servicio — árbol, detalle y listado con agregación D1 (AC-1/AC-2/AC-9) — 0.5 h
@@ -68,7 +68,7 @@ language: es
 
 - [ ] T8.1 e2e negative-space + disponibilidad + vacío
   - **Exit criterion**: la suite e2e cubre — producto publicado con `stock=0` aparece en el listado con `in_stock:false` (AC-5); categoría publicada sin productos publicados (pero con drafts) → 200 `data: []`, `total: 0` (AC-6, y los drafts no inflan el total); productos `draft` y `archived` de la categoría NO aparecen en ninguna página del listado (AC-8); producto sin imagen → `image_url: null` en el item (AC-3).
-  - **Verify**: `pnpm --filter @dsm/api test -- storefront-categories-acceptance` (e2e-nest contra Postgres real: los cuatro escenarios pasan; el de AC-8 recorre todas las páginas y asserta que ningún `sku` de draft/archived aparece)
+  - **Verify**: `pnpm --filter @dsm/api test -- storefront-categories-acceptance` (e2e-nest contra Postgres real: los cuatro escenarios pasan; el de AC-8 recorre todas las páginas y asserta que ningún `slug` de draft/archived aparece)
 - [ ] T8.2 e2e de paginación a volumen (AC-7 — sin transferir el catálogo completo)
   - **Exit criterion**: con un seed de ≥120 productos publicados (más drafts intercalados) en un rubro con subrubros, el listado del rubro agrega los hijos (D1: `total` = publicados del rubro + subrubros), recorre páginas de `limit=50` sin duplicados ni faltantes (unión = total, intersección = ∅), respeta `limit` max 100 (pedir 150 → 422, pedir 100 → a lo sumo 100 filas) y una página nunca devuelve más de `limit` filas. Nota de NFR: el umbral p95 < 300ms es herencia de NFR-1 de la capacidad y su re-medición prod-shaped queda gated en US-019 (no se asserta latencia en CI local).
   - **Verify**: `pnpm --filter @dsm/api test -- storefront-pagination-volume` (e2e: seed 120+; asserts de unión/disjunción de páginas, `total` agregado del rubro correcto vs el del subrubro, límites 100/422)
@@ -96,7 +96,7 @@ language: es
 |---|---|---|
 | AC-1 (rubro → subrubros y/o productos) | T1.1, T4.1, T5.1 | en este change — agregación per D1 |
 | AC-2 (subrubro + volver al padre) | T1.1, T4.1, T5.1 | en este change — `parent` en detalle; el breadcrumb visual es FE |
-| AC-3 (item: nombre, precio ARS, imagen, disponibilidad, paginado, enlace) | T2.1, T3.1, T5.1, T8.1 | en este change — enlace por `sku` (OQ-BE-1 diferida, infra) |
+| AC-3 (item: nombre, precio ARS, imagen, disponibilidad, paginado, enlace) | T2.1, T3.1, T5.1, T8.1 | en este change — enlace por `slug` (OQ-BE-1 resuelta en US-003 Fase 10) |
 | AC-4 (página indexable SEO) | — | **Deferred: FE-US-002** — SSR/metadatos/sitemap; el BE habilita datos (T5.1, T6.1) |
 | AC-5 (sin stock visible, no comprable) | T3.1, T8.1 | en este change — `in_stock:false`; badge/acción son FE |
 | AC-6 (categoría vacía) | T5.1, T8.1 | en este change — 200 `data: []` / `total: 0`; estado visual es FE |
