@@ -21,7 +21,18 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      // El panel del dueño no se indexa (ADR-0010 + E2E §14). Defensa en
+      // profundidad, NO control de acceso: la autoridad sigue siendo el
+      // AdminGuard en el cliente y el backend en el servidor. Con `/admin/*`
+      // como prefijo único, la regla es una sola y no hay que extenderla cada
+      // vez que el panel gana una pantalla.
+      {
+        source: '/admin/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ];
   },
 };
 

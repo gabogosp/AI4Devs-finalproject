@@ -118,7 +118,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     *(el grep final está acotado a las redirecciones del panel — no puede dar falso positivo con las
     URLs públicas legítimas del storefront que T3.1/T6.2 agregan.)*
 
-- [ ] **T0.3** `X-Robots-Tag: noindex, nofollow` para `/admin/:path*` (0.25 h)
+- [x] **T0.3** `X-Robots-Tag: noindex, nofollow` para `/admin/:path*` (0.25 h)
   - **Pattern**:
     ```js
     // next.config.mjs — junto a los security headers de US-001 (T8.4)
@@ -137,7 +137,7 @@ sitemap/robots del storefront → `Deferred: US-002`.
     *(el spec `e2e/admin-noindex.spec.ts` asserta el header presente en `/admin/acceso` y ausente
     en `/`.)*
 
-- [ ] **T0.4** Route group `(storefront)`: layout mínimo + home pública en `/` (0.25 h)
+- [x] **T0.4** Route group `(storefront)`: layout mínimo + home pública en `/` (0.25 h)
   - **Pattern**:
     ```tsx
     // app/(storefront)/layout.tsx — mínimo: wordmark "DSM" → '/' (top-nav completo: Deferred US-002)
