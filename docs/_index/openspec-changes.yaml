@@ -177,6 +177,26 @@
   completed-at: null
   archived-at: null
   archive-path: null
+- name: US-014-registro-login-backend
+  us-id: US-014
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-014-registro-login.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 15 h tradicional / 7,5 h AI-asistido (US §7 estima BE-US-014 en 12-16 h).
+  # El peso está en la superficie de credenciales, no en el CRUD de la cuenta.
+  estimate-hours: 15
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-17
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-002-storefront-navegacion-categorias-qa
   us-id: US-002
   discipline: qa
@@ -191,6 +211,28 @@
   branch: null
   pr-url: null
   created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-002-storefront-navegacion-categorias-frontend-web
+  us-id: US-002
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,5 h AI-asistido / ~19 h tradicional (20 tasks). US §7 presupuesta FE-US-002 en 12-16 h:
+  # el tradicional excede el techo ~3 h por trabajo que la US no contemplaba — sitemap/robots
+  # (diferido formalmente desde US-003), el circuito de invalidación del catálogo (la caché por
+  # tag nació en US-003) y la extensión del stub de contrato para E2E server-side.
+  estimate-hours: 10.5
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-17
   completed-at: null
   archived-at: null
   archive-path: null
