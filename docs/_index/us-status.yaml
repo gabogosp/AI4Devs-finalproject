@@ -151,7 +151,7 @@
   blocked_by: [US-010, US-012]
 - id: US-014
   slug: registro-login
-  status: Ready
+  status: In Progress
   priority: Medium
   prd-capacity: 8
   disciplines: [BE, FE, QA]
@@ -159,6 +159,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-17
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras

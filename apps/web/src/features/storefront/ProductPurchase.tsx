@@ -36,7 +36,12 @@ export function ProductPurchase({
 
     return (
       <div className="flex flex-col gap-3">
-        <span className="inline-flex w-fit items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500">
+        {/* `text-gray-600`, no `-500`: sobre `bg-gray-100` el 500 da 4.39:1 y
+            WCAG 2.1 AA exige 4.5:1 para texto normal. Quedaba a un pelo, así que
+            no se veía a ojo — lo detectó axe en browser real (TC-320c). El
+            contraste no es medible en jsdom, por eso el test de componente
+            pasaba. */}
+        <span className="inline-flex w-fit items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
           Sin stock
         </span>
         <p className="text-sm text-muted">{OUT_OF_STOCK_COPY}</p>

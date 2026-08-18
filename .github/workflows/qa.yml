@@ -1,9 +1,9 @@
 name: qa-cross-stack
 
 # Gates de la suite QA cross-stack (@dsm/qa, Layer 3) — qa-plan §12.
-# - PR: funcional + aceptación + smoke-load contra el stack levantado.
-# - nightly: + E2E y a11y completos (necesitan también apps/web arriba).
-# - pre-release (tag): + baseline de carga.
+# - PR: funcional + aceptación + E2E + a11y + smoke-load contra el stack levantado.
+# - nightly: lo mismo, como red por si un PR se saltea el gate.
+# - pre-release (tag): + baseline de carga completa.
 #
 # AUTO-GATED (2026-07-26): cada paso se saltea limpio si su suite todavía no fue
 # autorada. La suite se construye por fases (T1.3 → T2.x → T3.1 → T4.x → T5.2) y
@@ -75,9 +75,12 @@ jobs:
       # E2E y a11y corren en el browser contra el FE: necesitan apps/web arriba,
       # no sólo la API (faltaba en la versión original de este workflow).
       - name: Build + arranque del front
-        if: >-
-          (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/'))
-          && hashFiles('qa/e2e/*.config.ts') != ''
+        # E2E y a11y corren TAMBIÉN en PR (decisión 2026-08-18): antes sólo iban
+        # en nightly, y un PR que movió el panel bajo /admin rompió la suite L3
+        # sin que nada se pusiera rojo durante un día. El costo por PR es levantar
+        # el front y un browser; el beneficio es atribuir la ruptura al commit que
+        # la causó, en vez de descubrirla mezclada con otros cambios.
+        if: hashFiles('qa/e2e/*.config.ts') != ''
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
           # `next start` toma el puerto de PORT. Se evita `-- -p 3100`: pnpm
@@ -89,15 +92,11 @@ jobs:
           npx wait-on -t 120000 http://localhost:3100
 
       - name: E2E cross-stack (Playwright)
-        if: >-
-          (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/'))
-          && hashFiles('qa/e2e/playwright.config.ts') != ''
+        if: hashFiles('qa/e2e/playwright.config.ts') != ''
         run: pnpm --filter @dsm/qa exec playwright install --with-deps chromium && pnpm --filter @dsm/qa test:e2e
 
       - name: Accesibilidad (axe-core)
-        if: >-
-          (github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/'))
-          && hashFiles('qa/e2e/playwright.a11y.config.ts') != ''
+        if: hashFiles('qa/e2e/playwright.a11y.config.ts') != ''
         run: pnpm --filter @dsm/qa test:a11y
 
       # ---- Carga: smoke en PR, baseline completa en pre-release ----
