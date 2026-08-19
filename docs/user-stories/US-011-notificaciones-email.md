@@ -22,6 +22,14 @@ figma-frames: []
 
 # US-011: Notificaciones por email (Resend)
 
+
+> **Alcance reducido (2026-08-19)**: el **adapter de Resend** se adelantó a
+> **US-014** (T7.2), porque AC-4 de esa US quedaba inalcanzable en producción
+> esperando a esta. US-011 ya **no** enchufa el adapter: consume el puerto
+> `PasswordResetMailer` que US-014 deja construido, y se concentra en sus propias
+> notificaciones (confirmación de orden, cambios de estado). Revisar el alcance
+> antes de planificarla.
+
 ## 1. La historia (formato Connextra)
 
 **Como** comprador y como dueño,

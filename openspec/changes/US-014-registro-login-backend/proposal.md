@@ -179,8 +179,14 @@ aterrice sin tocarlo.
 > puede ejecutar el plan completo.
 
 - **OQ-BE-1 — ¿Cómo se entrega el email de recuperación (AC-4)?**
-  `[Resolved: 2026-08-17 — opción (a): puerto PasswordResetMailer + adapter de log
-  en US-014; el adapter Resend lo enchufa US-011]` US-011 (Resend) está `Ready`
+  `[Resolved: 2026-08-19 — REABIERTA por el PO: se adelanta el adapter Resend a
+  US-014 (T7.2). La resolución del 2026-08-17 (adapter sólo en US-011) dejaba AC-4
+  inalcanzable en producción durante varios ciclos, porque US-011 depende del loop
+  de compra entero (US-003→007→008→009→010→012). Cerrar US-014 con un flujo que
+  ningún cliente puede usar no era aceptable. El puerto no cambia; ahora hay dos
+  adapters y el alcance de US-011 se reduce.]` Resolución anterior, conservada
+  como registro:`[Resolved: 2026-08-17 — opción (a): puerto PasswordResetMailer +
+  adapter de log en US-014; el adapter Resend lo enchufa US-011]` US-011 (Resend) está `Ready`
   pero `blocked_by: [US-010, US-012]`, y hoy no existe ninguna integración de email
   en el repo. Se descartó adelantar el adapter Resend acá (duplicaría el alcance de
   US-011 y sumaría una API key nueva) y bloquear US-014 hasta US-011 (invertiría el

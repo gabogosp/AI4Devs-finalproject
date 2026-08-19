@@ -454,10 +454,18 @@ language: es
 
 ## Fase 7: Puerto de email de recuperación — 0,3 h
 
-> **OQ-BE-1 resuelta (2026-08-17)**: puerto + adapter de log en US-014; el adapter
-> Resend lo enchufa US-011. Consecuencia a no perder de vista: al terminar esta
-> fase el backend del reset está completo pero **el email no llega al cliente en
-> producción** (`Deferred: US-011`, ver `design.md` §Puerto de email).
+> **OQ-BE-1 REABIERTA Y RESUELTA DE NUEVO (2026-08-19, decisión del PO)**: se
+> **adelanta el adapter Resend a US-014**. La resolución previa (puerto + adapter
+> de log, Resend en US-011) dejaba AC-4 inalcanzable en producción durante varios
+> ciclos: US-011 depende de US-003, 007, 008, 009, 010 y 012 — el loop de compra
+> entero. Cerrar US-014 con un flujo de recuperación que ningún cliente puede usar
+> no era aceptable.
+>
+> **Consecuencias**: (a) hace falta una API key de Resend, que pasa a ser
+> pre-requisito de esta fase; (b) el alcance de **US-011 se reduce** — ya no
+> enchufa el adapter, sólo consume el puerto para sus propias notificaciones;
+> conviene anotarlo en US-011 antes de planificarla; (c) el puerto sigue siendo el
+> diseño correcto y no cambia: lo que cambia es que ahora hay **dos** adapters.
 
 - [ ] T7.1 `PasswordResetMailer` (puerto) + `LoggingPasswordResetMailer` (adapter)
   - **Pattern**: interfaz + token de inyección (`provide: PASSWORD_RESET_MAILER`),
@@ -474,6 +482,25 @@ language: es
     (los casos del mailer: con `NODE_ENV='production'` el log capturado **no**
     contiene el token ni el email; con `'test'` sí contiene el token; un mailer que
     lanza no altera el resultado de `request`)
+
+- [ ] T7.2 `ResendPasswordResetMailer` (adapter real) + selección por entorno
+  - **Pattern**: segundo adapter del mismo puerto, registrado por factory según
+    `RESEND_API_KEY` presente/ausente — `per backend-node-standards.md §3 —
+    depender del token de inyección, no de la clase concreta`. El service **no se
+    toca**: si hay que modificarlo, el puerto estaba mal diseñado.
+  - **Exit criterion**: `RESEND_API_KEY` (opcional) y `PASSWORD_RESET_FROM`
+    (email remitente) validadas en `envSchema`; con la key presente el provider
+    resuelve al adapter Resend, sin key resuelve al de log — así local y tests no
+    necesitan credenciales y producción no cae al de log en silencio: si
+    `NODE_ENV === 'production'` **y** falta la key, el arranque **falla**
+    (fail-fast §7), no degrada. El adapter envía el enlace de reset y **nunca**
+    loguea el token ni el email. Un fallo de Resend no altera el 202 ni propaga
+    excepción (mismo contrato que el de log, AC-11 anti-enumeración).
+  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=resend-mailer`
+    (unit con el cliente de Resend mockeado: con key → se elige Resend y se llama
+    una vez con el destinatario y un cuerpo que contiene el enlace; sin key →
+    se elige el de log; `NODE_ENV=production` sin key → `validateEnv` lanza; el
+    cliente que rechaza no propaga y no cambia el resultado de `request`)
 
 ---
 
@@ -594,6 +621,12 @@ language: es
     cada uno declara el header `X-CSRF-Token` donde aplica y ninguno declara el
     token de sesión en el cuerpo de la respuesta. Queda anotado que al archivar
     forman la capacidad nueva `openspec/specs/cuentas/`.
+    **Decisión del PO (2026-08-19)**: al archivar, `POST /admin/auth/login` **se
+    mueve** del contrato vivo de `catalogo` al de `cuentas` — es un endpoint de
+    autenticación, no de catálogo, y su hogar natural es la capacidad que lo
+    gobierna. `catalogo` queda con una nota apuntando al nuevo hogar; **no** se
+    declara en las dos (dos copias driftean). Anotarlo acá porque `/archive-change`
+    sincroniza `openspec/specs/` y necesita saberlo.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-014-registro-login-backend/contracts/openapi/*.yaml`
 
 - [ ] T11.2 Spec publicado del servicio + README
