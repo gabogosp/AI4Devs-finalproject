@@ -568,7 +568,9 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 7: A11y + E2E (SSR / 404 / paginación / invalidación reales)
 
-- [ ] **T7.1** Accesibilidad — axe sin violaciones en los estados de la página de categoría (0.5 h)
+- [x] **T7.1** Accesibilidad — axe sin violaciones en los estados de la página de categoría (0.5 h)
+  - **AS-BUILT 2026-08-18**: 8 tests verdes (3 estados por axe + 5 asserts estructurales).
+  - **Encontró un defecto real, no un falso positivo**: axe reportó `heading-order` porque la card usa `h3` (así lo pedía el `Pattern:` de T4.2) directamente bajo el `h1` de la categoría, saltando el `h2`. El `Pattern:` de T4.2 y el criterio de T7.1 ("orden `h1 → h2 → h3`") se contradecían. Se resolvió **conciliando ambos**: se agregó un `<h2 className="sr-only">Productos</h2>` antes de la grilla, así la card conserva su `h3` del Pattern y el orden queda correcto. Un lector de pantalla ahora anuncia la sección de productos, que antes no existía como nivel.
   - **Pattern**: jest-axe sobre (a) categoría con productos, (b) categoría vacía, (c) grilla con un
     item sin stock → **0 violaciones**; asserts adicionales: `h1` único, orden `h1 → h2 → h3`,
     breadcrumb con `aria-current="page"`, paginación con `aria-current="page"` y `nav` etiquetada,

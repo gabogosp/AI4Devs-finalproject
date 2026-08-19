@@ -109,6 +109,10 @@ export default async function CategoryPage({
 
       {data.length > 0 && (
         <>
+          {/* h2 sólo para lectores de pantalla: la card usa h3 para el nombre
+              del producto, y sin este nivel intermedio el orden saltaría de h1
+              a h3 (violación `heading-order` de axe, detectada en T7.1). */}
+          <h2 className="sr-only">Productos</h2>
           <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
             {data.map((item) => (
               <ProductCard key={item.slug} item={item} categoryName={category.name} />
