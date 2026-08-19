@@ -42,7 +42,15 @@ describe('CategoryNav (AC-1)', () => {
   });
 
   it('si el árbol falla NO lanza: se pierde la nav, no el sitio', async () => {
-    getTree.mockRejectedValue(new Error('backend caído'));
+    // Función async que lanza: `mockRejectedValue` deja en `mock.results` una
+    // promesa rechazada que vitest reporta como unhandled apenas alguien
+    // flushee microtasks (p. ej. un `render()`), aunque el componente la
+    // maneje. Hoy este caso no renderiza, así que pasaría igual — se usa la
+    // forma robusta para que agregar un `render()` mañana no rompa el test
+    // por una razón que no tiene nada que ver con el componente.
+    getTree.mockImplementation(async () => {
+      throw new Error('backend caído');
+    });
 
     // Sin el catch, un 5xx del árbol tumbaría TODA página del storefront,
     // incluida la ficha de producto, que no depende de este fetch.

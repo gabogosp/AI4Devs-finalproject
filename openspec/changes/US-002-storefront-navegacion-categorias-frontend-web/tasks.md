@@ -252,7 +252,9 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     render sin lanzar + `captureError` invocado (el test **falla** si el error se propaga).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/CategoryNav && pnpm --filter @dsm/web build`
 
-- [ ] **T3.2** Home pública real en `/`: claim + grilla de rubros con sus subrubros (0.5 h)
+- [x] **T3.2** Home pública real en `/`: claim + grilla de rubros con sus subrubros (0.5 h)
+  - **AS-BUILT 2026-08-18**: 3 tests verdes + build OK; `/` pasa de 140 B a 176 B (sigue estática). El stub "Comprá online y retirá" deja de ser el contenido completo: hay `h2` por rubro y un link por cada subrubro.
+  - **Falso rojo del harness, diagnosticado y evitado (aplica a todo test futuro de resiliencia acá)**: mockear el fallo del árbol con `vi.fn().mockRejectedValue(...)` —o `mockImplementation(() => Promise.reject(...))`, o incluso `async () => { throw }`— hace que el spy **retenga la promesa rechazada en `mock.results`**, y vitest la reporta como unhandled apenas `render()` flushea microtasks, **aunque el componente sí la maneje**. Verificado aislando el caso: `StorefrontHome()` NO propaga, el catch funciona; el rojo lo producía el harness. La solución es un doble con **estado plano** (`let treeResult`) en vez de un spy. Se aplicó también a `CategoryNav.test.tsx`, que tenía el mismo defecto latente (hoy pasa sólo porque ese caso no llama a `render`).
   - **Pattern**:
     ```tsx
     // app/(storefront)/page.tsx — reemplaza el stub que US-003 dejó marcado "Deferred: US-002"
