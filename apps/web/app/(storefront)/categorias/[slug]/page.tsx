@@ -3,7 +3,11 @@ import { categoriesStorefrontService } from '@/features/storefront/categoriesSto
 import { ProductCard } from '@/features/storefront/ProductCard';
 import { Pagination, normalizePage } from '@/features/storefront/Pagination';
 import { CategoryEmptyState } from '@/features/storefront/CategoryEmptyState';
+import { CategoryJsonLd } from '@/features/storefront/CategoryJsonLd';
+import { categoryMetadata, categoryUrl } from '@/features/storefront/categoryMetadata';
+import { Breadcrumb } from '@/features/storefront/Breadcrumb';
 import { isAppError } from '@/lib/http/errors';
+import type { Metadata } from 'next';
 
 /**
  * Página pública de una categoría (US-002). Server Component: los subrubros y
@@ -17,6 +21,23 @@ import { isAppError } from '@/lib/http/errors';
  * el soft-200 indexable que AC-9 prohíbe. Puesto en el route group rompería
  * además el 404 de la ficha de US-003, que ya está en producción.
  */
+/**
+ * Metadatos por página de categoría (AC-4). El `fetch` de Next memoiza por URL
+ * + opciones, así que esta llamada y la de la page se deduplican.
+ */
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ page?: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const page = normalizePage((await searchParams)?.page);
+  const category = await categoriesStorefrontService.getBySlug(slug).catch(() => null);
+  return categoryMetadata(category, page);
+}
+
 export default async function CategoryPage({
   params,
   searchParams,
@@ -44,6 +65,32 @@ export default async function CategoryPage({
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
+      <CategoryJsonLd category={category} />
+
+      {/* React 19 hoistea <link> al <head>: es la API disponible para los rel
+          que el objeto Metadata no modela (next-standards §10), no un hack. */}
+      {current > 1 && (
+        <link rel="prev" href={categoryUrl(slug, current - 1)} />
+      )}
+      {current * pagination.limit < pagination.total && (
+        <link rel="next" href={categoryUrl(slug, current + 1)} />
+      )}
+
+      <Breadcrumb
+        items={[
+          { name: 'Inicio', href: '/' },
+          ...(category.parent
+            ? [
+                {
+                  name: category.parent.name,
+                  href: `/categorias/${category.parent.slug}`,
+                },
+              ]
+            : []),
+          { name: category.name },
+        ]}
+      />
+
       <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
         {category.name}
       </h1>

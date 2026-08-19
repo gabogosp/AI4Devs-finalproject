@@ -441,7 +441,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 5: SEO de sitio (AC-4) — `design.md` D4, D5
 
-- [ ] **T5.1** Metadatos de categoría + canonical por página + `rel=prev/next` + JSON-LD `BreadcrumbList` (0.5 h)
+- [x] **T5.1** Metadatos de categoría + canonical por página + `rel=prev/next` + JSON-LD `BreadcrumbList` (0.5 h)
+  - **AS-BUILT 2026-08-18**: 9 tests propios (7 de `categoryMetadata` + 2 de `CategoryJsonLd`); 126 verdes en todo `storefront`, typecheck y build OK. El canonical es **auto-referencial** por página (test que falla si apunta a la 1) y ninguna página lleva `noindex`. `CategoryJsonLd` **reusa `serializeJsonLd` de US-003** en vez de duplicar el escape: una sola implementación evita que una copia se olvide de escapar `<`. Test con `</script>` en el nombre en ambos módulos. La página también renderiza el `Breadcrumb` visible con el rubro padre cuando existe.
   - **Pattern**:
     ```tsx
     // src/features/storefront/categoryMetadata.ts — función pura, testeable (molde de metadata.ts de US-003)
