@@ -7,7 +7,11 @@ export type BusinessEvent =
   // Storefront público: una vista de ficha. El backend no la ve por cada
   // visita (la caché por tag le ahorra el request), así que su `product.viewed`
   // subcuenta — OQ-FE-5.
-  | 'pdp_shown';
+  | 'pdp_shown'
+  // Storefront público: una vista de página de categoría. Mismo razonamiento
+  // que `pdp_shown` — con la caché por tag, el `category.viewed` del backend
+  // sólo ve los re-fetches post-invalidación y subcuenta estructuralmente.
+  | 'category_shown';
 
 export interface EventProps {
   operator_id?: string;
@@ -33,6 +37,7 @@ export function setEventSink(next: Sink): void {
  */
 const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'pdp_shown',
+  'category_shown',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

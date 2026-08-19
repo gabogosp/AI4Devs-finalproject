@@ -4,6 +4,7 @@ import { ProductCard } from '@/features/storefront/ProductCard';
 import { Pagination, normalizePage } from '@/features/storefront/Pagination';
 import { CategoryEmptyState } from '@/features/storefront/CategoryEmptyState';
 import { CategoryJsonLd } from '@/features/storefront/CategoryJsonLd';
+import { CategoryViewTracker } from '@/features/storefront/CategoryViewTracker';
 import { categoryMetadata, categoryUrl } from '@/features/storefront/categoryMetadata';
 import { Breadcrumb } from '@/features/storefront/Breadcrumb';
 import { isAppError } from '@/lib/http/errors';
@@ -66,6 +67,13 @@ export default async function CategoryPage({
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
       <CategoryJsonLd category={category} />
+
+      <CategoryViewTracker
+        slug={slug}
+        isRubro={category.parent === null}
+        page={current}
+        productCount={data.length}
+      />
 
       {/* React 19 hoistea <link> al <head>: es la API disponible para los rel
           que el objeto Metadata no modela (next-standards §10), no un hack. */}

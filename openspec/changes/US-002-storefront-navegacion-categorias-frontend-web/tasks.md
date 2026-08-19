@@ -538,7 +538,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 6: Observabilidad (US §9, E2E §18) — `design.md` D12
 
-- [ ] **T6.1** Evento público `category_shown` (sin PII) + tipado del catálogo de eventos (0.25 h)
+- [x] **T6.1** Evento público `category_shown` (sin PII) + tipado del catálogo de eventos (0.25 h)
+  - **AS-BUILT 2026-08-18**: 6 tests verdes + typecheck. El evento entró en la unión `BusinessEvent` **y** en `PUBLIC_EVENTS`; hay un test que falla si el payload trae `operator_id` —sin ese registro, cada visita anónima se contaría como acción del dueño y ensuciaría las métricas de US-016—. El guard de doble emisión usa una clave `slug:page` en vez de un booleano: StrictMode no duplica, pero **cambiar de página sí emite una vista nueva**, que es lo correcto.
   - **Pattern**:
     ```ts
     // src/lib/observability/events.ts — extender la unión Y el set PUBLIC_EVENTS
