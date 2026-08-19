@@ -1,4 +1,5 @@
 import { formatArs } from '@/lib/format/currency';
+import { Breadcrumb } from './Breadcrumb';
 import { ProductJsonLd } from './ProductJsonLd';
 import { ProductImage } from './ProductImage';
 import { ProductPurchase } from './ProductPurchase';
@@ -32,7 +33,18 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
       </div>
 
       <div className="flex w-full flex-col gap-5 lg:w-1/2">
-        <p className="text-sm text-muted">{product.category.name}</p>
+        {/* La categoría deja de ser texto muerto: es el camino de vuelta al
+            rubro (AC-2), y cierra el `Deferred: US-002` que dejó US-003. */}
+        <Breadcrumb
+          items={[
+            { name: 'Inicio', href: '/' },
+            {
+              name: product.category.name,
+              href: `/categorias/${product.category.slug}`,
+            },
+            { name: product.name },
+          ]}
+        />
 
         <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
           {product.name}

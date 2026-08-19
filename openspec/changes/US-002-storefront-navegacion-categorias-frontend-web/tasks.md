@@ -273,7 +273,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     aparece como link.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/StorefrontHome && pnpm --filter @dsm/web build`
 
-- [ ] **T3.3** `Breadcrumb` reusable + cierre del `Deferred: US-002` que US-003 dejó en la ficha (0.5 h)
+- [x] **T3.3** `Breadcrumb` reusable + cierre del `Deferred: US-002` que US-003 dejó en la ficha (0.5 h)
+  - **AS-BUILT 2026-08-18**: 9 tests verdes (3 nuevos + los 6 de `ProductDetail` intactos, o sea que el nombre de la categoría sigue presente, ahora como link). La ficha muestra `Inicio › {categoría con link} › {producto}` y la categoría deja de ser texto plano. La cadena con el **rubro padre** sigue diferida (`OQ-FE-11`): exigiría un segundo fetch en cadena sobre la página de conversión.
   - **Pattern**:
     ```tsx
     // src/features/storefront/Breadcrumb.tsx — Server Component
