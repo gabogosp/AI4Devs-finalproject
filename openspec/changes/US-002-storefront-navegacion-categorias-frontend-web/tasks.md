@@ -65,17 +65,17 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Pre-requisitos
 
-- [ ] **P1** — `docs/product/design-system.md` en estado `Approved` (gate de `fe-design-without-figma`
+- [x] **P1** — `docs/product/design-system.md` en estado `Approved` (gate de `fe-design-without-figma`
   §5: sin Figma, el design-system es la autoridad visual y ninguna task de UI arranca con él en
   `Draft`).
   - **Verify**: `grep -qE "^\*\*Status\*\*:? *Approved|^status: *Approved|Approved" docs/product/design-system.md`
 
-- [ ] **P2** — Suite verde antes de empezar. Este change **modifica superficie entregada**
+- [x] **P2** — Suite verde antes de empezar. *(2026-08-18: 29 archivos / 127 tests verdes + build OK.)* Este change **modifica superficie entregada**
   (`revalidateSafely.ts`, `ProductDetail.tsx`, `ProductImage.tsx`, `layout.tsx`, `page.tsx` de la
   home, `api-stub.mjs`): se necesita la red de seguridad previa (`refactoring-discipline`).
   - **Verify**: `pnpm --filter @dsm/web test -- --run && pnpm --filter @dsm/web build`
 
-- [ ] **P3** — El contrato publicado expone las **tres** operaciones de categorías y el cliente
+- [x] **P3** — El contrato publicado expone las **tres** operaciones de categorías y el cliente
   generado las refleja **sin diff** (gate `frontend-codegen-fresh`). Los artefactos derivados del
   contrato —DTOs, Zod y mocks MSW— son **siempre generados**, nunca escritos a mano
   (`frontend-standards.md` §3.1/§3.2 + skill `openapi-client-codegen`). Si este check falla, **parar

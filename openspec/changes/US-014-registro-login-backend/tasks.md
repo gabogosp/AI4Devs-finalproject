@@ -21,13 +21,13 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-001 backend archivado** (AS-BUILT verificado al planificar): `apps/api`
+- [x] **US-001 backend archivado** (AS-BUILT verificado al planificar): `apps/api`
   corre con `HttpProblemFilter` (RFC 7807 `dsm:catalog/*`), `ValidationPipe`
   global con `whitelist`+`forbidNonWhitelisted` (422), helmet §7.1, allowlist CORS
   §7.2, throttler nombrado `auth` + `AuthThrottlerGuard`, y el seam admin
   (`AdminGuard`, `AdminAuthService`, `AdminAuthController`).
   **Verify**: `pnpm --filter @dsm/api typecheck && pnpm --filter @dsm/api test -- --testPathPattern=e2e-admin-auth`
-- [ ] **Postgres local arriba** (integration/e2e): `docker compose up -d db`.
+- [x] **Postgres local arriba** (integration/e2e): `docker compose up -d db`.
 - [x] **Open questions cerradas** (2026-08-17): OQ-BE-1 = puerto + adapter de log
   (Resend en US-011) · OQ-BE-2 = se levanta ADR-0011 como enmienda a ADR-0005
   (T0.1) · OQ-BE-3 = la Fase 8 entra en el alcance · OQ-BE-4 = refresh de 30 días.
@@ -37,7 +37,7 @@ language: es
 
 ## Fase 0: ADR, esquema y configuración — 1,0 h
 
-- [ ] T0.1 ADR-0011 — almacén server-side de refresh tokens (enmienda a ADR-0005)
+- [x] T0.1 ADR-0011 — almacén server-side de refresh tokens (enmienda a ADR-0005)
   - **Exit criterion**: existe `docs/architecture/decisions/0011-*.md` con
     `Status: Accepted`, que declara la tabla `refresh_tokens` con rotación,
     detección de reuso y revocación, y **enmienda explícitamente** la nota

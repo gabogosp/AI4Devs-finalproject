@@ -73,3 +73,19 @@
   triggered-by: manual
   supersedes: null
   superseded-by: null
+- id: ADR-0010
+  title: "URL namespace — el storefront público se queda con la raíz; el panel vive bajo /admin/*"
+  status: Accepted
+  path: docs/architecture/decisions/0010-url-namespace-storefront-vs-admin.md
+  affects: [frontend-web, storefront, admin, seo]
+  triggered-by: "US-003 FE — colisión de rutas entre panel y storefront"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0011
+  title: Server-side refresh-token store with rotation and reuse detection
+  status: Accepted
+  path: docs/architecture/decisions/0011-server-side-refresh-token-store.md
+  affects: [auth, backend-nestjs, security, customers]
+  triggered-by: "US-014 AC-3 + security-standards §3.3"
+  supersedes: null
+  superseded-by: null

@@ -5,7 +5,7 @@
 > **Decision-makers**: Gabriel Suarez (Arquitecto)
 > **Supersedes**: —
 > **Superseded by**: —
-> **Related**: ADR 0007 (NestJS monolith), ADR 0004 (Redis rate-limit), ADR 0009 (phased admin-auth seam — refines how/when the admin portion of this auth is delivered)
+> **Related**: ADR 0007 (NestJS monolith), ADR 0004 (Redis rate-limit), ADR 0009 (phased admin-auth seam — refines how/when the admin portion of this auth is delivered), ADR 0011 (server-side refresh-token store — **amends** the session-invalidation note below)
 
 ## Context
 
@@ -39,7 +39,7 @@ Registered customer accounts are delivered as a "Should" capability; guest check
 
 ### Neutral
 
-- **Session invalidation is achieved via short access-token TTL plus refresh-token rotation** rather than a server-side session store. This is an acceptable trade-off for the scope but means logout/revocation is bounded by the access-token TTL rather than instantaneous.
+- ~~**Session invalidation is achieved via short access-token TTL plus refresh-token rotation** rather than a server-side session store. This is an acceptable trade-off for the scope but means logout/revocation is bounded by the access-token TTL rather than instantaneous.~~ **Amended by ADR 0011 (2026-08-18)**: US-014 AC-3 requires that closing the session **revoke** the refresh token, and `security-standards` §3.3 requires **reuse detection** — neither is achievable statelessly. A server-side `refresh_tokens` store (hash only, with rotation, `family_id` and revocation) was adopted. The access token stays stateless and short-lived, so the per-request benefit of this ADR is preserved; only the refresh path became stateful.
 - **bcrypt cost factor** becomes a tunable operational parameter (CPU vs. resistance) we must choose and revisit.
 
 ## Alternatives considered
