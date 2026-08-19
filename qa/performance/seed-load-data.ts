@@ -31,8 +31,18 @@ async function main(): Promise<void> {
       create: { slug: CATEGORY_SLUG, name: 'Carga QA' },
     });
 
+    // `products.slug` es NOT NULL + UNIQUE desde la Fase 10 de US-003 (decisión
+    // D-1). El generador de SKUs es anterior a esa columna, así que el slug se
+    // deriva acá con el mismo criterio determinista: sin él, `createMany` falla
+    // y la suite de carga queda inservible.
     const rows = generateSkus(MIN_SKUS, 'LOAD').map((r) => ({
       ...r,
+      slug: r.name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, ''),
       status: 'published',
       category_id: category.id,
     }));

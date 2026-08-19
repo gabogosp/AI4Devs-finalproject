@@ -7,6 +7,15 @@ export const list_products = {
   checks: ['rate>0.99'],
 };
 
+// Ficha pública de US-003 (§9): misma latencia de lectura, superficie ANÓNIMA.
+// Presupuesto propio para no diluir la señal del listado admin: son patrones de
+// acceso distintos (una fila por slug vs una página de 50).
+export const storefront_product = {
+  'http_req_duration{endpoint:storefront_product}': ['p(95)<300', 'p(99)<800'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 export const MIN_SKUS = 5000;
 
-export default { list_products, MIN_SKUS };
+export default { list_products, storefront_product, MIN_SKUS };

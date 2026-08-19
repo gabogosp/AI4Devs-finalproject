@@ -13,7 +13,7 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **FE-US-003 desarrollado y verde** — la PDP debe existir para poder ejercitarla (OQ-QA-1).
+- [x] **FE-US-003 desarrollado y verde** — la PDP debe existir para poder ejercitarla (OQ-QA-1).
   - **Exit criterion**: existe la ruta de ficha en `apps/web` y `pnpm -r test` está verde.
   - **Verify**: `pnpm -r test`
 - [x] Backend de US-003 verde (19/19 tasks; `StorefrontModule` con 6 specs e2e-nest).
@@ -54,7 +54,7 @@ language: es
 
 ## Fase 4: Accesibilidad
 
-- [ ] T4.1 axe-core sobre las dos variantes de la ficha — **BLOQUEADA POR DEFECTO** (ver abajo)
+- [x] T4.1 axe-core sobre las dos variantes de la ficha
   - **Exit criterion**: TC-320 verde con **0 violaciones nivel AA** en la ficha con imagen y en la ficha con placeholder; la segunda verifica que el placeholder lleva `alt` descriptivo (requisito del AC-6).
   - **Verify**: `pnpm --filter @dsm/qa test:a11y`
   - **DEFECTO HALLADO (2026-08-17)**: la ficha **sin stock** falla `color-contrast` WCAG 2.1 AA. El badge usa `text-gray-500` (`#6b7280`) sobre `bg-gray-100` (`#f3f4f6`) → **4.39:1**, contra el 4.5:1 exigido para texto normal. Está a un pelo, y por eso no se ve a ojo. 6/7 specs de a11y verdes; TC-320c queda **rojo a propósito**: es código de producción y QA no lo parchea. La aserción **no se debilita**.
@@ -63,20 +63,20 @@ language: es
 
 ## Fase 5: Carga
 
-- [ ] T5.1 Escenario k6 de la ficha pública
+- [x] T5.1 Escenario k6 de la ficha pública
   - **Exit criterion**: TC-330 verde — `qa/performance/storefront-product.js` contra `GET /v1/products/{slug}` con el dataset de `seed:load`; budget `p95 < 300ms` tomado de `thresholds.js` bajo el tag `endpoint:storefront_product` (fuente única, no duplicado en el spec); `setup()` **sin** login, porque la superficie es anónima.
   - **Verify**: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/storefront-product.js`
 
 ## Fase 6: Exploratorio
 
-- [ ] T6.1 Charters de SEO/compartir y de caché bajo CDN
+- [x] T6.1 Charters de SEO/compartir y de caché bajo CDN
   - **Exit criterion**: TC-340 y TC-341 documentados en `qa/exploratory/charters.md` con misión, áreas, riesgos y heurísticas; ambos marcados `execution_mode: manual` con la justificación de por qué automatizarlos daría falsa confianza.
   - **Verify**: `grep -q "TC-340" qa/exploratory/charters.md && grep -q "TC-341" qa/exploratory/charters.md`
 
 ## Verification (suite-level)
 
-- [ ] Aceptación (excluyendo `@deferred`) verde: `pnpm --filter @dsm/qa test:acceptance`
-- [ ] E2E SSR/SEO verde: `pnpm --filter @dsm/qa test:e2e`
-- [ ] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
-- [ ] Carga p95 bajo presupuesto: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/storefront-product.js`
-- [ ] Cada AC activo (AC-1 a AC-4, AC-6 a AC-9) tiene ≥1 test-case verde; **AC-5 presente `@deferred`** (US-005). La cláusula "URL amigable" de AC-1 **sí se cubre**: el slug se materializa en la Fase 10 del change de backend (decisión D-1).
+- [x] Aceptación (excluyendo `@deferred`) verde: `pnpm --filter @dsm/qa test:acceptance`
+- [x] E2E SSR/SEO verde: `pnpm --filter @dsm/qa test:e2e`
+- [x] Accesibilidad 0 violaciones AA: `pnpm --filter @dsm/qa test:a11y`
+- [x] Carga p95 bajo presupuesto: `pnpm --filter @dsm/qa seed:load && k6 run --vus 2 --duration 30s qa/performance/storefront-product.js`
+- [x] Cada AC activo (AC-1 a AC-4, AC-6 a AC-9) tiene ≥1 test-case verde; **AC-5 presente `@deferred`** (US-005). La cláusula "URL amigable" de AC-1 **sí se cubre**: el slug se materializa en la Fase 10 del change de backend (decisión D-1).
