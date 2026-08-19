@@ -5,8 +5,24 @@ import Image from 'next/image';
 import { Package } from 'lucide-react';
 
 /**
- * Imagen principal de la ficha. Es la imagen **LCP** de la página, por eso
- * `priority` (design-system §8.1, presupuesto LCP < 2.5 s de US §9).
+ * Variantes de contexto (design.md D9): se PARAMETRIZA, no se duplica el
+ * componente. `hero` es el default, así que los call-sites de US-003 no
+ * cambian.
+ *
+ * **Ninguna card lleva `priority`**: veinte imágenes prioritarias compiten
+ * entre sí por ancho de banda y EMPEORAN el LCP en vez de mejorarlo.
+ */
+const IMAGE_VARIANTS = {
+  hero: { sizes: '(max-width: 1024px) 100vw, 50vw', priority: true },
+  card: { sizes: '(max-width: 768px) 50vw, 25vw', priority: false },
+} as const;
+
+export type ImageVariant = keyof typeof IMAGE_VARIANTS;
+
+/**
+ * Imagen de producto. En la ficha (`hero`) es la imagen **LCP** de la página,
+ * por eso `priority` (design-system §8.1, presupuesto LCP < 2.5 s de US §9);
+ * en la grilla (`card`) no.
  *
  * Hoja `client` mínima porque necesita `onError` (next-standards §2): una URL
  * que el dueño cargó puede romperse en cualquier momento, y el broken-image
@@ -18,12 +34,15 @@ export function ProductImage({
   src,
   name,
   categoryName,
+  variant = 'hero',
 }: {
   src: string | null;
   name: string;
   categoryName: string;
+  variant?: ImageVariant;
 }) {
   const [broken, setBroken] = useState(false);
+  const { sizes, priority } = IMAGE_VARIANTS[variant];
 
   // Sin imagen (AC-6) o carga rota → mismo placeholder: el layout no cambia.
   if (!src || broken) {
@@ -46,8 +65,8 @@ export function ProductImage({
         // y lo que indexa Google Images (WCAG 2.1 AA).
         alt={`${name} — ${categoryName}`}
         fill
-        priority
-        sizes="(max-width: 1024px) 100vw, 50vw"
+        priority={priority}
+        sizes={sizes}
         onError={() => setBroken(true)}
         className="object-contain"
       />

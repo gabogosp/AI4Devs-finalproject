@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { categoriesStorefrontService } from '@/features/storefront/categoriesStorefrontService';
+import { ProductCard } from '@/features/storefront/ProductCard';
 import { isAppError } from '@/lib/http/errors';
 
 /**
@@ -30,11 +31,21 @@ export default async function CategoryPage({
     },
   );
 
+  const { data } = await categoriesStorefrontService.listProducts(slug, 1);
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
       <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
         {category.name}
       </h1>
+
+      {data.length > 0 && (
+        <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
+          {data.map((item) => (
+            <ProductCard key={item.slug} item={item} categoryName={category.name} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

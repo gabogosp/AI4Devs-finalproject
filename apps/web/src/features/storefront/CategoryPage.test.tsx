@@ -22,6 +22,7 @@ vi.mock('next/navigation', () => ({ notFound: () => notFound() }));
 let categoryResult:
   | { ok: true; value: { slug: string; name: string; parent: unknown; children: unknown[] } }
   | { ok: false; error: unknown };
+let productsResult: { data: unknown[]; pagination: { limit: number; offset: number; total: number } };
 
 vi.mock('@/features/storefront/categoriesStorefrontService', () => ({
   categoriesStorefrontService: {
@@ -29,8 +30,21 @@ vi.mock('@/features/storefront/categoriesStorefrontService', () => ({
       if (!categoryResult.ok) throw categoryResult.error;
       return categoryResult.value;
     },
+    listProducts: async () => productsResult,
   },
 }));
+
+function gridItem(over: Record<string, unknown> = {}) {
+  return {
+    slug: 'compresor-1hp',
+    name: 'Compresor 1HP',
+    price_ars_cents: 1250000,
+    currency: 'ARS',
+    image_url: null,
+    in_stock: true,
+    ...over,
+  };
+}
 
 const { default: CategoryPage } = await import(
   '@/../app/(storefront)/categorias/[slug]/page'
@@ -44,6 +58,7 @@ beforeEach(() => {
     ok: true,
     value: { slug: 'climatizacion', name: 'Climatización', parent: null, children: [] },
   };
+  productsResult = { data: [], pagination: { limit: 20, offset: 0, total: 0 } };
 });
 
 describe('CategoryPage (AC-9, AC-10)', () => {
@@ -74,5 +89,20 @@ describe('CategoryPage (AC-9, AC-10)', () => {
     // Traducir un 5xx a 404 escondería una caída del backend detrás de una
     // página "no encontrado" perfectamente indexable.
     expect(notFound).not.toHaveBeenCalled();
+  });
+
+  it('renderiza una card por producto de la página (AC-3)', async () => {
+    productsResult = {
+      data: [gridItem(), gridItem({ slug: 'compresor-2hp', name: 'Compresor 2HP' })],
+      pagination: { limit: 20, offset: 0, total: 2 },
+    };
+
+    render(await CategoryPage({ params }));
+
+    expect(screen.getByRole('link', { name: /Compresor 1HP/ })).toHaveAttribute(
+      'href',
+      '/productos/compresor-1hp',
+    );
+    expect(screen.getByRole('link', { name: /Compresor 2HP/ })).toBeInTheDocument();
   });
 });

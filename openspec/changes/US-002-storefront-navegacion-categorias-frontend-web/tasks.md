@@ -347,7 +347,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     (propaga).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/CategoryPage && pnpm --filter @dsm/web build && ! find "apps/web/app/(storefront)" -name 'loading.tsx' | grep -q .`
 
-- [ ] **T4.2** `ProductCard` + grilla responsive + `ProductImage` parametrizado por contexto (AC-3, AC-5, AC-7) (0.75 h)
+- [x] **T4.2** `ProductCard` + grilla responsive + `ProductImage` parametrizado por contexto (AC-3, AC-5, AC-7) (0.75 h)
+  - **AS-BUILT 2026-08-18**: 100 tests verdes en `src/features/storefront` + typecheck limpio. `ProductImage` se parametrizó con `IMAGE_VARIANTS` y `variant` **default `hero`**, así que ningún call-site de US-003 cambió y sus 4 tests siguen pasando; la variante `card` emite los `sizes` de grilla y `priority: false`. La card es un único `<Link>` a la ficha y **no contiene ningún control de compra** — AC-5 se cumple por construcción, y hay dos tests que fallan si aparece un `button` o un "Agregar".
   - **Pattern**:
     ```tsx
     // src/features/storefront/ProductCard.tsx — Server Component; TODA la card es un <a>
