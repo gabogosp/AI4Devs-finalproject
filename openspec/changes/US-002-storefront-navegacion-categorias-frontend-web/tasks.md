@@ -86,7 +86,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 1: Servicio de categorías del storefront (AC-1, AC-2, AC-3)
 
-- [ ] **T1.1** `categoriesStorefrontService`: árbol + detalle + listado paginado, con la política de caché declarada en el servicio (0.75 h)
+- [x] **T1.1** `categoriesStorefrontService`: árbol + detalle + listado paginado, con la política de caché declarada en el servicio (0.75 h)
+  - **AS-BUILT 2026-08-18**: 13 tests verdes + typecheck. Única desviación del `Pattern:`, de tipos y sin cambio de comportamiento: `catalogCache` es una **función** en vez de un objeto `as const` — el `as const` produce `tags: readonly ["catalog"]` y el `RequestInit` de Next declara `tags: string[]` mutable, así que no tipa. Construirlo por llamada evita además compartir el array entre fetches.
   - **Pattern**:
     ```ts
     // src/features/storefront/categoriesStorefrontService.ts
