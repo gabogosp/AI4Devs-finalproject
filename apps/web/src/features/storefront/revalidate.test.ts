@@ -4,10 +4,13 @@ const revalidateTag = vi.fn();
 const revalidatePath = vi.fn();
 vi.mock('next/cache', () => ({
   revalidateTag: (tag: string) => revalidateTag(tag),
-  revalidatePath: (path: string) => revalidatePath(path),
+  // Se reenvía el 2º argumento (`type`): `revalidateCatalog` distingue purgar
+  // una URL de purgar todas las instancias de un segmento dinámico.
+  revalidatePath: (path: string, type?: string) => revalidatePath(path, type),
 }));
 
-const { revalidateProduct } = await import('./revalidate');
+const { revalidateCatalog, revalidateProduct } = await import('./revalidate');
+const { CATALOG_TAG } = await import('./categoriesStorefrontService');
 
 describe('revalidateProduct', () => {
   beforeEach(() => {
@@ -39,4 +42,43 @@ describe('revalidateProduct', () => {
       expect(revalidatePath).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('revalidateCatalog', () => {
+  beforeEach(() => {
+    revalidateTag.mockClear();
+    revalidatePath.mockClear();
+  });
+
+  it('purga la Data Cache del catálogo con el MISMO tag que usa el servicio', async () => {
+    await revalidateCatalog();
+
+    // Si el literal se duplicara y divergiera, el servicio seguiría cacheando
+    // bajo un tag que nadie invalida: la grilla quedaría vieja hasta el TTL.
+    expect(revalidateTag).toHaveBeenCalledWith(CATALOG_TAG);
+    expect(revalidateTag).toHaveBeenCalledTimes(1);
+  });
+
+  it('purga TODAS las instancias del segmento de categoría, no una URL suelta', async () => {
+    await revalidateCatalog();
+
+    // La forma ('/categorias/[slug]', 'page') es la que cubre el 404 cacheado
+    // de una categoría recién creada: sin `type: 'page'` sólo se purgaría la
+    // ruta literal "/categorias/[slug]", que no existe.
+    expect(revalidatePath).toHaveBeenCalledWith('/categorias/[slug]', 'page');
+  });
+
+  it('purga también la home y el sitemap (dependen del árbol)', async () => {
+    await revalidateCatalog();
+
+    expect(revalidatePath).toHaveBeenCalledWith('/', undefined);
+    expect(revalidatePath).toHaveBeenCalledWith('/sitemap.xml', undefined);
+  });
+
+  it('ejecuta exactamente las cuatro purgas — falla si alguna se quita', async () => {
+    await revalidateCatalog();
+
+    expect(revalidatePath).toHaveBeenCalledTimes(3);
+    expect(revalidateTag).toHaveBeenCalledTimes(1);
+  });
 });

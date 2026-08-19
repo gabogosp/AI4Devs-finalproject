@@ -41,3 +41,66 @@ model Product {
   @@index([category_id, status])
   @@map("products")
 }
+
+/// Cliente del storefront (US-014). El email se guarda YA normalizado
+/// (trim + NFKC + lowercase) por `CustomersRepository`, que es el único punto
+/// que escribe esta tabla: la unicidad es un UNIQUE plano, no `citext`.
+model Customer {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String    @unique
+  password_hash         String
+  name                  String
+  phone                 String?
+  role                  String    @default("customer")
+  failed_login_attempts Int       @default(0)
+  lockout_count         Int       @default(0)
+  locked_until          DateTime?
+  password_changed_at   DateTime  @default(now())
+  last_login_at         DateTime?
+  /// Soft-delete del DER (E2E §8). Ningún endpoint la escribe en US-014;
+  /// el login ya la filtra. Borrado de cuenta → US-020.
+  deleted_at            DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now()) @updatedAt
+
+  refresh_tokens        RefreshToken[]
+  password_reset_tokens PasswordResetToken[]
+
+  @@map("customers")
+}
+
+/// Almacén server-side de refresh tokens (ADR-0011). Sólo se guarda el hash:
+/// una fuga de base no debe entregar sesiones usables. `family_id` es la unidad
+/// de revocación — presentar un token ya rotado revoca la familia entera.
+model RefreshToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String    @db.Uuid
+  customer    Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  token_hash  String    @unique
+  family_id   String    @db.Uuid
+  expires_at  DateTime
+  rotated_at  DateTime?
+  revoked_at  DateTime?
+  created_at  DateTime  @default(now())
+
+  @@index([customer_id])
+  @@index([family_id])
+  @@index([expires_at])
+  @@map("refresh_tokens")
+}
+
+/// Token de recuperación de contraseña (uso único, AC-7). El claro sólo viaja
+/// en el email; acá vive su SHA-256.
+model PasswordResetToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String    @db.Uuid
+  customer    Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  token_hash  String    @unique
+  expires_at  DateTime
+  used_at     DateTime?
+  created_at  DateTime  @default(now())
+
+  @@index([customer_id, created_at])
+  @@index([expires_at])
+  @@map("password_reset_tokens")
+}

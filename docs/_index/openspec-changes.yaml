@@ -181,7 +181,7 @@
   us-id: US-014
   discipline: backend
   variant: null
-  status: draft
+  status: in progress
   parent-us: docs/user-stories/US-014-registro-login.md
   linear-task-id: null
   audit-baseline: null

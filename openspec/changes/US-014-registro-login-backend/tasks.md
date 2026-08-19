@@ -48,7 +48,7 @@ language: es
     `docs/_index/decisions.yaml`.
   - **Verify**: `grep -q '^> \*\*Status\*\*: Accepted' docs/architecture/decisions/0011-*.md && grep -qi 'refresh' docs/architecture/decisions/0011-*.md && grep -q '0011' docs/architecture/decisions/0005-own-jwt-authentication.md && grep -q 'ADR-0011' docs/_index/decisions.yaml`
 
-- [ ] T0.2 Migración aditiva `customers` + `refresh_tokens` + `password_reset_tokens`
+- [x] T0.2 Migración aditiva `customers` + `refresh_tokens` + `password_reset_tokens`
   - **Pattern**: en `packages/db/prisma/schema.prisma`, tres `model` nuevos con
     `@id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` y `@@map("…")`,
     espejando `Category`/`Product`; FKs con `onDelete: Cascade`; migración generada
@@ -75,7 +75,7 @@ language: es
     falla si sobra o falta una sola columna, F40; además verifica el borrado en
     cascada insertando y borrando un `customer`)
 
-- [ ] T0.3 Variables de entorno de auth validadas por Zod
+- [x] T0.3 Variables de entorno de auth validadas por Zod
   - **Pattern**: extender `envSchema` en `apps/api/src/config/env.validation.ts`
     con `z.coerce.number().int().positive().default(…)` / `z.enum(['true','false'])`
     — `per backend-node-standards.md §7 — config validada al arranque, fail-fast`.

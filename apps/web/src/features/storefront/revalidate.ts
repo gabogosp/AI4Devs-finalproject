@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { productTag } from './storefrontService';
+import { CATALOG_TAG } from './categoriesStorefrontService';
 
 /**
  * Una Server Action es una superficie invocable desde afuera: se valida el
@@ -27,4 +28,29 @@ export async function revalidateProduct(rawSlug: string): Promise<void> {
 
   revalidateTag(productTag(slug));
   revalidatePath(`/productos/${slug}`);
+}
+
+/**
+ * Invalida TODO el catálogo público: navegación, listados y sitemap
+ * (AC-8, design.md D2).
+ *
+ * Sin input → nada que validar; el efecto es idempotente y benigno (purgar de
+ * más sólo provoca un re-fetch), a diferencia de `revalidateProduct`, que sí
+ * recibe un slug del exterior.
+ *
+ * Las cuatro purgas cubren cosas distintas y ninguna sobra:
+ * - `revalidateTag(CATALOG_TAG)` tira la Data Cache del árbol, los detalles,
+ *   los listados y el sitemap, que comparten tag.
+ * - `revalidatePath('/categorias/[slug]', 'page')` tira la Full Route Cache de
+ *   **todas** las instancias del segmento dinámico — incluidos los 404
+ *   cacheados, que es el caso "la categoría recién creada seguía dando 404" y
+ *   que ningún tag puede cubrir porque nunca hubo respuesta exitosa.
+ * - `revalidatePath('/')` refresca la grilla de rubros de la home.
+ * - `revalidatePath('/sitemap.xml')` porque el sitemap es una ruta cacheada más.
+ */
+export async function revalidateCatalog(): Promise<void> {
+  revalidateTag(CATALOG_TAG);
+  revalidatePath('/categorias/[slug]', 'page');
+  revalidatePath('/');
+  revalidatePath('/sitemap.xml');
 }

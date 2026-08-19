@@ -28,6 +28,18 @@ export const envSchema = z.object({
   // laxa que auth: es lectura anónima, no un vector de brute-force.
   STOREFRONT_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000), // 1 min
   STOREFRONT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
+
+  // §7.3 + ADR-0011 — superficie de auth de clientes (US-014). Defaults seguros;
+  // un valor inválido hace FALLAR el arranque, nunca cae al default en silencio.
+  AUTH_ACCESS_TTL_MIN: z.coerce.number().int().positive().default(15),
+  AUTH_REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  AUTH_COOKIE_SECURE: z.enum(['true', 'false']).default('true'),
+  AUTH_LOGIN_MAX_FAILURES: z.coerce.number().int().positive().default(5),
+  AUTH_LOCKOUT_BASE_MIN: z.coerce.number().int().positive().default(15),
+  AUTH_LOCKOUT_MAX_MIN: z.coerce.number().int().positive().default(60),
+  PASSWORD_RESET_TTL_MIN: z.coerce.number().int().positive().default(60),
+  PASSWORD_RESET_MAX_PER_HOUR: z.coerce.number().int().positive().default(3),
+  BCRYPT_COST: z.coerce.number().int().positive().default(12),
 });
 
 /** Parsea la allowlist de CORS a orígenes exactos, sin vacíos. */
