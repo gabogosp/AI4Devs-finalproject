@@ -386,7 +386,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     precio (falla si se muestran centavos o sin separador de miles).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/ProductCard src/features/storefront/ProductImage`
 
-- [ ] **T4.3** Paginación server-side por `searchParams` (AC-3, AC-7, AC-9) (0.75 h)
+- [x] **T4.3** Paginación server-side por `searchParams` (AC-3, AC-7, AC-9) (0.75 h)
+  - **AS-BUILT 2026-08-18**: 19 tests verdes. `normalizePage` es una función pura exportada y testeada aparte (7 casos: `abc`/`0`/`-1`/`2.5`/ausente → 1). La página 1 se enlaza **sin** `?page=1`, así que hay una sola URL canónica. Fuera de rango → `notFound()`; vacío en página 1 → 200 (la categoría existe, AC-6). AC-7 se cumple por construcción: `PAGE_SIZE` es fijo y no se toma de la query, así que ninguna URL manipulada puede pedir el catálogo entero.
   - **Pattern**:
     ```tsx
     // Normalización: page malformada (abc, 0, -1, 2.5) → 1; el canonical apunta a la URL limpia.

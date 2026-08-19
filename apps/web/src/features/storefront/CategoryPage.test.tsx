@@ -23,6 +23,7 @@ let categoryResult:
   | { ok: true; value: { slug: string; name: string; parent: unknown; children: unknown[] } }
   | { ok: false; error: unknown };
 let productsResult: { data: unknown[]; pagination: { limit: number; offset: number; total: number } };
+const listProductsCalls: number[] = [];
 
 vi.mock('@/features/storefront/categoriesStorefrontService', () => ({
   categoriesStorefrontService: {
@@ -30,7 +31,10 @@ vi.mock('@/features/storefront/categoriesStorefrontService', () => ({
       if (!categoryResult.ok) throw categoryResult.error;
       return categoryResult.value;
     },
-    listProducts: async () => productsResult,
+    listProducts: async (_slug: string, page: number) => {
+      listProductsCalls.push(page);
+      return productsResult;
+    },
   },
 }));
 
@@ -59,6 +63,7 @@ beforeEach(() => {
     value: { slug: 'climatizacion', name: 'Climatización', parent: null, children: [] },
   };
   productsResult = { data: [], pagination: { limit: 20, offset: 0, total: 0 } };
+  listProductsCalls.length = 0;
 });
 
 describe('CategoryPage (AC-9, AC-10)', () => {
@@ -104,5 +109,47 @@ describe('CategoryPage (AC-9, AC-10)', () => {
       '/productos/compresor-1hp',
     );
     expect(screen.getByRole('link', { name: /Compresor 2HP/ })).toBeInTheDocument();
+  });
+
+  it('pide la página que dice searchParams (AC-3)', async () => {
+    productsResult = {
+      data: [gridItem()],
+      pagination: { limit: 20, offset: 20, total: 25 },
+    };
+
+    render(
+      await CategoryPage({ params, searchParams: Promise.resolve({ page: '2' }) }),
+    );
+
+    expect(listProductsCalls).toEqual([2]);
+  });
+
+  it('una page malformada se normaliza a 1 y responde 200, no 404', async () => {
+    productsResult = { data: [gridItem()], pagination: { limit: 20, offset: 0, total: 1 } };
+
+    render(
+      await CategoryPage({ params, searchParams: Promise.resolve({ page: 'abc' }) }),
+    );
+
+    expect(listProductsCalls).toEqual([1]);
+    expect(notFound).not.toHaveBeenCalled();
+  });
+
+  it('una página fuera de rango ejecuta notFound() — nada de páginas fantasma indexables', async () => {
+    productsResult = { data: [], pagination: { limit: 20, offset: 1960, total: 25 } };
+
+    await expect(
+      CategoryPage({ params, searchParams: Promise.resolve({ page: '99' }) }),
+    ).rejects.toBe(notFoundSignal);
+    expect(notFound).toHaveBeenCalledTimes(1);
+  });
+
+  it('vacío en la página 1 NO es 404: la categoría existe (AC-6)', async () => {
+    productsResult = { data: [], pagination: { limit: 20, offset: 0, total: 0 } };
+
+    render(await CategoryPage({ params }));
+
+    expect(notFound).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 });
