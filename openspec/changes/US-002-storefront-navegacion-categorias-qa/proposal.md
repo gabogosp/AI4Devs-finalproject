@@ -82,13 +82,15 @@ Los **10 AC** tienen escenario QA; ninguno queda diferido.
   `/develop-frontend-web US-002`]` Se planifica ahora a propósito: los AC observables escritos antes
   hacen que el FE se construya contra ellos.
 
-- **OQ-QA-2 — El plan de backend de US-002 no incorporó la decisión D-1 (slug).** `[Open]`
-  Su `proposal.md` declara en dos lugares que el enlace del listado usa `sku` porque "OQ-BE-1 sigue
-  diferida". **Ya no lo está**: el PO resolvió D-1 el 2026-08-16 y `products.slug` se materializa en
-  la Fase 10 del backend de US-003. Si no se propaga, la grilla enlazaría a `/productos/{sku}`
-  mientras la ficha vive en `/productos/{slug}` y **la navegación se rompe** — lo detectaría X-1
-  (TC-215), por diseño. Son dos líneas en un plan con 18 tasks **abiertas**: corregirlo ahora es
-  gratis. Este plan de QA asume **slug**, que es la decisión vigente.
+- **OQ-QA-2 — El plan de backend de US-002 no incorporó la decisión D-1 (slug).**
+  `[Resolved: 2026-08-17 — propagado y ya implementado]` Cuando se escribió esta observación era
+  cierta, y el riesgo que describía era real: la grilla habría enlazado a `/productos/{sku}` mientras
+  la ficha vive en `/productos/{slug}`, rompiendo la navegación. Se corrigió el plan de backend
+  (commit `d93a340`: el `StorefrontProductListItemDto` pasó a exponer `slug`, OQ-BE-1 pasó a
+  `Resolved` y `products.slug` salió de "fuera de alcance") y después se implementó (commit
+  `9f2f409`, US-002 backend 11/11). El contrato publicado y los e2e verifican que el item del listado
+  enlaza por `slug`. Este plan de QA asumía **slug**, que era y sigue siendo la decisión vigente, así
+  que no requiere cambios; X-1 (TC-215) queda como la red que detectaría una regresión futura.
 
 ## Referencias
 

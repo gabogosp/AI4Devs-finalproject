@@ -216,3 +216,13 @@
   ready-at: 2026-08-09
   in-progress-at: 2026-08-16
   blocked_by: []          # gated en dependencias externas (cuentas/billing), no en otra US
+- id: US-020
+  slug: borrado-cuenta-datos-personales
+  status: Backlog
+  priority: Medium
+  prd-capacity: 10
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-08-18
+  blocked_by: [US-014]    # no hay cuenta que borrar hasta que exista el registro
