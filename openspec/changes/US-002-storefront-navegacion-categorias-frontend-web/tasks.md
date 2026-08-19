@@ -309,7 +309,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 4: Página de categoría (AC-1, AC-3, AC-5, AC-6, AC-7, AC-9, AC-10)
 
-- [ ] **T4.1** Ruta `app/(storefront)/categorias/[slug]/page.tsx`: Server Component + 404 real + boundaries, **sin `loading.tsx`** (0.75 h)
+- [x] **T4.1** Ruta `app/(storefront)/categorias/[slug]/page.tsx`: Server Component + 404 real + boundaries, **sin `loading.tsx`** (0.75 h)
+  - **AS-BUILT 2026-08-18**: 3 tests verdes + build OK + chequeo de `loading.tsx` en verde. La ruta aparece en el build como `ƒ /categorias/[slug]` (dynamic, server-rendered). Existen `not-found.tsx` (accionable, sale a los rubros) y `error.tsx` (reintento + `captureError`). Los tres casos cubiertos: éxito (h1 único con el nombre), `AppError.notFound` → `notFound()`, y error no-404 → **propaga** (traducir un 5xx a 404 escondería una caída del backend detrás de una página indexable). La grilla, la paginación y el estado vacío entran en T4.2–T4.4.
   - **Pattern**:
     ```tsx
     // Server Component async (SIN "use client") — next-standards §2/§3
