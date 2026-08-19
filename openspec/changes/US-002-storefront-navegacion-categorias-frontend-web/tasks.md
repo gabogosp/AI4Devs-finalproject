@@ -171,7 +171,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     falta cualquiera de las cuatro** llamadas o si el tag no coincide con el que usa el servicio.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/revalidate`
 
-- [ ] **T2.2** Puente panel → catálogo: el puente **existente** invalida también el catálogo, y el alta/edición de categorías gana el suyo (0.5 h)
+- [x] **T2.2** Puente panel → catálogo: el puente **existente** invalida también el catálogo, y el alta/edición de categorías gana el suyo (0.5 h)
+  - **AS-BUILT 2026-08-18**: 34 tests verdes en el alcance del `Verify:` (6 nuevos: 4 unitarios del puente + 2 de `CategoryForm`). Los **tres call-sites de producto no se tocaron**, tal como pedía el criterio: heredan la invalidación del catálogo desde el puente. `CategoryForm.test.tsx` necesitó mockear el módulo del puente —sin el mock la Server Action corría en jsdom— y ahí se asertan los dos casos: alta OK → catálogo invalidado; 409 → ninguna invalidación.
   - **Pattern**:
     ```ts
     // src/features/storefront/revalidateSafely.ts — diff mínimo, a propósito

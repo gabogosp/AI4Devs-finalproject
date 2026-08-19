@@ -6,6 +6,11 @@ import { server } from '@/test/server';
 import { CategoryForm } from './CategoryForm';
 import type { Category } from './categoriesService';
 
+const revalidateCatalogSafely = vi.fn();
+vi.mock('@/features/storefront/revalidateSafely', () => ({
+  revalidateCatalogSafely: () => revalidateCatalogSafely(),
+}));
+
 const API = 'http://localhost:3000';
 const cat: Category = {
   id: '22222222-2222-4222-8222-222222222222',
@@ -69,5 +74,35 @@ describe('CategoryForm (AC-1)', () => {
     await userEvent.type(input, 'Refrigeración y Aire');
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalled());
+  });
+
+  it('alta OK → invalida el catálogo (la categoría nueva aparece ya en la nav y el sitemap)', async () => {
+    server.use(
+      http.post(`${API}/v1/admin/categories`, () =>
+        HttpResponse.json(cat, { status: 201 }),
+      ),
+    );
+    render(<CategoryForm onSaved={vi.fn()} />);
+    await userEvent.type(screen.getByLabelText(/Nombre/), 'Refrigeración');
+    await userEvent.click(screen.getByRole('button', { name: 'Crear' }));
+
+    await vi.waitFor(() => expect(revalidateCatalogSafely).toHaveBeenCalledTimes(1));
+  });
+
+  it('alta fallida (409) → NO invalida nada', async () => {
+    server.use(
+      http.post(`${API}/v1/admin/categories`, () =>
+        HttpResponse.json(
+          { type: 'dsm:catalog/conflict', status: 409, detail: 'slug duplicado' },
+          { status: 409 },
+        ),
+      ),
+    );
+    render(<CategoryForm onSaved={vi.fn()} />);
+    await userEvent.type(screen.getByLabelText(/Nombre/), 'Refrigeración');
+    await userEvent.click(screen.getByRole('button', { name: 'Crear' }));
+
+    await screen.findByText('Ya existe una categoría con ese nombre.');
+    expect(revalidateCatalogSafely).not.toHaveBeenCalled();
   });
 });

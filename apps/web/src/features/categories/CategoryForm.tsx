@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { AppErrorException } from '@/lib/http/errors';
+import { revalidateCatalogSafely } from '@/features/storefront/revalidateSafely';
 import { categoriesService, type Category } from './categoriesService';
 
 const schema = z.object({
@@ -41,6 +42,9 @@ export function CategoryForm({
       const saved = initial
         ? await categoriesService.update(initial.id, values)
         : await categoriesService.create(values);
+      // Sólo tras un guardado EXITOSO: la categoría nueva o renombrada tiene
+      // que aparecer ya en la nav pública y en el sitemap (design.md D2).
+      revalidateCatalogSafely();
       onSaved?.(saved);
     } catch (err) {
       if (err instanceof AppErrorException && err.appError.kind === 'conflict') {
