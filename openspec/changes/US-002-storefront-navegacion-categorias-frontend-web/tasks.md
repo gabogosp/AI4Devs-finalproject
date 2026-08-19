@@ -142,7 +142,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 2: Circuito de invalidación del catálogo (AC-8) — `design.md` D2
 
-- [ ] **T2.1** Server Action `revalidateCatalog()`: Data Cache + Full Route Cache de categorías + home + sitemap (0.5 h)
+- [x] **T2.1** Server Action `revalidateCatalog()`: Data Cache + Full Route Cache de categorías + home + sitemap (0.5 h)
+  - **AS-BUILT 2026-08-18**: 12 tests verdes (4 nuevos + los 8 de `revalidateProduct` intactos). Hubo que extender el mock de `next/cache` del spec existente, que descartaba el 2º argumento de `revalidatePath` y por lo tanto no podía distinguir `('/categorias/[slug]', 'page')` de purgar una URL suelta. El mock reenvía el `type` **sólo cuando viene**, para no romper las aserciones de un argumento que ya existían.
   - **Pattern**:
     ```ts
     // src/features/storefront/revalidate.ts — el archivo YA existe ('use server') con revalidateProduct

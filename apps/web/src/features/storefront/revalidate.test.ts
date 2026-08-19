@@ -4,9 +4,12 @@ const revalidateTag = vi.fn();
 const revalidatePath = vi.fn();
 vi.mock('next/cache', () => ({
   revalidateTag: (tag: string) => revalidateTag(tag),
-  // Se reenvía el 2º argumento (`type`): `revalidateCatalog` distingue purgar
-  // una URL de purgar todas las instancias de un segmento dinámico.
-  revalidatePath: (path: string, type?: string) => revalidatePath(path, type),
+  // Se reenvía el 2º argumento (`type`) SÓLO cuando viene: `revalidateCatalog`
+  // distingue purgar una URL de purgar todas las instancias de un segmento
+  // dinámico, y reenviar un `undefined` explícito rompería las aserciones de
+  // un argumento que ya existían.
+  revalidatePath: (path: string, type?: string) =>
+    type === undefined ? revalidatePath(path) : revalidatePath(path, type),
 }));
 
 const { revalidateCatalog, revalidateProduct } = await import('./revalidate');
@@ -71,8 +74,8 @@ describe('revalidateCatalog', () => {
   it('purga también la home y el sitemap (dependen del árbol)', async () => {
     await revalidateCatalog();
 
-    expect(revalidatePath).toHaveBeenCalledWith('/', undefined);
-    expect(revalidatePath).toHaveBeenCalledWith('/sitemap.xml', undefined);
+    expect(revalidatePath).toHaveBeenCalledWith('/');
+    expect(revalidatePath).toHaveBeenCalledWith('/sitemap.xml');
   });
 
   it('ejecuta exactamente las cuatro purgas — falla si alguna se quita', async () => {
