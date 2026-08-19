@@ -391,6 +391,12 @@ Este plan de QA asume **slug**, que es la decisión vigente.
 - **OQ-QA-1** `[Deferred: la ejecución espera a FE-US-002 y a que el backend esté desarrollado —
   owner: FE/BE, revisit: tras `/develop-frontend-web US-002`]` El plan es completo y ejecutable en
   cuanto exista la superficie.
-- **OQ-QA-2** `[Open]` **¿Se corrige el plan de backend de US-002 para usar `slug` en vez de `sku`
-  en el enlace a la ficha (§7)?** Es la decisión D-1 ya tomada, sólo falta propagarla a un artefacto
-  que se escribió en paralelo. Sin esa corrección, X-1 (TC-215) va a fallar por diseño.
+- **OQ-QA-2 — ¿Se propagó al plan de backend la decisión D-1 (`slug` en vez de `sku`)?**
+  `[Resolved: 2026-08-18 — sí, se corrigió y se implementó]` La observación era correcta y el riesgo
+  que describía era real. Se atendió en dos pasos verificables: el plan de backend se corrigió en el
+  commit `d93a340` («el enlace del listado pasa a slug», tocando `design.md`, `proposal.md` y
+  `tasks.md`), y la implementación cerró 18/18. Hoy el contrato publicado declara
+  `StorefrontProductListItem.required: [slug, …]` con la descripción «Enlaza a la ficha
+  `/v1/products/{slug}`». Consecuencia para esta suite: **X-1 (TC-215) ya no falla por diseño** —
+  grilla y ficha comparten el identificador público, así que el test verifica navegación real y no
+  una discrepancia conocida de antemano.
