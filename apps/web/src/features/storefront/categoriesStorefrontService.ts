@@ -44,6 +44,9 @@ export const CATALOG_REVALIDATE_SECONDS = 3600;
  */
 export const PAGE_SIZE = 20;
 
+/** Máximo del contrato. Sólo para el sitemap — ver `listAllSlugs`. */
+export const SITEMAP_PAGE_SIZE = 100;
+
 /**
  * Sin `as const`: `next.tags` del `RequestInit` de Next es `string[]` mutable y
  * una tupla readonly no le asigna. Se construye por llamada para no compartir
@@ -85,5 +88,38 @@ export const categoriesStorefrontService = {
       offset: (page - 1) * PAGE_SIZE,
     }, catalogCache());
     return parseContract(StorefrontListCategoryProductsResponse, res.data);
+  },
+
+  /**
+   * Todos los slugs publicados de una categoría, paginando hasta agotar
+   * `total`. **Sólo para el sitemap**, que necesita el catálogo completo.
+   *
+   * Usa `SITEMAP_PAGE_SIZE` (el máximo del contrato) y no `PAGE_SIZE`: son dos
+   * necesidades distintas y mezclarlas rompería una de las dos. El límite fijo
+   * de la grilla pública es una garantía de AC-7 y no se toca; acá, al revés,
+   * pedir de a 20 multiplicaría por cinco los requests de una ruta que ya es
+   * la más pesada del sitio.
+   */
+  async listAllSlugs(slug: string): Promise<string[]> {
+    const slugs: string[] = [];
+    let offset = 0;
+    let total = 0;
+
+    do {
+      const res = await storefrontListCategoryProducts(
+        slug,
+        { limit: SITEMAP_PAGE_SIZE, offset },
+        catalogCache(),
+      );
+      const page = parseContract(StorefrontListCategoryProductsResponse, res.data);
+      slugs.push(...page.data.map((item) => item.slug));
+      total = page.pagination.total;
+      offset += SITEMAP_PAGE_SIZE;
+      // Corta si el backend devuelve una página vacía: sin esto, un `total`
+      // inconsistente con `data` produciría un bucle infinito.
+      if (page.data.length === 0) break;
+    } while (offset < total);
+
+    return slugs;
   },
 };

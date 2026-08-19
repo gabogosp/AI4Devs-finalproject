@@ -5,6 +5,7 @@ import {
   CATALOG_REVALIDATE_SECONDS,
   CATALOG_TAG,
   PAGE_SIZE,
+  SITEMAP_PAGE_SIZE,
   categoriesStorefrontService,
 } from './categoriesStorefrontService';
 
@@ -204,5 +205,56 @@ describe('política de caché (design.md D2)', () => {
     expect(CATALOG_TAG).toBe('catalog');
     expect(CATALOG_REVALIDATE_SECONDS).toBe(3600);
     expect(PAGE_SIZE).toBe(20);
+  });
+});
+
+describe('categoriesStorefrontService.listAllSlugs (sitemap)', () => {
+  it('pagina hasta agotar total cuando hay más de SITEMAP_PAGE_SIZE productos', async () => {
+    const page = (offset: number, count: number) => ({
+      data: Array.from({ length: count }, (_, i) => gridItem({ slug: `p-${offset + i}` })),
+      pagination: { limit: SITEMAP_PAGE_SIZE, offset, total: 250 },
+    });
+    const calls: string[] = [];
+    const fetchSpy = vi.fn().mockImplementation(async (url: unknown) => {
+      calls.push(String(url));
+      const offset = Number(new URL(String(url)).searchParams.get('offset') ?? '0');
+      const remaining = 250 - offset;
+      const body = page(offset, Math.max(0, Math.min(SITEMAP_PAGE_SIZE, remaining)));
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const slugs = await categoriesStorefrontService.listAllSlugs('compresores');
+
+    // 250 productos con páginas de 100 → 3 requests (offset 0, 100, 200).
+    expect(calls).toHaveLength(3);
+    expect(calls[0]).toContain('offset=0');
+    expect(calls[1]).toContain('offset=100');
+    expect(calls[2]).toContain('offset=200');
+    expect(slugs).toHaveLength(250);
+  });
+
+  it('corta si el backend devuelve una página vacía con total inconsistente', async () => {
+    const fetchSpy = vi.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            data: [],
+            // `total` miente: sin el corte por página vacía, esto sería un
+            // bucle infinito que colgaría la generación del sitemap.
+            pagination: { limit: SITEMAP_PAGE_SIZE, offset: 0, total: 9999 },
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+    );
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const slugs = await categoriesStorefrontService.listAllSlugs('compresores');
+
+    expect(slugs).toEqual([]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

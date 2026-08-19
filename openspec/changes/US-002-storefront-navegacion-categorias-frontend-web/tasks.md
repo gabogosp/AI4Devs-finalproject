@@ -483,7 +483,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     (no explota), y el JSON-LD con input malicioso.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/categoryMetadata src/features/storefront/CategoryJsonLd`
 
-- [ ] **T5.2** `app/sitemap.ts`: home + rubros + subrubros + fichas de producto, fresco por el mismo tag (0.75 h)
+- [x] **T5.2** `app/sitemap.ts`: home + rubros + subrubros + fichas de producto, fresco por el mismo tag (0.75 h)
+  - **AS-BUILT 2026-08-18**: 6 tests del sitemap + 2 de la paginación en el servicio (15 en total ahí). Se recorre **sólo las hojas** —un rubro agrega los productos de sus subrubros (D1 del backend), así que recorrer ambos niveles duplicaría cada ficha— y hay un test que falla si se le piden productos a un rubro con hijos. Doble red contra duplicados: hojas + `Set`. La paginación vive en `listAllSlugs` del servicio con `SITEMAP_PAGE_SIZE = 100` (constante propia, para no tocar el `PAGE_SIZE` fijo que garantiza AC-7 en la grilla pública) y **corta ante una página vacía**, porque un `total` inconsistente con `data` colgaría la generación del sitemap en un bucle infinito.
   - **Pattern**:
     ```ts
     // src/features/storefront/sitemap.ts — la lógica vive en src (testeable); app/sitemap.ts la re-exporta
@@ -512,7 +513,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     categoría → se piden las páginas siguientes, y árbol caído → sólo la home.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/sitemap`
 
-- [ ] **T5.3** `app/robots.ts`: allow público, `Disallow: /admin/`, puntero al sitemap (0.25 h)
+- [x] **T5.3** `app/robots.ts`: allow público, `Disallow: /admin/`, puntero al sitemap (0.25 h)
+  - **AS-BUILT 2026-08-18**: 3 tests verdes. El sitemap se declara con URL **absoluta** construida desde `NEXT_PUBLIC_SITE_URL` (un sitemap relativo en `robots.txt` es inválido y los crawlers lo ignoran), y hay un test que falla si alguna ruta pública cae en `disallow`.
   - **Pattern**:
     ```ts
     // app/robots.ts
