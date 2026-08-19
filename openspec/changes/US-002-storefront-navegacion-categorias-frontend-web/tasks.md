@@ -209,7 +209,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 3: Navegación del sitio (AC-1, AC-2) — `design.md` D6, D7
 
-- [ ] **T3.1** `CategoryNav` en el layout `(storefront)`: rubros indexables, cero JS de cliente, con degradación (0.75 h)
+- [x] **T3.1** `CategoryNav` en el layout `(storefront)`: rubros indexables, cero JS de cliente, con degradación (0.75 h)
+  - **AS-BUILT 2026-08-18**: 3 tests verdes + build OK. Server Component sin `"use client"` (verificado por grep), montado en `app/(storefront)/layout.tsx` bajo el wordmark, así que toda página del route group —incluida la ficha de US-003— lo incluye. Tres casos cubiertos: árbol OK (un link por rubro con su href), árbol que rechaza (devuelve `null` + `captureError`, **no** propaga) y árbol vacío (no renderiza una barra hueca).
   - **Pattern**:
     ```tsx
     // src/features/storefront/CategoryNav.tsx — Server Component (SIN "use client")
@@ -598,6 +599,7 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     **self-test ejecutable** levanta el stub en un puerto efímero, ejercita cada semántica y sale con
     código distinto de 0 si alguna falla.
   - **Verify**: `node apps/web/e2e/support/api-stub.selftest.mjs`
+  - ⚠️ **Riesgo señalado por la sesión de QA (2026-08-18), verificar antes de commitear**: `pdp-invalidation.spec.ts` (US-003, el **único** spec que cubre AC-9 end-to-end) depende de que el reset devuelva el catálogo entero a su estado inicial, y usa un precio único por corrida para no dar falso verde contra un valor cacheado. Un `__reset` parcial puede romperlo **en silencio** —seguiría verde por la razón equivocada—, así que hay que confirmar que `ventilador-de-techo` vuelve a `1250000` tras un reset por alcance. Coordinar con la sesión de QA al llegar acá.
 
 - [ ] **T7.3** E2E — SSR indexable, 404 real y paginación, **sobre `response.status()` y el body del servidor** (0.75 h)
   - **Pattern**:
