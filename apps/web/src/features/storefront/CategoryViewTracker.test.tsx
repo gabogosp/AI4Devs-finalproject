@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { setEventSink, type BusinessEvent, type EventProps } from '@/lib/observability/events';
 import { CategoryViewTracker } from './CategoryViewTracker';
