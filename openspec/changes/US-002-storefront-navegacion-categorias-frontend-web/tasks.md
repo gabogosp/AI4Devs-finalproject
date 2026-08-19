@@ -387,6 +387,7 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/ProductCard src/features/storefront/ProductImage`
 
 - [x] **T4.3** Paginación server-side por `searchParams` (AC-3, AC-7, AC-9) (0.75 h)
+  - ⚠️ **Autoría partida (no reescribir historia)**: `Pagination.tsx`, `Pagination.test.tsx` y el `page.tsx` de esta task entraron en el commit **`6ab9bf9` ("docs(openspec): US-014 — tres decisiones del PO")**, de la sesión de US-014, que barrió el working tree mientras yo escribía. El resto de T4.3 quedó en `5a1645a`. El contenido es correcto y los tests pasan; lo que está mal es el mensaje que los describe. **Este caso no lo previene ninguna disciplina de staging**: no es "mi commit se llevó lo ajeno" sino "un commit ajeno se llevó lo mío antes de que yo lo stagee" — cuando corrí `git add`, ya no había nada que stagear.
   - **AS-BUILT 2026-08-18**: 19 tests verdes. `normalizePage` es una función pura exportada y testeada aparte (7 casos: `abc`/`0`/`-1`/`2.5`/ausente → 1). La página 1 se enlaza **sin** `?page=1`, así que hay una sola URL canónica. Fuera de rango → `notFound()`; vacío en página 1 → 200 (la categoría existe, AC-6). AC-7 se cumple por construcción: `PAGE_SIZE` es fijo y no se toma de la query, así que ninguna URL manipulada puede pedir el catálogo entero.
   - **Pattern**:
     ```tsx
@@ -419,7 +420,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     fijo, normalización de `page` inválida, `notFound` en fuera de rango, y los `rel`/`aria-current`.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/Pagination src/features/storefront/CategoryPage`
 
-- [ ] **T4.4** Estado vacío accionable (AC-6) (0.25 h)
+- [x] **T4.4** Estado vacío accionable (AC-6) (0.25 h)
+  - **AS-BUILT 2026-08-18**: 10 tests verdes en `CategoryPage` + lint limpio. `CategoryEmptyState` con ícono + mensaje + salida: los subrubros cuando existen, y siempre el link a todos los rubros. La grilla y la paginación no se renderizan. La prop se llama `subcategories` y no `children`: eslint (`react/no-children-prop`) rechaza pasar `children` como prop, y además el nombre confundía la jerarquía de React con la del catálogo.
   - **Pattern**:
     ```tsx
     // design-system §10.1: "ícono + mensaje + CTA" — nunca un vacío mudo.

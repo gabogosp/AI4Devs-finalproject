@@ -152,4 +152,42 @@ describe('CategoryPage (AC-9, AC-10)', () => {
     expect(notFound).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
   });
+
+  it('categoría vacía: estado accionable con salida, y sin grilla ni paginación (AC-6)', async () => {
+    categoryResult = {
+      ok: true,
+      value: {
+        slug: 'climatizacion',
+        name: 'Climatización',
+        parent: null,
+        children: [{ slug: 'compresores', name: 'Compresores' }],
+      },
+    };
+    productsResult = { data: [], pagination: { limit: 20, offset: 0, total: 0 } };
+
+    render(await CategoryPage({ params }));
+
+    expect(
+      screen.getByText(/Todavía no hay productos publicados/),
+    ).toBeInTheDocument();
+    // Un vacío mudo dejaría al cliente sin camino: tiene que poder seguir
+    // navegando por los subrubros o volver a los rubros.
+    expect(screen.getByRole('link', { name: 'Compresores' })).toHaveAttribute(
+      'href',
+      '/categorias/compresores',
+    );
+    expect(screen.getByRole('link', { name: 'Ver todos los rubros' })).toHaveAttribute(
+      'href',
+      '/',
+    );
+    expect(screen.queryByRole('navigation', { name: 'Paginación' })).not.toBeInTheDocument();
+  });
+
+  it('un rubro vacío SIN subrubros igual ofrece salida', async () => {
+    productsResult = { data: [], pagination: { limit: 20, offset: 0, total: 0 } };
+
+    render(await CategoryPage({ params }));
+
+    expect(screen.getByRole('link', { name: 'Ver todos los rubros' })).toBeInTheDocument();
+  });
 });

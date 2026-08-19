@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { categoriesStorefrontService } from '@/features/storefront/categoriesStorefrontService';
 import { ProductCard } from '@/features/storefront/ProductCard';
 import { Pagination, normalizePage } from '@/features/storefront/Pagination';
+import { CategoryEmptyState } from '@/features/storefront/CategoryEmptyState';
 import { isAppError } from '@/lib/http/errors';
 
 /**
@@ -46,6 +47,10 @@ export default async function CategoryPage({
       <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
         {category.name}
       </h1>
+
+      {data.length === 0 && (
+        <CategoryEmptyState subcategories={category.children} />
+      )}
 
       {data.length > 0 && (
         <>
