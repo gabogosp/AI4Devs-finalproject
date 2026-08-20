@@ -24,15 +24,15 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-001 backend archivado** (AS-BUILT verificado al planificar): `apps/api` corre con
+- [x] **US-001 backend archivado** (AS-BUILT verificado al planificar): `apps/api` corre con
   `HttpProblemFilter` (RFC 7807 `dsm:catalog/*`), `ValidationPipe` global
   (`whitelist` + `forbidNonWhitelisted`, 422), helmet §7.1, allowlist CORS §7.2, throttlers
   nombrados `auth` y `storefront`, y `AdminGuard` (ADR-0009).
   **Verify**: `pnpm --filter @dsm/api typecheck && pnpm --filter @dsm/api test -- --testPathPattern='e2e-rbac|e2e-security-edge'`
-- [ ] **US-003 backend en `apps/api`**: `products.slug` UNIQUE existe y
+- [x] **US-003 backend en `apps/api`**: `products.slug` UNIQUE existe y
   `ProductsService.deriveUniqueSlug` deriva con sufijo ordinal.
   **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern='products.service|e2e-products-create'`
-- [ ] **Postgres local arriba**: `docker compose up -d postgres`.
+- [x] **Postgres local arriba**: `docker compose up -d postgres`.
 - [x] **Preguntas abiertas cerradas (2026-08-20)** — OQ-BE-1 = contrato asíncrono + ejecutor
   in-process (ADR-0012) · OQ-BE-2 = celda vacía significa "no cambiar ese campo" · **OQ-BE-3 =
   5.000 filas / 4 MiB / 32 MiB descomprimidos** (el PO eligió el tope ajustado, **no** el
@@ -46,7 +46,7 @@ language: es
 
 ## Fase 0: ADR, esquema y configuración — 1,2 h
 
-- [ ] T0.1 ADR-0012 — ejecución in-process del import (enmienda a ADR-0004)
+- [x] T0.1 ADR-0012 — ejecución in-process del import (enmienda a ADR-0004)
   - **Exit criterion**: existe `docs/architecture/decisions/0012-*.md` con
     `Status: Accepted`, que declara (a) el contrato asíncrono `POST` 202 + `GET` de estado,
     (b) el ejecutor in-process con un solo trabajo concurrente, heartbeat y reaper, (c) el
@@ -58,7 +58,7 @@ language: es
     correspondiente existe en `docs/_index/decisions.yaml`.
   - **Verify**: `grep -q '^> \*\*Status\*\*: Accepted' docs/architecture/decisions/0012-*.md && grep -qi 'bullmq' docs/architecture/decisions/0012-*.md && grep -q '0012' docs/architecture/decisions/0004-redis-bullmq-async-processing.md && grep -q 'ADR-0012' docs/_index/decisions.yaml`
 
-- [ ] T0.2 Migración aditiva: `import_jobs` + `import_job_rows` + `products.enrichment_done`
+- [x] T0.2 Migración aditiva: `import_jobs` + `import_job_rows` + `products.enrichment_done`
   - **Pattern**: en `packages/db/prisma/schema.prisma`, dos `model` nuevos con
     `@id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` y `@@map("…")`, espejando
     `RefreshToken`; FK con `onDelete: Cascade`; en `Product`,

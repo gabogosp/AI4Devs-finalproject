@@ -38,8 +38,66 @@ model Product {
   created_at      DateTime @default(now())
   updated_at      DateTime @default(now()) @updatedAt
 
+  /// US-006: el import marca las filas que crea para que US-005 las enriquezca.
+  /// Los productos existentes quedan en `false`, que es correcto — ninguno fue
+  /// enriquecido nunca.
+  enrichment_done Boolean @default(false)
+
   @@index([category_id, status])
   @@map("products")
+}
+
+/// Trabajo de import masivo (US-006, ADR-0012). El estado vive acá y no en el
+/// proceso: por eso un redeploy que corta un import deja rastro en vez de
+/// perderlo, y por eso migrar el ejecutor a BullMQ no toca esta tabla.
+model ImportJob {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status                   String    @default("pending")
+  filename                 String
+  file_size_bytes          Int
+  source_format            String
+  /// UNIQUE — reenviar el mismo archivo con la misma clave no crea otro trabajo.
+  idempotency_key          String?   @unique
+  /// Claim `sub` del JWT admin: pseudónimo interno, no PII.
+  created_by_subject       String?
+  total_rows               Int?
+  processed_rows           Int       @default(0)
+  created_count            Int       @default(0)
+  updated_count            Int       @default(0)
+  failed_count             Int       @default(0)
+  categories_created_count Int       @default(0)
+  error_code               String?
+  error_message            String?
+  report_truncated         Boolean   @default(false)
+  started_at               DateTime?
+  finished_at              DateTime?
+  /// Insumo del reaper: un trabajo `running` sin latido reciente quedó huérfano.
+  heartbeat_at             DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @default(now()) @updatedAt
+
+  rows                     ImportJobRow[]
+
+  @@index([status])
+  @@index([created_at])
+  @@map("import_jobs")
+}
+
+/// Detalle por fila fallida del reporte (US-006 AC-5). Se borra en cascada con
+/// su trabajo, así la purga por retención es un solo DELETE sobre `import_jobs`.
+model ImportJobRow {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job_id        String    @db.Uuid
+  job           ImportJob @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  row_number    Int
+  sku           String?
+  field         String?
+  error_code    String
+  error_message String
+  created_at    DateTime  @default(now())
+
+  @@index([job_id, row_number])
+  @@map("import_job_rows")
 }
 
 /// Cliente del storefront (US-014). El email se guarda YA normalizado

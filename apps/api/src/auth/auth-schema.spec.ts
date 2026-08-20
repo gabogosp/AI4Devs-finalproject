@@ -125,10 +125,14 @@ describe('Esquema de auth materializado (F40 — reconciliación con design.md)'
     ).toBe(0);
   });
 
-  it('ninguna tabla existente fue modificada por esta migración', async () => {
-    // El diseño declara la migración como puramente aditiva. Si `products` o
-    // `categories` cambiaran, la suite de US-001/US-003 lo notaría tarde y
-    // mezclado; acá se ancla explícito.
+  it('la migración de auth no modificó products (su única columna extra es de US-006)', async () => {
+    // El diseño de US-014 declara su migración como puramente aditiva sobre
+    // tablas nuevas. El ancla sigue siendo el conjunto EXACTO, no un subconjunto.
+    //
+    // `enrichment_done` la agregó US-006 (import masivo) el 2026-08-20, con
+    // decisión registrada en su design.md §Persistencia: se declara acá para que
+    // el ancla siga siendo exacto. Si aparece cualquier OTRA columna, este test
+    // falla — que es justo lo que tiene que hacer.
     const productos = await prisma.$queryRawUnsafe<
       Array<{ column_name: string }>
     >(
@@ -149,6 +153,7 @@ describe('Esquema de auth materializado (F40 — reconciliación con design.md)'
         'image_url',
         'created_at',
         'updated_at',
+        'enrichment_done', // US-006
       ].sort(),
     );
   });

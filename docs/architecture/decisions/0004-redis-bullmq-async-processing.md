@@ -5,7 +5,8 @@
 > **Decision-makers**: Gabriel Suarez (Arquitecto)
 > **Supersedes**: —
 > **Superseded by**: —
-> **Related**: ADR-0001 (Railway as deployment platform), ADR-0003 (Gemini for AI jobs), ADR-0007 (worker is part of the modular monolith deployment)
+> **Amended by**: ADR-0012 (bulk import runs in-process until Redis is provisioned; the async contract and the durable job state are built now, the executor is swapped later)
+> **Related**: ADR-0001 (Railway as deployment platform), ADR-0003 (Gemini for AI jobs), ADR-0007 (worker is part of the modular monolith deployment), ADR-0012 (in-process import executor — amends this decision for the first workload named below)
 
 ## Context
 

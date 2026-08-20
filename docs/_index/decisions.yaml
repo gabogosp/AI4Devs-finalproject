@@ -89,3 +89,11 @@
   triggered-by: "US-014 AC-3 + security-standards §3.3"
   supersedes: null
   superseded-by: null
+- id: ADR-0012
+  title: In-process executor for bulk catalog import, with an asynchronous contract from day one
+  status: Accepted
+  path: docs/architecture/decisions/0012-in-process-import-executor.md
+  affects: [backend-nestjs, catalogo, import, async-processing]
+  triggered-by: "US-006 — Redis sin aprovisionar (US-019 pendiente) y apps/worker vacío"
+  supersedes: null
+  superseded-by: null
