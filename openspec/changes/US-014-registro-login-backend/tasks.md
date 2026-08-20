@@ -184,7 +184,7 @@ language: es
     y **no** un error de Prisma; `findActiveByEmail` case-insensitive;
     un `customer` con `deleted_at` seteado a mano **no** lo devuelve)
 
-- [ ] T2.2 `RefreshTokensRepository`
+- [x] T2.2 `RefreshTokensRepository`
   - **Exit criterion**: expone `issue({customerId, tokenHash, familyId, expiresAt})`,
     `findByHash(hash)`, `markRotated(id)`, `revokeFamily(familyId)`,
     `revokeAllForCustomer(customerId)` y `purgeExpiredForCustomer(customerId)`.
@@ -196,7 +196,7 @@ language: es
     marca exactamente 3 y deja la otra intacta; `purgeExpiredForCustomer` borra
     sólo el vencido de ese cliente y no toca el vencido de otro)
 
-- [ ] T2.3 `PasswordResetTokensRepository`
+- [x] T2.3 `PasswordResetTokensRepository`
   - **Exit criterion**: expone `issue({customerId, tokenHash, expiresAt})`,
     `findUsableByHash(hash)` (devuelve `null` si `used_at IS NOT NULL` **o**
     `expires_at <= now()`), `markUsed(id)`, `countIssuedSince(customerId, since)` y
