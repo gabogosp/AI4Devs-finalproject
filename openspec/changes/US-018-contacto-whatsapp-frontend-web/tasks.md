@@ -57,7 +57,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Pre-requisitos
 
-- [ ] **P1 — BLOQUEANTE: US-002 FE cerrada y el working tree limpio** (`design.md` D11)
+- [x] **P1 — BLOQUEANTE: US-002 FE cerrada y el working tree limpio** (`design.md` D11)
 
   Otra sesión ejecuta `/develop-frontend-web US-002` **en el mismo working tree** y toca dos
   archivos que esta US necesita (`app/(storefront)/layout.tsx`, `apps/web/README.md`) más el
@@ -86,12 +86,12 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
     limpio dentro de una hora. Un pre-requisito que se da por cumplido "porque lo estaba al
     planificar" es exactamente cómo se pierde trabajo.
 
-- [ ] **P2 — Suite verde antes de empezar** (`refactoring-discipline`: T1.3 es un refactor
+- [x] **P2 — Suite verde antes de empezar** (`refactoring-discipline`: T1.3 es un refactor
   sobre superficie ya entregada; sin red previa no se refactoriza)
   - **Exit criterion**: unit/componente y build de producción pasan en el `HEAD` de partida.
   - **Verify**: `pnpm --filter @dsm/web test && pnpm --filter @dsm/web build`
 
-- [ ] **P3 — `design-system.md` en `Approved`** (gate de `fe-design-without-figma` §5: sin
+- [x] **P3 — `design-system.md` en `Approved`** (gate de `fe-design-without-figma` §5: sin
   Figma, el design-system **es** la autoridad visual)
   - **Exit criterion**: el doc declara la aprobación de PO y Arquitecto.
   - **Verify**: `grep -q '^- \[x\] PO:' docs/product/design-system.md && grep -q '^- \[x\] Arquitecto:' docs/product/design-system.md && echo OK`
@@ -100,7 +100,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Fase 1: Fuente única del enlace (AC-5, AC-3) — `design.md` D1, D4, D6, D7
 
-- [ ] **T1.1** `whatsapp.ts`: el único constructor del href `wa.me` + catálogo de mensajes (0.3 h)
+- [x] **T1.1** `whatsapp.ts`: el único constructor del href `wa.me` + catálogo de mensajes (0.3 h)
 
   - **Pattern**: función pura, sin hook y sin estado — así la consume tanto un Server como un
     Client Component (`frontend-next-standards.md` §2). La env ya está tipada y validada con
@@ -143,7 +143,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
     expect(whatsappHref()).not.toMatch(/api\.whatsapp\.com/);         // forma canónica (AC-3)
     ```
 
-- [ ] **T1.2** `WhatsAppLink`: la pieza compartida, Server Component (0.3 h)
+- [x] **T1.2** `WhatsAppLink`: la pieza compartida, Server Component (0.3 h)
 
   - **Pattern**: presentacional puro; **no compone la URL** (la pide a T1.1). Reproduce la
     forma que US-003 ya validó con axe en browser real:
@@ -195,7 +195,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
     expect(link).toHaveAttribute('href', whatsappHref('hola'));
     ```
 
-- [ ] **T1.3** `ProductPurchase` consume la pieza compartida — refactor sin cambio observable (0.2 h)
+- [x] **T1.3** `ProductPurchase` consume la pieza compartida — refactor sin cambio observable (0.2 h)
 
   - **Pattern**: **Extract + Move** de Fowler (`refactoring-discipline`). Sale el bloque que
     arma `message`/`href` y el `<a>` inline; entra el componente. **No se toca nada más**:

@@ -1,8 +1,8 @@
 'use client';
 
-import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { publicEnv } from '@/lib/env';
+import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
+import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
 
 /** Copy del design-system §10.2 — momento de ansiedad "sin stock". */
 const OUT_OF_STOCK_COPY =
@@ -31,9 +31,6 @@ export function ProductPurchase({
   onAddToCart?: () => void;
 }) {
   if (!inStock) {
-    const message = `Hola! Quería consultar por "${productName}".`;
-    const href = `https://wa.me/${publicEnv.NEXT_PUBLIC_WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-
     return (
       <div className="flex flex-col gap-3">
         {/* `text-gray-600`, no `-500`: sobre `bg-gray-100` el 500 da 4.39:1 y
@@ -45,16 +42,10 @@ export function ProductPurchase({
           Sin stock
         </span>
         <p className="text-sm text-muted">{OUT_OF_STOCK_COPY}</p>
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[44px] w-fit items-center justify-center gap-2 rounded-md bg-accent-strong px-4 text-sm font-medium text-white focus:outline-none focus-visible:shadow-focus"
-        >
-          {/* Ícono + texto, nunca sólo ícono (§7.14). */}
-          <MessageCircle className="h-4 w-4" aria-hidden="true" />
-          Avisame por WhatsApp
-        </a>
+        <WhatsAppLink
+          label="Avisame por WhatsApp"
+          message={WHATSAPP_MESSAGES.product(productName)}
+        />
       </div>
     );
   }
