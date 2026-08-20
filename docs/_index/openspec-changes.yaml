@@ -289,9 +289,11 @@
   # el modelo de trabajo en Postgres (2 tablas), el runner por lotes, el heartbeat/reaper y
   # los dos endpoints de lectura de progreso y reporte. Con la cola aprovisionada ese trabajo
   # lo habría aportado la infraestructura.
-  # BLOQUEO DE ARRANQUE: OQ-BE-1 (modo de ejecución — async in-process vs BullMQ vs síncrono)
-  # es decisión del PO y T0.1 no arranca sin ella. El plan está escrito bajo la recomendación
-  # (contrato asíncrono + ejecutor in-process, ADR-0012 enmendando ADR-0004).
+  # Preguntas abiertas resueltas por el PO el 2026-08-20 — sin bloqueo de arranque: el plan se
+  # ejecuta completo desde T0.1. Modo de ejecución = contrato asíncrono + ejecutor in-process
+  # (ADR-0012 enmendando ADR-0004). Límites = 5.000 filas / 4 MiB (el PO eligió el tope
+  # ajustado sobre el holgado que proponía el diseño): queda SIN MARGEN sobre el catálogo
+  # objetivo del E2E §21, con gatillo de revisión declarado en design.md §NFRs cuantificados.
   estimate-hours: 9.5
   assignee: bce7ffb7
   branch: null

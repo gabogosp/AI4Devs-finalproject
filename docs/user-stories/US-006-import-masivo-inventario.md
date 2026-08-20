@@ -4,7 +4,7 @@ id: US-006
 slug: import-masivo-inventario
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: M
 story_points_traditional: 8
