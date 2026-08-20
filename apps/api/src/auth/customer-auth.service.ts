@@ -9,6 +9,7 @@ import {
 import { PasswordHasher } from './password/password-hasher';
 import { validatePassword } from './password/password-policy';
 import { IssuedSession, SessionService } from './session.service';
+import { AuthEventsService } from '../observability/auth-events.service';
 
 export interface RegisterInput {
   email: string;
@@ -30,6 +31,7 @@ export class CustomerAuthService {
     private readonly hasher: PasswordHasher,
     private readonly credentials: CredentialsService,
     private readonly sessions: SessionService,
+    private readonly events: AuthEventsService,
   ) {}
 
   /**
@@ -66,6 +68,7 @@ export class CustomerAuthService {
       role: customer.role,
     });
 
+    this.events.emit('auth.registered', customer.id);
     return { customer, session };
   }
 
@@ -76,6 +79,7 @@ export class CustomerAuthService {
       id: customer.id,
       role: customer.role,
     });
+    this.events.emit('auth.login_succeeded', customer.id);
     return { customer, session };
   }
 

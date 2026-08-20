@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { AuthEventsService } from '../observability/auth-events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomersRepository } from './customers.repository';
 import { PasswordHasher } from './password/password-hasher';
@@ -17,6 +18,9 @@ class RelojFijo implements Clock {
     this.instante = new Date(this.instante.getTime() + min * 60_000);
   }
 }
+
+/** Los eventos no son el objeto de estos tests; se verifican en T9.1. */
+const eventos = new AuthEventsService();
 
 describe('CredentialsService (§7.3, AC-2/AC-5/AC-10)', () => {
   const prisma = new PrismaService();
@@ -44,7 +48,7 @@ describe('CredentialsService (§7.3, AC-2/AC-5/AC-10)', () => {
       'TRUNCATE TABLE customers RESTART IDENTITY CASCADE',
     );
     reloj = new RelojFijo();
-    service = new CredentialsService(customers, hasher, config, reloj);
+    service = new CredentialsService(customers, hasher, config, eventos, reloj);
     await customers.create({
       email: 'ana@example.com',
       name: 'Ana',

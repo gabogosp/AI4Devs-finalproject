@@ -12,6 +12,7 @@ import {
   PASSWORD_RESET_MAILER,
   PasswordResetMailer,
 } from './mail/password-reset-mailer';
+import { AuthEventsService } from '../observability/auth-events.service';
 
 /**
  * Recuperación de contraseña — AC-4, AC-7, AC-11 y `security-standards.md` §3.7.
@@ -37,6 +38,7 @@ export class PasswordResetService {
     private readonly config: ConfigService,
     @Inject(PASSWORD_RESET_MAILER)
     private readonly mailer: PasswordResetMailer,
+    private readonly events: AuthEventsService,
   ) {}
 
   private get ttlMin(): number {
@@ -82,6 +84,8 @@ export class PasswordResetService {
       tokenHash: hashToken(raw), // sólo el hash toca la base
       expiresAt: new Date(Date.now() + this.ttlMin * 60_000),
     });
+
+    this.events.emit('auth.password_reset_requested', cliente.id);
 
     try {
       await this.mailer.send({
@@ -137,8 +141,6 @@ export class PasswordResetService {
     await this.tokens.deleteAllForCustomer(fila.customer_id);
     await this.sessions.revokeAllForCustomer(fila.customer_id);
 
-    this.logger.log(
-      `password_reset.completed customer_id=${fila.customer_id}`,
-    );
+    this.events.emit('auth.password_reset_completed', fila.customer_id);
   }
 }

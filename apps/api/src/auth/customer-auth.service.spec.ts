@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { AuthEventsService } from '../observability/auth-events.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomersRepository } from './customers.repository';
@@ -9,6 +10,9 @@ import { SessionService } from './session.service';
 import { CustomerAuthService } from './customer-auth.service';
 import { InvalidCredentialsError, RegistrationFailedError } from '../common/errors/auth-errors';
 import { ValidationError } from '../common/errors/domain-errors';
+
+/** Los eventos no son el objeto de estos tests; se verifican en T9.1. */
+const eventos = new AuthEventsService();
 
 describe('CustomerAuthService (AC-1, AC-2, AC-6)', () => {
   const prisma = new PrismaService();
@@ -21,17 +25,19 @@ describe('CustomerAuthService (AC-1, AC-2, AC-6)', () => {
     AUTH_LOGIN_MAX_FAILURES: 5,
   }) as ConfigService;
   const hasher = new PasswordHasher(config);
-  const credentials = new CredentialsService(customers, hasher, config);
+  const credentials = new CredentialsService(customers, hasher, config, eventos);
   const sessions = new SessionService(
     new JwtService({}),
     config,
     refreshTokens,
+    eventos,
   );
   const service = new CustomerAuthService(
     customers,
     hasher,
     credentials,
     sessions,
+    eventos,
   );
 
   const PASSWORD = 'correo caballo batería grapa';

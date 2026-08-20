@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { AuthEventsService } from '../observability/auth-events.service';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,6 +33,9 @@ class MailerRoto implements PasswordResetMailer {
   }
 }
 
+/** Los eventos no son el objeto de estos tests; se verifican en T9.1. */
+const eventos = new AuthEventsService();
+
 describe('PasswordResetService (AC-4, AC-7, AC-11)', () => {
   const prisma = new PrismaService();
   const customers = new CustomersRepository(prisma);
@@ -45,8 +49,8 @@ describe('PasswordResetService (AC-4, AC-7, AC-11)', () => {
     AUTH_REFRESH_TTL_DAYS: 30,
   }) as ConfigService;
   const hasher = new PasswordHasher(config);
-  const sessions = new SessionService(new JwtService({}), config, refreshTokens);
-  const credentials = new CredentialsService(customers, hasher, config);
+  const sessions = new SessionService(new JwtService({}), config, refreshTokens, eventos);
+  const credentials = new CredentialsService(customers, hasher, config, eventos);
 
   const VIEJA = 'contraseña vieja del cliente';
   const NUEVA = 'contraseña nueva y distinta';
@@ -56,7 +60,7 @@ describe('PasswordResetService (AC-4, AC-7, AC-11)', () => {
   let anaId: string;
 
   const construir = (m: PasswordResetMailer) =>
-    new PasswordResetService(customers, tokens, hasher, sessions, config, m);
+    new PasswordResetService(customers, tokens, hasher, sessions, config, m, eventos);
 
   beforeAll(async () => {
     await prisma.$connect();

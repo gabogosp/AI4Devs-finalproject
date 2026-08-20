@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InvalidCredentialsError } from '../common/errors/auth-errors';
 import { CustomersRepository, SafeCustomer } from './customers.repository';
 import { PasswordHasher } from './password/password-hasher';
+import { AuthEventsService } from '../observability/auth-events.service';
 
 /** Reloj inyectable — el backoff se prueba sin esperar 60 minutos reales. */
 export interface Clock {
@@ -43,6 +44,7 @@ export class CredentialsService {
     private readonly customers: CustomersRepository,
     private readonly hasher: PasswordHasher,
     private readonly config: ConfigService,
+    private readonly events: AuthEventsService,
     @Optional() @Inject(CLOCK) private readonly clock: Clock = SYSTEM_CLOCK,
   ) {}
 
@@ -70,6 +72,9 @@ export class CredentialsService {
       // "contraseña incorrecta" tarda ~250 ms, y esa diferencia enumera cuentas
       // aunque el cuerpo de la respuesta sea idéntico.
       await this.hasher.verifyDummy(plainPassword);
+      // `null` y no el email: un hash de email es reversible por diccionario,
+      // así que "anonimizarlo" no lo anonimiza.
+      this.events.emit('auth.login_failed', null);
       throw new InvalidCredentialsError();
     }
 
@@ -90,6 +95,7 @@ export class CredentialsService {
       if (!passwordCorrecta && !bloqueada) {
         await this.registrarFallo(cliente.id, cliente.lockout_count);
       }
+      this.events.emit('auth.login_failed', cliente.id);
       throw new InvalidCredentialsError();
     }
 
@@ -123,5 +129,6 @@ export class CredentialsService {
     );
     const hasta = new Date(this.clock.now().getTime() + minutos * 60_000);
     await this.customers.lockUntil(customerId, hasta, nuevoCiclo);
+    this.events.emit('auth.account_locked', customerId);
   }
 }

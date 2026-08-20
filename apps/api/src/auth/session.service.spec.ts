@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { AuthEventsService } from '../observability/auth-events.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,6 +15,9 @@ import { hashToken } from './tokens/opaque-token';
  * quedan con `revoked_at`), y un mock que devuelva lo que yo le diga no
  * verificaría nada de eso.
  */
+/** Los eventos no son el objeto de estos tests; se verifican en T9.1. */
+const eventos = new AuthEventsService();
+
 describe('SessionService (ADR-0011)', () => {
   const prisma = new PrismaService();
   const refreshTokens = new RefreshTokensRepository(prisma);
@@ -24,7 +28,7 @@ describe('SessionService (ADR-0011)', () => {
     AUTH_REFRESH_TTL_DAYS: 30,
   }) as ConfigService;
   const jwt = new JwtService({});
-  const service = new SessionService(jwt, config, refreshTokens);
+  const service = new SessionService(jwt, config, refreshTokens, eventos);
 
   // `ConfigService` da prioridad a `process.env` sobre el objeto del
   // constructor, y el setup de jest define `JWT_SECRET`. El test debe verificar

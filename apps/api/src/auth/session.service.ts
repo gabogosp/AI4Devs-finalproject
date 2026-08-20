@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InvalidRefreshError } from '../common/errors/auth-errors';
 import { RefreshTokensRepository } from './refresh-tokens.repository';
 import { hashToken, newToken } from './tokens/opaque-token';
+import { AuthEventsService } from '../observability/auth-events.service';
 
 /**
  * Emisor y `issuer`/`audience` de los access tokens. Constantes, no configuración:
@@ -45,6 +46,7 @@ export class SessionService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly refreshTokens: RefreshTokensRepository,
+    private readonly events: AuthEventsService,
   ) {}
 
   private get secret(): string {
@@ -88,6 +90,9 @@ export class SessionService {
       // duda se asume lo segundo — el costo de equivocarse es un re-login; el de
       // no hacerlo es una sesión ajena viva.
       await this.refreshTokens.revokeFamily(fila.family_id);
+      // El evento de mayor valor operativo de toda la US: es la señal de que un
+      // token fue robado. Merece alerta, no sólo un contador.
+      this.events.emit('auth.refresh_reuse_detected', fila.customer_id);
       throw new InvalidRefreshError();
     }
 
@@ -117,6 +122,7 @@ export class SessionService {
     );
     if (fila) {
       await this.refreshTokens.revokeFamily(fila.family_id);
+      this.events.emit('auth.logout', fila.customer_id);
     }
   }
 

@@ -19,6 +19,7 @@ import { CustomerGuard } from './customer.guard';
 import { CsrfGuard } from './csrf.guard';
 import { passwordResetMailerProvider } from './mail/password-reset-mailer.provider';
 import { PrismaModule } from '../prisma/prisma.module';
+import { AuthEventsService } from '../observability/auth-events.service';
 
 /**
  * Módulo del seam de auth admin (ADR-0009). Expone `POST /v1/admin/auth/login`
@@ -71,10 +72,11 @@ import { PrismaModule } from '../prisma/prisma.module';
     PasswordResetService,
     CustomerGuard,
     CsrfGuard,
+    AuthEventsService,
     // El adapter de email se elige por entorno (T7.2): Resend con clave, log sin
     // ella. En producción, faltar la clave hace fallar el arranque (envSchema).
     passwordResetMailerProvider,
   ],
-  exports: [AdminGuard, AdminAuthService, JwtModule, CustomerGuard],
+  exports: [AdminGuard, AdminAuthService, JwtModule, CustomerGuard, AuthEventsService],
 })
 export class AuthModule {}

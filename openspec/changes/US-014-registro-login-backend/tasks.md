@@ -557,7 +557,7 @@ language: es
 
 ## Fase 9: Observabilidad — 0,3 h
 
-- [ ] T9.1 `AuthEventsService` — 8 eventos sin PII
+- [x] T9.1 `AuthEventsService` — 8 eventos sin PII
   - **Pattern**: espejo de `CatalogEventsService` (contador en memoria + log pino
     estructurado) con su propia unión de nombres; `entity_id` = UUID del cliente —
     `per observability-patterns §3.3 — el id va al log, NUNCA como dimensión de
