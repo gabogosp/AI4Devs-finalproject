@@ -188,20 +188,6 @@
   completed-at: null
   archived-at: null
   archive-path: null
-- name: US-007-carrito-compra-backend
-  us-id: US-007
-  discipline: backend
-  variant: null
-  status: Draft
-  parent-us: docs/user-stories/US-007-carrito-compra.md
-  linear-task-id: null
-  audit-baseline: null
-  audit-derived: false
-  estimate-hours: 7
-  assignee: sin-identificar
-  branch: null
-  pr-url: null
-
 - name: US-014-registro-login-backend
   us-id: US-014
   discipline: backend
@@ -315,6 +301,86 @@
   branch: null
   pr-url: null
   created: 2026-08-19
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-007-carrito-compra-backend
+  us-id: US-007
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # COLISION DE SESIONES (2026-08-20): una sesion paralela ya habia commiteado un plan
+  # para este mismo change (157/376/237 lineas) y su entrada stub en este indice
+  # (status Draft, estimate 7, sin campos de fecha). Al planificar de nuevo se
+  # sobrescribio. El plan anterior esta INTACTO en git (HEAD 0193e53) y respaldado en
+  # openspec/changes/_backups/2026-08-20-US-007-carrito-compra-backend/. Los dos planes
+  # convergen en lo esencial (token opaco hasheado, expires_at agregado al DER, creacion
+  # perezosa, precios vigentes, AC-8 como invariante probada, purga oportunista); el
+  # plan vigente agrega los controles §7 que faltaban (CSRF sobre cookie — §7.5 es
+  # Mandatory —, Cache-Control: no-store, DELETE en la allowlist de metodos CORS sin el
+  # cual el preflight del DELETE fallaba) y cambia la semantica de escritura a PUT
+  # absoluto (idempotente por §10.5, sin Idempotency-Key). Decision de cual queda: del PO.
+  # 7,7 h AI-asistido / ~15 h tradicional (24 tasks). US §7 presupuesta BE-US-007 en
+  # 6-10 h: el tradicional excede el techo ~5 h por trabajo que la US da por resuelto al
+  # describirla como "carrito CRUD con persistencia + chequeo de stock" — la identidad
+  # del invitado (token opaco + cookie propia + CSRF sin `jti`, que el mecanismo de
+  # US-014 no cubre) y los controles §7 de la PRIMERA superficie pública de escritura
+  # del proyecto (tercer throttler nombrado + no-store también en 4xx/429 + PUT/DELETE
+  # en CORS + extracción de verifyRequestOrigin). El CRUD en sí son ~3 h.
+  # Sin ADR nuevo: ADR-0008 gobierna stock (el carrito no reserva ni descuenta) y el
+  # DER del E2E §8 ya declara CARTS/CART_ITEMS. Las dos desviaciones del DER
+  # (session_token → session_token_hash; expires_at/updated_at) se declaran en design.md.
+  # 6 preguntas abiertas para el PO, NINGUNA bloquea el arranque: todas tienen default
+  # implementado (retención 30 d, max_quantity sólo en el carrito, fusión diferida por
+  # la US §4, total sin líneas bloqueadas, PUT absoluto idempotente, purga oportunista).
+  estimate-hours: 7.7
+  assignee: bce7ffb7
+  branch: null
+  pr-url: null
+  created: 2026-08-20
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-014-registro-login-frontend-web
+  us-id: US-014
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-014-registro-login.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,1 h AI-asistido / ~20 h tradicional (22 tasks + 2 pre-requisitos). US §7 presupuesta
+  # FE-US-014 en 8-12 h tradicional: se excede ~8 h con causa nombrada en tasks.md §"Por qué el
+  # plan excede el presupuesto". La US pricing-eó "formularios de auth" (Fases 3-4, ~8 h trad,
+  # entra cómodo) y se escribió ANTES de que el backend eligiera cookies HttpOnly + refresh
+  # rotado. Lo no presupuestado: (1) topología same-origin — `up.railway.app` está en la Public
+  # Suffix List, así que web y API son SITIOS DISTINTOS y las cookies SameSite=Lax nunca
+  # viajarían (en local funciona, en producción no: defecto invisible hasta el despliegue);
+  # (2) dos modelos de auth conviviendo en el único choke point de red (F48); (3) refresh
+  # single-flight cross-tab — sin coalescing, la rotación single-use de ADR-0011 hace que el
+  # propio FE desloguee al usuario legítimo; (4) superficie /v1/auth/* en el stub E2E con
+  # Set-Cookie real; (5) las cuatro garantías de la Fase 4 (AC-5/AC-8/AC-9 son propiedades de
+  # SEGURIDAD: verdaderas hoy no alcanza, tienen que quedar protegidas).
+  # BLOQUEANTES al cerrar el planning (ambos en rojo, a propósito):
+  #   P1 — US-018 FE tiene 8 tasks abiertas Y apps/web dejó de estar limpio DURANTE este
+  #        planning: otra sesión modificó src/lib/http/{client,errors}.ts sin commitear, que son
+  #        exactamente los archivos de la Fase 0. Demostración en vivo de por qué P1 existe.
+  #   P2 — OQ-FE-1 (topología de cookies) sin ratificar; gobierna la Fase 0 entera.
+  # Efecto colateral favorable de ese cambio ajeno: AppError ya tiene kind 'rateLimited' con
+  # retryAfterSeconds, así que AC-10 se resuelve consumiéndolo y el deferral queda cancelado.
+  # ADR-0013 propuesto en T0.3 (condicionado a que OQ-FE-1 se ratifique como opción (a)).
+  estimate-hours: 10.1
+  assignee: 9a385021
+  branch: null
+  pr-url: null
+  created: 2026-08-20
   completed-at: null
   archived-at: null
   archive-path: null
