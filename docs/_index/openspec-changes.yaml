@@ -188,6 +188,20 @@
   completed-at: null
   archived-at: null
   archive-path: null
+- name: US-007-carrito-compra-backend
+  us-id: US-007
+  discipline: backend
+  variant: null
+  status: Draft
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 7
+  assignee: sin-identificar
+  branch: null
+  pr-url: null
+
 - name: US-014-registro-login-backend
   us-id: US-014
   discipline: backend
