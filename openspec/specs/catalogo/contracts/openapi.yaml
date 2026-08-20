@@ -3,7 +3,8 @@ info:
   title: DSM — Contrato vivo de la capacidad Catálogo (CAP-1)
   version: 1.0.0
   description: Contrato VIVO de la capacidad, acumulado por /archive-change. Superficie de administración
-    entregada por US-001. Las rutas públicas del storefront se suman al archivar US-002 y US-003.
+    entregada por US-001, más la ficha pública de producto de US-003. Las rutas de
+    navegación por categorías se suman al archivar US-002.
   contact:
     name: DSM
     url: https://example.com
@@ -17,6 +18,8 @@ tags:
   description: Gestión de categorías (AC-1)
 - name: admin-products
   description: Gestión de productos (AC-2..AC-9)
+- name: storefront-products
+  description: Superficie pública de lectura del storefront (ficha de producto, US-003)
 - name: health
   description: Liveness / readiness
 security:
@@ -37,6 +40,23 @@ components:
         type: string
         format: uuid
   responses:
+    RateLimited:
+      description: |
+        Rate-limit por IP excedido (security-standards §7.3). Trae `Retry-After` y
+        las cabeceras `RateLimit-*` (api-standards §12).
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
     Problem:
       description: Error RFC 7807
       content:
@@ -44,6 +64,59 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    StorefrontProduct:
+      type: object
+      description: |
+        Vista PÚBLICA del producto (US-003). Deliberadamente distinta de `Product`
+        (la vista admin): expone `in_stock` como booleano y **no** el nivel de
+        stock — publicar cuántas unidades quedan le da a la competencia una
+        lectura de la rotación del negocio.
+      required:
+      - slug
+      - sku
+      - name
+      - description
+      - price_ars_cents
+      - currency
+      - image_url
+      - in_stock
+      - category
+      properties:
+        slug:
+          type: string
+          description: URL amigable canónica de la ficha (AC-1, decisión D-1).
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+          description: Descripción base (`description_raw`); US-005 antepondrá la enriquecida.
+        price_ars_cents:
+          type: integer
+          description: Precio en centavos de ARS, IVA incluido (AC-9).
+        currency:
+          type: string
+          enum:
+          - ARS
+        image_url:
+          type: string
+          nullable: true
+          description: 'null → el frontend muestra un placeholder (AC-6).'
+        in_stock:
+          type: boolean
+          description: '`stock > 0` (AC-3/AC-4). Booleano, sin exponer el nivel.'
+        category:
+          type: object
+          required:
+          - name
+          - slug
+          properties:
+            name:
+              type: string
+            slug:
+              type: string
     AdminLogin:
       type: object
       required:
@@ -279,3 +352,5 @@ paths:
     $ref: ./openapi/paths/admin-products.yaml
   /admin/products/{id}:
     $ref: ./openapi/paths/admin-products-id.yaml
+  /products/{slug}:
+    $ref: ./openapi/paths/storefront-products-slug.yaml

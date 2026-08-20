@@ -4,20 +4,20 @@ get:
   summary: Obtener producto (AC-3)
   description: Devuelve un producto por id.
   parameters:
-  - $ref: '#/components/parameters/Id'
+  - $ref: '../../openapi.yaml#/components/parameters/Id'
   responses:
     '200':
       description: OK
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Product'
+            $ref: '../../openapi.yaml#/components/schemas/Product'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '404':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
 patch:
   tags:
   - admin-products
@@ -25,27 +25,27 @@ patch:
   description: 'Sin `status`: edita campos (AC-3). Con `status`: transición de estado (publicar/archivar/despublicar);
     publicar incompleto → 422 y permanece draft.'
   parameters:
-  - $ref: '#/components/parameters/Id'
+  - $ref: '../../openapi.yaml#/components/parameters/Id'
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/UpdateProduct'
+          $ref: '../../openapi.yaml#/components/schemas/UpdateProduct'
   responses:
     '200':
       description: OK
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Product'
+            $ref: '../../openapi.yaml#/components/schemas/Product'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '404':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '409':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '422':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'

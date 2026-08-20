@@ -4,23 +4,23 @@ patch:
   summary: Editar categoría (AC-1)
   description: Actualiza el nombre/parent de una categoría.
   parameters:
-  - $ref: '#/components/parameters/Id'
+  - $ref: '../../openapi.yaml#/components/parameters/Id'
   requestBody:
     required: true
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/UpdateCategory'
+          $ref: '../../openapi.yaml#/components/schemas/UpdateCategory'
   responses:
     '200':
       description: OK
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Category'
+            $ref: '../../openapi.yaml#/components/schemas/Category'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '404':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'

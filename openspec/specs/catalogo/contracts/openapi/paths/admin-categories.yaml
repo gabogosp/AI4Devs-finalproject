@@ -8,22 +8,22 @@ post:
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/CreateCategory'
+          $ref: '../../openapi.yaml#/components/schemas/CreateCategory'
   responses:
     '201':
       description: Creada
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Category'
+            $ref: '../../openapi.yaml#/components/schemas/Category'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '409':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '422':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
 get:
   tags:
   - admin-categories
@@ -37,8 +37,8 @@ get:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/Category'
+              $ref: '../../openapi.yaml#/components/schemas/Category'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'

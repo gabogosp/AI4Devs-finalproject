@@ -10,18 +10,18 @@ post:
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/AdminLogin'
+          $ref: '../../openapi.yaml#/components/schemas/AdminLogin'
   responses:
     '200':
       description: OK
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/AdminLoginResponse'
+            $ref: '../../openapi.yaml#/components/schemas/AdminLoginResponse'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '422':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '429':
       description: Rate limit de la superficie de auth excedido (security-standards §7.3). Incluye `Retry-After`
         y las cabeceras `RateLimit-*` (api-standards §12).
@@ -42,6 +42,6 @@ post:
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Problem'
+            $ref: '../../openapi.yaml#/components/schemas/Problem'
     '503':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'

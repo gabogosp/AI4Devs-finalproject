@@ -8,22 +8,22 @@ post:
     content:
       application/json:
         schema:
-          $ref: '#/components/schemas/CreateProduct'
+          $ref: '../../openapi.yaml#/components/schemas/CreateProduct'
   responses:
     '201':
       description: Creado
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Product'
+            $ref: '../../openapi.yaml#/components/schemas/Product'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '409':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '422':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
 get:
   tags:
   - admin-products
@@ -48,8 +48,8 @@ get:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ProductList'
+            $ref: '../../openapi.yaml#/components/schemas/ProductList'
     '401':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
     '403':
-      $ref: '#/components/responses/Problem'
+      $ref: '../../openapi.yaml#/components/responses/Problem'
