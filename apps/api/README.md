@@ -87,8 +87,120 @@ envelope RFC 7807 con `type` `dsm:catalog/*`.
 
 ## Auth (seam ADR-0009)
 
-`AdminGuard` valida un JWT `role=admin` firmado con `JWT_SECRET`. La emisión
-interina (`AdminAuthService`, detrás de `ADMIN_AUTH_ENABLED` +
-`ADMIN_BOOTSTRAP_TOKEN`) es mínima; **US-014** la endurece (login, cookie
-httpOnly, refresh rotado, rate-limit, 2FA) preservando el contrato `role=admin`
-sin reescribir el guard.
+`AdminGuard` valida un JWT `role=admin` firmado con `JWT_SECRET`. **US-014**
+endureció la **emisión** preservando el contrato `role=admin` — el guard no se
+tocó, y hay una verificación en el plan que lo prueba contra el rango de commits
+del change.
+
+`POST /v1/admin/auth/login` acepta **dos** formas, en la misma ruta y con la
+misma respuesta `{ token }`:
+
+- `{ email, password }` de una cuenta con `role='admin'` (el camino normal desde
+  US-014). Además de `{ token }`, emite las cookies de sesión.
+- `{ bootstrapToken }` — el camino interino de US-001, detrás de
+  `ADMIN_AUTH_ENABLED`. Queda como **salida de emergencia**.
+
+Las credenciales de una cuenta que existe pero **no** es admin devuelven el mismo
+`401` que una contraseña incorrecta: decir "esta cuenta no es admin" confirmaría
+que existe.
+
+### Procedimiento de corte del bootstrap token
+
+1. Sembrar la cuenta admin:
+   `ADMIN_SEED_EMAIL=... ADMIN_SEED_PASSWORD=... pnpm --filter @dsm/db seed`
+   (idempotente; sin ambas variables no siembra admin y tampoco falla).
+2. Verificar el login por credenciales contra `POST /v1/admin/auth/login` y que
+   el token devuelto abra `GET /v1/admin/categories`.
+3. Recién entonces, `ADMIN_AUTH_ENABLED=false`.
+
+El orden importa: invertir 2 y 3 deja el panel inaccesible si la siembra falló.
+El bootstrap token no se borra — es el único camino de vuelta si la cuenta admin
+queda inaccesible (contraseña perdida, fila borrada).
+
+## Auth de cliente (US-014)
+
+Siete rutas bajo `/v1/auth`, declaradas en `docs/api/openapi.yaml` con el tag
+`customer-auth`:
+
+| Ruta | Código | Notas |
+|---|---|---|
+| `POST /auth/register` | 201 | Sesión activa inmediata, sin verificación de email |
+| `POST /auth/login` | 200 | |
+| `POST /auth/refresh` | 200 | Rotación + detección de reuso (ADR-0011) |
+| `POST /auth/logout` | 204 | Revoca la familia de refresh |
+| `GET /auth/me` | 200 | |
+| `POST /auth/password-reset/request` | 202 | **Siempre** 202 (anti-enumeración) |
+| `POST /auth/password-reset/confirm` | 200 | Revoca todas las sesiones |
+
+### Cookies
+
+**Ningún token de sesión viaja en el cuerpo.** Se emiten tres cookies (§7.4):
+
+| Cookie | HttpOnly | Path | Vida |
+|---|---|---|---|
+| `dsm_access` | sí | `/` | `AUTH_ACCESS_TTL_MIN` |
+| `dsm_refresh` | sí | `/v1/auth` | `AUTH_REFRESH_TTL_DAYS` |
+| `dsm_csrf` | **no** | `/` | `AUTH_ACCESS_TTL_MIN` |
+
+`dsm_csrf` es legible a propósito: el frontend la lee para reenviarla en el
+header `X-CSRF-Token`. Ahí está el double-submit — un atacante en otro origen
+puede provocar que el navegador **mande** la cookie, pero la política de mismo
+origen le impide **leerla** para poner el header.
+
+`dsm_refresh` se acota a `/v1/auth` para que no viaje en cada petición al
+catálogo. `Secure` sale de `AUTH_COOKIE_SECURE` (default `true`).
+
+### CSRF
+
+`POST /auth/refresh` y `POST /auth/logout` exigen el header `X-CSRF-Token`
+**y** un `Origin` de `CORS_ALLOWED_ORIGINS`. La **ausencia** de `Origin` también
+se rechaza: una escritura autenticada por cookie que no declara origen no es
+verificable. Las rutas no autenticadas (`register`, `login`, los de reset) no lo
+exigen — ahí todavía no hay sesión que secuestrar.
+
+### Rate limit (por IP, throttler `auth`)
+
+| Ruta | Límite |
+|---|---|
+| `login` | 10 / 15 min |
+| `register` | 5 / hora |
+| `password-reset/request` | 5 / hora |
+| `password-reset/confirm` | 10 / hora |
+| `refresh` | 60 / 15 min |
+
+Más un límite **por cuenta** de `PASSWORD_RESET_MAX_PER_HOUR` en el reset: el de
+IP se evade rotando IPs y el de cuenta rotando destinatarios, así que hacen falta
+los dos. Y un **lockout por cuenta** tras `AUTH_LOGIN_MAX_FAILURES` fallos, con
+backoff `min(BASE × 2^(n-1), MAX)` — nunca permanente, para que nadie pueda dejar
+a un usuario fuera de su cuenta fallando el login a propósito.
+
+> ⚠️ **`TRUST_PROXY_HOPS` hay que configurarlo en el deploy.** El rate-limit
+> cuenta por IP, y detrás de un CDN Express devuelve la IP del proxy para
+> **todos** los clientes: el límite se volvería global. El default es `0` porque
+> el riesgo inverso es peor —confiar de más deja falsificar `X-Forwarded-For` y
+> evadir el límite por completo—, así que en producción detrás de Cloudflare va
+> `TRUST_PROXY_HOPS=1`.
+
+### Variables de entorno
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `AUTH_ACCESS_TTL_MIN` | 15 | Vida del access |
+| `AUTH_REFRESH_TTL_DAYS` | 30 | Vida del refresh |
+| `AUTH_COOKIE_SECURE` | `true` | Flag `Secure` de las cookies |
+| `AUTH_LOGIN_MAX_FAILURES` | 5 | Fallos antes del lockout |
+| `AUTH_LOCKOUT_BASE_MIN` | 15 | Primer bloqueo |
+| `AUTH_LOCKOUT_MAX_MIN` | 60 | Tope del backoff |
+| `PASSWORD_RESET_TTL_MIN` | 60 | Vida del token de reset |
+| `PASSWORD_RESET_MAX_PER_HOUR` | 3 | Emisiones por cuenta |
+| `BCRYPT_COST` | 12 | Costo del hash |
+| `TRUST_PROXY_HOPS` | 0 | Saltos de proxy confiables (ver aviso) |
+| `RESEND_API_KEY` | — | Envío real del email de reset |
+| `PASSWORD_RESET_FROM` | — | Remitente |
+| `PASSWORD_RESET_URL_BASE` | — | Base del enlace del email |
+
+Las tres últimas son opcionales **fuera** de producción: sin `RESEND_API_KEY` se
+usa el adapter de log, que escribe el token en el log para poder probar en local.
+Con `NODE_ENV=production` y alguna faltante, **el arranque falla** — un deploy mal
+configurado caería al adapter de log y el reset "funcionaría" sin enviar un solo
+email, que nadie notaría hasta que un cliente no pueda recuperar su cuenta.

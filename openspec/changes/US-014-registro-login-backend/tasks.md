@@ -623,7 +623,7 @@ language: es
 
 ## Fase 11: Contratos y documentación — 0,3 h
 
-- [ ] T11.1 Siete contratos OpenAPI draft (1 por endpoint) + lint
+- [x] T11.1 Siete contratos OpenAPI draft (1 por endpoint) + lint
   - **Pattern**: un yaml autocontenido por endpoint en `contracts/openapi/`
     (`auth-register`, `auth-login`, `auth-refresh`, `auth-logout`, `auth-me`,
     `auth-password-reset-request`, `auth-password-reset-confirm`) con
@@ -647,7 +647,7 @@ language: es
     sincroniza `openspec/specs/` y necesita saberlo.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-014-registro-login-backend/contracts/openapi/*.yaml`
 
-- [ ] T11.2 Spec publicado del servicio + README
+- [x] T11.2 Spec publicado del servicio + README
   - **Pattern**: en `apps/api/docs/api/openapi.yaml` el `/v1` vive en `servers`, así
     que los paths se declaran **sin** el prefijo (`/auth/login`, no
     `/v1/auth/login`) — `per api-standards.md §5 — el contrato declara todo campo y
