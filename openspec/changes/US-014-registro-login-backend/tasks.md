@@ -581,7 +581,7 @@ language: es
 
 ## Fase 10: Cobertura e2e de los AC — 0,6 h
 
-- [ ] T10.1 e2e de registro y login (AC-1, AC-2, AC-8)
+- [x] T10.1 e2e de registro y login (AC-1, AC-2, AC-8)
   - **Exit criterion**: alta con email nuevo → 201, fila creada con
     `password_hash` que **no** es la contraseña, y sesión activa inmediata
     (`GET /v1/auth/me` con las cookies de la respuesta → 200) **sin** verificación
@@ -590,7 +590,7 @@ language: es
     (AC-8).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-auth-register`
 
-- [ ] T10.2 e2e de sesión: logout, refresh, rotación y reuso (AC-3, AC-9)
+- [x] T10.2 e2e de sesión: logout, refresh, rotación y reuso (AC-3, AC-9)
   - **Exit criterion**: `POST /logout` → 204 y, tras él, el refresh usado ya no
     renueva (401) y `GET /me` con esa cookie de refresh no reabre sesión (AC-3);
     `POST /refresh` devuelve cookies **nuevas** y el refresh anterior deja de
@@ -600,7 +600,7 @@ language: es
     y el access **no** viaja en el cuerpo (AC-9).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-auth-session`
 
-- [ ] T10.3 e2e de recuperación de contraseña (AC-4, AC-7, AC-11)
+- [x] T10.3 e2e de recuperación de contraseña (AC-4, AC-7, AC-11)
   - **Exit criterion**: `request` → 202; con el token capturado del adapter de log,
     `confirm` fija la contraseña nueva y el login con la vieja falla y con la nueva
     funciona (AC-4); reusar el mismo token → 400 `dsm:auth/invalid-reset-token`, y
