@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { categoriesStorefrontService } from '@/features/storefront/categoriesStorefrontService';
 import { ProductCard } from '@/features/storefront/ProductCard';
@@ -103,8 +104,28 @@ export default async function CategoryPage({
         {category.name}
       </h1>
 
+      {/* Los subrubros se listan SIEMPRE que existan, no sólo cuando la
+          categoría está vacía: AC-1 dice "subrubros **y/o** productos", y un
+          rubro con productos agregados igual tiene que dejar bajar un nivel. */}
+      {category.children.length > 0 && (
+        <nav aria-label="Subrubros">
+          <ul className="flex flex-wrap gap-3 text-sm">
+            {category.children.map((sub) => (
+              <li key={sub.slug}>
+                <Link
+                  href={`/categorias/${sub.slug}`}
+                  className="inline-flex min-h-[44px] items-center rounded-md border border-border px-3 focus:outline-none focus-visible:shadow-focus"
+                >
+                  {sub.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+
       {data.length === 0 && (
-        <CategoryEmptyState subcategories={category.children} />
+        <CategoryEmptyState />
       )}
 
       {data.length > 0 && (

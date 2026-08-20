@@ -1,16 +1,15 @@
 import Link from 'next/link';
 import { PackageOpen } from 'lucide-react';
-import type { CategoryRef } from '@/api/generated/model';
 
 /**
  * Estado vacío de una categoría (AC-6).
  *
  * Nunca un vacío mudo: ícono + mensaje + **camino de salida** real
- * (design-system §10.1). Un rubro con subrubros pero sin productos propios
- * ofrece sus subrubros —AC-1 dice "subrubros **y/o** productos"—; siempre
- * queda además el link a todos los rubros.
+ * (design-system §10.1). Los subrubros los lista la propia página encima de
+ * este bloque —siempre que existan, no sólo cuando está vacía—, así que acá
+ * sólo va la salida general para no duplicar los mismos links.
  */
-export function CategoryEmptyState({ subcategories }: { subcategories: CategoryRef[] }) {
+export function CategoryEmptyState() {
   return (
     <section className="flex flex-col items-start gap-4 rounded-lg bg-gray-50 p-8">
       <PackageOpen className="h-12 w-12 text-gray-400" aria-hidden="true" />
@@ -18,20 +17,6 @@ export function CategoryEmptyState({ subcategories }: { subcategories: CategoryR
         Todavía no hay productos publicados en esta categoría.
       </p>
 
-      {subcategories.length > 0 && (
-        <ul className="flex flex-wrap gap-3 text-sm">
-          {subcategories.map((sub) => (
-            <li key={sub.slug}>
-              <Link
-                href={`/categorias/${sub.slug}`}
-                className="focus:outline-none focus-visible:shadow-focus"
-              >
-                {sub.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
 
       <Link
         href="/"

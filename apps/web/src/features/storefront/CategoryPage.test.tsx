@@ -172,10 +172,7 @@ describe('CategoryPage (AC-9, AC-10)', () => {
     ).toBeInTheDocument();
     // Un vacío mudo dejaría al cliente sin camino: tiene que poder seguir
     // navegando por los subrubros o volver a los rubros.
-    expect(screen.getByRole('link', { name: 'Compresores' })).toHaveAttribute(
-      'href',
-      '/categorias/compresores',
-    );
+    expect(screen.getByRole('navigation', { name: 'Subrubros' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver todos los rubros' })).toHaveAttribute(
       'href',
       '/',
@@ -189,5 +186,30 @@ describe('CategoryPage (AC-9, AC-10)', () => {
     render(await CategoryPage({ params }));
 
     expect(screen.getByRole('link', { name: 'Ver todos los rubros' })).toBeInTheDocument();
+  });
+
+  it('lista los subrubros aunque la categoría TENGA productos (AC-1: y/o)', async () => {
+    categoryResult = {
+      ok: true,
+      value: {
+        slug: 'climatizacion',
+        name: 'Climatización',
+        parent: null,
+        children: [{ slug: 'compresores', name: 'Compresores' }],
+      },
+    };
+    productsResult = {
+      data: [gridItem()],
+      pagination: { limit: 20, offset: 0, total: 1 },
+    };
+
+    render(await CategoryPage({ params }));
+
+    // Un rubro que agrega productos igual tiene que dejar bajar un nivel.
+    expect(screen.getByRole('navigation', { name: 'Subrubros' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Compresores' })).toHaveAttribute(
+      'href',
+      '/categorias/compresores',
+    );
   });
 });
