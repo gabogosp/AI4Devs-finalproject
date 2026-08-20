@@ -245,3 +245,58 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-018-contacto-whatsapp-frontend-web
+  us-id: US-018
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-018-contacto-whatsapp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 3,2 h AI-asistido / ~5,5 h tradicional (11 tasks + 3 pre-requisitos). US §7 presupuesta
+  # FE-US-018 en 2-4 h tradicional: se excede ~1,5 h porque AC-1 exige un FOOTER que no existe
+  # en la app (design-system §7.10 le da contenido propio) y AC-5 obliga a extraer la
+  # composición del enlace que US-003 dejó inline en la ficha (refactor + re-verificación de
+  # superficie entregada). En sentido contrario, AC-2 y AC-3 ya están construidos por US-003 y
+  # no cuestan nada — sin eso el plan rondaría las 8 h. Si OQ-FE-12 y OQ-FE-13 se ratifican
+  # como "(a) no hacer nada", caen T5.1/T5.2 y el total baja a 2,7 h / ~4,7 h.
+  # SECUENCIA: P1 bloquea hasta que US-002-frontend-web cierre y `apps/web` quede limpio
+  # (comparten working tree, el layout (storefront) y el README). La ventana se cerró durante
+  # el planning — al cerrar, US-002 FE sin tasks abiertas y apps/web limpio (9da1e86) — pero
+  # el gate se conserva y se re-corre al ejecutar: siguen activas US-014 y US-006 en apps/api.
+  estimate-hours: 3.2
+  assignee: 9a385021
+  branch: null
+  pr-url: null
+  created: 2026-08-19
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-006-import-masivo-inventario-backend
+  us-id: US-006
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-006-import-masivo-inventario.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 9,5 h AI-asistido / ~19 h tradicional (26 tasks). US §7 presupuesta BE-US-006 en 12-16 h:
+  # el tradicional excede el techo ~3 h por trabajo que la US daba por resuelto con BullMQ —
+  # el modelo de trabajo en Postgres (2 tablas), el runner por lotes, el heartbeat/reaper y
+  # los dos endpoints de lectura de progreso y reporte. Con la cola aprovisionada ese trabajo
+  # lo habría aportado la infraestructura.
+  # BLOQUEO DE ARRANQUE: OQ-BE-1 (modo de ejecución — async in-process vs BullMQ vs síncrono)
+  # es decisión del PO y T0.1 no arranca sin ella. El plan está escrito bajo la recomendación
+  # (contrato asíncrono + ejecutor in-process, ADR-0012 enmendando ADR-0004).
+  estimate-hours: 9.5
+  assignee: bce7ffb7
+  branch: null
+  pr-url: null
+  created: 2026-08-19
+  completed-at: null
+  archived-at: null
+  archive-path: null

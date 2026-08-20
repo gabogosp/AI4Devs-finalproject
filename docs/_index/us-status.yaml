@@ -63,7 +63,7 @@
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
-  status: Ready
+  status: In Progress
   priority: Medium
   prd-capacity: 7
   disciplines: [BE, FE, QA]
@@ -71,6 +71,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-19        # first plan invocation (backend-node-developer)
   blocked_by: [US-001]
 - id: US-007
   slug: carrito-compra
@@ -204,6 +205,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-19        # first plan invocation (frontend-web-developer)
   blocked_by: [US-001]
 - id: US-019
   slug: provision-plataforma-cloud
