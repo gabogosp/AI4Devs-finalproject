@@ -6,6 +6,15 @@ import { z } from 'zod';
  * NO levanta con configuración a medias.
  */
 export const envSchema = z.object({
+  /**
+   * Entorno de ejecución. No estaba declarado hasta T7.2, y hacía falta: sin él
+   * el refinement de producción de abajo no tendría contra qué comparar y sería
+   * letra muerta. `development` por defecto — el default seguro es el que NO
+   * activa las exigencias de producción por accidente en local.
+   */
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
+    .default('development'),
   DATABASE_URL: z.string().min(1, 'requerida'),
   JWT_SECRET: z.string().min(1, 'requerida'),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -40,6 +49,34 @@ export const envSchema = z.object({
   PASSWORD_RESET_TTL_MIN: z.coerce.number().int().positive().default(60),
   PASSWORD_RESET_MAX_PER_HOUR: z.coerce.number().int().positive().default(3),
   BCRYPT_COST: z.coerce.number().int().positive().default(12),
+
+  // T7.2 — entrega real del email de recuperación (decisión del PO, 2026-08-19).
+  // Opcionales a nivel de campo, pero NO en producción: el refinement de abajo
+  // hace fallar el arranque si faltan con `NODE_ENV=production`.
+  RESEND_API_KEY: z.string().min(1).optional(),
+  PASSWORD_RESET_FROM: z.string().email().optional(),
+  /** Base del enlace del email — el reset se completa en el frontend. */
+  PASSWORD_RESET_URL_BASE: z.string().url().optional(),
+}).superRefine((env, ctx) => {
+  // Sin esto, un deploy mal configurado caería al adapter de log y el flujo de
+  // recuperación "funcionaría" sin enviar un solo email. Nadie se entera hasta
+  // que un cliente no puede recuperar su cuenta — peor que no arrancar.
+  if (env.NODE_ENV !== 'production') return;
+
+  for (const campo of [
+    'RESEND_API_KEY',
+    'PASSWORD_RESET_FROM',
+    'PASSWORD_RESET_URL_BASE',
+  ] as const) {
+    if (!env[campo]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [campo],
+        message:
+          'requerida en producción: sin ella el reset caería al adapter de log y no se enviaría ningún email',
+      });
+    }
+  }
 });
 
 /** Parsea la allowlist de CORS a orígenes exactos, sin vacíos. */

@@ -491,7 +491,7 @@ language: es
     contiene el token ni el email; con `'test'` sí contiene el token; un mailer que
     lanza no altera el resultado de `request`)
 
-- [ ] T7.2 `ResendPasswordResetMailer` (adapter real) + selección por entorno
+- [x] T7.2 `ResendPasswordResetMailer` (adapter real) + selección por entorno
   - **Pattern**: segundo adapter del mismo puerto, registrado por factory según
     `RESEND_API_KEY` presente/ausente — `per backend-node-standards.md §3 —
     depender del token de inyección, no de la clase concreta`. El service **no se
@@ -673,7 +673,7 @@ language: es
 | AC-1 (registro con login inmediato) | T0.2, T1.1, T1.2, T2.1, T3.1, T3.3, T5.1, T5.2, T10.1 | en este change |
 | AC-2 (login con credenciales válidas) | T3.2, T3.3, T4.3, T5.2, T10.1 | en este change |
 | AC-3 (logout invalida la sesión) | T0.2, T2.2, T3.3, T5.2, T10.2 | en este change — ventana residual del access ≤ 15 min, declarada |
-| AC-4 (recuperación de contraseña) | T1.4, T2.3, T3.4, T7.1, T10.3 | **parcial en este change**: backend completo (emisión, hash, expiración, uso único, revocación de sesiones); el **envío del email al cliente** es `Deferred: US-011` ⇒ el flujo no es alcanzable en producción hasta entonces (OQ-BE-1) |
+| AC-4 (recuperación de contraseña) | T1.4, T2.3, T3.4, T7.1, T7.2, T10.3 | **completo en este change** desde la decisión del PO del 2026-08-19: backend (emisión, hash, expiración, uso único, revocación de sesiones) **y entrega real del email** (adapter Resend, T7.2). La resolución previa lo dejaba parcial con el envío `Deferred: US-011`; queda anulada |
 | AC-5 (login inválido genérico) | T3.2, T4.1, T6.2 | en este change |
 | AC-6 (registro con email existente) | T2.1, T3.1, T6.2 | en este change — límite documentado (OQ-BE-5) |
 | AC-7 (token de reset expirado o usado) | T2.3, T3.4, T10.3 | en este change |
@@ -700,7 +700,7 @@ language: es
 | CSRF double-submit firmado + chequeo de `Origin` (§7.5) | T4.4, T5.3 | en este change |
 | `X-CSRF-Token` en la allowlist de CORS (§7.2) | T5.3 | en este change |
 | Presupuestos de rate-limit por ruta sobre el throttler `auth` (§7.3) | T6.1 | en este change |
-| Puerto `PasswordResetMailer` | T7.1 | en este change (sólo el puerto + adapter de log). Adapter Resend y entrega real del email: `Deferred: US-011 — owner: PO` |
+| Puerto `PasswordResetMailer` + **dos** adapters (log para dev/test, Resend para producción) | T7.1, T7.2 | en este change — el diferimiento a US-011 quedó anulado por la decisión del PO del 2026-08-19 |
 | Endurecimiento del seam admin sin tocar `AdminGuard` (ADR-0009) | T8.1, T8.2 | en este change — alcance ratificado por el PO (OQ-BE-3) |
 | 8 eventos de auth sin PII, sin cardinalidad por usuario (E2E §18) | T9.1 | en este change |
 | Contratos: 7 yaml + spec publicado + README (capacidad `cuentas`) | T11.1, T11.2 | en este change |
