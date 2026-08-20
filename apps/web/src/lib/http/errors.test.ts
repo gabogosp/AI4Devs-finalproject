@@ -41,3 +41,33 @@ describe('mapProblemToAppError (RFC 7807 → AppError)', () => {
     expect(networkError().kind).toBe('network');
   });
 });
+
+describe('429 — rate limit (transitorio, no fallo del servidor)', () => {
+  it('se mapea a `rateLimited`, no a `server`', () => {
+    // Antes caía en el `default` y, al no ser >= 500, salía como `server`. La
+    // página lo relanzaba y el boundary lo convertía en un 500 — el peor código
+    // posible en las páginas que existen para ser indexadas.
+    const err = mapProblemToAppError(429, { detail: 'Demasiadas solicitudes' }, 30);
+
+    expect(err.kind).toBe('rateLimited');
+    expect(err.kind).not.toBe('server');
+  });
+
+  it('conserva el Retry-After que manda el backend', () => {
+    const err = mapProblemToAppError(429, {}, 30);
+
+    expect(err).toMatchObject({ kind: 'rateLimited', retryAfterSeconds: 30 });
+  });
+
+  it('sin Retry-After sigue siendo rateLimited, sin inventar un número', () => {
+    const err = mapProblemToAppError(429, {});
+
+    expect(err).toMatchObject({ kind: 'rateLimited' });
+    expect((err as { retryAfterSeconds?: number }).retryAfterSeconds).toBeUndefined();
+  });
+
+  it('un 5xx real sigue siendo `server` — el 429 no se lleva puesto ese caso', () => {
+    expect(mapProblemToAppError(500, {}).kind).toBe('server');
+    expect(mapProblemToAppError(503, {}).kind).toBe('server');
+  });
+});

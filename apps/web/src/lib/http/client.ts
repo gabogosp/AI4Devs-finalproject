@@ -100,7 +100,16 @@ export async function customFetch<T>(
     } catch {
       body = undefined;
     }
-    throw new AppErrorException(mapProblemToAppError(res.status, body));
+    // El backend manda `Retry-After` en los 429; sin leerlo acá se pierde y la
+    // UI no puede decirle al cliente cuánto esperar.
+    const retryAfter = Number(res.headers.get('retry-after'));
+    throw new AppErrorException(
+      mapProblemToAppError(
+        res.status,
+        body,
+        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined,
+      ),
+    );
   }
 
   const text = [204, 205, 304].includes(res.status) ? '' : await res.text();

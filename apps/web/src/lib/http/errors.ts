@@ -10,6 +10,8 @@ export type AppError =
   | { kind: 'unauthorized'; message: string }
   | { kind: 'forbidden'; message: string }
   | { kind: 'notFound'; message: string }
+  /** 429: el backend pide esperar. Transitorio y esperado, NO un fallo. */
+  | { kind: 'rateLimited'; message: string; retryAfterSeconds?: number }
   | { kind: 'network'; message: string }
   | { kind: 'server'; message: string };
 
@@ -22,7 +24,11 @@ interface ProblemBody {
 }
 
 /** Mapea el envelope RFC 7807 (`application/problem+json`) a un `AppError` tipado. */
-export function mapProblemToAppError(status: number, body: unknown): AppError {
+export function mapProblemToAppError(
+  status: number,
+  body: unknown,
+  retryAfterSeconds?: number,
+): AppError {
   const p: ProblemBody =
     typeof body === 'object' && body !== null ? (body as ProblemBody) : {};
   const message = p.detail || p.title || 'Ocurrió un error';
@@ -38,6 +44,14 @@ export function mapProblemToAppError(status: number, body: unknown): AppError {
       return { kind: 'forbidden', message };
     case 404:
       return { kind: 'notFound', message };
+    case 429:
+      // Sin este caso, un 429 caía en el `default` y —al no ser >= 500— salía
+      // como `server`, que la página relanza y el boundary convierte en un
+      // **500**. Eso es lo peor posible justo en las páginas que existen para
+      // ser indexadas: un buscador que crawlea durante una ráfaga ve 5xx y
+      // termina sacando URLs del índice. Además tiraba el `Retry-After` que el
+      // backend manda a propósito.
+      return { kind: 'rateLimited', message, retryAfterSeconds };
     default:
       return status >= 500
         ? { kind: 'server', message: 'Ocurrió un error en el servidor' }
