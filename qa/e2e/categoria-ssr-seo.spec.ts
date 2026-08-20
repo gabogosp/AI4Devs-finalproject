@@ -115,18 +115,46 @@ test('TC-203: cada categoría trae metadatos propios, no los del sitio (AC-4)', 
   expect(html).toMatch(/<meta name="description"[^>]*content="[^"]+"/);
 });
 
-// Bloqueado por implementación: el sitemap es la Fase 5 del change de FE-US-002,
-// todavía abierta. `test.fixme` con la forma (título, fn) marca SÓLO este test;
-// la forma (condición, motivo) a nivel de archivo saltaba los ocho.
-test.fixme('TC-204: el sitemap lista las categorías publicadas (AC-4)', async ({ page }) => {
+test('TC-204: el sitemap cubre el catálogo y no anuncia URLs muertas (AC-4)', async ({
+  page,
+  request,
+}) => {
   const res = await page.goto('/sitemap.xml');
   expect(res?.status()).toBe(200);
-
   const xml = await res!.text();
-  expect(xml).toContain(`/categorias/${seed.rubro.slug}`);
-  expect(xml).toContain(`/categorias/${seed.subrubro.slug}`);
-  // Una categoría inexistente no puede estar: sería una URL fantasma indexable.
+
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  expect(locs.length).toBeGreaterThan(0);
+
+  // La home entra: es la raíz del árbol de navegación.
+  expect(locs.some((u) => new URL(u).pathname === '/')).toBe(true);
+
+  // Absolutas y del mismo origen: un sitemap con URLs relativas o apuntando a
+  // localhost desde producción es inútil para un buscador. Este assert es el
+  // que atraparía el modo de falla de `NEXT_PUBLIC_SITE_URL` sin definir en el
+  // paso de build del pipeline.
+  const origen = new URL(page.url()).origin;
+  for (const u of locs) {
+    expect(u).toMatch(/^https?:\/\//);
+    expect(new URL(u).origin).toBe(origen);
+  }
+
+  // Ninguna URL anunciada puede estar muerta: una entrada que devuelve 404 es
+  // una promesa rota al crawler y castiga el dominio entero.
+  for (const u of locs) {
+    const r = await request.get(u);
+    expect(r.status(), `el sitemap anuncia ${u} y responde ${r.status()}`).toBe(200);
+  }
+
+  // Y ninguna categoría inexistente puede aparecer.
   expect(xml).not.toContain('/categorias/no-existe-jamas');
+
+  // NO se asserta que la categoría recién sembrada figure acá: el catálogo se
+  // cachea 3600 s y sembrar por la API **no** invalida el frontend (la
+  // invalidación está cableada a la UI del panel). Esperar el TTL no es una
+  // prueba, es una espera de una hora. Que una publicación nueva llegue al
+  // sitemap lo cubre el E2E de invalidación, que muta por el panel — el camino
+  // real. Ver OBS-2 del reporte.
 });
 
 test('TC-206: el HTML servido no contiene draft ni archivados (AC-8)', async ({

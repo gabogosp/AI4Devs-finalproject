@@ -179,7 +179,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "AC-4 — metadatos"
   name: Categoria_Html_TitleYMetaDescriptionPropiosDeLaCategoria
 
-- id: TC-204   # [ ] BLOQUEADO por implementacion: sitemap = Fase 5 del change FE, abierta
+- id: TC-204   # [x] verde 2026-08-19 (cobertura + ninguna URL muerta; ver OBS-2)
   scenario: S-4
   execution_mode: automated
   test_layer: 3
