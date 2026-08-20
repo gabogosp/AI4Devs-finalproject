@@ -144,8 +144,13 @@ language: es
     (integration: insertar `'  Ana.Perez@Example.COM '` y luego buscar por
     `'ana.perez@example.com'` devuelve la fila; un segundo insert con la variante
     en mayúsculas viola el UNIQUE)
+  - **Nota de ejecución (2026-08-19)**: el `Verify:` de esta task apunta a un
+    archivo que crea **T2.1**, así que T1.3 no puede cerrarse antes que T2.1 pese
+    a estar antes en el plan. El código y su unit test (`normalize-email.spec.ts`)
+    se entregaron acá; la task se marca al correr el spec del repositorio. Es una
+    inversión de orden del plan, no un bloqueo — anotada por si se repite.
 
-- [ ] T1.4 Tokens opacos: generación CSPRNG + hash de reposo
+- [x] T1.4 Tokens opacos: generación CSPRNG + hash de reposo
   - **Pattern**: `randomBytes(32).toString('base64url')` para el claro y
     `createHash('sha256').update(raw).digest('hex')` para el reposo — `per
     security-standards.md §3.7 — token de un solo uso ≥ 128 bits de un CSPRNG,
