@@ -265,7 +265,7 @@ language: es
     logout ⇒ el refresh vigente deja de rotar; claims del access verificados con
     `algorithms:['HS256']`, `issuer`, `audience`)
 
-- [ ] T3.4 `PasswordResetService` (AC-4, AC-7, AC-11)
+- [x] T3.4 `PasswordResetService` (AC-4, AC-7, AC-11)
   - **Pattern**: `request` responde igual exista o no la cuenta y despacha el mail
     **fuera de banda**; `confirm` corre en `$transaction`: actualizar hash +
     `password_changed_at`, `markUsed`, `deleteAllForCustomer`,
@@ -472,7 +472,7 @@ language: es
 > conviene anotarlo en US-011 antes de planificarla; (c) el puerto sigue siendo el
 > diseño correcto y no cambia: lo que cambia es que ahora hay **dos** adapters.
 
-- [ ] T7.1 `PasswordResetMailer` (puerto) + `LoggingPasswordResetMailer` (adapter)
+- [x] T7.1 `PasswordResetMailer` (puerto) + `LoggingPasswordResetMailer` (adapter)
   - **Pattern**: interfaz + token de inyección (`provide: PASSWORD_RESET_MAILER`),
     inyectada por el service — `per backend-node-standards.md §3 — depender de
     interfaces/tokens, no de clases concretas, donde ayuda a sustituir/testear`.
@@ -482,7 +482,10 @@ language: es
     además escribe el token en claro para poder ejercer AC-4 en local/tests, y con
     `NODE_ENV === 'production'` **no** lo escribe; un fallo del mailer **no**
     cambia la respuesta 202 ni propaga excepción al cliente (se loguea).
-    `Deferred: adapter Resend — US-011` queda anotado en el código y en el README.
+    ~~`Deferred: adapter Resend — US-011` queda anotado en el código y en el
+    README.~~ **Anulado por la decisión del PO del 2026-08-19**: el adapter Resend
+    entra en T7.2, así que no hay diferimiento que anotar. El de log pasa a ser el
+    adapter de **desarrollo y test**, no el de producción.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=password-reset.service`
     (los casos del mailer: con `NODE_ENV='production'` el log capturado **no**
     contiene el token ni el email; con `'test'` sí contiene el token; un mailer que
