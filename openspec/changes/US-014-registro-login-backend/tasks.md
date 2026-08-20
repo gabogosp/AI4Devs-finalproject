@@ -519,7 +519,7 @@ language: es
 > y su respuesta `{ token }` — aditivo, con churn cero en FE-US-001. Cierra el
 > criterio de validación de ADR-0009.
 
-- [ ] T8.1 Login admin por credenciales, preservando el contrato `role=admin`
+- [x] T8.1 Login admin por credenciales, preservando el contrato `role=admin`
   - **Pattern**: `AdminLoginDto` pasa a aceptar `{ bootstrapToken }` **o**
     `{ email, password }` (validación condicional), y `AdminAuthService` delega en
     `CredentialsService` cuando llegan credenciales — `per ADR-0009 — US-014
@@ -537,11 +537,21 @@ language: es
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-auth-admin-credentials`
     (e2e: login por credenciales admin → 200 con `token` que abre
     `GET /v1/admin/categories`; credenciales de cliente → 401 idéntico al de
-    contraseña incorrecta; el bootstrap token sigue devolviendo 200) `&& git diff --exit-code "$(git merge-base HEAD main)" -- apps/api/src/auth/admin.guard.ts`
-    (el diff contra la base de la rama prueba que el guard **no** cambió, aunque el
-    trabajo ya esté commiteado — un `git diff` a secas daría verde siempre)
+    contraseña incorrecta; el bootstrap token sigue devolviendo 200) `&& [ -z "$(git log --oneline d0b5105^..HEAD -- apps/api/src/auth/admin.guard.ts)" ]`
+    (ningún commit de este change tocó el guard)
 
-- [ ] T8.2 Siembra de la cuenta admin + corte documentado del bootstrap
+  - **Corrección del Verify (2026-08-20, al ejecutar)**: la forma original era
+    `git diff --exit-code "$(git merge-base HEAD main)" -- .../admin.guard.ts`, y
+    **no puede dar verde nunca en este repo**: `main` es la plantilla del curso
+    forkeada y no contiene el código del proyecto, así que el merge-base muestra
+    `admin.guard.ts` como archivo **nuevo** y el diff siempre es no vacío. La
+    intención era correcta —probar la no-modificación contra una base fija, no
+    contra el working tree— pero la base elegida no existe acá.
+    Se reemplaza por la base real: el primer commit de este change (`d0b5105`,
+    T0.1). Si el log de ese rango sobre el archivo está vacío, ningún commit de
+    US-014 lo tocó, que es exactamente lo que ADR-0009 exige. Verificado vacío.
+
+- [x] T8.2 Siembra de la cuenta admin + corte documentado del bootstrap
   - **Exit criterion**: `packages/db/prisma/seed.ts` crea/actualiza la fila
     `role='admin'` a partir de `ADMIN_SEED_EMAIL` + `ADMIN_SEED_PASSWORD`
     (idempotente, **sólo** si ambas están presentes; nunca con contraseña
@@ -660,7 +670,7 @@ language: es
 - [ ] Esquema materializado == `design.md` §Persistencia (F40):
       `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=auth-schema`
 - [ ] Contratos válidos: `npx @stoplight/spectral-cli lint openspec/changes/US-014-registro-login-backend/contracts/openapi/*.yaml && npx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml`
-- [ ] **No regresión del seam admin (ADR-0009)**: `git diff --exit-code "$(git merge-base HEAD main)" -- apps/api/src/auth/admin.guard.ts && pnpm --filter @dsm/api test -- --testPathPattern='e2e-rbac|e2e-admin-auth'`
+- [x] **No regresión del seam admin (ADR-0009)**: `[ -z "$(git log --oneline d0b5105^..HEAD -- apps/api/src/auth/admin.guard.ts)" ] && pnpm --filter @dsm/api test -- --testPathPattern='e2e-rbac|e2e-admin-auth'` (base corregida — ver la nota en T8.1)
 - [ ] **Ninguna credencial escapa por respuesta ni por log (AC-8)**: `pnpm --filter @dsm/api test -- --testPathPattern='e2e-auth-observability|e2e-auth-register'` (los dos specs barren el cuerpo de las respuestas y el volcado completo de logs de la corrida buscando la contraseña, el prefijo de hash, el email y los tokens — fallan si aparece cualquiera)
 - [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
 

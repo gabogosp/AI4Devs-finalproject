@@ -5,6 +5,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AdminAuthService } from './admin-auth.service';
+import { CredentialsService } from './credentials.service';
 import { AdminGuard } from './admin.guard';
 
 const SECRET = 'test-secret';
@@ -31,9 +32,12 @@ function contextWith(authorization: string): ExecutionContext {
 
 describe('AdminAuthService seam (admin-token)', () => {
   const jwt = new JwtService({});
+  // Estos tests cubren el camino de bootstrap, que no toca credenciales; el
+  // login por credenciales se verifica en e2e-auth-admin-credentials (T8.1).
+  const credenciales = {} as unknown as CredentialsService;
 
   it('issueAdminToken emite un JWT con role=admin', () => {
-    const svc = new AdminAuthService(jwt, makeConfig());
+    const svc = new AdminAuthService(jwt, makeConfig(), credenciales);
     const token = svc.issueAdminToken();
     const decoded = jwt.verify<{ role: string }>(token, { secret: SECRET });
     expect(decoded.role).toBe('admin');
@@ -41,7 +45,7 @@ describe('AdminAuthService seam (admin-token)', () => {
 
   it('el token emitido es aceptado por AdminGuard', async () => {
     const config = makeConfig();
-    const svc = new AdminAuthService(jwt, config);
+    const svc = new AdminAuthService(jwt, config, credenciales);
     const guard = new AdminGuard(jwt, config);
     const token = svc.issueAdminToken();
     await expect(
@@ -50,7 +54,7 @@ describe('AdminAuthService seam (admin-token)', () => {
   });
 
   it('loginWithBootstrap con seed correcto emite token admin', () => {
-    const svc = new AdminAuthService(jwt, makeConfig());
+    const svc = new AdminAuthService(jwt, makeConfig(), credenciales);
     const token = svc.loginWithBootstrap(BOOTSTRAP);
     expect(jwt.verify<{ role: string }>(token, { secret: SECRET }).role).toBe(
       'admin',
@@ -58,7 +62,7 @@ describe('AdminAuthService seam (admin-token)', () => {
   });
 
   it('loginWithBootstrap con seed incorrecto → 401', () => {
-    const svc = new AdminAuthService(jwt, makeConfig());
+    const svc = new AdminAuthService(jwt, makeConfig(), credenciales);
     expect(() => svc.loginWithBootstrap('wrong')).toThrow(UnauthorizedException);
   });
 });

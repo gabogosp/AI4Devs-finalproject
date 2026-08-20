@@ -1,4 +1,15 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Response } from 'express';
+import { deriveCsrfToken, setSessionCookies } from './cookies';
+import { SessionService } from './session.service';
 import { SkipThrottle } from '@nestjs/throttler';
 import { AuthThrottlerGuard } from './auth-throttler.guard';
 import { AdminAuthService } from './admin-auth.service';
@@ -21,13 +32,60 @@ import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-auth.dto';
 @UseGuards(AuthThrottlerGuard)
 @SkipThrottle({ storefront: true })
 export class AdminAuthController {
-  constructor(private readonly auth: AdminAuthService) {}
+  constructor(
+    private readonly auth: AdminAuthService,
+    private readonly sessions: SessionService,
+    private readonly config: ConfigService,
+  ) {}
 
+  /**
+   * Dos caminos, **una** ruta y **una** forma de respuesta.
+   *
+   * Que el shape sea `{ token }` en los dos casos es lo que hace este cambio
+   * aditivo: el panel de US-001 sigue funcionando sin tocar una línea, que es lo
+   * que ADR-0009 prometió al aceptar el seam interino.
+   */
   @Post('login')
   @HttpCode(200)
-  login(@Body() dto: AdminLoginDto): AdminLoginResponseDto {
+  async login(
+    @Body() dto: AdminLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AdminLoginResponseDto> {
+    if (dto.email && dto.password) {
+      const { token, customer } = await this.auth.loginWithCredentials(
+        dto.email,
+        dto.password,
+      );
+
+      // Además del token en el cuerpo (contrato de US-001), se emiten cookies:
+      // es el camino por el que el panel migrará cuando deje de guardar el token
+      // en memoria. Los dos conviven sin romper a nadie.
+      const session = await this.sessions.issue({
+        id: customer.id,
+        role: customer.role,
+      });
+      setSessionCookies(
+        res,
+        {
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          csrfToken: deriveCsrfToken(
+            session.jti,
+            this.config.getOrThrow<string>('JWT_SECRET'),
+          ),
+        },
+        {
+          accessTtlMin: this.config.get<number>('AUTH_ACCESS_TTL_MIN') ?? 15,
+          refreshTtlDays: this.config.get<number>('AUTH_REFRESH_TTL_DAYS') ?? 30,
+          secure: this.config.get<string>('AUTH_COOKIE_SECURE') !== 'false',
+        },
+      );
+
+      return { token };
+    }
+
     // `loginWithBootstrap` lanza 401 (token inválido) o 503 (auth deshabilitada);
     // el filtro RFC 7807 los traduce sin filtrar detalle del seam.
-    return { token: this.auth.loginWithBootstrap(dto.bootstrapToken) };
+    return { token: this.auth.loginWithBootstrap(dto.bootstrapToken ?? '') };
   }
 }

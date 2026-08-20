@@ -1,6 +1,7 @@
 // Seed idempotente de datos de demo (Q-C). Re-correrlo no duplica ni falla:
 // usa upsert por clave natural (slug de categoría, sku de producto).
 import { PrismaClient } from "@prisma/client";
+import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
@@ -39,7 +40,51 @@ async function main() {
     });
   }
 
+  await seedAdmin();
+
   console.log(`Seed OK: ${categories.length} categorías, ${products.length} productos.`);
+}
+
+/**
+ * Cuenta admin para el login por credenciales (US-014 T8.2, ADR-0009).
+ *
+ * Sólo corre si **ambas** variables están presentes. Nada de contraseña por
+ * defecto en el repo: una credencial hardcodeada termina en producción sin que
+ * nadie la cambie, y el panel es el blanco más valioso del sistema. Si faltan,
+ * el seed no crea admin y **tampoco falla** — el resto de los datos de demo se
+ * siembra igual y el bootstrap token sigue siendo el camino de entrada.
+ *
+ * Idempotente por `upsert` sobre el email: correrlo dos veces deja una fila.
+ */
+async function seedAdmin(): Promise<void> {
+  const email = process.env.ADMIN_SEED_EMAIL;
+  const password = process.env.ADMIN_SEED_PASSWORD;
+
+  if (!email || !password) {
+    console.log(
+      "Seed admin omitido: faltan ADMIN_SEED_EMAIL y/o ADMIN_SEED_PASSWORD.",
+    );
+    return;
+  }
+
+  const normalizado = email.trim().normalize("NFKC").toLowerCase();
+  const cost = Number(process.env.BCRYPT_COST ?? 12);
+  const password_hash = await bcrypt.hash(password, cost);
+
+  await prisma.customer.upsert({
+    where: { email: normalizado },
+    update: { password_hash, role: "admin" },
+    create: {
+      email: normalizado,
+      name: "Administrador",
+      password_hash,
+      role: "admin",
+    },
+  });
+
+  // Se loguea el email —dato operativo que el operador necesita confirmar— pero
+  // NUNCA la contraseña ni el hash.
+  console.log(`Seed admin OK: ${normalizado}`);
 }
 
 main()
