@@ -325,7 +325,7 @@ language: es
     `HttpOnly`; con `AUTH_COOKIE_SECURE=false` desaparece `Secure` y con `true`
     aparece; el `clear` emite los tres con `Max-Age=0` y el path original)
 
-- [ ] T4.3 `CustomerGuard` — cookie de access con pin de algoritmo
+- [x] T4.3 `CustomerGuard` — cookie de access con pin de algoritmo
   - **Pattern**: `jwt.verifyAsync(token, { secret, algorithms: ['HS256'], issuer, audience })`
     y chequeo explícito de `payload.typ === 'access'` y `payload.role === 'customer'`
     — `per security-standards.md §3.3 — pinear el allowlist de algoritmos, rechazar
