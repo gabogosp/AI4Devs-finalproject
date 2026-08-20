@@ -95,7 +95,7 @@ language: es
 
 ## Fase 1: Primitivas de credenciales — 0,7 h
 
-- [ ] T1.1 `PasswordHasher` — bcrypt cost 12 + hash señuelo
+- [x] T1.1 `PasswordHasher` — bcrypt cost 12 + hash señuelo
   - **Pattern**: `await bcrypt.hash(plain, cost)` / `await bcrypt.compare(plain, hash)`;
     señuelo `DUMMY_HASH = await bcrypt.hash(randomBytes(32).toString('hex'), cost)`
     calculado una vez al arranque — `per security-standards.md §3.1 — bcrypt cost ≥ 12,
@@ -114,7 +114,7 @@ language: es
     `verify` fallido real — se compara `Math.abs(t1-t2) < t1` para evitar
     flakiness de reloj)
 
-- [ ] T1.2 Política de contraseña (§3.2) + corpus offline de filtradas
+- [x] T1.2 Política de contraseña (§3.2) + corpus offline de filtradas
   - **Pattern**: función pura `validatePassword(plain): string[]` (lista de
     violaciones) + `Set<string>` cargado una vez desde
     `apps/api/src/auth/password/breached-passwords.txt` — `per
