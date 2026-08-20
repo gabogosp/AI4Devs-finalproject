@@ -65,10 +65,13 @@ language: es
 
 ## Fase 4: Accesibilidad
 
-- [ ] T4.1 axe-core sobre las dos variantes de la categoría
+- [x] T4.1 axe-core sobre las dos variantes de la categoría   <!-- verde 2026-08-20 — TC-220 -->
+  - **AS-BUILT**: 3 variantes auditadas, 0 violaciones AA en las tres. Se agregó el **rubro con subrubros y paginación** además de las dos del plan: es la que suma más controles y por lo tanto la de mayor superficie a11y.
   - **Exit criterion**: TC-220 verde con **0 violaciones nivel AA** en la categoría con productos y en la vacía.
   - **Verify**: `pnpm --filter @dsm/qa test:a11y`
-- [ ] T4.2 Navegación y paginación operables sólo con teclado
+- [x] T4.2 Navegación y paginación operables sólo con teclado   <!-- verde 2026-08-20 — TC-221 -->
+  - **AS-BUILT**: 3 tests verdes (alcance del subrubro, alcance de "Siguiente", orden de foco), más el chequeo de **foco visible** al llegar (WCAG 2.4.7), que axe no cubre.
+  - **Falso rojo evitado**: la primera versión tabulaba a ciegas con un presupuesto fijo y fallaba porque la barra de rubros lista **todas** las categorías de la base, y el entorno de desarrollo compartido acumula decenas de corridas previas. Ahora se cuenta cuántos focusables preceden al objetivo y se tabula esa cantidad exacta: falla igual si el elemento está fuera del orden de tabulación, pero no por la cantidad de datos.
   - **Exit criterion**: TC-221 verde — recorrido con `Tab`/`Enter` que alcanza el árbol rubro→subrubro y los controles de paginación, con orden de foco lógico y foco **visible** en cada parada. axe no cubre esto: no detecta alcanzabilidad.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-221"`
 
@@ -80,7 +83,8 @@ language: es
 
 ## Fase 6: Exploratorio
 
-- [ ] T6.1 Charters de indexación real y de coherencia del árbol
+- [x] T6.1 Charters de indexación real y de coherencia del árbol   <!-- 2026-08-20 — TC-240, TC-241 -->
+  - **AS-BUILT**: apéndice a `qa/exploratory/charters.md` (no se reescribió lo de US-003). Ambos con misión, áreas, riesgos, heurísticas y **justificación de por qué son manuales**: TC-240 porque el criterio lo decide un tercero (el crawler) en su propia ventana y exige un dominio público que no existe hasta US-019; TC-241 porque el criterio es de usabilidad y juicio, no un assert.
   - **Exit criterion**: TC-240 y TC-241 documentados en `qa/exploratory/charters.md` con misión, áreas, riesgos y heurísticas; marcados `execution_mode: manual` con su justificación.
   - **Verify**: `grep -q "TC-240" qa/exploratory/charters.md && grep -q "TC-241" qa/exploratory/charters.md`
 
