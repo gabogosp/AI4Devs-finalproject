@@ -107,6 +107,14 @@ export class HttpProblemFilter implements ExceptionFilter {
       );
     }
 
-    res.status(problem.status).json(problem);
+    // RFC 7807 define el media type como parte del contrato, no sólo la forma
+    // del cuerpo: un cliente que negocie por `Accept: application/problem+json`
+    // o que ramifique por content-type no reconocería estas respuestas.
+    // `apps/api/docs/api/openapi.yaml` ya lo declaraba — era la implementación
+    // la que no lo honraba (detectado al cerrar T6.1 de US-014).
+    res
+      .status(problem.status)
+      .type('application/problem+json')
+      .json(problem);
   }
 }

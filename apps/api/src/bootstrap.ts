@@ -16,6 +16,14 @@ export function configureApp(app: INestApplication): void {
   // test e2e levantara la app sin él, los guards fallarían abierto.
   app.use(cookieParser());
 
+  // §7.3 — sin esto el rate-limit por IP no distingue clientes detrás de un
+  // proxy. El valor es configurable y su default es 0 a propósito: ver la nota
+  // de `TRUST_PROXY_HOPS` en env.validation.
+  const hops = Number(process.env.TRUST_PROXY_HOPS ?? 0);
+  if (hops > 0) {
+    app.getHttpAdapter().getInstance().set('trust proxy', hops);
+  }
+
   // §7.1 — perfil API-only: nosniff + HSTS + Referrer-Policy + X-Frame-Options
   // + CSP mínima para JSON renderizado por un browser. Se setea UNA vez en el
   // borde, nunca por handler.

@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SkipThrottle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthThrottlerGuard } from './auth-throttler.guard';
 import { CustomerAuthService } from './customer-auth.service';
@@ -60,7 +60,13 @@ export class CustomerAuthController {
     private readonly config: ConfigService,
   ) {}
 
+  // §7.3 — presupuestos por ruta sobre el throttler `auth` ya registrado (T6.1).
+  // Cada uno refleja el vector de esa ruta: el alta es cara (un bcrypt de cost 12
+  // por intento) y su abuso llena la tabla de cuentas basura, así que va apretada;
+  // el refresh lo llama el navegador solo cada 15 minutos por sesión, pero un
+  // usuario con varias pestañas puede dispararlo en ráfaga, así que va holgada.
   @Post('register')
+  @Throttle({ auth: { limit: 5, ttl: 3_600_000 } })
   @HttpCode(201)
   async register(
     @Body() dto: RegisterDto,
@@ -71,6 +77,7 @@ export class CustomerAuthController {
   }
 
   @Post('login')
+  @Throttle({ auth: { limit: 10, ttl: 900_000 } })
   @HttpCode(200)
   async login(
     @Body() dto: LoginDto,
@@ -87,6 +94,7 @@ export class CustomerAuthController {
    * sirve.
    */
   @Post('refresh')
+  @Throttle({ auth: { limit: 60, ttl: 900_000 } })
   @HttpCode(200)
   @UseGuards(CsrfGuard)
   async refresh(
@@ -140,6 +148,10 @@ export class CustomerAuthController {
    * lo mismo exista o no la cuenta — que es exactamente el punto.
    */
   @Post('password-reset/request')
+  // Además del límite por cuenta que aplica el service (PASSWORD_RESET_MAX_PER_HOUR):
+  // éste es por IP y el otro por cuenta. Hacen falta los dos — uno solo se evade
+  // rotando IPs o rotando direcciones de destino.
+  @Throttle({ auth: { limit: 5, ttl: 3_600_000 } })
   @HttpCode(202)
   async solicitarReset(@Body() dto: ResetRequestDto): Promise<void> {
     await this.reset.request(dto.email);
@@ -152,6 +164,7 @@ export class CustomerAuthController {
    * haberlo completado el atacante.
    */
   @Post('password-reset/confirm')
+  @Throttle({ auth: { limit: 10, ttl: 3_600_000 } })
   @HttpCode(200)
   async confirmarReset(@Body() dto: ResetConfirmDto): Promise<void> {
     await this.reset.confirm(dto.token, dto.password);

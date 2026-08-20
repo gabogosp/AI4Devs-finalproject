@@ -37,6 +37,7 @@ export type SafeCustomer = Omit<Customer, 'password_hash'>;
 export type CustomerWithHash = Customer;
 
 function stripHash(customer: Customer): SafeCustomer {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
   const { password_hash: _hash, ...resto } = customer;
   return resto;
 }

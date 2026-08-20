@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { bootTestApp } from '../../test/e2e-app';
+import { bootTestApp, nuevaIpDeTest } from '../../test/e2e-app';
 import { AuthModule } from './auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE } from './cookies';
@@ -19,21 +19,29 @@ describe('POST /v1/auth/register (e2e-auth-register)', () => {
     password: PASSWORD,
   };
 
+  let ip = '';
+
   beforeAll(async () => {
+    process.env.TRUST_PROXY_HOPS = '1';
     app = await bootTestApp([AuthModule]);
     prisma = app.get(PrismaService);
   });
   afterAll(async () => {
     await app?.close();
+    delete process.env.TRUST_PROXY_HOPS;
   });
   beforeEach(async () => {
     await prisma.$executeRawUnsafe(
       'TRUNCATE TABLE customers RESTART IDENTITY CASCADE',
     );
+    ip = nuevaIpDeTest();
   });
 
   const alta = (body: Record<string, unknown> = ALTA) =>
-    request(app.getHttpServer()).post('/v1/auth/register').send(body);
+    request(app.getHttpServer())
+      .post('/v1/auth/register')
+      .set('X-Forwarded-For', ip)
+      .send(body);
 
   const cookies = (res: request.Response): string[] =>
     (res.headers['set-cookie'] as unknown as string[]) ?? [];
@@ -50,6 +58,7 @@ describe('POST /v1/auth/register (e2e-auth-register)', () => {
       // Y la sesión sirve YA: `/me` responde con las cookies de esta respuesta.
       await request(app.getHttpServer())
         .get('/v1/auth/me')
+        .set('X-Forwarded-For', ip)
         .set('Cookie', c)
         .expect(200)
         .expect((r) => expect(r.body.email).toBe('ana@example.com'));
@@ -118,6 +127,7 @@ describe('POST /v1/auth/register (e2e-auth-register)', () => {
     it('name vacío → 422', () => alta({ ...ALTA, name: '' }).expect(422));
 
     it('sin password → 422', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
       const { password: _p, ...sinPassword } = ALTA;
       await alta(sinPassword).expect(422);
     });

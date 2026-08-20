@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { bootTestApp } from '../../test/e2e-app';
+import { bootTestApp, nuevaIpDeTest } from '../../test/e2e-app';
 import { AuthModule } from './auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE } from './cookies';
@@ -15,20 +15,33 @@ describe('Seam de auth de cliente (e2e-auth-login)', () => {
   const PASSWORD = 'correo caballo batería grapa';
   const EMAIL = 'ana@example.com';
 
+  let ip = '';
+
   beforeAll(async () => {
+    // Ver `nuevaIpDeTest`: sin esto la suite agota el presupuesto de T6.1.
+    process.env.TRUST_PROXY_HOPS = '1';
     app = await bootTestApp([AuthModule]);
     prisma = app.get(PrismaService);
   });
   afterAll(async () => {
     await app?.close();
+    delete process.env.TRUST_PROXY_HOPS;
   });
   beforeEach(async () => {
     await prisma.$executeRawUnsafe(
       'TRUNCATE TABLE customers RESTART IDENTITY CASCADE',
     );
+    ip = nuevaIpDeTest();
   });
 
-  const http = () => request(app.getHttpServer());
+  const http = () => {
+    const agente = request(app.getHttpServer());
+    return {
+      get: (r: string) => agente.get(r).set('X-Forwarded-For', ip),
+      post: (r: string) => agente.post(r).set('X-Forwarded-For', ip),
+      options: (r: string) => agente.options(r).set('X-Forwarded-For', ip),
+    };
+  };
   const registrar = () =>
     http()
       .post('/v1/auth/register')

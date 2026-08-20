@@ -50,6 +50,20 @@ export const envSchema = z.object({
   PASSWORD_RESET_MAX_PER_HOUR: z.coerce.number().int().positive().default(3),
   BCRYPT_COST: z.coerce.number().int().positive().default(12),
 
+  /**
+   * Saltos de proxy confiables para resolver la IP real del cliente (§7.3).
+   *
+   * El rate-limit se cuenta por IP, y sin esto Express devuelve la IP del ÚLTIMO
+   * salto: detrás de un CDN, todos los clientes comparten un solo cubo y el
+   * límite de login se vuelve global — diez fallos de cualquiera dejarían fuera
+   * a todo el mundo.
+   *
+   * Default **0** (no confiar en ningún proxy) porque el riesgo inverso es peor:
+   * confiar de más deja que cualquiera falsifique `X-Forwarded-For` y evada el
+   * límite por completo. En producción detrás de Cloudflare va `1`; en local, 0.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
+
   // T7.2 — entrega real del email de recuperación (decisión del PO, 2026-08-19).
   // Opcionales a nivel de campo, pero NO en producción: el refinement de abajo
   // hace fallar el arranque si faltan con `NODE_ENV=production`.

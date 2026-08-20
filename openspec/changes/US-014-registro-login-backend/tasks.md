@@ -422,7 +422,7 @@ language: es
 
 ## Fase 6: Rate-limit y anti-enumeración — 0,5 h
 
-- [ ] T6.1 Presupuestos por ruta sobre el throttler `auth` (AC-10)
+- [x] T6.1 Presupuestos por ruta sobre el throttler `auth` (AC-10)
   - **Pattern**: `@Throttle({ auth: { limit: N, ttl: MS } })` por handler sobre el
     throttler **ya registrado** `auth` (no se registra uno nuevo) — `per
     security-standards.md §7.3 — rate-limit obligatorio en login, alta, solicitud
@@ -440,7 +440,7 @@ language: es
     `Retry-After` y cuerpo `problem+json`; un `GET /v1/products/{slug}` en la misma
     corrida sigue respondiendo 200 — el throttler del storefront no se contaminó)
 
-- [ ] T6.2 Indistinguibilidad de respuestas (AC-5, AC-6, AC-11)
+- [x] T6.2 Indistinguibilidad de respuestas (AC-5, AC-6, AC-11)
   - **Exit criterion**: en `POST /v1/auth/login`, los tres casos —contraseña
     incorrecta, email inexistente y cuenta bloqueada por lockout— devuelven
     respuestas **byte-idénticas** salvo `instance` (mismo `status`, `type`, `title`

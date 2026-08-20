@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { bootTestApp } from '../../test/e2e-app';
+import { bootTestApp, nuevaIpDeTest } from '../../test/e2e-app';
 import { AuthModule } from './auth.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseCorsOrigins } from '../config/env.validation';
@@ -17,20 +17,32 @@ describe('CSRF y CORS del seam de cliente (e2e-auth-csrf)', () => {
   const EMAIL = 'ana@example.com';
   const ORIGEN_OK = parseCorsOrigins(process.env.CORS_ALLOWED_ORIGINS ?? '')[0];
 
+  let ip = '';
+
   beforeAll(async () => {
+    process.env.TRUST_PROXY_HOPS = '1';
     app = await bootTestApp([AuthModule]);
     prisma = app.get(PrismaService);
   });
   afterAll(async () => {
     await app?.close();
+    delete process.env.TRUST_PROXY_HOPS;
   });
   beforeEach(async () => {
     await prisma.$executeRawUnsafe(
       'TRUNCATE TABLE customers RESTART IDENTITY CASCADE',
     );
+    ip = nuevaIpDeTest();
   });
 
-  const http = () => request(app.getHttpServer());
+  const http = () => {
+    const agente = request(app.getHttpServer());
+    return {
+      get: (r: string) => agente.get(r).set('X-Forwarded-For', ip),
+      post: (r: string) => agente.post(r).set('X-Forwarded-For', ip),
+      options: (r: string) => agente.options(r).set('X-Forwarded-For', ip),
+    };
+  };
 
   /** Alta + extracción de cookies y del valor de CSRF que emitió el servidor. */
   async function sesion(): Promise<{ cookies: string[]; csrf: string }> {

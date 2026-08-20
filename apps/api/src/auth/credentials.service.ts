@@ -95,6 +95,7 @@ export class CredentialsService {
 
     await this.customers.resetLoginFailures(cliente.id);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
     const { password_hash: _hash, ...safe } = cliente;
     return safe;
   }

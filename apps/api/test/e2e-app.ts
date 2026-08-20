@@ -46,3 +46,26 @@ export async function truncateCatalog(prisma: {
     'TRUNCATE TABLE products, categories RESTART IDENTITY CASCADE',
   );
 }
+
+/**
+ * Aislamiento de rate-limit entre tests e2e.
+ *
+ * Desde US-014 T6.1 las rutas de `/v1/auth` llevan presupuesto por IP, y una
+ * suite con más llamadas que el límite empieza a recibir 429 en lugar del código
+ * que está verificando. El límite no está mal puesto: son los tests los que
+ * tienen que hablar desde IPs distintas.
+ *
+ * Requiere `TRUST_PROXY_HOPS=1` para que Express lea `X-Forwarded-For`; la suite
+ * lo setea en su `beforeAll` y lo borra en el `afterAll`, porque en producción
+ * el default es 0 a propósito (confiar de más deja falsificar la IP y evadir el
+ * límite por completo).
+ */
+let contadorDeIps = 0;
+
+/** IP nueva para el test en curso. Llamar desde `beforeEach`. */
+export function nuevaIpDeTest(): string {
+  contadorDeIps += 1;
+  const tercerOcteto = Math.floor(contadorDeIps / 250);
+  const cuartoOcteto = (contadorDeIps % 250) + 1;
+  return `192.168.${tercerOcteto}.${cuartoOcteto}`;
+}
