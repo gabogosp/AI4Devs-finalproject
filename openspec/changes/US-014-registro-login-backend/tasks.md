@@ -664,15 +664,15 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
-- [ ] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] Esquema materializado == `design.md` §Persistencia (F40):
+- [x] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
+- [x] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+- [x] Esquema materializado == `design.md` §Persistencia (F40):
       `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=auth-schema`
-- [ ] Contratos válidos: `npx @stoplight/spectral-cli lint openspec/changes/US-014-registro-login-backend/contracts/openapi/*.yaml && npx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml`
+- [x] Contratos válidos: `npx @stoplight/spectral-cli lint openspec/changes/US-014-registro-login-backend/contracts/openapi/*.yaml && npx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml`
 - [x] **No regresión del seam admin (ADR-0009)**: `[ -z "$(git log --oneline d0b5105^..HEAD -- apps/api/src/auth/admin.guard.ts)" ] && pnpm --filter @dsm/api test -- --testPathPattern='e2e-rbac|e2e-admin-auth'` (base corregida — ver la nota en T8.1)
-- [ ] **Ninguna credencial escapa por respuesta ni por log (AC-8)**: `pnpm --filter @dsm/api test -- --testPathPattern='e2e-auth-observability|e2e-auth-register'` (los dos specs barren el cuerpo de las respuestas y el volcado completo de logs de la corrida buscando la contraseña, el prefijo de hash, el email y los tokens — fallan si aparece cualquiera)
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [x] **Ninguna credencial escapa por respuesta ni por log (AC-8)**: `pnpm --filter @dsm/api test -- --testPathPattern='e2e-auth-observability|e2e-auth-register'` (los dos specs barren el cuerpo de las respuestas y el volcado completo de logs de la corrida buscando la contraseña, el prefijo de hash, el email y los tokens — fallan si aparece cualquiera)
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
 
 ---
 
