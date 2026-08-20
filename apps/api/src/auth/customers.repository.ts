@@ -8,6 +8,17 @@ import {
 import { RegistrationFailedError } from './auth-errors';
 import { normalizeEmail } from './email/normalize-email';
 
+/**
+ * Rol de todo cliente que se registra por la vía pública.
+ *
+ * `CreateCustomerData` **no tiene** campo `role`, así que no hay un valor del
+ * request que filtrar: es estructuralmente imposible que llegue uno. El valor lo
+ * escribe el repositorio de forma explícita, y no se deja al `@default` del
+ * esquema: si alguien cambiara ese default, el registro empezaría a emitir otro
+ * rol sin que nada acá se entere.
+ */
+export const ROL_CLIENTE = 'customer';
+
 export interface CreateCustomerData {
   email: string;
   name: string;
@@ -56,6 +67,7 @@ export class CustomersRepository {
           name: data.name,
           phone: data.phone ?? null,
           password_hash: data.passwordHash,
+          role: ROL_CLIENTE,
         },
       });
       return stripHash(creado);

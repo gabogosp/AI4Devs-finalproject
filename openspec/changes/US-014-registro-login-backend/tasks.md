@@ -210,7 +210,7 @@ language: es
 
 ## Fase 3: Servicios de caso de uso — 1,0 h
 
-- [ ] T3.1 `CustomerAuthService.register` (AC-1, AC-6)
+- [x] T3.1 `CustomerAuthService.register` (AC-1, AC-6)
   - **Pattern**: validar política → normalizar email → hashear → `create` →
     emitir sesión, todo dentro de `prisma.$transaction` cuando hay más de una
     escritura — `per backend-node-standards.md §5 — transacción para casos de uso
@@ -227,7 +227,7 @@ language: es
     `RegistrationFailedError` y `create` no se llama dos veces; contraseña del
     corpus → `ValidationError` sin llamar al repo)
 
-- [ ] T3.2 `CredentialsService` — verificación + lockout (AC-2, AC-5, AC-10)
+- [x] T3.2 `CredentialsService` — verificación + lockout (AC-2, AC-5, AC-10)
   - **Pattern**: si el email no existe, ejecutar igual `hasher.verifyDummy(plain)`
     y lanzar **el mismo** `InvalidCredentialsError`; backoff
     `lockMinutes = min(BASE * 2 ** (lockoutCount - 1), MAX)` — `per
@@ -245,7 +245,7 @@ language: es
     `deepEqual` en `type`+`detail`; 4 fallos no bloquean y el 5.º sí;
     backoff 15→30→60→60 min; login OK tras expirar el bloqueo resetea contadores)
 
-- [ ] T3.3 `SessionService` — emisión, rotación y detección de reuso (AC-3, AC-9)
+- [x] T3.3 `SessionService` — emisión, rotación y detección de reuso (AC-3, AC-9)
   - **Pattern**: `jwt.sign({ sub, role, typ:'access', jti }, { secret, expiresIn, issuer, audience })`
     para el access; refresh **opaco** persistido por hash; en `refresh`, dentro de
     `$transaction`: `markRotated(viejo)` + `issue(nuevo, mismo familyId)`; si el
