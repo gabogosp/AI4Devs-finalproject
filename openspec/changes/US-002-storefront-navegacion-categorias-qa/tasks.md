@@ -49,13 +49,17 @@ language: es
 
 ## Fase 3: Aceptación BDD (Cucumber + Playwright)
 
-- [ ] T3.1 Features de happy path (AC-1, AC-2, AC-3)
+- [x] T3.1 Features de happy path (AC-1, AC-2, AC-3)   <!-- verde 2026-08-20 — TC-210..212 -->
+  - **AS-BUILT**: 3 escenarios verdes. Tres asserts se reescribieron para no depender del **orden**: el backend ordena por `name ASC` y los nombres del seed llevan sufijo numérico, así que el orden alfabético no coincide con el de creación ("-11" va antes que "-9"). Fijar `publicados[0]` ataba el test a una suposición que no es parte de ningún AC; ahora se asserta la propiedad (que aparezca alguno de los sembrados, que el rubro agregue los del hijo).
   - **Exit criterion**: TC-210..TC-212 verdes contra el stack real; runner en modo `strict`. TC-211 asierta que el subrubro lista **sólo** sus productos y que se puede volver al rubro padre.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@happy"`
-- [ ] T3.2 Features corner (AC-5, AC-6)
+- [x] T3.2 Features corner (AC-5, AC-6)   <!-- verde 2026-08-20 — TC-213, TC-214 -->
+  - **AS-BUILT**: 2 escenarios verdes. TC-213 recorre las páginas hasta encontrar el producto sin stock en vez de asumir en cuál cae (mismo motivo de orden que T3.1).
   - **Exit criterion**: TC-213 verde — el producto sin stock aparece con indicador y **sin** acción de compra. TC-214 verde — la categoría vacía muestra estado vacío y ofrece salida a otros rubros.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@corner"`
-- [ ] T3.3 Cross-feature: la costura con US-003 y con el panel (X-1, X-2)
+- [x] T3.3 Cross-feature: la costura con US-003 y con el panel (X-1, X-2)   <!-- verde 2026-08-20 — TC-215, TC-216 -->
+  - **AS-BUILT**: 2 escenarios verdes. TC-216 muta **por la UI del panel** (login real con bootstrap token → publicar), que es el único camino que dispara la Server Action de invalidación; por API directa el escenario daría verde sin probar el circuito. Usa `expect.poll` (30 s) contra una caché de 1 h: si el producto aparece sólo puede ser por la invalidación, y si no corre el poll agota y falla.
+  - **Requisitos de entorno descubiertos al ejecutar** (no estaban en el plan): (a) la API necesita `CORS_ALLOWED_ORIGINS` con el origen del web — la config por defecto sólo admite `http://localhost:3000`, que es el puerto de la propia API, así que **ningún navegador puede usar el panel**; (b) necesita `ADMIN_BOOTSTRAP_TOKEN`, sin el cual el fixture degrada a un JWT minteado y el login del panel falla; (c) `AUTH_RATE_LIMIT_MAX` por defecto es 5 cada 15 min y la suite hace 2 logins por escenario.
   - **Exit criterion**: TC-215 verde — hacer clic en un producto de la grilla lleva a **su** ficha, con el mismo nombre y precio. TC-216 verde — publicar desde el panel hace aparecer el producto en la categoría tras la ventana de caché. TC-215 es el único test que detecta una divergencia de identificador entre grilla y ficha (ver OQ-QA-2).
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@cross-feature"`
 
