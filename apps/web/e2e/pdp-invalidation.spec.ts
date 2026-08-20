@@ -31,7 +31,10 @@ test.beforeEach(async () => {
   // El stub guarda estado en memoria y este spec lo muta: sin reset, una
   // segunda corrida arrancaría del precio ya cambiado.
   const ctx = await playwrightRequest.newContext();
-  await ctx.post(`${STUB}/__reset`);
+  // Alcance `pdp`: sin él, este reset borraría también el fixture de browse de
+  // US-002 y, con `fullyParallel`, le revertiría los datos a un spec ajeno en
+  // medio de su aserción (T7.2 de US-002).
+  await ctx.post(`${STUB}/__reset?scope=pdp`);
   await ctx.dispose();
 });
 

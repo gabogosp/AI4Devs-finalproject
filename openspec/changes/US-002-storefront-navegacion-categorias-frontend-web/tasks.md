@@ -583,7 +583,10 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     fallan si se rompen (verificado invirtiendo temporalmente el assert durante el desarrollo).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/categoryA11y`
 
-- [ ] **T7.2** Stub de contrato: endpoints de categorías + `__reset` **por alcance** + log de requests (0.75 h)
+- [x] **T7.2** Stub de contrato: endpoints de categorías + `__reset` **por alcance** + log de requests (0.75 h)
+  - **AS-BUILT 2026-08-18**: self-test con **21 chequeos**, todos verdes. Revisado y aprobado por la sesión de QA antes de commitear (leyó el código, no sólo la descripción).
+  - **El riesgo que señaló QA se tradujo a tres chequeos permanentes**, no a una verificación manual: (1) muto `ventilador-de-techo` a 999999, corro `__reset?scope=catalog` y asserto que **sigue** en 999999 —o sea, que el reset del catálogo **no funcione de más**—; (2) `__reset?scope=pdp` lo devuelve a `1250000` exacto; (3) `__reset` sin scope sigue restaurando todo. Un reset que restaura de más es indistinguible de uno correcto mirando el verde: el spec de US-003 pasaría por el reset ajeno en vez de por su propia lógica.
+  - **Dos correcciones que salieron de correr la suite en paralelo**: (a) el log de requests **dejó de limpiarse** en el reset —es diagnóstico append-only; borrarlo creaba una carrera donde un spec vaciaba el log de otro en medio de su aserción—; (b) `pdp-invalidation.spec.ts` pasó a usar `?scope=pdp`, porque su reset global borraba el fixture de browse y le revertía los datos a este change a mitad de test. Sin (b) la suite fallaba de forma intermitente y el fallo aparecía en el spec equivocado.
   - **Pattern**:
     ```js
     // apps/web/e2e/support/api-stub.mjs — se EXTIENDE el stub de US-003 (design.md D13)
@@ -615,7 +618,10 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
   - **Verify**: `node apps/web/e2e/support/api-stub.selftest.mjs`
   - ⚠️ **Riesgo señalado por la sesión de QA (2026-08-18), verificar antes de commitear**: `pdp-invalidation.spec.ts` (US-003, el **único** spec que cubre AC-9 end-to-end) depende de que el reset devuelva el catálogo entero a su estado inicial, y usa un precio único por corrida para no dar falso verde contra un valor cacheado. Un `__reset` parcial puede romperlo **en silencio** —seguiría verde por la razón equivocada—, así que hay que confirmar que `ventilador-de-techo` vuelve a `1250000` tras un reset por alcance. Coordinar con la sesión de QA al llegar acá.
 
-- [ ] **T7.3** E2E — SSR indexable, 404 real y paginación, **sobre `response.status()` y el body del servidor** (0.75 h)
+- [x] **T7.3** E2E — SSR indexable, 404 real y paginación, **sobre `response.status()` y el body del servidor** (0.75 h)
+  - **AS-BUILT 2026-08-18**: 6 specs verdes, todos contra `response.status()` y el body servido.
+  - **Encontró un defecto real que los tests unitarios no veían**: la página no listaba los subrubros cuando la categoría **sí** tenía productos —sólo en el estado vacío—, y AC-1 pide "subrubros **y/o** productos". Un rubro con productos agregados quedaba sin forma de bajar un nivel. Se corrigió renderizando la nav de subrubros siempre que existan, y como consecuencia el estado vacío dejó de duplicarlos.
+  - **La aserción de AC-7 hubo que reformularla**: el plan pedía "ningún request pidió más de 20", pero el **sitemap de T5.2 pagina de a 100** legítimamente (es el máximo del contrato y no es superficie de usuario). Quedó como dos aserciones: la grilla usa exactamente 20, y **nada** supera el techo de 100 — que es la garantía de fondo de AC-7, que el catálogo completo no viaje en una sola respuesta.
   - **Pattern**:
     ```ts
     // apps/web/e2e/category-ssr.spec.ts
@@ -650,7 +656,10 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
     US-001 y los specs de US-003 siguen verdes.
   - **Verify**: `pnpm --filter @dsm/web test:e2e`
 
-- [ ] **T7.4** E2E del circuito de invalidación del catálogo (AC-8): archivar en el panel → desaparece del listado **ya** (0.5 h)
+- [x] **T7.4** E2E del circuito de invalidación del catálogo (AC-8): mutar en el panel → el listado se refresca **ya** (0.5 h)
+  - **AS-BUILT 2026-08-18**: 2 specs verdes; suite E2E completa en **16/16**, con los specs de US-003 y el smoke de US-001 intactos.
+  - La mutación va **por la UI del panel** (login → `/admin/productos/{id}` → guardar), que es el camino que dispara la Server Action; mutar por API directa no invalida nada y el test daría verde sin probar el circuito. El nombre nuevo es **único por corrida**, para que una corrida previa no lo deje cacheado y produzca un falso verde. Sin ninguna espera temporal: la caché dura 1 h, así que la ausencia de espera **es** la aserción.
+  - Requirió extender el stub para que el panel pueda mutar un producto del fixture de browse (`compresor-e2e-1` con id propio): sin eso, el PATCH sólo alcanzaba el fixture de la PDP y el test no habría probado la invalidación del catálogo.
   - **Pattern**:
     ```ts
     // apps/web/e2e/category-invalidation.spec.ts
