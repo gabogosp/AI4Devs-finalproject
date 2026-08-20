@@ -289,7 +289,7 @@ language: es
 
 ## Fase 4: Borde HTTP — cookies, guards, errores — 0,9 h
 
-- [ ] T4.1 Errores de dominio `dsm:auth/*`
+- [x] T4.1 Errores de dominio `dsm:auth/*`
   - **Pattern**: subclases de la `DomainError` existente con `readonly status` y
     `readonly type` — `per backend-node-standards.md §6 — errores de dominio
     tipados mapeados centralmente, nunca HttpException ad-hoc en services`.
@@ -306,7 +306,7 @@ language: es
     (unit sobre `mapErrorToProblem`: las 6 clases producen el `type`/`status`/
     `title` esperados y `detail` no contiene el literal de una credencial de prueba)
 
-- [ ] T4.2 `cookie-parser` + módulo de cookies con atributos §7.4
+- [x] T4.2 `cookie-parser` + módulo de cookies con atributos §7.4
   - **Pattern**: `app.use(cookieParser())` en `configureApp` (un solo punto de
     borde, junto a helmet/CORS) y un helper `setSessionCookies(res, …)` /
     `clearSessionCookies(res)` que centraliza atributos — `per

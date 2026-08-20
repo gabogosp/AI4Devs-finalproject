@@ -1,5 +1,6 @@
 import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { HttpProblemFilter } from './common/filters/http-problem.filter';
 import { parseCorsOrigins } from './config/env.validation';
 
@@ -9,6 +10,12 @@ import { parseCorsOrigins } from './config/env.validation';
  * y filtro RFC 7807. Mantiene un único punto de verdad para el borde HTTP.
  */
 export function configureApp(app: INestApplication): void {
+  // T4.2 — las cookies de sesión (US-014) llegan como header crudo; sin este
+  // parser `req.cookies` no existe y los guards leerían `undefined` en vez de
+  // rechazar. Va en el borde, junto al resto, no en el módulo de auth: si un
+  // test e2e levantara la app sin él, los guards fallarían abierto.
+  app.use(cookieParser());
+
   // §7.1 — perfil API-only: nosniff + HSTS + Referrer-Policy + X-Frame-Options
   // + CSP mínima para JSON renderizado por un browser. Se setea UNA vez en el
   // borde, nunca por handler.
@@ -53,7 +60,14 @@ export function configureApp(app: INestApplication): void {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'traceparent'],
+    // `X-CSRF-Token` (T5.3): sin declararlo, el preflight del panel falla y el
+    // logout/refresh se vuelven inalcanzables desde el browser.
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'traceparent',
+      'X-CSRF-Token',
+    ],
     exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset', 'Retry-After'],
     maxAge: 86_400, // ≤ 24 h
   });

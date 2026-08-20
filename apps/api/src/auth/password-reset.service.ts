@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ValidationError } from '../common/errors/domain-errors';
-import { InvalidResetTokenError } from './auth-errors';
+import { InvalidResetTokenError } from '../common/errors/auth-errors';
 import { CustomersRepository } from './customers.repository';
 import { PasswordResetTokensRepository } from './password-reset-tokens.repository';
 import { PasswordHasher } from './password/password-hasher';

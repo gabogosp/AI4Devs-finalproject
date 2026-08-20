@@ -1,4 +1,4 @@
-import { DomainError } from '../common/errors/domain-errors';
+import { DomainError } from './domain-errors';
 
 /**
  * Errores de dominio de auth (§6). Los mapea el `HttpProblemFilter` existente al

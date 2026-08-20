@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InvalidRefreshError } from './auth-errors';
+import { InvalidRefreshError } from '../common/errors/auth-errors';
 import { RefreshTokensRepository } from './refresh-tokens.repository';
 import { hashToken, newToken } from './tokens/opaque-token';
 

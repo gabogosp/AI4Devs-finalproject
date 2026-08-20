@@ -1,6 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomersRepository } from './customers.repository';
-import { RegistrationFailedError } from './auth-errors';
+import { RegistrationFailedError } from '../common/errors/auth-errors';
 
 /**
  * T2.1 (+ cierre del Verify de T1.3) — integration contra el Postgres real.

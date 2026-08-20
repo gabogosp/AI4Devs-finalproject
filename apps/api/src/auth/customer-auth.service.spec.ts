@@ -7,7 +7,7 @@ import { PasswordHasher } from './password/password-hasher';
 import { CredentialsService } from './credentials.service';
 import { SessionService } from './session.service';
 import { CustomerAuthService } from './customer-auth.service';
-import { InvalidCredentialsError, RegistrationFailedError } from './auth-errors';
+import { InvalidCredentialsError, RegistrationFailedError } from '../common/errors/auth-errors';
 import { ValidationError } from '../common/errors/domain-errors';
 
 describe('CustomerAuthService (AC-1, AC-2, AC-6)', () => {

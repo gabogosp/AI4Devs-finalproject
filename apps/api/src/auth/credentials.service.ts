@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InvalidCredentialsError } from './auth-errors';
+import { InvalidCredentialsError } from '../common/errors/auth-errors';
 import { CustomersRepository, SafeCustomer } from './customers.repository';
 import { PasswordHasher } from './password/password-hasher';
 

@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CustomersRepository } from './customers.repository';
 import { RefreshTokensRepository } from './refresh-tokens.repository';
 import { SessionService, JWT_ISSUER, JWT_AUDIENCE } from './session.service';
-import { InvalidRefreshError } from './auth-errors';
+import { InvalidRefreshError } from '../common/errors/auth-errors';
 import { hashToken } from './tokens/opaque-token';
 
 /**

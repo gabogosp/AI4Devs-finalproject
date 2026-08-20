@@ -5,7 +5,7 @@ import {
   isPrismaError,
   PRISMA_UNIQUE_VIOLATION,
 } from '../common/prisma-errors';
-import { RegistrationFailedError } from './auth-errors';
+import { RegistrationFailedError } from '../common/errors/auth-errors';
 import { normalizeEmail } from './email/normalize-email';
 
 /**

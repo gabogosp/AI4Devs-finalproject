@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CustomersRepository } from './customers.repository';
 import { PasswordHasher } from './password/password-hasher';
 import { Clock, CredentialsService } from './credentials.service';
-import { InvalidCredentialsError } from './auth-errors';
+import { InvalidCredentialsError } from '../common/errors/auth-errors';
 
 /**
  * T3.2 — reloj inyectado para recorrer el backoff sin esperar 60 minutos.

@@ -14,7 +14,7 @@ import {
   PasswordResetEmail,
   PasswordResetMailer,
 } from './mail/password-reset-mailer';
-import { InvalidResetTokenError, InvalidCredentialsError } from './auth-errors';
+import { InvalidResetTokenError, InvalidCredentialsError } from '../common/errors/auth-errors';
 import { ValidationError } from '../common/errors/domain-errors';
 
 /** Mailer de prueba que captura lo despachado. */
