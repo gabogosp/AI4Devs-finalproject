@@ -25,22 +25,22 @@ language: es
 
 ## Fase 1: Datos de test del browse
 
-- [ ] T1.1 Extender el seed con la topología de categorías
+- [x] T1.1 Extender el seed con la topología de categorías   <!-- verde 2026-08-19 — qa/support/seed-categorias.ts + api.ts (af61431) -->
   - **Exit criterion**: `seedBrowse()` en `qa/support/seed.ts` crea, vía API admin: un rubro con al menos dos subrubros; productos publicados repartidos entre el rubro y un subrubro (para verificar la agregación D1); una categoría publicada **sin** productos publicados; y dentro de una categoría poblada, un producto `draft` y uno `archived`. Devuelve los slugs e identificadores; re-ejecutar no colisiona.
   - **Verify**: `pnpm --filter @dsm/qa exec tsx support/seed-browse.smoke.ts`
 
 ## Fase 2: E2E de SSR / SEO / sitemap (Playwright)
 
-- [ ] T2.1 SSR real sobre el HTML sin JavaScript (AC-10)
+- [x] T2.1 SSR real sobre el HTML sin JavaScript (AC-10)   <!-- verde 2026-08-19 — TC-208, contexto con JS deshabilitado (af61431) -->
   - **Exit criterion**: TC-208 verde — con JS **deshabilitado** en el contexto, el HTML servido de la categoría ya contiene los productos del listado. Un test que pasara con la página hidratada no vale.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-208"`
-- [ ] T2.2 Metadatos propios y sitemap (AC-4)
+- [x] T2.2 Metadatos propios y sitemap (AC-4)   <!-- verde 2026-08-19 — TC-203 + TC-204 (9da1e86) -->
   - **Exit criterion**: TC-203 verde — `title` y `meta description` son propios de la categoría, no genéricos del sitio. TC-204 verde — el sitemap **lista** las categorías publicadas **y no lista** una inexistente (la exclusión es la mitad que se olvida y la que genera URLs fantasma indexadas).
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-203|TC-204"`
-- [ ] T2.3 Rubro por slug y grilla paginada (AC-1, AC-3)
+- [x] T2.3 Rubro por slug y grilla paginada (AC-1, AC-3)   <!-- verde 2026-08-19 — TC-201 + TC-202 (af61431) -->
   - **Exit criterion**: TC-201 verde (URL por slug, subrubros y productos agregados del rubro) y TC-202 verde (grilla con nombre/precio/imagen-o-placeholder/disponibilidad, paginada, y avanzar de página **no** recarga el catálogo completo).
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-201|TC-202"`
-- [ ] T2.4 No-publicados invisibles y 404 sin fantasma (AC-8, AC-9)
+- [x] T2.4 No-publicados invisibles y 404 sin fantasma (AC-8, AC-9)   <!-- verde 2026-08-19 — TC-206 + TC-207 (af61431) -->
   - **Exit criterion**: TC-206 verde — el HTML servido de una categoría poblada **no** contiene el producto `draft` ni el `archived`. TC-207 verde — una categoría inexistente devuelve 404, no es un 200 vacío, y no aparece en el sitemap.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-206|TC-207"`
 - [ ] T2.5 Core Web Vitals con catálogo grande (AC-7)
