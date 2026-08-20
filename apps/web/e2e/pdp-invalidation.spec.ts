@@ -58,7 +58,24 @@ test('editar el precio en el panel refresca la ficha pública de inmediato', asy
   await page.getByLabel(/Precio/).fill(String(NUEVO_PESOS));
   await page.getByRole('button', { name: /Guardar/ }).click();
 
-  // 3) Recargar: el HTML del servidor ya debe traer el precio nuevo.
-  const after = await page.goto(`/productos/${SLUG}`);
-  expect(await after!.text()).toContain(NUEVO_FORMATEADO);
+  // 3) Recargar hasta que el HTML del servidor traiga el precio nuevo.
+  //
+  //    `expect.poll` y no una espera fija: el puente es fire-and-forget —la
+  //    mutación ya fue confirmada por el backend, así que la purga corre sin
+  //    bloquear al dueño— y la recarga puede ganarle por milisegundos. Desde
+  //    US-002 el puente purga DOS cachés (ficha y catálogo), lo que ensancha
+  //    esa ventana y hacía fallar este spec ~1 de cada 3 corridas en paralelo.
+  //
+  //    No debilita la aserción: la caché dura 1 h y el poll agota en 5 s, así
+  //    que si el precio aparece sólo puede ser por la invalidación, nunca por
+  //    un TTL vencido. Si no corre, el poll agota y el test FALLA.
+  await expect
+    .poll(
+      async () => {
+        const res = await page.goto(`/productos/${SLUG}`);
+        return await res!.text();
+      },
+      { timeout: 5000, intervals: [200, 300, 500, 500, 1000] },
+    )
+    .toContain(NUEVO_FORMATEADO);
 });

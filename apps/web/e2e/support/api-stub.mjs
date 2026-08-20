@@ -24,7 +24,7 @@ const BROWSE_MUTABLE_ID = '44444444-4444-4444-8444-444444444444';
 const ID_TO_SLUG = new Map([
   [PRODUCT_ID, 'heladera-exhibidora'],
   [MUTABLE_ID, 'ventilador-de-techo'],
-  [BROWSE_MUTABLE_ID, 'compresor-e2e-1'],
+  [BROWSE_MUTABLE_ID, 'compresor-invalidacion'],
 ]);
 
 /** Catálogo inicial. `reset()` lo reconstruye entero (fixture limpio por corrida). */
@@ -98,7 +98,25 @@ const initialBrowseCatalog = () =>
           category: { name: 'Compresores E2E', slug: 'compresores-e2e' },
         },
       ];
-    }),
+    }).concat([
+      // Producto EXCLUSIVO del spec de invalidación, en su propia categoría:
+      // el spec lo renombra, y si viviera en `compresores-e2e` el spec de SSR
+      // —que asserta nombres ahí— lo vería renombrado a mitad de corrida.
+      [
+        'compresor-invalidacion',
+        {
+          slug: 'compresor-invalidacion',
+          sku: 'CMP-INV',
+          name: 'Compresor Invalidación',
+          description: null,
+          price_ars_cents: 777000,
+          currency: 'ARS',
+          image_url: null,
+          in_stock: true,
+          category: { name: 'Invalidación E2E', slug: 'invalidacion-e2e' },
+        },
+      ],
+    ]),
   );
 
 /** Árbol de dos niveles del fixture de browse. */
@@ -109,6 +127,7 @@ const CATEGORY_TREE = [
     children: [{ slug: 'compresores-e2e', name: 'Compresores E2E' }],
   },
   { slug: 'vacia-e2e', name: 'Vacía E2E', children: [] },
+  { slug: 'invalidacion-e2e', name: 'Invalidación E2E', children: [] },
 ];
 
 const CATEGORY_BY_SLUG = new Map([
@@ -117,6 +136,8 @@ const CATEGORY_BY_SLUG = new Map([
   ['compresores-e2e', { slug: 'compresores-e2e', name: 'Compresores E2E',
     parent: { slug: 'climatizacion', name: 'Climatización' }, children: [] }],
   ['vacia-e2e', { slug: 'vacia-e2e', name: 'Vacía E2E', parent: null, children: [] }],
+  ['invalidacion-e2e', { slug: 'invalidacion-e2e', name: 'Invalidación E2E',
+    parent: null, children: [] }],
 ]);
 
 /** Estado en memoria: se muta con los PATCH del panel, como haría la API real. */

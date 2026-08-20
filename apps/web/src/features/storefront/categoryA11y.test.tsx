@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
@@ -45,7 +46,7 @@ function CategoryScreen({
       />
       <h1>Compresores</h1>
       {empty ? (
-        <CategoryEmptyState subcategories={[{ slug: 'split', name: 'Split' }]} />
+        <CategoryEmptyState />
       ) : (
         <>
           <h2 className="sr-only">Productos</h2>
@@ -61,7 +62,7 @@ function CategoryScreen({
   );
 }
 
-const STATES: Array<[string, JSX.Element]> = [
+const STATES: Array<[string, ReactElement]> = [
   ['con productos', <CategoryScreen items={[item()]} key="a" />],
   ['vacía', <CategoryScreen items={[]} empty key="b" />],
   [

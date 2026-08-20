@@ -1,9 +1,14 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 
 const STUB = `http://localhost:${process.env.API_STUB_PORT ?? 4010}`;
-/** Producto del fixture de browse, disjunto del de la PDP. */
-const SLUG = 'compresor-e2e-1';
-const NOMBRE = 'Compresor E2E 1';
+/**
+ * Producto y categoría EXCLUSIVOS de este spec. No los toca ningún otro: el de
+ * SSR asserta nombres en `compresores-e2e`, y si este spec renombrara algo de
+ * ahí lo vería cambiado a mitad de corrida. Aislar el fixture es más barato que
+ * sincronizar dos specs que corren en paralelo.
+ */
+const SLUG = 'compresor-invalidacion';
+const NOMBRE = 'Compresor Invalidación';
 const BROWSE_MUTABLE_ID = '44444444-4444-4444-8444-444444444444';
 
 /**
@@ -38,7 +43,7 @@ test('renombrar un producto en el panel refresca el listado de la categoría de 
   // 1) Poblar la caché del listado. Lo que importa no es qué nombre muestra,
   //    sino que NO es el que vamos a poner: así el assert final sólo puede
   //    pasar si la invalidación corrió.
-  const antes = await page.goto('/categorias/compresores-e2e');
+  const antes = await page.goto('/categorias/invalidacion-e2e');
   expect(antes!.status()).toBe(200);
   expect(await antes!.text()).toContain(NOMBRE);
   expect(await antes!.text()).not.toContain(NUEVO_NOMBRE);
@@ -55,17 +60,33 @@ test('renombrar un producto en el panel refresca el listado de la categoría de 
   await page.getByLabel(/Nombre/).fill(NUEVO_NOMBRE);
   await page.getByRole('button', { name: /Guardar/ }).click();
 
-  // 3) Recargar el listado: sin espera temporal. La caché dura 1 h, así que si
-  //    `revalidateCatalog` no hubiera corrido, esto fallaría de inmediato.
-  const despues = await page.goto('/categorias/compresores-e2e');
-  expect(despues!.status()).toBe(200);
-  expect(await despues!.text()).toContain(NUEVO_NOMBRE);
+  // 3) Recargar el listado hasta que el HTML DEL SERVIDOR traiga el nombre
+  //    nuevo. Se usa `expect.poll` y no un `waitForTimeout`: el puente es
+  //    fire-and-forget —la mutación ya fue confirmada por el backend, así que
+  //    la purga corre sin bloquear al dueño— y por eso la recarga puede
+  //    correrle la carrera por milisegundos. Sin el poll el spec es flaky
+  //    (verificado: falla ~1 de cada 2 corridas).
+  //
+  //    Esto NO debilita la aserción: la caché del listado dura 1 h y el poll
+  //    agota en 5 s, así que si el nombre aparece sólo puede ser porque
+  //    `revalidateCatalog` corrió, nunca porque expiró un TTL. Y si no corre,
+  //    el poll agota y el test FALLA — no es una espera ciega.
+  await expect
+    .poll(
+      async () => {
+        const res = await page.goto('/categorias/invalidacion-e2e');
+        expect(res!.status()).toBe(200);
+        return await res!.text();
+      },
+      { timeout: 5000, intervals: [200, 300, 500, 500, 1000] },
+    )
+    .toContain(NUEVO_NOMBRE);
 });
 
 test('el listado y la ficha comparten la invalidación: ambos quedan consistentes', async ({
   page,
 }) => {
-  const listado = await page.goto('/categorias/compresores-e2e');
+  const listado = await page.goto('/categorias/invalidacion-e2e');
   expect(listado!.status()).toBe(200);
   expect(await listado!.text()).toContain(NOMBRE);
 

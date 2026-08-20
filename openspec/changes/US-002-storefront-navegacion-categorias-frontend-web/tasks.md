@@ -688,7 +688,8 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Fase 8: Documentación
 
-- [ ] **T8.1** README de `apps/web`: mapa de rutas públicas, sitemap/robots y el circuito de invalidación (0.25 h)
+- [x] **T8.1** README de `apps/web`: mapa de rutas públicas, sitemap/robots y el circuito de invalidación (0.25 h)
+  - **AS-BUILT 2026-08-18**: las cuatro rutas nuevas en el mapa, una sección nueva de caché e invalidación con la tabla de qué purga qué, la regla del puente único, y la nota de `loading.tsx` **ampliada a todo el route group** (antes decía sólo el segmento de la ficha). Cero variables de entorno nuevas.
   - **Pattern**: per `documentation-standards.md` §11.1 (README cuando cambian rutas/config). Sumar:
     (a) las rutas públicas nuevas (`/`, `/categorias/{slug}`, `/sitemap.xml`, `/robots.txt`) al mapa
     que US-003 dejó; (b) **el circuito de invalidación**: tag `catalog`, qué lo purga y por qué toda
@@ -704,21 +705,14 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ## Verification (suite-level)
 
-- [ ] Unit + component + integración verdes: `pnpm --filter @dsm/web test -- --run`
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción OK: `pnpm --filter @dsm/web build`
-- [ ] E2E verde (US-001 + US-003 + los specs nuevos de categoría): `pnpm --filter @dsm/web test:e2e`
-- [ ] Codegen del contrato en sync (gate `frontend-codegen-fresh`):
-  `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
-- [ ] **Sin `loading.tsx` en todo el storefront** (D10 / F59 — un skeleton en el route group rompería
-  el 404 de la categoría **y** el de la ficha):
-  `! find "apps/web/app/(storefront)" -name 'loading.tsx' | grep -q .`
-- [ ] `dangerouslySetInnerHTML` sólo para JSON-LD (security-standards §6):
-  `! grep -rn "dangerouslySetInnerHTML" apps/web/src apps/web/app | grep -vi "ld+json\|jsonLd\|Ld\b" | grep -q .`
-- [ ] Sin `fetch` crudo fuera del cliente (F48): el único `fetch` de la app sigue en
-  `src/lib/http/client.ts`; el stub de E2E es servidor de test, no cliente de la app.
-- [ ] Reconciliación contra el `design.md` completo (F51): D1–D13 construidas o con `Deferred:`
-  documentado (US-004 / US-006 / US-007 / OQ-FE-7 / OQ-FE-11).
-- [ ] Índice actualizado: `docs/_index/openspec-changes.yaml` refleja `status` y `estimate-hours` de
-  este change.
+- [x] Unit + component + integración verdes: **43 archivos / 218 tests** *(2026-08-18)*
+- [x] Lint limpio *(2026-08-18)*
+- [x] Typecheck limpio *(2026-08-18)*
+- [x] Build de producción OK *(2026-08-18)*
+- [x] E2E verde (US-001 + US-003 + los nuevos de categoría): **16/16, cinco corridas consecutivas sin flake** *(2026-08-18)*
+- [x] Codegen del contrato en sync — sin diff *(2026-08-18)*
+- [x] **Sin `loading.tsx` en todo el storefront** (D10 / F59) *(2026-08-18)*
+- [x] `dangerouslySetInnerHTML` sólo para JSON-LD (security-standards §6) *(2026-08-18)*
+- [x] Sin `fetch` crudo fuera del cliente (F48) — verificado, cero ocurrencias fuera de `client.ts` *(2026-08-18)*
+- [x] Reconciliación contra el `design.md` completo (F51) *(2026-08-18)*: **D1–D13 verificadas una por una**. D1 rutas (`page`/`not-found`/`error`) · D2 tag `catalog` + puente (5 archivos lo referencian) · D3 `Pagination` · D4 canonical auto-referencial · D5 `sitemap.ts` + `robots.ts` · D6 `CategoryNav` · D7 `Breadcrumb` · D8 `ProductCard` sin CTA · D9 `ProductImage` con variantes · D10 cero `loading.tsx` en el route group · D11 `CategoryEmptyState` · D12 evento `category_shown` · D13 stub con `__reset` por alcance. Diferidos vigentes y sin construir, como corresponde: CTA "Agregar" (US-007), top-nav completo (US-004/US-007), grilla global `/productos` (OQ-FE-7), breadcrumb con rubro padre **en la ficha** (OQ-FE-11), `generateSitemaps` particionado (>50.000 URLs), `placeholder="blur"`, número real de WhatsApp (OQ-FE-3), invalidación desde import masivo (US-006).
+- [x] Índice actualizado *(2026-08-18)*: `docs/_index/openspec-changes.yaml` con `status: in progress` (pasa a `merged` cuando `/commit` abra el PR) y `estimate-hours: 10.5`.

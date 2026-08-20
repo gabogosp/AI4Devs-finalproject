@@ -11,13 +11,12 @@ const STUB = `http://localhost:${process.env.API_STUB_PORT ?? 4010}`;
  * casos, y ésa es exactamente la diferencia que AC-9 exige. `page.route`
  * tampoco sirve acá: el fetch es server-side.
  */
-test.beforeEach(async () => {
-  const ctx = await playwrightRequest.newContext();
-  // Reset acotado: no toca el fixture de la PDP, del que dependen los specs de
-  // US-003 corriendo en paralelo.
-  await ctx.post(`${STUB}/__reset?scope=catalog`);
-  await ctx.dispose();
-});
+/**
+ * Este spec **no resetea nada**: sólo lee. Un reset acá revertiría el fixture
+ * de un spec de mutación corriendo en paralelo (`fullyParallel`) en medio de su
+ * aserción — que es exactamente el flake que costó encontrar. Sólo resetea
+ * quien muta.
+ */
 
 test('una categoría con contenido: 200 + subrubros + productos + JSON-LD en el HTML servido', async ({
   page,
