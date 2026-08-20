@@ -155,7 +155,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
 ### 5.1 E2E de SSR / SEO / sitemap (Playwright)
 
 ```yaml
-- id: TC-201
+- id: TC-201   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-1
   execution_mode: automated
   test_layer: 3
@@ -163,7 +163,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "H-1 — rubro por slug"
   name: Categoria_Rubro_UrlPorSlugYMuestraSubrubrosYProductos
 
-- id: TC-202
+- id: TC-202   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-2
   execution_mode: automated
   test_layer: 3
@@ -171,7 +171,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "H-3 — grilla"
   name: Categoria_Grilla_MuestraDatosYPaginaSinRecargarCatalogoCompleto
 
-- id: TC-203
+- id: TC-203   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-3
   execution_mode: automated
   test_layer: 3
@@ -179,7 +179,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "AC-4 — metadatos"
   name: Categoria_Html_TitleYMetaDescriptionPropiosDeLaCategoria
 
-- id: TC-204
+- id: TC-204   # [ ] BLOQUEADO por implementacion: sitemap = Fase 5 del change FE, abierta
   scenario: S-4
   execution_mode: automated
   test_layer: 3
@@ -187,7 +187,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "AC-4 — sitemap"
   name: Sitemap_ListaLasCategoriasPublicadasYNoLasInexistentes
 
-- id: TC-205
+- id: TC-205   # [ ] pendiente: LCP con catalogo grande
   scenario: S-5
   execution_mode: automated
   test_layer: 3
@@ -195,7 +195,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "AC-7 — Core Web Vitals"
   name: Categoria_LcpBajoDosPuntoCincoSegundosConCatalogoGrande
 
-- id: TC-206
+- id: TC-206   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-6
   execution_mode: automated
   test_layer: 3
@@ -203,7 +203,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "N-1 — no publicados"
   name: Categoria_HtmlServido_NoContieneDraftNiArchivados
 
-- id: TC-207
+- id: TC-207   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-7
   execution_mode: automated
   test_layer: 3
@@ -211,7 +211,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "N-2 — 404"
   name: Categoria_Inexistente_Devuelve404YNoQuedaEnSitemap
 
-- id: TC-208
+- id: TC-208   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-8
   execution_mode: automated
   test_layer: 3
