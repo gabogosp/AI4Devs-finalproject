@@ -98,7 +98,7 @@
   us-id: US-003
   discipline: backend
   variant: null
-  status: in progress
+  status: archived
   parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
   linear-task-id: null
   audit-baseline: null
@@ -111,12 +111,13 @@
   completed-at: null
   archived-at: null
   archive-path: null
+  archive-path: openspec/changes/archive/US-003-ficha-producto-pdp-backend
 
 - name: US-003-ficha-producto-pdp-frontend-web
   us-id: US-003
   discipline: frontend-web
   variant: null
-  status: in progress  # 19/19 tasks cerradas 2026-08-17; suite-level verde. Pendiente /commit (PR)
+  status: archived  # 19/19 tasks cerradas 2026-08-17; suite-level verde. Pendiente /commit (PR)
   parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
   linear-task-id: null
   audit-baseline: null
@@ -133,6 +134,7 @@
   completed-at: null
   archived-at: null
   archive-path: null
+  archive-path: openspec/changes/archive/US-003-ficha-producto-pdp-frontend-web
 
 - name: US-002-storefront-navegacion-categorias-backend
   us-id: US-002
@@ -173,7 +175,7 @@
   us-id: US-003
   discipline: qa
   variant: null
-  status: in progress
+  status: archived
   parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
   linear-task-id: null
   audit-baseline: null

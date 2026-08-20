@@ -29,7 +29,7 @@
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
-  status: In Progress
+  status: Done
   priority: High
   prd-capacity: 1
   disciplines: [BE, FE, QA]
@@ -38,6 +38,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-15
+  done-at: 2026-08-20               # 3/3 changes de disciplina archivados
   blocked_by: [US-001]
 - id: US-004
   slug: busqueda-semantica

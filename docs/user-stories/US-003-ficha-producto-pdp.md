@@ -4,7 +4,7 @@ id: US-003
 slug: ficha-producto-pdp
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: High
 estimate-tshirt: S
 story_points_traditional: 5
