@@ -132,7 +132,7 @@ language: es
     `'123456789'` → rechazadas por corpus; `'correo caballo batería grapa'` →
     **aceptada**; el archivo del corpus tiene ≥ 10 000 líneas)
 
-- [ ] T1.3 Normalización de email
+- [x] T1.3 Normalización de email
   - **Pattern**: `email.trim().normalize('NFKC').toLowerCase()` en una función pura
     reusada por repositorio y DTO — `per security-standards.md §6 — normalizar
     antes de comparar; la normalización vive en un solo lugar`.
@@ -168,7 +168,7 @@ language: es
 
 ## Fase 2: Repositorios (único punto de ORM) — 0,6 h
 
-- [ ] T2.1 `CustomersRepository`
+- [x] T2.1 `CustomersRepository`
   - **Pattern**: clase `@Injectable()` que envuelve `PrismaService`; ningún service
     toca el cliente Prisma — `per backend-node-standards.md §5 — el repositorio
     envuelve el ORM; los services no lo llaman directo`.
