@@ -6,6 +6,19 @@ import { AdminGuard } from './admin.guard';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminAuthController } from './admin-auth.controller';
 import { AuthThrottlerGuard } from './auth-throttler.guard';
+import { CustomerAuthController } from './customer-auth.controller';
+import { CustomerAuthService } from './customer-auth.service';
+import { CredentialsService } from './credentials.service';
+import { SessionService } from './session.service';
+import { PasswordResetService } from './password-reset.service';
+import { CustomersRepository } from './customers.repository';
+import { RefreshTokensRepository } from './refresh-tokens.repository';
+import { PasswordResetTokensRepository } from './password-reset-tokens.repository';
+import { PasswordHasher } from './password/password-hasher';
+import { CustomerGuard } from './customer.guard';
+import { CsrfGuard } from './csrf.guard';
+import { passwordResetMailerProvider } from './mail/password-reset-mailer.provider';
+import { PrismaModule } from '../prisma/prisma.module';
 
 /**
  * Módulo del seam de auth admin (ADR-0009). Expone `POST /v1/admin/auth/login`
@@ -14,6 +27,7 @@ import { AuthThrottlerGuard } from './auth-throttler.guard';
  */
 @Module({
   imports: [
+    PrismaModule,
     JwtModule.register({}),
     // §7.3 — throttle por IP acotado a la superficie de auth. La ventana y el
     // límite salen de env (validados) para poder endurecerlos por entorno sin
@@ -41,8 +55,26 @@ import { AuthThrottlerGuard } from './auth-throttler.guard';
       ],
     }),
   ],
-  controllers: [AdminAuthController],
-  providers: [AdminGuard, AdminAuthService, AuthThrottlerGuard],
-  exports: [AdminGuard, AdminAuthService, JwtModule],
+  controllers: [AdminAuthController, CustomerAuthController],
+  providers: [
+    AdminGuard,
+    AdminAuthService,
+    AuthThrottlerGuard,
+    // US-014 — repositorios, primitivas, services y guards del seam de cliente.
+    CustomersRepository,
+    RefreshTokensRepository,
+    PasswordResetTokensRepository,
+    PasswordHasher,
+    CredentialsService,
+    SessionService,
+    CustomerAuthService,
+    PasswordResetService,
+    CustomerGuard,
+    CsrfGuard,
+    // El adapter de email se elige por entorno (T7.2): Resend con clave, log sin
+    // ella. En producción, faltar la clave hace fallar el arranque (envSchema).
+    passwordResetMailerProvider,
+  ],
+  exports: [AdminGuard, AdminAuthService, JwtModule, CustomerGuard],
 })
 export class AuthModule {}

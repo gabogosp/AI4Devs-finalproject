@@ -342,7 +342,7 @@ language: es
     con otro secreto se rechaza; un token `HS256` válido con `typ='refresh'` se
     rechaza; el caso feliz pone `req.customerId`)
 
-- [ ] T4.4 `CsrfGuard` — double-submit firmado + chequeo de `Origin` (§7.5)
+- [x] T4.4 `CsrfGuard` — double-submit firmado + chequeo de `Origin` (§7.5)
   - **Pattern**: `csrf = base64url(hmacSha256(JWT_SECRET, jti))`; el guard
     recalcula desde el `jti` del token presentado y compara con
     `crypto.timingSafeEqual`; además `parseCorsOrigins(process.env.CORS_ALLOWED_ORIGINS)`
@@ -365,7 +365,7 @@ language: es
 
 ## Fase 5: Controller, DTOs y cableado — 0,7 h
 
-- [ ] T5.1 DTOs de entrada y de respuesta
+- [x] T5.1 DTOs de entrada y de respuesta
   - **Pattern**: `class-validator` sobre el DTO de entrada + DTO de respuesta con
     `static from(customer)` — `per backend-node-standards.md §4 — todo input de
     controller es un DTO validado en el borde; DTO de respuesta separado de la
@@ -384,7 +384,7 @@ language: es
     conjunto de 5 campos; `JSON.stringify(body)` no contiene `$2b$` ni la
     contraseña enviada)
 
-- [ ] T5.2 `CustomerAuthController` + cableado del módulo
+- [x] T5.2 `CustomerAuthController` + cableado del módulo
   - **Pattern**: `@Controller('v1/auth')` sin `AdminGuard`; `@UseGuards(AuthThrottlerGuard)`
     + `@SkipThrottle({ storefront: true })` a nivel de clase, espejando
     `AdminAuthController`; los guards de sesión (`CustomerGuard`, `CsrfGuard`) por
@@ -404,7 +404,7 @@ language: es
     cuerpo; `GET /v1/auth/me` con la cookie → 200 con el email; sin cookie → 401
     `dsm:auth/unauthenticated`)
 
-- [ ] T5.3 CORS: header `X-CSRF-Token` en la allowlist
+- [x] T5.3 CORS: header `X-CSRF-Token` en la allowlist
   - **Pattern**: agregar `'X-CSRF-Token'` a `allowedHeaders` en `app.enableCors`
     de `configureApp` — `per security-standards.md §7.2 — permitir sólo los
     métodos y headers que la API realmente usa; nunca * con credenciales`.

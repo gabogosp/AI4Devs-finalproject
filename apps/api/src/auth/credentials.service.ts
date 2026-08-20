@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InvalidCredentialsError } from '../common/errors/auth-errors';
 import { CustomersRepository, SafeCustomer } from './customers.repository';
@@ -10,6 +10,17 @@ export interface Clock {
 }
 
 export const SYSTEM_CLOCK: Clock = { now: () => new Date() };
+
+/**
+ * Token de inyección del reloj.
+ *
+ * Hizo falta porque un parámetro con valor por defecto **no** exime a Nest de
+ * intentar resolverlo: TypeScript emite igual su tipo en `design:paramtypes`, y
+ * el contenedor falla al arrancar con "can't resolve dependencies ... index [3]".
+ * `@Optional()` + token explícito deja el default operativo para los tests que
+ * construyen la clase a mano y resoluble para el contenedor.
+ */
+export const CLOCK = Symbol('CLOCK');
 
 /**
  * Verificación de credenciales con bloqueo temporal — `security-standards.md`
@@ -32,7 +43,7 @@ export class CredentialsService {
     private readonly customers: CustomersRepository,
     private readonly hasher: PasswordHasher,
     private readonly config: ConfigService,
-    private readonly clock: Clock = SYSTEM_CLOCK,
+    @Optional() @Inject(CLOCK) private readonly clock: Clock = SYSTEM_CLOCK,
   ) {}
 
   private get maxFailures(): number {
