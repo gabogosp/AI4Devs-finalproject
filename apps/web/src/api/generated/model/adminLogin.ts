@@ -6,7 +6,11 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface AdminLogin {
-  /** @minLength 1 */
-  bootstrapToken: string;
-}
+/**
+ * Dos formas admitidas y ninguna más: `{bootstrapToken}` (camino interino de US-001) o `{email, password}` (US-014). La validación es condicional sobre el mismo objeto para no cambiar la ruta ni la forma de la respuesta.
+ */
+export type AdminLogin = (unknown & {
+  bootstrapToken?: string;
+  email?: string;
+  password?: string;
+});

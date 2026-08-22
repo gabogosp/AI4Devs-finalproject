@@ -200,7 +200,7 @@ language: es
     `deleteById` borra las líneas en cascada; `countItems` cuenta líneas distintas, no
     unidades; `touch` mueve `expires_at` y `updated_at`)
 
-- [ ] T2.2 `ProductsRepository.findManyBySlugs` — lectura de las líneas del carrito
+- [x] T2.2 `ProductsRepository.findManyBySlugs` — lectura de las líneas del carrito
   - **Pattern**: método nuevo en el repositorio existente (no un acceso a ORM paralelo)
     que trae los productos de un conjunto de slugs **sin filtrar por estado**, porque
     la lectura del carrito necesita mostrar también los despublicados para poder

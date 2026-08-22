@@ -106,6 +106,49 @@ export class ProductsRepository {
   }
 
   /**
+   * Lectura de las líneas del carrito (US-007 T2.2): trae los productos de un
+   * conjunto de slugs **sin filtrar por estado**, a propósito.
+   *
+   * Es la contracara de `findPublishedBySlug`. El carrito necesita ver también los
+   * `draft` y `archived` para poder **marcarlos** como no disponibles (AC-6): si
+   * los filtrara, la línea desaparecería del carrito sin explicación y el cliente
+   * perdería la información de qué quería. Agregar sigue yendo por
+   * `findPublishedBySlug`, y por eso AC-10 devuelve el mismo 404 que un slug
+   * inexistente.
+   *
+   * Una sola query para todo el conjunto: la lectura del carrito está acotada por
+   * `CART_MAX_ITEMS`, pero un N+1 acá sería 50 round-trips por `GET`.
+   */
+  findManyBySlugs(slugs: string[]): Promise<
+    Array<
+      Pick<
+        Product,
+        | 'id'
+        | 'slug'
+        | 'name'
+        | 'image_url'
+        | 'price_ars_cents'
+        | 'stock'
+        | 'status'
+      >
+    >
+  > {
+    if (slugs.length === 0) return Promise.resolve([]);
+    return this.prisma.product.findMany({
+      where: { slug: { in: slugs } },
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        image_url: true,
+        price_ars_cents: true,
+        stock: true,
+        status: true,
+      },
+    });
+  }
+
+  /**
    * Listado público por categorías (US-002 AC-3/AC-7/AC-8). Recibe varios ids
    * porque un rubro agrega los productos de sus subrubros (decisión D1); un
    * subrubro pasa un solo id. Sólo `published`: draft/archived nunca aparecen,

@@ -204,6 +204,58 @@ describe('ProductsRepository (products.repository, integration)', () => {
     });
   });
 
+  describe('findManyBySlugs (US-007 T2.2 — lectura de las líneas del carrito)', () => {
+    beforeEach(async () => {
+      await repo.create({ ...base('CART-PUB'), slug: 'pub', status: 'published' });
+      await repo.create({ ...base('CART-DRA'), slug: 'dra', status: 'draft' });
+      await repo.create({ ...base('CART-ARC'), slug: 'arc', status: 'archived' });
+    });
+
+    it('devuelve los 3 estados: el carrito necesita ver los ocultos para MARCARLOS (AC-6)', async () => {
+      const found = await repo.findManyBySlugs(['pub', 'dra', 'arc']);
+
+      expect(found.map((p) => p.slug).sort()).toEqual(['arc', 'dra', 'pub']);
+      expect(found.map((p) => p.status).sort()).toEqual([
+        'archived',
+        'draft',
+        'published',
+      ]);
+    });
+
+    it('trae los campos que la vista del carrito necesita', async () => {
+      const [p] = await repo.findManyBySlugs(['pub']);
+
+      expect(Object.keys(p).sort()).toEqual(
+        [
+          'id',
+          'slug',
+          'name',
+          'image_url',
+          'price_ars_cents',
+          'stock',
+          'status',
+        ].sort(),
+      );
+    });
+
+    it('los slugs inexistentes simplemente no aparecen', async () => {
+      const found = await repo.findManyBySlugs(['pub', 'no-existe-999']);
+      expect(found.map((p) => p.slug)).toEqual(['pub']);
+    });
+
+    it('conjunto vacío → array vacío sin ir a la base', async () => {
+      expect(await repo.findManyBySlugs([])).toEqual([]);
+    });
+
+    it('findPublishedBySlug NO cambió: sigue devolviendo null para draft y archived', async () => {
+      // US-003 depende de esto: si el filtro se relajara, la ficha pública
+      // empezaría a servir productos ocultos.
+      expect(await repo.findPublishedBySlug('dra')).toBeNull();
+      expect(await repo.findPublishedBySlug('arc')).toBeNull();
+      expect(await repo.findPublishedBySlug('pub')).not.toBeNull();
+    });
+  });
+
   it('slug duplicado → ConflictError que apunta a slug, no a sku', async () => {
     await repo.create({ ...base('DUP-001'), slug: 'mismo-slug' });
 

@@ -61,6 +61,19 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 ## Pre-requisitos
 
 - [ ] **P1 — BLOQUEANTE: US-018 FE cerrada y `apps/web` sin cambios sin commitear**
+
+  > **DESVIACIÓN AUTORIZADA (2026-08-22, PO)** — el gate sigue **en rojo** y no se marca verde.
+  > Estado al ejecutar: `apps/web` **limpio** (la condición que protege del barrido de trabajo
+  > sin commitear, que es el peligro agudo, **se cumple**), pero US-018 FE tiene **8 tasks
+  > abiertas** y su sesión editó el header hace tres commits.
+  >
+  > El PO autorizó ejecutar **sólo la Fase 0** (T0.1–T0.6), que es plomería de red y **no toca
+  > `app/(storefront)/layout.tsx` ni el header**. La ejecución **para antes de T1.3**, que es la
+  > task que los monta. Acordado con la sesión de US-018 por mensaje, con la lista de archivos.
+  >
+  > Esto es un alcance parcial deliberado, contrario a la instrucción "no scopea parcial" de este
+  > mismo gate: se registra acá para que quede como decisión y no como olvido. **P1 se re-corre
+  > entero antes de la Fase 1.**
       (`design.md` §Riesgos, `proposal.md` §Secuencia)
 
   Esta misma sesión (`9a385021`) tiene US-018 a mitad de ejecución y US-014 FE toca **el mismo**
@@ -94,7 +107,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     que AC-10 se resuelve consumiéndolo (T2.1/T2.2/T2.4) y el deferral que este plan iba a
     declarar **queda cancelado** (`design.md` D10, nota de reconciliación).
 
-- [ ] **P2 — BLOQUEANTE: OQ-FE-1 ratificada** (`proposal.md` §Open questions)
+- [x] **P2 — BLOQUEANTE: OQ-FE-1 ratificada** (`proposal.md` §Open questions)
 
   La Fase 0 entera materializa la opción elegida. Arrancar sin ratificación significa construir
   el borde de red dos veces.
@@ -104,11 +117,16 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     US-014 --regenerate`) — no se "adapta sobre la marcha".
   - **Verify**:
     ```bash
-    grep -q '^Ratificada: ' openspec/changes/US-014-registro-login-frontend-web/proposal.md \
-      && echo "OK — OQ-FE-1 ratificada" || { echo "FALTA ratificación de OQ-FE-1"; exit 1; }
+    grep -qE '^`?\[Resolved: [0-9]{4}-[0-9]{2}-[0-9]{2} — opción \(a\)' openspec/changes/US-014-registro-login-frontend-web/proposal.md \
+      && echo "OK — OQ-FE-1 ratificada en la opción (a)" || { echo "FALTA ratificación de OQ-FE-1"; exit 1; }
     ```
     *(única excepción a F57: el grep apunta a este plan **a propósito**, porque la ratificación
     se escribe acá; el patrón es un ancla de línea, no una mención suelta)*
+    *(corregido 2026-08-22: el patrón original buscaba una línea `^Ratificada: ` que la
+    convención del repo no usa — la ratificación se escribe `[Resolved: {fecha} — {opción}]`.
+    Daba **rojo con la decisión ya tomada**: comprobaba el formato esperado en vez del hecho,
+    la misma clase de defecto que F50. El ancla nuevo exige fecha **y** que la opción sea la
+    (a), así que sigue fallando si se ratificara otra — que es cuando el plan debe regenerarse)*
 
 ---
 
@@ -116,7 +134,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 > Es la fase cero: no entrega UI. Nada de la Fase 1 puede empezar antes de que T0.3 pase.
 
-- [ ] **T0.1** Regenerar los artefactos derivados del contrato (DTOs + Zod + MSW) (0.4 h)
+- [x] **T0.1** Regenerar los artefactos derivados del contrato (DTOs + Zod + MSW) (0.4 h)
 
   Hoy el contrato declara las 7 operaciones de `customer-auth` y el cliente generado no conoce
   ninguna (`grep -c loginCustomer src/api/generated/endpoints.ts` → `0`). El gate
@@ -134,15 +152,29 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
   - **Verify**:
     ```bash
     pnpm --filter @dsm/web codegen \
-      && git diff --quiet -- apps/web/src/api/generated \
+      && A=$(find apps/web/src/api/generated -type f -exec md5 -q {} \; | sort | md5 -q) \
+      && pnpm --filter @dsm/web codegen \
+      && B=$(find apps/web/src/api/generated -type f -exec md5 -q {} \; | sort | md5 -q) \
+      && [ "$A" = "$B" ] \
       && for op in registerCustomer loginCustomer refreshSession logoutCustomer \
                    getCurrentCustomer requestPasswordReset confirmPasswordReset; do
            grep -q "export const $op" apps/web/src/api/generated/endpoints.ts || { echo "FALTA $op"; exit 1; }
          done \
-      && grep -q 'PostAuthLoginResponse' apps/web/src/api/generated/zod.ts \
-      && echo "OK — codegen fresco y completo"
+      && grep -q 'export const LoginCustomerResponse' apps/web/src/api/generated/zod.ts \
+      && grep -q 'export const RegisterCustomerBody' apps/web/src/api/generated/zod.ts \
+      && echo "OK — codegen fresco, idempotente y completo"
     ```
-    *(el `git diff --quiet` corre **después** de regenerar: prueba frescura, no presencia)*
+    *(**corregido 2026-08-22 al ejecutar** — el `Verify` original tenía dos defectos y ninguno
+    era del criterio, que se cumplía:*
+    1. *`git diff --quiet` comparaba contra **HEAD**, no contra la corrida anterior. En la task
+       que **introduce** el código generado, el diff contra HEAD es enorme por definición: sólo
+       podría pasar después de commitear, o sea nunca durante la ejecución. Medía "no cambió
+       respecto de lo commiteado", no "regenerar es idempotente". Ahora se comparan los
+       checksums de dos corridas seguidas, que es el hecho que interesa e independiente de git.*
+    2. *`PostAuthLoginResponse` no existe: orval nombra por `operationId`, así que el schema es
+       `LoginCustomerResponse`. El nombre viejo sale de la convención por-path, que es la que
+       orval usa sólo cuando la operación **no** declara `operationId` — el caso del login admin
+       (`PostAdminAuthLoginResponse`), no el de estas siete.)*
 
 - [ ] **T0.2** Stub E2E: superficie `/v1/auth/*` con `Set-Cookie` real (0.6 h)
 

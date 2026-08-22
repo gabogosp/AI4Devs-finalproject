@@ -12,11 +12,18 @@ import type {
   CategoryTree,
   CreateCategory,
   CreateProduct,
+  Customer,
+  CustomerEnvelope,
   GetAdminProductsParams,
+  LoginRequest,
   Problem,
   ProblemResponse,
   Product,
   ProductList,
+  RateLimitedResponse,
+  RegisterRequest,
+  ResetConfirm,
+  ResetRequest,
   StorefrontCategory,
   StorefrontListCategoryProductsParams,
   StorefrontProduct,
@@ -38,6 +45,374 @@ import type {
 } from 'msw';
 
 import { customFetch } from '../../lib/http/client';
+export type registerCustomerResponse201 = {
+  data: CustomerEnvelope
+  status: 201
+}
+
+export type registerCustomerResponse409 = {
+  data: ProblemResponse
+  status: 409
+}
+
+export type registerCustomerResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type registerCustomerResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type registerCustomerResponseSuccess = (registerCustomerResponse201) & {
+  headers: Headers;
+};
+export type registerCustomerResponseError = (registerCustomerResponse409 | registerCustomerResponse422 | registerCustomerResponse429) & {
+  headers: Headers;
+};
+
+export type registerCustomerResponse = (registerCustomerResponseSuccess | registerCustomerResponseError)
+
+export const getRegisterCustomerUrl = () => {
+
+
+
+
+  return `/v1/auth/register`
+}
+
+/**
+ * Sin verificación de email intermedia: la cuenta queda usable en el acto. Un email ya registrado devuelve 409 con un mensaje que NO confirma que la dirección exista (AC-6). Enviar `role`, `id` o `password_hash` devuelve 422: no se ignoran.
+ * @summary Alta de cliente con sesión activa inmediata (AC-1)
+ */
+export const registerCustomer = async (registerRequest: RegisterRequest, options?: Parameters<typeof customFetch>[1]): Promise<registerCustomerResponse> => {
+
+  return customFetch<registerCustomerResponse>(getRegisterCustomerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(registerRequest)
+  }
+);}
+
+
+
+export type loginCustomerResponse200 = {
+  data: CustomerEnvelope
+  status: 200
+}
+
+export type loginCustomerResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type loginCustomerResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type loginCustomerResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type loginCustomerResponseSuccess = (loginCustomerResponse200) & {
+  headers: Headers;
+};
+export type loginCustomerResponseError = (loginCustomerResponse401 | loginCustomerResponse422 | loginCustomerResponse429) & {
+  headers: Headers;
+};
+
+export type loginCustomerResponse = (loginCustomerResponseSuccess | loginCustomerResponseError)
+
+export const getLoginCustomerUrl = () => {
+
+
+
+
+  return `/v1/auth/login`
+}
+
+/**
+ * Contraseña incorrecta, cuenta inexistente y cuenta bloqueada devuelven respuestas idénticas y con latencias del mismo orden (AC-5).
+ * @summary Login por credenciales (AC-2)
+ */
+export const loginCustomer = async (loginRequest: LoginRequest, options?: Parameters<typeof customFetch>[1]): Promise<loginCustomerResponse> => {
+
+  return customFetch<loginCustomerResponse>(getLoginCustomerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(loginRequest)
+  }
+);}
+
+
+
+export type refreshSessionResponse200 = {
+  data: CustomerEnvelope
+  status: 200
+}
+
+export type refreshSessionResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type refreshSessionResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type refreshSessionResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type refreshSessionResponseSuccess = (refreshSessionResponse200) & {
+  headers: Headers;
+};
+export type refreshSessionResponseError = (refreshSessionResponse401 | refreshSessionResponse403 | refreshSessionResponse429) & {
+  headers: Headers;
+};
+
+export type refreshSessionResponse = (refreshSessionResponseSuccess | refreshSessionResponseError)
+
+export const getRefreshSessionUrl = () => {
+
+
+
+
+  return `/v1/auth/refresh`
+}
+
+/**
+ * El refresh es de un solo uso. Presentar uno ya rotado se trata como robo: revoca la familia entera y devuelve el MISMO 401 que un token inexistente — distinguirlos le confirmaría al atacante que su réplica llegó. No exige access válido: ya venció, que es el motivo de llamar a esta ruta.
+ * @summary Rota el refresh y renueva la sesión (ADR-0011)
+ */
+export const refreshSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<refreshSessionResponse> => {
+
+  return customFetch<refreshSessionResponse>(getRefreshSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type logoutCustomerResponse204 = {
+  data: void
+  status: 204
+}
+
+export type logoutCustomerResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type logoutCustomerResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type logoutCustomerResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type logoutCustomerResponseSuccess = (logoutCustomerResponse204) & {
+  headers: Headers;
+};
+export type logoutCustomerResponseError = (logoutCustomerResponse401 | logoutCustomerResponse403 | logoutCustomerResponse429) & {
+  headers: Headers;
+};
+
+export type logoutCustomerResponse = (logoutCustomerResponseSuccess | logoutCustomerResponseError)
+
+export const getLogoutCustomerUrl = () => {
+
+
+
+
+  return `/v1/auth/logout`
+}
+
+/**
+ * Revocación inmediata del refresh. Cierra la familia del dispositivo actual; las otras sesiones del cliente siguen vivas. Límite declarado: el access ya emitido sigue siendo válido hasta que vence (≤ AUTH_ACCESS_TTL_MIN), consecuencia aceptada de un access stateless.
+ * @summary Cierra la sesión y revoca la familia de refresh (AC-3)
+ */
+export const logoutCustomer = async ( options?: Parameters<typeof customFetch>[1]): Promise<logoutCustomerResponse> => {
+
+  return customFetch<logoutCustomerResponse>(getLogoutCustomerUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type getCurrentCustomerResponse200 = {
+  data: Customer
+  status: 200
+}
+
+export type getCurrentCustomerResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getCurrentCustomerResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type getCurrentCustomerResponseSuccess = (getCurrentCustomerResponse200) & {
+  headers: Headers;
+};
+export type getCurrentCustomerResponseError = (getCurrentCustomerResponse401 | getCurrentCustomerResponse429) & {
+  headers: Headers;
+};
+
+export type getCurrentCustomerResponse = (getCurrentCustomerResponseSuccess | getCurrentCustomerResponseError)
+
+export const getGetCurrentCustomerUrl = () => {
+
+
+
+
+  return `/v1/auth/me`
+}
+
+/**
+ * Lee el access de la cookie dsm_access, no del header Authorization. Un token con role=admin NO abre esta ruta.
+ * @summary Cliente de la sesión en curso
+ */
+export const getCurrentCustomer = async ( options?: Parameters<typeof customFetch>[1]): Promise<getCurrentCustomerResponse> => {
+
+  return customFetch<getCurrentCustomerResponse>(getGetCurrentCustomerUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type requestPasswordResetResponse202 = {
+  data: void
+  status: 202
+}
+
+export type requestPasswordResetResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type requestPasswordResetResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type requestPasswordResetResponseSuccess = (requestPasswordResetResponse202) & {
+  headers: Headers;
+};
+export type requestPasswordResetResponseError = (requestPasswordResetResponse422 | requestPasswordResetResponse429) & {
+  headers: Headers;
+};
+
+export type requestPasswordResetResponse = (requestPasswordResetResponseSuccess | requestPasswordResetResponseError)
+
+export const getRequestPasswordResetUrl = () => {
+
+
+
+
+  return `/v1/auth/password-reset/request`
+}
+
+/**
+ * SIEMPRE 202, con cuerpo y cabeceras idénticos exista o no la cuenta — incluido el Content-Length. Tampoco cambia si se superó el límite por cuenta ni si el proveedor de email falla: cualquier diferencia observable convertiría la ruta en un verificador de direcciones registradas.
+ * @summary Solicita el enlace de recuperación (AC-11)
+ */
+export const requestPasswordReset = async (resetRequest: ResetRequest, options?: Parameters<typeof customFetch>[1]): Promise<requestPasswordResetResponse> => {
+
+  return customFetch<requestPasswordResetResponse>(getRequestPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resetRequest)
+  }
+);}
+
+
+
+export type confirmPasswordResetResponse200 = {
+  data: void
+  status: 200
+}
+
+export type confirmPasswordResetResponse400 = {
+  data: ProblemResponse
+  status: 400
+}
+
+export type confirmPasswordResetResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type confirmPasswordResetResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type confirmPasswordResetResponseSuccess = (confirmPasswordResetResponse200) & {
+  headers: Headers;
+};
+export type confirmPasswordResetResponseError = (confirmPasswordResetResponse400 | confirmPasswordResetResponse422 | confirmPasswordResetResponse429) & {
+  headers: Headers;
+};
+
+export type confirmPasswordResetResponse = (confirmPasswordResetResponseSuccess | confirmPasswordResetResponseError)
+
+export const getConfirmPasswordResetUrl = () => {
+
+
+
+
+  return `/v1/auth/password-reset/confirm`
+}
+
+/**
+ * Completar el reset revoca TODAS las sesiones de la cuenta (§3.7), borra los demás tokens pendientes y levanta el bloqueo por intentos fallidos. NO emite sesión: devolver una dejaría viva justo la del que completó el flujo, y puede haberlo completado el atacante. Token inexistente, vencido o ya usado devuelven el mismo 400.
+ * @summary Fija la contraseña nueva con el token del email (AC-4, AC-7)
+ */
+export const confirmPasswordReset = async (resetConfirm: ResetConfirm, options?: Parameters<typeof customFetch>[1]): Promise<confirmPasswordResetResponse> => {
+
+  return customFetch<confirmPasswordResetResponse>(getConfirmPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(resetConfirm)
+  }
+);}
+
+
+
 export type postAdminAuthLoginResponse200 = {
   data: AdminLoginResponse
   status: 200
@@ -81,8 +456,10 @@ export const getPostAdminAuthLoginUrl = () => {
 }
 
 /**
- * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular. US-014 la reemplaza preservando el contrato `role=admin`.
- * @summary Login admin — intercambia el bootstrap token por un JWT (AC-8)
+ * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular.
+ *
+ * US-014 agregó el login por `{email, password}` contra una cuenta con `role='admin'`, preservando la ruta, el transporte y la forma de la respuesta `{ token }` — el panel de US-001 no requirió cambios. El camino `{bootstrapToken}` sigue disponible detrás de `ADMIN_AUTH_ENABLED` como salida de emergencia. Con credenciales, la respuesta además emite las cookies de sesión. Las credenciales de una cuenta que existe pero NO es admin devuelven el mismo 401 que una contraseña incorrecta.
+ * @summary Login admin — bootstrap token o credenciales (AC-8, US-014 T8.1)
  */
 export const postAdminAuthLogin = async (adminLogin: AdminLogin, options?: Parameters<typeof customFetch>[1]): Promise<postAdminAuthLoginResponse> => {
 
@@ -698,6 +1075,14 @@ export const storefrontListCategoryProducts = async (slug: string,
 );}
 
 
+export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+
+export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+
+export const getRefreshSessionResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+
+export const getGetCurrentCustomerResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
 export const getPostAdminAuthLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
 export const getPostAdminCategoriesResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
@@ -722,6 +1107,84 @@ export const getStorefrontGetCategoryResponseMock = (overrideResponse: Partial<E
 
 export const getStorefrontListCategoryProductsResponseMock = (overrideResponse: Partial<Extract<StorefrontProductPage, object>> = {}): StorefrontProductPage => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean()})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
+
+export const getRegisterCustomerMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
+  return http.post('*/auth/register', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRegisterCustomerResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
+export const getLoginCustomerMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
+  return http.post('*/auth/login', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getLoginCustomerResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRefreshSessionMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
+  return http.post('*/auth/refresh', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRefreshSessionResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getLogoutCustomerMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/auth/logout', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 204
+      })
+  }, options)
+}
+
+export const getGetCurrentCustomerMockHandler = (overrideResponse?: Customer | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Customer> | Customer), options?: RequestHandlerOptions) => {
+  return http.get('*/auth/me', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetCurrentCustomerResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRequestPasswordResetMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/auth/password-reset/request', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 202
+      })
+  }, options)
+}
+
+export const getConfirmPasswordResetMockHandler = (overrideResponse?: void | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<void> | void), options?: RequestHandlerOptions) => {
+  return http.post('*/auth/password-reset/confirm', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+  if (typeof overrideResponse === 'function') {await overrideResponse(info); }
+
+    return new HttpResponse(null,
+      { status: 200
+      })
+  }, options)
+}
 
 export const getPostAdminAuthLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
   return http.post('*/admin/auth/login', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
@@ -867,6 +1330,13 @@ export const getStorefrontListCategoryProductsMockHandler = (overrideResponse?: 
   }, options)
 }
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
+  getRegisterCustomerMockHandler(),
+  getLoginCustomerMockHandler(),
+  getRefreshSessionMockHandler(),
+  getLogoutCustomerMockHandler(),
+  getGetCurrentCustomerMockHandler(),
+  getRequestPasswordResetMockHandler(),
+  getConfirmPasswordResetMockHandler(),
   getPostAdminAuthLoginMockHandler(),
   getPostAdminCategoriesMockHandler(),
   getGetAdminCategoriesMockHandler(),

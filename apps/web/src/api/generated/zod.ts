@@ -8,15 +8,130 @@
 import * as zod from 'zod';
 
 /**
- * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular. US-014 la reemplaza preservando el contrato `role=admin`.
- * @summary Login admin — intercambia el bootstrap token por un JWT (AC-8)
+ * Sin verificación de email intermedia: la cuenta queda usable en el acto. Un email ya registrado devuelve 409 con un mensaje que NO confirma que la dirección exista (AC-6). Enviar `role`, `id` o `password_hash` devuelve 422: no se ignoran.
+ * @summary Alta de cliente con sesión activa inmediata (AC-1)
  */
+export const registerCustomerBodyNameMax = 120;
+
+export const registerCustomerBodyPhoneMax = 40;
 
 
 
-export const PostAdminAuthLoginBody = zod.object({
-  "bootstrapToken": zod.string().min(1)
+export const RegisterCustomerBody = zod.object({
+  "email": zod.string().email(),
+  "name": zod.string().min(1).max(registerCustomerBodyNameMax),
+  "password": zod.string().describe('Mínimo 8 caracteres, máximo 72 BYTES (límite de bcrypt: se rechaza, no se trunca) y fuera del corpus de filtradas. Sin reglas de composición.'),
+  "phone": zod.string().max(registerCustomerBodyPhoneMax).nullish()
 })
+
+export const RegisterCustomerResponse = zod.object({
+  "customer": zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "phone": zod.string().nullable(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+})
+
+
+/**
+ * Contraseña incorrecta, cuenta inexistente y cuenta bloqueada devuelven respuestas idénticas y con latencias del mismo orden (AC-5).
+ * @summary Login por credenciales (AC-2)
+ */
+export const LoginCustomerBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string()
+})
+
+export const LoginCustomerResponse = zod.object({
+  "customer": zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "phone": zod.string().nullable(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+})
+
+
+/**
+ * El refresh es de un solo uso. Presentar uno ya rotado se trata como robo: revoca la familia entera y devuelve el MISMO 401 que un token inexistente — distinguirlos le confirmaría al atacante que su réplica llegó. No exige access válido: ya venció, que es el motivo de llamar a esta ruta.
+ * @summary Rota el refresh y renueva la sesión (ADR-0011)
+ */
+export const RefreshSessionHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige además de un Origin de la allowlist; la ausencia de Origin se rechaza.')
+})
+
+export const RefreshSessionResponse = zod.object({
+  "customer": zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "phone": zod.string().nullable(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+})
+
+
+/**
+ * Revocación inmediata del refresh. Cierra la familia del dispositivo actual; las otras sesiones del cliente siguen vivas. Límite declarado: el access ya emitido sigue siendo válido hasta que vence (≤ AUTH_ACCESS_TTL_MIN), consecuencia aceptada de un access stateless.
+ * @summary Cierra la sesión y revoca la familia de refresh (AC-3)
+ */
+export const LogoutCustomerHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige además de un Origin de la allowlist; la ausencia de Origin se rechaza.')
+})
+
+export const LogoutCustomerResponse = zod.void()
+
+
+/**
+ * Lee el access de la cookie dsm_access, no del header Authorization. Un token con role=admin NO abre esta ruta.
+ * @summary Cliente de la sesión en curso
+ */
+export const GetCurrentCustomerResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "phone": zod.string().nullable(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+
+
+/**
+ * SIEMPRE 202, con cuerpo y cabeceras idénticos exista o no la cuenta — incluido el Content-Length. Tampoco cambia si se superó el límite por cuenta ni si el proveedor de email falla: cualquier diferencia observable convertiría la ruta en un verificador de direcciones registradas.
+ * @summary Solicita el enlace de recuperación (AC-11)
+ */
+export const RequestPasswordResetBody = zod.object({
+  "email": zod.string().email()
+})
+
+export const RequestPasswordResetResponse = zod.void()
+
+
+/**
+ * Completar el reset revoca TODAS las sesiones de la cuenta (§3.7), borra los demás tokens pendientes y levanta el bloqueo por intentos fallidos. NO emite sesión: devolver una dejaría viva justo la del que completó el flujo, y puede haberlo completado el atacante. Token inexistente, vencido o ya usado devuelven el mismo 400.
+ * @summary Fija la contraseña nueva con el token del email (AC-4, AC-7)
+ */
+export const ConfirmPasswordResetBody = zod.object({
+  "token": zod.string(),
+  "password": zod.string()
+})
+
+export const ConfirmPasswordResetResponse = zod.unknown()
+
+
+/**
+ * Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo sería circular.
+ *
+ * US-014 agregó el login por `{email, password}` contra una cuenta con `role='admin'`, preservando la ruta, el transporte y la forma de la respuesta `{ token }` — el panel de US-001 no requirió cambios. El camino `{bootstrapToken}` sigue disponible detrás de `ADMIN_AUTH_ENABLED` como salida de emergencia. Con credenciales, la respuesta además emite las cookies de sesión. Las credenciales de una cuenta que existe pero NO es admin devuelven el mismo 401 que una contraseña incorrecta.
+ * @summary Login admin — bootstrap token o credenciales (AC-8, US-014 T8.1)
+ */
+export const PostAdminAuthLoginBody = zod.union([zod.unknown(),zod.unknown()]).and(zod.object({
+  "bootstrapToken": zod.string().optional(),
+  "email": zod.string().email().optional(),
+  "password": zod.string().optional()
+})).describe('Dos formas admitidas y ninguna más: `{bootstrapToken}` (camino interino de US-001) o `{email, password}` (US-014). La validación es condicional sobre el mismo objeto para no cambiar la ruta ni la forma de la respuesta.')
 
 export const PostAdminAuthLoginResponse = zod.object({
   "token": zod.string().describe('JWT con claim role=admin')
