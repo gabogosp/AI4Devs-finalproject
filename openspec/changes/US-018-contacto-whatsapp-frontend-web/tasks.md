@@ -496,7 +496,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Fase 6: Documentación
 
-- [ ] **T6.1** README del canal de contacto (0.2 h)
+- [x] **T6.1** README del canal de contacto (0.2 h)
 
   - **Pattern**: `apps/web/README.md` ya documenta `NEXT_PUBLIC_WHATSAPP_PHONE`. Se agrega el
     mapa de **dónde vive el canal ahora** y el bloqueo de despliegue:

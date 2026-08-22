@@ -95,6 +95,22 @@ pnpm --filter @dsm/web lint
 pnpm --filter @dsm/web typecheck
 ```
 
+### Canal de contacto (WhatsApp — US-018)
+
+- **Fuente única del enlace**: `src/features/contact/whatsapp.ts`. **Ningún otro archivo
+  compone una URL `wa.me`** (AC-5); si hace falta un enlace nuevo, se usa `whatsappHref()`.
+- **Superficies**: header y footer del storefront (`app/(storefront)/layout.tsx`, montados en
+  el layout para que estén en toda página pública) y la ficha de producto. El panel
+  `/admin/*` **no lo lleva** a propósito: es la superficie privada del dueño (ADR-0010).
+- **Forma canónica `wa.me`**, no `api.whatsapp.com`: es la que resuelve sola el desvío a la
+  app móvil, a WhatsApp Web o a la de escritorio, sin ninguna detección de dispositivo.
+- **Sin backend**: el contacto no hace ni una llamada de red, y un guard lo verifica espiando
+  `globalThis.fetch` por debajo del cliente HTTP (`src/features/contact/noBackend.test.tsx`).
+- ⚠ **Bloqueo de despliegue**: el default `5491100000000` es un **placeholder**. Publicar así
+  ofrece un canal que no existe —el visitante escribe y nadie contesta—, que es peor que no
+  ofrecerlo. El gate es `scripts/check-whatsapp-configured.mjs`, para enganchar al job de
+  deploy (`Deferred: US-019`).
+
 ## Auth admin (seam, ADR-0009)
 
 El panel obtiene un JWT `role=admin` vía una **página de acceso mínima**

@@ -252,7 +252,7 @@
   us-id: US-018
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in progress  # 14/14 tasks cerradas 2026-08-22; suite-level verde. Pendiente /commit
   parent-us: docs/user-stories/US-018-contacto-whatsapp.md
   linear-task-id: null
   audit-baseline: null
