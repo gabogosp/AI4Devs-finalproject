@@ -289,7 +289,7 @@ language: es
 
 ## Fase 4: Caso de uso del import — 1,8 h
 
-- [ ] T4.1 `CategoryResolver` — auto-creación normalizada (AC-2)
+- [x] T4.1 `CategoryResolver` — auto-creación normalizada (AC-2)
   - **Pattern**: normalizar con la `slugify()` **existente** (la misma que usa
     `CategoriesService.create`, US-001) antes de reconciliar — `per base-standards.md §1 —
     single source of truth: una regla, un lugar`.
