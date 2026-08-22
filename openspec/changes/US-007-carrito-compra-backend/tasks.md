@@ -373,7 +373,7 @@ language: es
     `PUT` → `GET` → `DELETE` → `GET` deja el carrito vacío; las suites de RBAC y de
     aceptación del storefront siguen verdes)
 
-- [ ] T4.3 Tercer throttler nombrado `cart` + aislamiento de los presupuestos existentes
+- [x] T4.3 Tercer throttler nombrado `cart` + aislamiento de los presupuestos existentes
   - **Pattern**: agregar `{ name: 'cart', ttl: CART_RATE_LIMIT_TTL_MS, limit: CART_RATE_LIMIT_MAX }`
     al array **ya registrado** de `ThrottlerModule.forRootAsync` en `auth.module.ts`
     (el módulo es global y se registra una sola vez), `@Throttle({ cart: { limit: CART_WRITE_RATE_LIMIT_MAX } })`

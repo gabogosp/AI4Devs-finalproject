@@ -29,7 +29,7 @@ import { CatalogEventsService } from '../observability/catalog-events.service';
  */
 @Controller('v1/categories')
 @UseGuards(StorefrontThrottlerGuard)
-@SkipThrottle({ auth: true })
+@SkipThrottle({ auth: true, cart: true })
 @UseInterceptors(StorefrontCacheInterceptor)
 export class StorefrontCategoriesController {
   constructor(

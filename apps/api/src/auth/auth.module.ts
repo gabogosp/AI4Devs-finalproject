@@ -53,6 +53,15 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('STOREFRONT_RATE_LIMIT_TTL_MS', 60_000),
           limit: config.get<number>('STOREFRONT_RATE_LIMIT_MAX', 60),
         },
+        // §7.3 — tercer throttler nombrado: la superficie del carrito (US-007),
+        // primera pública de ESCRITURA. El `limit` de acá es el de lectura; las
+        // escrituras lo bajan con `@Throttle({ cart: { limit: … } })` en el
+        // handler, porque cada una crea o modifica filas.
+        {
+          name: 'cart',
+          ttl: config.get<number>('CART_RATE_LIMIT_TTL_MS', 60_000),
+          limit: config.get<number>('CART_RATE_LIMIT_MAX', 120),
+        },
       ],
     }),
   ],

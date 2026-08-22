@@ -50,7 +50,7 @@ import { SafeCustomer } from './customers.repository';
 // §7.3 — misma disposición que `AdminAuthController`: throttler `auth` por IP,
 // y `SkipThrottle` del `storefront` para no mezclar los presupuestos.
 @UseGuards(AuthThrottlerGuard)
-@SkipThrottle({ storefront: true })
+@SkipThrottle({ storefront: true, cart: true })
 export class CustomerAuthController {
   constructor(
     private readonly auth: CustomerAuthService,

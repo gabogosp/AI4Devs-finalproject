@@ -30,7 +30,7 @@ import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-auth.dto';
 // `@SkipThrottle({ storefront: true })` deja fuera el throttler público de
 // US-003: esta ruta sólo la limita el throttler `auth` (semántica intacta).
 @UseGuards(AuthThrottlerGuard)
-@SkipThrottle({ storefront: true })
+@SkipThrottle({ storefront: true, cart: true })
 export class AdminAuthController {
   constructor(
     private readonly auth: AdminAuthService,

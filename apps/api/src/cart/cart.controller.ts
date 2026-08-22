@@ -9,13 +9,23 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { SkipThrottle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { CartService } from './cart.service';
 import { CartCsrfGuard } from './cart-csrf.guard';
 import { CartThrottlerGuard } from './cart-throttler.guard';
 import { CartDto } from './dto/cart.dto';
 import { SetCartItemDto } from './dto/set-cart-item.dto';
+
+/**
+ * Presupuesto de **escritura** (§7.3): más estricto que el de lectura, porque cada
+ * request crea o modifica filas. Se lee de `process.env` porque los decoradores se
+ * evalúan al definir la clase, antes de que exista el contenedor de DI; el valor es
+ * el mismo que `envSchema` ya validó al arrancar.
+ */
+const LIMITE_DE_ESCRITURA = Number(
+  process.env.CART_WRITE_RATE_LIMIT_MAX ?? 30,
+);
 
 /**
  * Superficie **pública** del carrito del invitado (US-007) — la primera de
@@ -62,6 +72,7 @@ export class CartController {
    */
   @Put('items/:slug')
   @UseGuards(CartCsrfGuard)
+  @Throttle({ cart: { limit: LIMITE_DE_ESCRITURA } })
   async setItem(
     @Param('slug') slug: string,
     @Body() body: SetCartItemDto,
@@ -75,6 +86,7 @@ export class CartController {
   /** Quita la línea (AC-3). Idempotente: quitar lo que no está devuelve 200. */
   @Delete('items/:slug')
   @UseGuards(CartCsrfGuard)
+  @Throttle({ cart: { limit: LIMITE_DE_ESCRITURA } })
   async removeItem(
     @Param('slug') slug: string,
     @Req() req: Request,

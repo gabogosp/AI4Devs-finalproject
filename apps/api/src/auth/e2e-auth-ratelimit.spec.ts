@@ -135,15 +135,21 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     });
   });
 
-  it('siguen existiendo exactamente DOS throttlers: no se agregó un tercero', () => {
-    // El plan lo pide explícito. Registrar un throttler por ruta habría sido la
-    // salida fácil, y habría dejado cada presupuesto sin gobierno central: los
-    // límites por ruta van como @Throttle sobre el `auth` que ya existía.
+  it('existen exactamente TRES throttlers nombrados: uno por superficie, no uno por ruta', () => {
+    // El plan de US-014 lo pedía explícito con dos: registrar un throttler por
+    // ruta habría sido la salida fácil y habría dejado cada presupuesto sin
+    // gobierno central; los límites por ruta van como `@Throttle` sobre el
+    // throttler de la superficie.
+    //
+    // US-007 (T4.3) suma el tercero, `cart` — la primera superficie pública de
+    // escritura, con su propio presupuesto por §7.3. Sigue siendo **uno por
+    // superficie**: el límite más estricto de las escrituras del carrito es un
+    // `@Throttle({ cart: … })` en el handler, no un throttler nuevo.
     //
     // Se lee la configuración REAL que resolvió el contenedor, no el archivo
     // fuente: lo que gobierna en runtime es esto.
     const opciones = app.get<Array<{ name?: string }>>(getOptionsToken());
     const nombres = opciones.map((o) => o.name).sort();
-    expect(nombres).toEqual(['auth', 'storefront']);
+    expect(nombres).toEqual(['auth', 'cart', 'storefront']);
   });
 });

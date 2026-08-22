@@ -24,7 +24,7 @@ import { CatalogEventsService } from '../observability/catalog-events.service';
 // §7.3 — throttle por IP de la superficie pública. `@SkipThrottle({ auth: true })`
 // deja fuera el throttler estricto de auth: acá sólo aplica el `storefront`.
 @UseGuards(StorefrontThrottlerGuard)
-@SkipThrottle({ auth: true })
+@SkipThrottle({ auth: true, cart: true })
 // AC-9 (M1): caché acotada SÓLO en 2xx (el interceptor no corre en 404/429).
 @UseInterceptors(StorefrontCacheInterceptor)
 export class StorefrontProductsController {

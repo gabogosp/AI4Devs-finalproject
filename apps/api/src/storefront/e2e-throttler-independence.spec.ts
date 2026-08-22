@@ -6,19 +6,25 @@ import { AppConfigModule } from '../config/config.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CatalogEventsModule } from '../observability/catalog-events.module';
 import { AuthModule } from '../auth/auth.module';
+import { CartModule } from '../cart/cart.module';
 import { configureApp } from '../bootstrap';
 import { StorefrontModule } from './storefront.module';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
- * m4 (audit): los throttlers `auth` (US-001) y `storefront` (US-003) son
- * INDEPENDIENTES. Agotar uno no consume el presupuesto del otro — el
- * `@SkipThrottle` cruzado los aísla. Fresh app por test → storage del throttler
- * en cero.
+ * m4 (audit): los throttlers nombrados son INDEPENDIENTES. Agotar uno no consume el
+ * presupuesto de los otros — el `@SkipThrottle` cruzado los aísla. Fresh app por
+ * test → storage del throttler en cero.
+ *
+ * US-007 T4.3 lo extiende de 2 a **3** throttlers (`auth`, `storefront`, `cart`) y
+ * cubre las 6 combinaciones: agotar cada uno deja los otros dos respondiendo 2xx.
+ * Es el punto donde una regresión sería silenciosa — un `@SkipThrottle` que se
+ * olvide y el carrito empieza a gastar el presupuesto de login de la misma IP.
  */
-describe('Throttlers auth/storefront independientes (e2e-throttler-independence)', () => {
+describe('Throttlers auth/storefront/cart independientes (e2e-throttler-independence)', () => {
   const AUTH_LIMIT = 2;
   const STOREFRONT_LIMIT = 3;
+  const CART_LIMIT = 4;
   let app: INestApplication;
 
   beforeEach(async () => {
@@ -29,6 +35,7 @@ describe('Throttlers auth/storefront independientes (e2e-throttler-independence)
         CatalogEventsModule,
         AuthModule,
         StorefrontModule,
+        CartModule,
       ],
     })
       .overrideProvider(getOptionsToken())
@@ -36,6 +43,7 @@ describe('Throttlers auth/storefront independientes (e2e-throttler-independence)
         throttlers: [
           { name: 'auth', ttl: 60_000, limit: AUTH_LIMIT },
           { name: 'storefront', ttl: 60_000, limit: STOREFRONT_LIMIT },
+          { name: 'cart', ttl: 60_000, limit: CART_LIMIT },
         ],
       })
       .compile();
@@ -45,7 +53,7 @@ describe('Throttlers auth/storefront independientes (e2e-throttler-independence)
 
     const prisma = app.get(PrismaService);
     await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE products, categories RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE carts, cart_items, products, categories RESTART IDENTITY CASCADE',
     );
     const cat = await prisma.category.create({
       data: { name: 'Refrigeración', slug: 'refrigeracion' },
@@ -72,26 +80,38 @@ describe('Throttlers auth/storefront independientes (e2e-throttler-independence)
     request(app.getHttpServer())
       .post('/v1/admin/auth/login')
       .send({ bootstrapToken: 'wrong-token' });
+  const getCart = () => request(app.getHttpServer()).get('/v1/cart');
 
-  it('agotar el throttler storefront NO consume el presupuesto de auth', async () => {
-    // Agota storefront: STOREFRONT_LIMIT × 200, el siguiente 429.
-    for (let i = 0; i < STOREFRONT_LIMIT; i += 1) {
-      expect((await getProduct()).status).toBe(200);
+  /** Agota el throttler de una superficie y devuelve el status del excedente. */
+  const agotar = async (
+    peticion: () => request.Test,
+    limite: number,
+    esperado: number,
+  ) => {
+    for (let i = 0; i < limite; i += 1) {
+      expect((await peticion()).status).toBe(esperado);
     }
-    expect((await getProduct()).status).toBe(429);
+    expect((await peticion()).status).toBe(429);
+  };
 
-    // Auth sigue con todo su presupuesto: rechaza por credencial (401), no por throttle.
+  it('agotar storefront NO consume el presupuesto de auth ni el del carrito', async () => {
+    await agotar(getProduct, STOREFRONT_LIMIT, 200);
+
     expect((await login()).status).toBe(401);
+    expect((await getCart()).status).toBe(200);
   });
 
-  it('agotar el throttler auth NO afecta a la superficie pública', async () => {
-    // Agota auth: AUTH_LIMIT × 401 (credencial inválida), el siguiente 429.
-    for (let i = 0; i < AUTH_LIMIT; i += 1) {
-      expect((await login()).status).toBe(401);
-    }
-    expect((await login()).status).toBe(429);
+  it('agotar auth NO afecta al storefront ni al carrito', async () => {
+    await agotar(login, AUTH_LIMIT, 401);
 
-    // La ficha pública sigue respondiendo 200 (su throttler no se tocó).
     expect((await getProduct()).status).toBe(200);
+    expect((await getCart()).status).toBe(200);
+  });
+
+  it('agotar el carrito NO afecta al storefront ni a auth', async () => {
+    await agotar(getCart, CART_LIMIT, 200);
+
+    expect((await getProduct()).status).toBe(200);
+    expect((await login()).status).toBe(401);
   });
 });
