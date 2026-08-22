@@ -148,7 +148,7 @@ language: es
     editar** + nuevo `src/common/http/origin.spec.ts` con los 5 casos de rechazo y los
     2 de aceptación)
 
-- [ ] T1.3 `CartCsrfGuard` — double-submit firmado sobre el token del carrito
+- [x] T1.3 `CartCsrfGuard` — double-submit firmado sobre el token del carrito
   - **Pattern**: espejo de `CsrfGuard` pero derivando de la cookie del carrito en vez
     del `jti` del access: `verifyRequestOrigin(req, allowed)` + comparación en tiempo
     constante de `X-CSRF-Token` contra `deriveCsrfToken(req.cookies[CART_COOKIE], JWT_SECRET)`
