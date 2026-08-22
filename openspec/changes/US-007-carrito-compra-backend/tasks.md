@@ -455,7 +455,7 @@ language: es
     productos, el total es exactamente la suma de los dos subtotales.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-cart-crud`
 
-- [ ] T6.2 e2e persistencia entre visitas y carrito vacío (AC-4, AC-7)
+- [x] T6.2 e2e persistencia entre visitas y carrito vacío (AC-4, AC-7)
   - **Exit criterion**: armado el carrito, una **nueva** petición que sólo lleva la
     cookie `dsm_cart` (simulando volver después de cerrar el navegador — cliente HTTP
     nuevo, sin estado en memoria) devuelve el mismo carrito con sus productos, **sin**
