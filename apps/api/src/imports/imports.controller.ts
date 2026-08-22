@@ -14,8 +14,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AdminGuard } from '../auth/admin.guard';
+import { AuthThrottlerGuard } from '../auth/auth-throttler.guard';
 import { ValidationError } from '../common/errors/domain-errors';
 import {
   ImportJobQueryDto,
@@ -33,11 +35,28 @@ export interface CreateImportResponse {
 }
 
 /**
+ * Presupuesto del `POST` (§7.3). Se lee de `process.env` porque los decoradores
+ * se evalúan al cargar la clase, antes del contenedor — igual que el cap del
+ * multipart. Zod ya validó el valor al arrancar.
+ */
+const RATE_LIMIT_MAX = Number(process.env.IMPORT_RATE_LIMIT_MAX ?? 3);
+const RATE_LIMIT_TTL_MS = Number(
+  process.env.IMPORT_RATE_LIMIT_TTL_MS ?? 3_600_000,
+);
+
+/**
  * Superficie admin del import masivo (US-006). Gateada por `AdminGuard`
  * (ADR-0009, AC-8): el guard no se modifica — se reusa tal cual.
+ *
+ * El throttle va sobre el throttler **ya registrado** `auth`, sin registrar uno
+ * nuevo: un cuarto cubo por IP sólo para esta ruta sería más superficie para
+ * mantener y otro `@SkipThrottle` que olvidarse en el próximo controller. Los
+ * presupuestos ajenos (`storefront`, `cart`) se saltean explícitamente para que el
+ * import no consuma el de nadie.
  */
 @Controller('v1/admin/imports')
-@UseGuards(AdminGuard)
+@UseGuards(AdminGuard, AuthThrottlerGuard)
+@SkipThrottle({ storefront: true, cart: true })
 export class ImportsController {
   constructor(
     private readonly imports: ImportsService,
@@ -54,6 +73,9 @@ export class ImportsController {
    * trabajo con 200 en vez de crear otro (api-standards §10).
    */
   @Post()
+  // 3 imports por hora por IP: cada uno abre un trabajo que escribe miles de
+  // filas, así que el presupuesto es deliberadamente chico (§7.3).
+  @Throttle({ auth: { limit: RATE_LIMIT_MAX, ttl: RATE_LIMIT_TTL_MS } })
   @UseInterceptors(ImportFileInterceptor)
   async create(
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -97,6 +119,9 @@ export class ImportsController {
    * que el panel consulta en loop.
    */
   @Get(':id')
+  // El panel hace polling del progreso: si las lecturas gastaran el presupuesto
+  // del `POST`, mirar una barra de progreso dejaría al dueño sin poder importar.
+  @SkipThrottle({ auth: true })
   async get(
     @Param(
       'id',
@@ -120,6 +145,7 @@ export class ImportsController {
    * de fórmulas: el destino de este texto es una planilla, no un JSON.
    */
   @Get(':id/report')
+  @SkipThrottle({ auth: true })
   async report(
     @Param(
       'id',

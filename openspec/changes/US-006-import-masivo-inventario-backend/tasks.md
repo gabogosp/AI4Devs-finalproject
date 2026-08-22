@@ -460,7 +460,7 @@ language: es
     vuelta con `csv-parse` devuelve el mismo número de filas que `failed_count`; headers
     `content-type` y `content-disposition` exactos; job sin errores ⇒ cuerpo de 1 línea)
 
-- [ ] T5.5 Cableado del módulo + rate limit de la superficie (§7.3)
+- [x] T5.5 Cableado del módulo + rate limit de la superficie (§7.3)
   - **Pattern**: `@Throttle({ auth: { limit: IMPORT_RATE_LIMIT_MAX, ttl: IMPORT_RATE_LIMIT_TTL_MS } })`
     por handler sobre el throttler **ya registrado** `auth` (no se registra un tercero),
     espejando lo que hizo US-014 — `per security-standards.md §7.3 — presupuesto por endpoint
