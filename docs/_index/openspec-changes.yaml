@@ -309,7 +309,7 @@
   us-id: US-007
   discipline: backend
   variant: null
-  status: draft
+  status: in progress   # /develop-backend abrió la ejecución el 2026-08-22 (T0.1 cerrada)
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
@@ -341,7 +341,7 @@
   # la US §4, total sin líneas bloqueadas, PUT absoluto idempotente, purga oportunista).
   estimate-hours: 7.7
   assignee: bce7ffb7
-  branch: null
+  branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
   pr-url: null
   created: 2026-08-20
   completed-at: null

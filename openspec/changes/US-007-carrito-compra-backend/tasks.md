@@ -26,18 +26,18 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-003 backend archivado** (AS-BUILT verificado al planificar): `apps/api` corre
+- [x] **US-003 backend archivado** (AS-BUILT verificado al planificar): `apps/api` corre
   con `HttpProblemFilter` (RFC 7807), `ValidationPipe` global
   (`whitelist` + `forbidNonWhitelisted`, 422), helmet §7.1, allowlist CORS §7.2,
   throttlers nombrados `auth` + `storefront`, y `ProductsRepository` como único punto
   de ORM de `products`.
   **Verify**: `pnpm --filter @dsm/api typecheck && pnpm --filter @dsm/api test -- --testPathPattern='e2e-storefront-product|e2e-throttler-independence'`
-- [ ] **US-014 backend presente en el working tree**: `apps/api/src/auth/cookies.ts`,
+- [x] **US-014 backend presente en el working tree**: `apps/api/src/auth/cookies.ts`,
   `csrf.guard.ts` y `tokens/opaque-token.ts` existen y sus specs pasan. T1.1, T1.2 y
   T2.3 los extienden o reusan.
   **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern='cookies|csrf|opaque-token'`
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
-- [ ] **Secuencia con changes en vuelo**: T1.2 toca `apps/api/src/auth/csrf.guard.ts`,
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
+- [x] **Secuencia con changes en vuelo**: T1.2 toca `apps/api/src/auth/csrf.guard.ts`,
   compartido con el change de US-014. Correrla con ese working tree limpio
   (`git status --porcelain apps/api/src/auth` vacío) o rebasar antes.
 
@@ -45,7 +45,7 @@ language: es
 
 ## Fase 0: Esquema y configuración — 1,2 h
 
-- [ ] T0.1 Migración aditiva `carts` + `cart_items` (F40 — column-complete)
+- [x] T0.1 Migración aditiva `carts` + `cart_items` (F40 — column-complete)
   - **Pattern**: dos `model` nuevos en `packages/db/prisma/schema.prisma` con
     `@id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` y `@@map("…")`,
     espejando `Customer`/`RefreshToken`; `@@unique([cart_id, product_id])`;

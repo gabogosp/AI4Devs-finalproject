@@ -43,6 +43,8 @@ model Product {
   /// enriquecido nunca.
   enrichment_done Boolean @default(false)
 
+  cart_items CartItem[]
+
   @@index([category_id, status])
   @@map("products")
 }
@@ -123,6 +125,7 @@ model Customer {
 
   refresh_tokens        RefreshToken[]
   password_reset_tokens PasswordResetToken[]
+  carts                 Cart[]
 
   @@map("customers")
 }
@@ -161,4 +164,48 @@ model PasswordResetToken {
   @@index([customer_id, created_at])
   @@index([expires_at])
   @@map("password_reset_tokens")
+}
+
+/// Carrito del invitado (US-007). Se resuelve por el hash del token de la cookie
+/// `dsm_cart`; el token en claro nunca se persiste. `customer_id` es la columna del
+/// DER (E2E §8) y queda SIN ESCRITOR en esta US: la fusión invitado↔cuenta está
+/// diferida (US §4, OQ-BE-3). `ON DELETE SET NULL` y no CASCADE: borrar una cuenta
+/// (US-020) anonimiza el carrito, no lo borra.
+/// Expira por `expires_at` (`CART_TTL_DAYS` = 7, deslizante en cada escritura); la
+/// purga es OPORTUNISTA al resolver — no hay job programado (OQ-BE-6, diferido).
+model Cart {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_token_hash String     @unique
+  customer_id        String?    @db.Uuid
+  customer           Customer?  @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  expires_at         DateTime
+  created_at         DateTime   @default(now())
+  updated_at         DateTime   @default(now()) @updatedAt
+  items              CartItem[]
+
+  @@index([expires_at])
+  @@index([customer_id])
+  @@map("carts")
+}
+
+/// Línea del carrito. `unit_price_ars_cents` es una INSTANTÁNEA del precio en el
+/// momento en que el cliente tocó la línea por última vez: nunca entra en una suma
+/// (todo importe se calcula con el precio vigente de `products`, AC-9) — su único uso
+/// es prender `price_changed` cuando difiere. Borrar el carrito borra sus líneas
+/// (CASCADE); un producto con línea viva no se puede borrar (RESTRICT), así no
+/// existen líneas huérfanas.
+model CartItem {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cart_id              String   @db.Uuid
+  cart                 Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product_id           String   @db.Uuid
+  product              Product  @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  quantity             Int
+  unit_price_ars_cents Int
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now()) @updatedAt
+
+  @@unique([cart_id, product_id])
+  @@index([cart_id])
+  @@map("cart_items")
 }
