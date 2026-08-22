@@ -97,4 +97,58 @@ export class CategoriesRepository {
       throw error;
     }
   }
+
+  /**
+   * Resolución por lote de las categorías del import (US-006 T3.3): una consulta
+   * para todos los slugs, indexada por slug. Un archivo donde 500 filas
+   * comparten rubro se resuelve con una lectura, no con 500.
+   */
+  async findManyBySlugs(slugs: string[]): Promise<Map<string, string>> {
+    if (slugs.length === 0) return new Map();
+    const rows = await this.prisma.category.findMany({
+      where: { slug: { in: slugs } },
+      select: { id: true, slug: true },
+    });
+    return new Map(rows.map((r) => [r.slug, r.id]));
+  }
+
+  /**
+   * Crea la categoría si no existe y, si la carrera la creó primero, **re-lee y
+   * devuelve la existente** en vez de propagar el conflicto (US-006 T3.3).
+   *
+   * Es la diferencia entre un import robusto y uno que falla por su propia
+   * concurrencia: dos filas del mismo rubro son el caso NORMAL de un archivo de
+   * catálogo, no una anomalía, así que la auto-creación (AC-2) no puede
+   * convertirse en una fila rechazada porque dos filas pidieron "Plomería".
+   *
+   * Siempre como rubro raíz: la jerarquía rubro/subrubro es curaduría del dueño
+   * y el archivo no tiene columna para expresarla.
+   */
+  async createIfAbsent(data: {
+    name: string;
+    slug: string;
+  }): Promise<{ id: string; created: boolean }> {
+    const existente = await this.prisma.category.findUnique({
+      where: { slug: data.slug },
+      select: { id: true },
+    });
+    if (existente !== null) return { id: existente.id, created: false };
+
+    try {
+      const creada = await this.prisma.category.create({
+        data: { name: data.name, slug: data.slug, parent_id: null },
+        select: { id: true },
+      });
+      return { id: creada.id, created: true };
+    } catch (error) {
+      if (isPrismaError(error, PRISMA_UNIQUE_VIOLATION)) {
+        const ganadora = await this.prisma.category.findUnique({
+          where: { slug: data.slug },
+          select: { id: true },
+        });
+        if (ganadora !== null) return { id: ganadora.id, created: false };
+      }
+      throw error;
+    }
+  }
 }

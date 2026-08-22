@@ -273,7 +273,7 @@ language: es
     `true`; update con descripción distinta ⇒ pasa a `false`; sembrar `heladera` y forzar
     `upsertFromImport` con ese slug ⇒ `ConflictError` con `field:'slug'`)
 
-- [ ] T3.3 `CategoriesRepository` — resolución por lote
+- [x] T3.3 `CategoriesRepository` — resolución por lote
   - **Exit criterion**: expone `findManyBySlugs(slugs[])` (una consulta →
     `Map<slug, id>`) y `createIfAbsent({name, slug})`, que ante la carrera de UNIQUE
     **re-lee** y devuelve la categoría existente en vez de propagar el conflicto (la

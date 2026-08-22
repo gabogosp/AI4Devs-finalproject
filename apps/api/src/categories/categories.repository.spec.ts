@@ -124,4 +124,63 @@ describe('CategoriesRepository (categories.repository, integration)', () => {
       ).resolves.toBeNull();
     });
   });
+
+  describe('resolución por lote del import (US-006 T3.3)', () => {
+    it('findManyBySlugs devuelve sólo las que existen, en una consulta', async () => {
+      await repo.create({ name: 'Plomería', slug: 'plomeria' });
+      await repo.create({ name: 'Electricidad', slug: 'electricidad' });
+
+      const mapa = await repo.findManyBySlugs([
+        'plomeria',
+        'electricidad',
+        'no-existe',
+      ]);
+
+      expect(mapa.size).toBe(2);
+      expect(mapa.get('plomeria')).toBeTruthy();
+      expect(mapa.get('no-existe')).toBeUndefined();
+    });
+
+    it('sin slugs devuelve un mapa vacío', async () => {
+      expect((await repo.findManyBySlugs([])).size).toBe(0);
+    });
+
+    it('createIfAbsent crea como rubro raíz y reporta created', async () => {
+      const r = await repo.createIfAbsent({ name: 'Plomería', slug: 'plomeria' });
+
+      expect(r.created).toBe(true);
+      const c = (await repo.findById(r.id))!;
+      expect(c.parent_id).toBeNull();
+      expect(c.name).toBe('Plomería');
+    });
+
+    it('createIfAbsent sobre una existente devuelve su id sin crear nada', async () => {
+      const previa = await repo.create({ name: 'Plomería', slug: 'plomeria' });
+
+      const r = await repo.createIfAbsent({
+        name: 'PLOMERIA EN MAYUSCULAS',
+        slug: 'plomeria',
+      });
+
+      expect(r).toEqual({ id: previa.id, created: false });
+      // El nombre de la existente NO se sobreescribe: el dueño ya lo curó.
+      expect((await repo.findById(previa.id))!.name).toBe('Plomería');
+      expect(await prisma.category.count()).toBe(1);
+    });
+
+    it('dos llamadas CONCURRENTES sobre el mismo slug resuelven al mismo id y ninguna lanza', async () => {
+      // Dos filas del mismo rubro son el caso normal de un archivo de catálogo:
+      // si la carrera hiciera fallar una fila, AC-2 se rompería con datos válidos.
+      const [a, b] = await Promise.all([
+        repo.createIfAbsent({ name: 'Plomería', slug: 'plomeria' }),
+        repo.createIfAbsent({ name: 'Plomería', slug: 'plomeria' }),
+      ]);
+
+      expect(a.id).toBe(b.id);
+      expect([a.created, b.created].filter(Boolean)).toHaveLength(1);
+      expect(
+        await prisma.category.count({ where: { slug: 'plomeria' } }),
+      ).toBe(1);
+    });
+  });
 });
