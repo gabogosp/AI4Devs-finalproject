@@ -354,7 +354,7 @@ language: es
     `Object.keys(dto.items[0])` el del ítem — falla si sobra o falta una.
     El 422 extremo a extremo lo prueba T6.5)
 
-- [ ] T4.2 `CartController` + `CartModule` + cableado en `AppModule`
+- [x] T4.2 `CartController` + `CartModule` + cableado en `AppModule`
   - **Pattern**: `@Controller('v1/cart')` sin `AdminGuard` ni `CustomerGuard`;
     `@UseGuards(CartThrottlerGuard)` a nivel de clase y `@UseGuards(CartCsrfGuard)` sólo
     en los handlers de escritura — `per backend-node-standards.md §2 — controller fino:

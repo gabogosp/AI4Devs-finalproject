@@ -8,11 +8,13 @@ import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { StorefrontModule } from './storefront/storefront.module';
 import { AuthModule } from './auth/auth.module';
+import { CartModule } from './cart/cart.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
  * Prisma, health) + los módulos de dominio (Categories, Products) que llegan en
  * las Fases 4-7. `AuthModule` expone además la ruta del seam de login (Fase 9).
+ * `CartModule` (US-007) es la primera superficie pública de **escritura**.
  */
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { AuthModule } from './auth/auth.module';
     CategoriesModule,
     ProductsModule,
     StorefrontModule,
+    CartModule,
   ],
   controllers: [],
   providers: [],
