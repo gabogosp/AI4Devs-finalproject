@@ -178,24 +178,26 @@ describe('CartService.setItem (AC-1, AC-2, AC-5, AC-10)', () => {
     // llegan acá indistinguibles, y el error también tiene que serlo.
     const casos = ['inexistente', 'draft', 'archived'];
 
-    it.each(casos)('%s → NotFoundError idéntico', async () => {
+    it.each(casos)('%s → NotFoundError idéntico', async (caso) => {
       const { service, req, res } = armar({ publicado: null });
 
       await expect(
-        service.setItem(req, res, 'lo-que-sea', 1),
+        service.setItem(req, res, `slug-${caso}`, 1),
       ).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it('los tres errores son iguales en type y detail', async () => {
       const errores = [];
-      for (const _caso of casos) {
+      for (const caso of casos) {
         const { service, req, res } = armar({ publicado: null });
         errores.push(
-          await service.setItem(req, res, 'x', 1).catch((e: NotFoundError) => ({
-            type: e.type,
-            status: e.status,
-            detail: e.message,
-          })),
+          await service
+            .setItem(req, res, `slug-${caso}`, 1)
+            .catch((e: NotFoundError) => ({
+              type: e.type,
+              status: e.status,
+              detail: e.message,
+            })),
         );
       }
 
