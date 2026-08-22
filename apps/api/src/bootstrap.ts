@@ -43,17 +43,27 @@ export function configureApp(app: INestApplication): void {
     }),
   );
 
-  // §7.1 — las respuestas autenticadas de `/v1/admin` NO se cachean (incluidos sus
-  // errores). Seteo único en el borde.
+  // §7.1 — las respuestas autenticadas de `/v1/admin` y **toda** la superficie del
+  // carrito (`/v1/cart`, US-007) NO se cachean, incluidos sus errores. Seteo único
+  // en el borde.
   //
-  // La caché ACOTADA de la ficha pública `/v1/products` (AC-9) NO se setea acá:
-  // este middleware corre ANTES del routing y no ve el status, así que estampaba
-  // el header también en 404/429 (hallazgo M1 del audit — un CDN compartido podría
-  // cachear un error). Se mueve a `StorefrontCacheInterceptor`, que sólo corre en
-  // respuestas 2xx del controller público.
+  // Va en el middleware y NO en un interceptor a propósito: el interceptor sólo
+  // corre en 2xx, y acá el header tiene que cubrir también los 4xx/429. Un 429 del
+  // carrito cacheado en el edge convierte el rate-limit en un DoS, y un carrito
+  // cacheado se le serviría a otro cliente. AC-9 también depende de esto: sin
+  // `no-store`, una caché intermedia puede devolver precios viejos aunque el
+  // cálculo del servidor sea perfecto.
+  //
+  // La caché ACOTADA de la ficha pública `/v1/products` (AC-9 de US-003) NO se
+  // setea acá: este middleware corre ANTES del routing y no ve el status, así que
+  // estampaba el header también en 404/429 (hallazgo M1 del audit — un CDN
+  // compartido podría cachear un error). Se mueve a `StorefrontCacheInterceptor`,
+  // que sólo corre en respuestas 2xx del controller público.
   app.use((req: { path?: string; url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => {
     const path = req.path ?? req.url ?? '';
-    if (path.startsWith('/v1/admin')) res.setHeader('Cache-Control', 'no-store');
+    if (path.startsWith('/v1/admin') || path.startsWith('/v1/cart')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
     next();
   });
 
@@ -67,7 +77,10 @@ export function configureApp(app: INestApplication): void {
       callback(null, allowed.includes(origin));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+    // `PUT` y `DELETE` los agrega US-007 (T4.4): sin ellos el preflight de las
+    // escrituras del carrito falla en el navegador y la superficie es
+    // inalcanzable desde el FE, aunque el servidor la sirva perfecto por curl.
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     // `X-CSRF-Token` (T5.3): sin declararlo, el preflight del panel falla y el
     // logout/refresh se vuelven inalcanzables desde el browser.
     allowedHeaders: [
