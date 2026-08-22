@@ -108,7 +108,7 @@ language: es
 
 ## Fase 1: Lectura y validación del archivo — 1,8 h
 
-- [ ] T1.1 Detección de formato por contenido + decodificación (§6.4)
+- [x] T1.1 Detección de formato por contenido + decodificación (§6.4)
   - **Pattern**: sniff de magic bytes sobre el buffer —`PK\x03\x04` ⇒ `xlsx`— y, para el
     resto, decodificación estricta con `new TextDecoder('utf-8', { fatal: true })` tras
     quitar el BOM `EF BB BF` — `per security-standards.md §6.4 — validar por content
