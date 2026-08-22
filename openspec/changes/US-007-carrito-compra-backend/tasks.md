@@ -83,7 +83,7 @@ language: es
     sus `cart_items`; borrar un `product` con línea viva **falla**; borrar un
     `customer` deja `carts.customer_id` en `NULL` sin borrar el carrito)
 
-- [ ] T0.2 Variables de entorno del carrito validadas por Zod
+- [x] T0.2 Variables de entorno del carrito validadas por Zod
   - **Pattern**: extender `envSchema` en `apps/api/src/config/env.validation.ts` con
     `z.coerce.number().int().positive().default(…)` — `per backend-node-standards.md
     §7 — config validada al arranque, fail-fast`.

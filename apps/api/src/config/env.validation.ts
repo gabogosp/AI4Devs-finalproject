@@ -71,6 +71,40 @@ export const envSchema = z.object({
   PASSWORD_RESET_FROM: z.string().email().optional(),
   /** Base del enlace del email — el reset se completa en el frontend. */
   PASSWORD_RESET_URL_BASE: z.string().url().optional(),
+
+  /**
+   * US-007 — carrito del invitado. Defaults seguros; un valor inválido hace
+   * FALLAR el arranque (§7), nunca cae al default en silencio.
+   *
+   * La cookie del carrito **reusa `AUTH_COOKIE_SECURE`** y NO agrega una segunda
+   * variable para el mismo concepto: dos flags para "¿emito cookies Secure?" es
+   * la forma de terminar con una superficie endurecida y la otra no.
+   */
+
+  /**
+   * Ventana de retención del carrito invitado, deslizante desde la última
+   * **escritura** (AC-4). Decisión del PO (OQ-BE-1, 2026-08-22): **7 días**, no
+   * los 30 que recomendaba el diseño. La cookie (`Max-Age`) y la fila
+   * (`expires_at`) se derivan de este mismo valor, así no pueden divergir.
+   *
+   * Costo declarado y aceptado: quien arma un carrito y vuelve a las dos semanas
+   * lo encuentra vacío. Es una variable de entorno justamente para poder subirla
+   * sin deploy de código si aparecen reclamos.
+   */
+  CART_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  /** Cota de líneas distintas por carrito (DoS, §7.3) → 409 al excederla. */
+  CART_MAX_ITEMS: z.coerce.number().int().positive().default(50),
+  /** Cota de unidades por línea (DoS, §7.3) → 422 en el DTO al excederla. */
+  CART_MAX_QTY_PER_LINE: z.coerce.number().int().positive().default(99),
+  /** §7.3 — presupuesto del throttler `cart` por IP: ventana y lecturas. */
+  CART_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000), // 1 min
+  CART_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+  /**
+   * Presupuesto de **escritura** (`PUT`/`DELETE`), más estricto que el de lectura:
+   * es la primera superficie pública de escritura del proyecto y cada request crea
+   * o modifica filas.
+   */
+  CART_WRITE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
 }).superRefine((env, ctx) => {
   // Sin esto, un deploy mal configurado caería al adapter de log y el flujo de
   // recuperación "funcionaría" sin enviar un solo email. Nadie se entera hasta
