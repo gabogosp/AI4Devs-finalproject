@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { CsrfError } from '../common/errors/auth-errors';
+import { verifyRequestOrigin } from '../common/http/origin';
 import { parseCorsOrigins } from '../config/env.validation';
 import { ACCESS_COOKIE, deriveCsrfToken } from './cookies';
 
@@ -38,43 +39,16 @@ export class CsrfGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
 
-    this.verificarOrigen(req);
+    // §7.5 — la verificación de `Origin` vive en `common/http/origin.ts` (T1.2 de
+    // US-007): el guard del carrito del invitado necesita exactamente la misma, y
+    // duplicarla garantizaba que un endurecimiento se aplicara a uno solo.
+    verifyRequestOrigin(
+      req,
+      parseCorsOrigins(this.config.get<string>('CORS_ALLOWED_ORIGINS') ?? ''),
+    );
     await this.verificarDoubleSubmit(req);
 
     return true;
-  }
-
-  private verificarOrigen(req: Request): void {
-    const permitidos = parseCorsOrigins(
-      this.config.get<string>('CORS_ALLOWED_ORIGINS') ?? '',
-    );
-
-    const origin = req.headers.origin;
-    if (typeof origin === 'string' && origin.length > 0) {
-      // Igualdad exacta, igual que CORS: nada de sufijos ni regex, porque
-      // `https://dsm.com.ar.evil.net` termina en el dominio bueno.
-      if (!permitidos.includes(origin)) throw new CsrfError();
-      return;
-    }
-
-    // Sin `Origin`, se acepta `Referer` como respaldo — algunos navegadores no
-    // mandan Origin en ciertos flujos. Se compara sólo el origen del Referer,
-    // no la ruta.
-    const referer = req.headers.referer;
-    if (typeof referer === 'string' && referer.length > 0) {
-      try {
-        const { origin: origenDelReferer } = new URL(referer);
-        if (!permitidos.includes(origenDelReferer)) throw new CsrfError();
-        return;
-      } catch (error) {
-        // Un Referer que no parsea no es evidencia de nada.
-        if (error instanceof CsrfError) throw error;
-        throw new CsrfError();
-      }
-    }
-
-    // Ninguno de los dos: no verificable ⇒ rechazo (§7.5).
-    throw new CsrfError();
   }
 
   private async verificarDoubleSubmit(req: Request): Promise<void> {

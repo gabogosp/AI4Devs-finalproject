@@ -127,7 +127,7 @@ language: es
     `secure:false` desaparece `Secure` y con `true` aparece; `clearCartCookies` emite
     las dos con `Max-Age=0`; los casos existentes de las cookies de auth siguen verdes)
 
-- [ ] T1.2 Extraer `verifyRequestOrigin` a `common/http/origin.ts` (refactor sin cambio de comportamiento)
+- [x] T1.2 Extraer `verifyRequestOrigin` a `common/http/origin.ts` (refactor sin cambio de comportamiento)
   - **Pattern**: **Extract Function** (Fowler) — mover el cuerpo de
     `CsrfGuard.verificarOrigen` a una función pura exportada
     `verifyRequestOrigin(req, allowedOrigins): void` que lanza `CsrfError`, y hacer que
