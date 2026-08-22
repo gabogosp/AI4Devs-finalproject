@@ -378,7 +378,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Fase 4: E2E — el enlace en el HTML servido (AC-1, AC-3) — `design.md` D2, D4
 
-- [ ] **T4.1** E2E: enlace en toda página pública, ausente en el panel (0.4 h)
+- [x] **T4.1** E2E: enlace en toda página pública, ausente en el panel (0.4 h)
 
   - **Pattern**: asserts contra el **body de la respuesta HTTP**, no contra el DOM hidratado
     (mismo criterio que `pdp-ssr.spec.ts`), y el status contra `response.status()`, nunca
