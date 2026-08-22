@@ -122,6 +122,19 @@ describe('CategoryResolver (integration)', () => {
     expect(await prisma.category.count()).toBe(1);
   });
 
+  it('invalidate obliga a re-resolver ese rubro (categoría borrada mientras corre)', async () => {
+    const primera = await resolver.resolve(['Plomería']);
+    const idOriginal = primera.get('Plomería')!;
+    await prisma.category.delete({ where: { id: idOriginal } });
+
+    resolver.invalidate('plomeria');
+    const segunda = await resolver.resolve(['Plomería']);
+
+    // Vuelve a consultar y la re-crea: el borrado no envenena el resto del import.
+    expect(segunda.get('Plomería')).not.toBe(idOriginal);
+    expect(await prisma.category.count({ where: { slug: 'plomeria' } })).toBe(1);
+  });
+
   it('sin nombres no consulta nada', async () => {
     const mapa = await resolver.resolve([]);
     expect(mapa.size).toBe(0);

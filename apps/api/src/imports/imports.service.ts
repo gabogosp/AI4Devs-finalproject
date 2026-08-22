@@ -1,0 +1,279 @@
+import { Injectable } from '@nestjs/common';
+import { CategoriesRepository } from '../categories/categories.repository';
+import {
+  ImportProductRef,
+  ProductsRepository,
+} from '../products/products.repository';
+import {
+  ConflictError,
+  ValidationError,
+} from '../common/errors/domain-errors';
+import { slugify } from '../common/slug';
+import { BatchSlugAllocator } from './batch-slug-allocator';
+import { CategoryResolver } from './category-resolver';
+import { ParsedRow, RowError, RowErrorCode } from './row-schema';
+
+/**
+ * Resultado de procesar una fila: se escribió (y qué pasó) o se rechazó.
+ * El runner suma los contadores con esto y persiste sólo los errores.
+ */
+export type RowOutcome =
+  | { kind: 'created'; id: string; sku: string; enrichmentPending: true }
+  | { kind: 'updated'; id: string; sku: string; enrichmentPending: boolean }
+  | RowError;
+
+/**
+ * Estado que vive **todo el trabajo**, no un lote: el allocator de slugs, el
+ * resolver de categorías y los SKUs ya vistos. Que esto sea explícito y no
+ * estado del service es lo que permite que el service siga siendo un singleton
+ * de Nest mientras cada import tiene su propia memoria.
+ */
+export class ImportContext {
+  readonly vistos = new Set<string>();
+
+  constructor(
+    readonly allocator: BatchSlugAllocator,
+    readonly resolver: CategoryResolver,
+  ) {}
+
+  get categoriesCreated(): number {
+    return this.resolver.categoriesCreated;
+  }
+}
+
+@Injectable()
+export class ImportsService {
+  constructor(
+    private readonly products: ProductsRepository,
+    private readonly categories: CategoriesRepository,
+  ) {}
+
+  createContext(): ImportContext {
+    return new ImportContext(
+      new BatchSlugAllocator(this.products),
+      new CategoryResolver(this.categories),
+    );
+  }
+
+  /**
+   * Procesa un lote: **tres** consultas de preparación (productos por SKU,
+   * categorías del lote, slugs del lote) y después una transacción por fila.
+   *
+   * La atomicidad es por fila y no por lote a propósito (AC-5): una fila mala en
+   * la posición 3.000 no puede tirar abajo las 2.999 buenas que ya se
+   * escribieron. El dueño quiere que entre lo que sirve y que le digan qué no.
+   */
+  async processBatch(
+    ctx: ImportContext,
+    filas: ParsedRow[],
+  ): Promise<RowOutcome[]> {
+    if (filas.length === 0) return [];
+
+    const existentes = await this.products.findManyBySkus(
+      filas.map((f) => f.sku),
+    );
+    const categorias = await ctx.resolver.resolve(
+      filas.map((f) => f.categoryName),
+    );
+
+    // Sólo las bases de los SKUs nuevos: para los existentes no se recalcula el
+    // slug (regla de US-003), así que no hace falta saber qué hay tomado.
+    const basesNuevas = filas
+      .filter((f) => !existentes.has(f.sku))
+      .map((f) => this.baseSlug(f))
+      .filter((b): b is string => b !== null);
+    await ctx.allocator.prime(basesNuevas);
+
+    const resultados: RowOutcome[] = [];
+    for (const fila of filas) {
+      resultados.push(
+        await this.processRow(ctx, fila, existentes.get(fila.sku), categorias),
+      );
+    }
+    return resultados;
+  }
+
+  /**
+   * Escribe una fila válida, o devuelve el motivo por el que no se pudo.
+   *
+   * Nunca lanza: un fallo de escritura de una fila es un dato del reporte, no
+   * una excepción del trabajo.
+   */
+  async processRow(
+    ctx: ImportContext,
+    fila: ParsedRow,
+    existente: ImportProductRef | undefined,
+    categorias: Map<string, string>,
+  ): Promise<RowOutcome> {
+    if (ctx.vistos.has(fila.sku)) {
+      // No es "gana el último" silencioso: es un error de datos del operador y
+      // merece aparecer en el reporte (design §Reconciliación).
+      return this.error(
+        fila,
+        'sku',
+        'duplicate_sku_in_file',
+        'el sku aparece más de una vez en el archivo; se procesó la primera aparición',
+      );
+    }
+    ctx.vistos.add(fila.sku);
+
+    const categoryId = categorias.get(fila.categoryName);
+    if (categoryId === undefined) {
+      return this.error(
+        fila,
+        'categoria',
+        'invalid_category',
+        'la categoría no se pudo resolver ni crear',
+      );
+    }
+
+    const base = this.baseSlug(fila);
+    if (base === null) {
+      return this.error(
+        fila,
+        'nombre',
+        'name_too_long',
+        'el nombre no permite derivar una URL amigable',
+      );
+    }
+
+    // Para un SKU existente el slug propuesto es irrelevante (no se recalcula),
+    // pero se manda el persistido para que el dato que viaja sea el verdadero.
+    const slug = existente ? existente.slug : ctx.allocator.allocate(base);
+
+    try {
+      return this.aOutcome(
+        await this.escribir(fila, slug, categoryId),
+        fila,
+        existente,
+      );
+    } catch (error) {
+      if (this.esColisionDeSlug(error) && !existente) {
+        // Un reintento, con el set refrescado: la colisión significa que la base
+        // tiene un slug que el allocator no conocía. Reintentar con el mismo set
+        // sería repetir el error.
+        try {
+          await ctx.allocator.refresh([base]);
+          return this.aOutcome(
+            await this.escribir(fila, ctx.allocator.allocate(base), categoryId),
+            fila,
+            existente,
+          );
+        } catch (segundo) {
+          if (this.esColisionDeSlug(segundo)) {
+            return this.error(
+              fila,
+              'nombre',
+              'slug_conflict',
+              'no se pudo generar una URL única para este producto',
+            );
+          }
+          return this.errorDeEscritura(fila);
+        }
+      }
+      if (this.esColisionDeSlug(error)) {
+        return this.error(
+          fila,
+          'nombre',
+          'slug_conflict',
+          'no se pudo generar una URL única para este producto',
+        );
+      }
+      if (this.esCategoriaInexistente(error)) {
+        // La categoría desapareció entre la resolución y la escritura. Se olvida
+        // del cache para que las filas siguientes del mismo rubro la vuelvan a
+        // resolver: el borrado cuesta esta fila, no el resto del trabajo.
+        ctx.resolver.invalidate(fila.categoryName);
+      }
+      return this.errorDeEscritura(fila);
+    }
+  }
+
+  private escribir(fila: ParsedRow, slug: string, categoryId: string) {
+    return this.products.upsertFromImport({
+      sku: fila.sku,
+      slug,
+      name: fila.name,
+      descriptionRaw: fila.descriptionRaw,
+      priceArsCents: fila.priceArsCents,
+      stock: fila.stock,
+      categoryId,
+      imageUrl: fila.imageUrl,
+    });
+  }
+
+  private aOutcome(
+    resultado: { outcome: 'created' | 'updated'; id: string },
+    fila: ParsedRow,
+    existente: ImportProductRef | undefined,
+  ): RowOutcome {
+    if (resultado.outcome === 'created') {
+      return {
+        kind: 'created',
+        id: resultado.id,
+        sku: fila.sku,
+        enrichmentPending: true,
+      };
+    }
+    // Sólo hay que re-enriquecer si cambió la descripción base (E2E §9.3): un
+    // update de precio o stock no cambia lo que el modelo tendría que leer.
+    const cambioDescripcion =
+      fila.descriptionRaw !== undefined &&
+      fila.descriptionRaw !== (existente?.description_raw ?? null);
+    return {
+      kind: 'updated',
+      id: resultado.id,
+      sku: fila.sku,
+      enrichmentPending: cambioDescripcion,
+    };
+  }
+
+  /** `null` si ni el nombre ni el sku producen una base usable. */
+  private baseSlug(fila: ParsedRow): string | null {
+    // Mismo criterio que el alta de a uno (US-003): el `sku` es el fallback.
+    return slugify(fila.name) || slugify(fila.sku) || null;
+  }
+
+  private esColisionDeSlug(error: unknown): boolean {
+    return (
+      error instanceof ConflictError &&
+      (error.fieldErrors ?? []).some((f) => f.field === 'slug')
+    );
+  }
+
+  /** La FK de categoría no resolvió: el repositorio traduce el P2003 a esto. */
+  private esCategoriaInexistente(error: unknown): boolean {
+    return (
+      error instanceof ValidationError &&
+      (error.fieldErrors ?? []).some((f) => f.field === 'category_id')
+    );
+  }
+
+  private errorDeEscritura(fila: ParsedRow): RowError {
+    // El motivo es deliberadamente genérico: el detalle del fallo va al log del
+    // servidor, no al reporte que descarga el dueño. Un mensaje de Prisma le
+    // filtraría nombres de tablas y columnas de la base.
+    return this.error(
+      fila,
+      'sku',
+      'write_failed',
+      'no se pudo guardar esta fila; volvé a intentarlo',
+    );
+  }
+
+  private error(
+    fila: ParsedRow,
+    field: string,
+    errorCode: RowErrorCode,
+    errorMessage: string,
+  ): RowError {
+    return {
+      kind: 'error',
+      rowNumber: fila.rowNumber,
+      sku: fila.sku,
+      field,
+      errorCode,
+      errorMessage,
+    };
+  }
+}

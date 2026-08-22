@@ -37,6 +37,20 @@ export class CategoryResolver {
   }
 
   /**
+   * Olvida lo que sabía de este nombre, para que la próxima fila que lo
+   * referencie vuelva a resolverlo (y lo re-cree si hace falta).
+   *
+   * Existe por un caso concreto: si alguien borra la categoría mientras el
+   * import corre, el id cacheado queda apuntando a una fila que ya no existe y
+   * **todas** las filas siguientes de ese rubro fallarían por la clave foránea.
+   * Una categoría borrada tiene que costar una fila, no el resto del trabajo.
+   */
+  invalidate(nombre: string): void {
+    const slug = slugify(nombre.trim());
+    if (slug !== '') this.cache.delete(slug);
+  }
+
+  /**
    * Resuelve los nombres de un lote a ids de categoría, creando las ausentes.
    *
    * @returns mapa del nombre **tal como vino en el archivo** al id. Un nombre

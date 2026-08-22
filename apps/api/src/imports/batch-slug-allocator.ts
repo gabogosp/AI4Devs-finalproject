@@ -58,6 +58,22 @@ export class BatchSlugAllocator {
     return slug;
   }
 
+  /**
+   * Vuelve a consultar la base para estas bases, aunque ya estuvieran cebadas.
+   *
+   * Existe para **un** caso: el reintento tras una colisión real de `slug`
+   * (T4.2). Si la base tiene un slug que el allocator no vio —porque lo escribió
+   * otro proceso—, re-cebar es lo único que puede darle una propuesta distinta;
+   * reintentar con el mismo set sería repetir el error.
+   */
+  async refresh(bases: string[]): Promise<void> {
+    const unicas = [...new Set(bases)];
+    if (unicas.length === 0) return;
+    const slugs = await this.source.findSlugsByPrefixes(unicas);
+    slugs.forEach((s) => this.taken.add(s));
+    unicas.forEach((b) => this.cebadas.add(b));
+  }
+
   /** Sólo para diagnóstico y tests: cuántos slugs conoce. */
   get size(): number {
     return this.taken.size;

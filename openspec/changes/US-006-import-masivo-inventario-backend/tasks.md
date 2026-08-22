@@ -305,7 +305,7 @@ language: es
     `categoriesCreated === 1`; segunda llamada con el mismo nombre ⇒ `categoriesCreated === 0`
     y **cero** consultas nuevas)
 
-- [ ] T4.2 `ImportService.processRow` — upsert por SKU, atómico por fila (AC-1, AC-4, AC-9, AC-10)
+- [x] T4.2 `ImportService.processRow` — upsert por SKU, atómico por fila (AC-1, AC-4, AC-9, AC-10)
   - **Pattern**: por lote, `findManyBySkus` → resolver categorías → `prime` del allocator sólo
     con las bases de los SKUs **nuevos** → por fila una `prisma.$transaction` con
     `upsertFromImport` — `per backend-node-standards.md §5 — transacción para casos de uso
