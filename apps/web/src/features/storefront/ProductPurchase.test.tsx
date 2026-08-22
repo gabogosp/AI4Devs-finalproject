@@ -17,12 +17,19 @@ describe('ProductPurchase — con stock (AC-3)', () => {
     expect(screen.getByText('En stock')).toBeInTheDocument();
   });
 
-  it('no ofrece el canal de WhatsApp cuando hay stock', () => {
+  it('ofrece el canal de WhatsApp como CTA de compra del MVP (sin carrito aún)', () => {
     render(<ProductPurchase inStock productName="Heladera exhibidora" />);
 
-    expect(
-      screen.queryByRole('link', { name: /WhatsApp/ }),
-    ).not.toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /Comprar por WhatsApp/ });
+    expect(link).toHaveAttribute('href', expect.stringContaining('https://wa.me/'));
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+  });
+
+  it('precarga el mensaje de WhatsApp con el nombre del producto (con stock)', () => {
+    render(<ProductPurchase inStock productName="Heladera exhibidora" />);
+
+    const href = screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href') ?? '';
+    expect(decodeURIComponent(href)).toContain('Heladera exhibidora');
   });
 });
 

@@ -20,46 +20,65 @@ export default async function StorefrontHome() {
   const rubros = await categoriesStorefrontService.getTree().catch(() => []);
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 p-8">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-foreground">
-          DSM Refrigeración y Ferretería
-        </h1>
-        <p className="text-muted">
-          Comprá online y retirá en nuestro local de Av. Córdoba y Av. Pueyrredón.
-        </p>
-      </header>
+    <div className="flex flex-col">
+      {/* Hero — puerta de entrada de la tienda. */}
+      <section className="bg-accent-subtle">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-8 py-12 lg:py-16">
+          <span className="w-fit rounded-full bg-accent-strong/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent-strong">
+            Refrigeración · Ferretería · Electricidad
+          </span>
+          <h1 className="max-w-2xl text-3xl font-bold text-foreground lg:text-5xl">
+            DSM Refrigeración y Ferretería
+          </h1>
+          <p className="max-w-2xl text-lg font-medium text-foreground lg:text-xl">
+            Todo para tu heladera, tu obra y tu taller.
+          </p>
+          <p className="max-w-xl text-muted">
+            Comprá online y retirá en nuestro local de Av. Córdoba y Av. Pueyrredón.
+            Asesoramiento por WhatsApp en cada producto.
+          </p>
+        </div>
+      </section>
 
-      {rubros.length > 0 && (
-        <section className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
-          {rubros.map((rubro) => (
-            <article key={rubro.slug} className="flex flex-col gap-2">
-              <h2 className="text-lg font-semibold">
-                <Link
-                  href={`/categorias/${rubro.slug}`}
-                  className="focus:outline-none focus-visible:shadow-focus"
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-8">
+        {rubros.length > 0 && (
+          <>
+            <h2 className="text-xl font-semibold text-foreground">Explorá por rubro</h2>
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              {rubros.map((rubro) => (
+                <article
+                  key={rubro.slug}
+                  className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  {rubro.name}
-                </Link>
-              </h2>
-              {rubro.children.length > 0 && (
-                <ul className="flex flex-col gap-1 text-sm text-muted">
-                  {rubro.children.map((sub) => (
-                    <li key={sub.slug}>
-                      <Link
-                        href={`/categorias/${sub.slug}`}
-                        className="focus:outline-none focus-visible:shadow-focus"
-                      >
-                        {sub.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </article>
-          ))}
-        </section>
-      )}
+                  <h3 className="text-lg font-semibold">
+                    <Link
+                      href={`/categorias/${rubro.slug}`}
+                      className="text-foreground transition-colors hover:text-accent-strong focus:outline-none focus-visible:shadow-focus"
+                    >
+                      {rubro.name}
+                      <span aria-hidden="true" className="ml-1">→</span>
+                    </Link>
+                  </h3>
+                  {rubro.children.length > 0 && (
+                    <ul className="flex flex-col gap-1.5 text-sm text-muted">
+                      {rubro.children.map((sub) => (
+                        <li key={sub.slug}>
+                          <Link
+                            href={`/categorias/${sub.slug}`}
+                            className="transition-colors hover:text-accent-strong focus:outline-none focus-visible:shadow-focus"
+                          >
+                            {sub.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </article>
+              ))}
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }

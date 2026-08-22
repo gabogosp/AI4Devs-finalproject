@@ -12,14 +12,16 @@ import { CategoryNav } from '@/features/storefront/CategoryNav';
 export default function StorefrontLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-border">
+      <header className="sticky top-0 z-20 border-b border-border bg-surface">
         <div className="mx-auto flex max-w-5xl items-center p-4">
           <Link
             href="/"
-            className="text-lg font-bold text-primary focus:outline-none focus-visible:shadow-focus"
+            className="flex items-baseline gap-2 focus:outline-none focus-visible:shadow-focus"
           >
-            DSM
-            <span className="ml-2 text-sm font-normal text-muted">
+            <span className="rounded-md bg-accent-strong px-2 py-1 text-lg font-extrabold leading-none text-white">
+              DSM
+            </span>
+            <span className="text-sm font-normal text-muted">
               Refrigeración y Ferretería
             </span>
           </Link>

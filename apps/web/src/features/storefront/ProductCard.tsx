@@ -24,7 +24,7 @@ export function ProductCard({
   return (
     <Link
       href={`/productos/${item.slug}`}
-      className="group flex flex-col gap-2 rounded-md p-4 shadow-sm focus:outline-none focus-visible:shadow-focus"
+      className="group flex h-full flex-col gap-3 rounded-lg border border-border bg-surface p-3 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:shadow-focus"
     >
       <ProductImage
         src={item.image_url}
@@ -33,18 +33,22 @@ export function ProductCard({
         variant="card"
       />
       {/* Jerarquía del design-system §7.3: imagen → nombre → precio → disponibilidad. */}
-      <h3 className="line-clamp-2 text-lg font-semibold text-foreground">{item.name}</h3>
-      <p className="text-lg font-bold tabular-nums text-foreground">
-        {formatArs(item.price_ars_cents)}
-      </p>
-      <p className="text-xs text-gray-600">IVA incluido</p>
-      {!item.in_stock && (
-        // Badge con TEXTO: el color nunca es el único portador de significado
-        // (design-system §7.7 / WCAG 2.1 AA).
-        <span className="self-start rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-          Sin stock
-        </span>
-      )}
+      <h3 className="line-clamp-2 text-sm font-medium text-foreground transition-colors group-hover:text-accent-strong">
+        {item.name}
+      </h3>
+      <div className="mt-auto flex flex-col gap-1">
+        <p className="text-xl font-bold tabular-nums text-foreground">
+          {formatArs(item.price_ars_cents)}
+        </p>
+        <p className="text-xs text-gray-600">IVA incluido</p>
+        {!item.in_stock && (
+          // Badge con TEXTO: el color nunca es el único portador de significado
+          // (design-system §7.7 / WCAG 2.1 AA).
+          <span className="mt-1 self-start rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+            Sin stock
+          </span>
+        )}
+      </div>
     </Link>
   );
 }

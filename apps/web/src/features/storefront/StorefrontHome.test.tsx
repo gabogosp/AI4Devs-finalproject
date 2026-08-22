@@ -67,7 +67,11 @@ describe('StorefrontHome (AC-1)', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: /DSM Refrigeración y Ferretería/ }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(2);
+    // Jerarquía nueva: un h2 de sección ("Explorá por rubro") con los rubros como h3.
+    expect(
+      screen.getByRole('heading', { level: 2, name: /Explorá por rubro/ }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2);
   });
 
   it('si el árbol falla, la home se sirve igual con el claim (no 500)', async () => {

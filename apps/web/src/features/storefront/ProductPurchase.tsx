@@ -11,10 +11,11 @@ const OUT_OF_STOCK_COPY =
 /**
  * Estados de compra de la ficha.
  *
- * **Con stock** (AC-3): CTA `accent` "Agregar al carrito" como **disparador**.
- * Va `disabled` con el seam `onAddToCart` listo: la lógica del carrito es de
- * US-007, y un botón activo que no hace nada erosiona la confianza de una
- * tienda que todavía no tiene reputación (§7.14).
+ * **Con stock** (AC-3): mientras el carrito (US-007) no exista, el MVP no puede
+ * dejar un producto sin forma de comprarlo. La CTA primaria es **"Comprar por
+ * WhatsApp"** (canal humano, funcional hoy) y debajo queda el botón "Agregar al
+ * carrito" `disabled` como señal explícita del roadmap — no como único control,
+ * que sería un botón muerto que erosiona la confianza (§7.14).
  *
  * **Sin stock** (AC-4): el botón de compra **se reemplaza** por el canal humano
  * — no queda un disabled mudo (design-system §7.3). El badge lleva **texto**,
@@ -51,10 +52,15 @@ export function ProductPurchase({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <span className="inline-flex w-fit items-center rounded-full bg-success-subtle px-3 py-1 text-sm font-medium text-foreground">
         En stock
       </span>
+      {/* Camino de compra del MVP (sin carrito todavía): canal humano por WhatsApp. */}
+      <WhatsAppLink
+        label="Comprar por WhatsApp"
+        message={WHATSAPP_MESSAGES.product(productName)}
+      />
       <Button
         variant="accent"
         className="w-fit"
@@ -63,6 +69,9 @@ export function ProductPurchase({
       >
         Agregar al carrito
       </Button>
+      <p className="text-xs text-muted">
+        Carrito próximamente — por ahora coordinás la compra por WhatsApp.
+      </p>
     </div>
   );
 }
