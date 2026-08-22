@@ -152,7 +152,7 @@ language: es
     `process.memoryUsage().heapUsed` no crece más que el cap; columna `notas` desconocida →
     ignorada, el resto se lee)
 
-- [ ] T1.3 Validación por fila → fila parseada o error de fila (AC-5)
+- [x] T1.3 Validación por fila → fila parseada o error de fila (AC-5)
   - **Pattern**: función pura `validateRow(cells, rowNumber): ParsedRow | RowError` con
     allowlist por campo (tipo, longitud, rango, patrón) — `per security-standards.md §6.1 —
     allowlist semantics: definir qué ES válido y rechazar el resto; reject, don't repair`.
