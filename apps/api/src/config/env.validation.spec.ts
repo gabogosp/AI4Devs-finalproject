@@ -116,3 +116,63 @@ describe('Carrito del invitado (US-007 T0.2) — defaults y fail-fast', () => {
     expect(env.AUTH_COOKIE_SECURE).toBe('true');
   });
 });
+
+describe('Import masivo de inventario (US-006 T0.3) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin las variables, aplica los 9 defaults seguros exactos', () => {
+    const env = validateEnv({ ...base });
+    // Literales a propósito: los tres primeros son la decisión del PO en OQ-BE-3
+    // (tope AJUSTADO, no el holgado del diseño). Si alguien los "recupera" a los
+    // valores holgados, este test falla y la conversación vuelve al PO.
+    expect(env.IMPORT_MAX_FILE_BYTES).toBe(4_194_304); // 4 MiB
+    expect(env.IMPORT_MAX_ROWS).toBe(5_000);
+    expect(env.IMPORT_MAX_UNCOMPRESSED_BYTES).toBe(33_554_432); // 32 MiB
+    expect(env.IMPORT_BATCH_SIZE).toBe(200);
+    expect(env.IMPORT_MAX_REPORT_ROWS).toBe(1_000);
+    expect(env.IMPORT_JOB_STALE_MS).toBe(120_000);
+    expect(env.IMPORT_RETENTION_DAYS).toBe(90);
+    expect(env.IMPORT_RATE_LIMIT_MAX).toBe(3);
+    expect(env.IMPORT_RATE_LIMIT_TTL_MS).toBe(3_600_000);
+  });
+
+  it('IMPORT_MAX_ROWS=abc hace fallar el arranque, no cae al default', () => {
+    // Un cap que se degrada a su default por un typo es un cap que no existe.
+    expect(() => validateEnv({ ...base, IMPORT_MAX_ROWS: 'abc' })).toThrow(
+      /fail-fast/,
+    );
+  });
+
+  it('IMPORT_BATCH_SIZE=0 hace fallar el arranque', () => {
+    // Un lote de 0 filas es un runner que nunca avanza: mejor no arrancar.
+    expect(() => validateEnv({ ...base, IMPORT_BATCH_SIZE: '0' })).toThrow(
+      /fail-fast/,
+    );
+  });
+
+  it('IMPORT_MAX_FILE_BYTES=-1 hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, IMPORT_MAX_FILE_BYTES: '-1' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('castea los valores provistos a número, sin dejarlos como string', () => {
+    const env = validateEnv({
+      ...base,
+      IMPORT_MAX_ROWS: '10000',
+      IMPORT_RETENTION_DAYS: '30',
+    });
+    expect(env.IMPORT_MAX_ROWS).toBe(10_000);
+    expect(env.IMPORT_RETENTION_DAYS).toBe(30);
+  });
+
+  it('el presupuesto del POST de import es más estricto que el del carrito', () => {
+    // El POST abre un trabajo que escribe miles de filas; una lectura del
+    // carrito no. Si algún día se invierten, el import quedó mal presupuestado.
+    const env = validateEnv({ ...base });
+    expect(env.IMPORT_RATE_LIMIT_MAX).toBeLessThan(env.CART_RATE_LIMIT_MAX);
+  });
+});

@@ -88,7 +88,7 @@ language: es
     asserta que `products` tiene exactamente 13 columnas con `enrichment_done` en `false` por
     default)
 
-- [ ] T0.3 Variables de entorno del import validadas por Zod
+- [x] T0.3 Variables de entorno del import validadas por Zod
   - **Pattern**: extender `envSchema` en `apps/api/src/config/env.validation.ts` con
     `z.coerce.number().int().positive().default(…)` — `per backend-node-standards.md §7 —
     config validada al arranque, fail-fast`.

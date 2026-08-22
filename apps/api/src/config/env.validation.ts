@@ -105,6 +105,67 @@ export const envSchema = z.object({
    * o modifica filas.
    */
   CART_WRITE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
+
+  /**
+   * US-006 — importación masiva de inventario. Defaults seguros; un valor
+   * inválido hace FALLAR el arranque (§7), nunca cae al default en silencio:
+   * un cap que se degrada a su default por un typo es un cap que no existe.
+   *
+   * Los tres primeros son la decisión del PO en OQ-BE-3 (2026-08-20): eligió el
+   * tope AJUSTADO sobre el holgado que proponía el diseño. 5.000 filas coincide
+   * con el catálogo objetivo del E2E §21, así que **no queda margen**: un
+   * catálogo mayor obliga a partir el archivo. Están acá, y no hardcodeadas,
+   * precisamente para poder subirlas sin deploy de código.
+   */
+  /** Cap de tamaño del archivo subido, aplicado ANTES de bufferizarlo (§6.4) → 413. */
+  IMPORT_MAX_FILE_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(4_194_304), // 4 MiB
+  /** Cap de filas de datos del archivo (el encabezado no cuenta) → 422. */
+  IMPORT_MAX_ROWS: z.coerce.number().int().positive().default(5_000),
+  /**
+   * Cap de bytes DESCOMPRIMIDOS de un xlsx (§6.6 — zip bomb / memory
+   * exhaustion): el stream se aborta al superarlo, sin agotar el proceso.
+   */
+  IMPORT_MAX_UNCOMPRESSED_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(33_554_432), // 32 MiB
+  /**
+   * Filas por lote del runner. Es lo que se procesa entre dos `await`, así que
+   * acota cuánto tiempo seguido ocupa el event loop y cada cuánto se publica el
+   * progreso consultable (AC-7).
+   */
+  IMPORT_BATCH_SIZE: z.coerce.number().int().positive().default(200),
+  /**
+   * Tope de filas rechazadas que se persisten para el reporte. Superado, el
+   * trabajo marca `report_truncated` y `failed_count` sigue contando el total
+   * real — el contador no miente aunque el reporte esté recortado.
+   */
+  IMPORT_MAX_REPORT_ROWS: z.coerce.number().int().positive().default(1_000),
+  /**
+   * Antigüedad del `heartbeat_at` a partir de la cual un trabajo `running` se
+   * considera muerto y el reaper lo cierra como `interrupted` (ADR-0012). Con
+   * el ejecutor in-process, un reinicio del proceso deja trabajos huérfanos:
+   * sin esto quedarían `running` para siempre y bloquearían el siguiente (409).
+   */
+  IMPORT_JOB_STALE_MS: z.coerce.number().int().positive().default(120_000), // 2 min
+  /** Retención de trabajos e historial de filas rechazadas (OQ-BE-6). */
+  IMPORT_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+  /**
+   * §7.3 — presupuesto del POST de import por IP. Deliberadamente chico: cada
+   * request abre un trabajo que escribe miles de filas. Los GET de estado NO
+   * comparten este presupuesto (el panel hace polling del progreso).
+   */
+  IMPORT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(3),
+  IMPORT_RATE_LIMIT_TTL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(3_600_000), // 1 h
 }).superRefine((env, ctx) => {
   // Sin esto, un deploy mal configurado caería al adapter de log y el flujo de
   // recuperación "funcionaría" sin enviar un solo email. Nadie se entera hasta
