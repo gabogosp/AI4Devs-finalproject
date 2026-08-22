@@ -507,7 +507,7 @@ language: es
 
 ## Fase 7: Cobertura e2e de los AC — 0,9 h
 
-- [ ] T7.1 e2e de reconciliación por SKU (AC-1, AC-4, AC-9, AC-10)
+- [x] T7.1 e2e de reconciliación por SKU (AC-1, AC-4, AC-9, AC-10)
   - **Exit criterion**: subir un archivo con 2 SKUs nuevos y 1 existente ⇒ los 2 nuevos se
     crean en `draft` y el existente se actualiza (AC-1); re-subir **el mismo** archivo ⇒
     `count(products)` no cambia y `updated_count === 3` (AC-10); subir un archivo que sólo
@@ -517,7 +517,7 @@ language: es
     (sigue `draft`, AC-9).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-imports-acceptance`
 
-- [ ] T7.2 e2e de categorías auto-creadas y enriquecimiento pendiente (AC-2, AC-3)
+- [x] T7.2 e2e de categorías auto-creadas y enriquecimiento pendiente (AC-2, AC-3)
   - **Exit criterion**: un archivo con 3 filas que referencian "Plomería", "plomeria" y
     "Electricidad" ⇒ se crean **2** categorías, `categories_created_count === 2`, y los 3
     productos quedan asignados correctamente (AC-2); tras el import, los productos creados y
@@ -525,7 +525,7 @@ language: es
     enriquecimiento recibió exactamente esos ids (AC-3).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-imports-categories`
 
-- [ ] T7.3 e2e de errores parciales y de rechazo del archivo (AC-5, AC-6, AC-7, AC-11)
+- [x] T7.3 e2e de errores parciales y de rechazo del archivo (AC-5, AC-6, AC-7, AC-11)
   - **Exit criterion**: archivo con 5 filas válidas y 3 inválidas (precio `0`, SKU vacío,
     stock `-1`) ⇒ trabajo `completed` con `created_count === 5` y `failed_count === 3`, las
     5 válidas presentes en `products`, ninguna de las 3 inválidas escrita ni parcialmente
