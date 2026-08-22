@@ -513,7 +513,7 @@ language: es
 
 ## Fase 7: Contratos y documentación — 0,5 h
 
-- [ ] T7.1 Tres contratos OpenAPI draft (1 por endpoint) + lint
+- [x] T7.1 Tres contratos OpenAPI draft (1 por endpoint) + lint
   - **Pattern**: un yaml autocontenido por endpoint en
     `openspec/changes/US-007-carrito-compra-backend/contracts/openapi/`
     (`cart-get.yaml`, `cart-set-item.yaml`, `cart-remove-item.yaml`) con `servers: [/v1]`

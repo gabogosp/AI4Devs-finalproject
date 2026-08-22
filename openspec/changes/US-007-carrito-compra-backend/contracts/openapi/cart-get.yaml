@@ -1,0 +1,280 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /cart
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-007 (carrito de compra del invitado). Al archivar el
+    change, estos 3 endpoints forman la capacidad nueva `openspec/specs/carrito/`
+    — no se mezclan con `catalogo`: son la capacidad 4 del PRD, con su propio
+    `CartModule` en el E2E §6.1.
+
+    **La identidad del carrito es la cookie `dsm_cart`** (token opaco de 256 bits,
+    guardado hasheado). No viaja en el cuerpo de ninguna respuesta ni aparece en
+    ninguna URL: la superficie es estructuralmente inmune a IDOR en vez de
+    depender de un chequeo de propiedad.
+
+    **Todos los importes se calculan con el precio vigente** de `products` leído en
+    la misma request (AC-9); la instantánea guardada sólo alimenta el flag
+    `price_changed`.
+servers:
+  - url: /v1
+tags:
+  - name: cart
+    description: Carrito de compra del invitado (US-007). Superficie pública.
+paths:
+  /cart:
+    get:
+      operationId: getCart
+      tags: [cart]
+      summary: Devuelve el carrito con precios vigentes y disponibilidad (AC-4, AC-6, AC-7, AC-9)
+      description: |
+        **Operación segura**: no crea carrito, no emite cookie y no desliza la
+        ventana de retención. Sin cookie, con una cookie huérfana o con la fila
+        vencida devuelve el **carrito vacío** con **200** (AC-7) — «no tengo
+        carrito» es un estado válido del recurso, no un recurso ausente.
+
+        Cada lectura re-evalúa precio y disponibilidad contra `products`, así que
+        una línea despublicada o sin stock suficiente aparece **marcada** (AC-6) y
+        fuera del `total_ars_cents`, nunca borrada sola.
+
+        Si la fila estaba vencida, se **purga** en el acto (purga oportunista) y se
+        responde como si no hubiera carrito.
+
+        **Carrito vacío (AC-7)**: `{ "cart": { "id": null, "items": [],
+        "item_count": 0, "total_quantity": 0, "total_ars_cents": 0,
+        "has_blocking_issues": false, "updated_at": null } }`, con **200** y **sin**
+        `Set-Cookie`. Va como prosa y no como `examples` porque Spectral 6.16 aborta
+        el lint al validar un ejemplo con valores `null` (bug del linter, no del
+        contrato); `image_url` también puede ser `null` cuando el producto no tiene
+        imagen cargada.
+      security: []
+      responses:
+        '200':
+          description: |
+            Carrito del invitado. `Cache-Control: no-store` en toda la superficie
+            (security-standards §7.1): sin él, una caché intermedia podría servir
+            el carrito de otro cliente o precios viejos, y AC-9 se caería aunque el
+            cálculo del servidor fuera perfecto.
+          headers:
+            Cache-Control:
+              description: Siempre `no-store`.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartEnvelope'
+              examples:
+                conProductos:
+                  summary: Carrito con una línea disponible y un cambio de precio
+                  value:
+                    cart:
+                      id: 9b2f8c1e-4d5a-4f6b-8c7d-1e2f3a4b5c6d
+                      items:
+                        - slug: amoladora-angular-115mm
+                          name: Amoladora angular 115mm
+                          image_url: https://cdn.example.com/amoladora.jpg
+                          quantity: 2
+                          unit_price_ars_cents: 185000
+                          currency: ARS
+                          subtotal_ars_cents: 370000
+                          availability: available
+                          max_quantity: 5
+                          price_changed: true
+                          previous_unit_price_ars_cents: 179000
+                      item_count: 1
+                      total_quantity: 2
+                      total_ars_cents: 370000
+                      has_blocking_issues: false
+                      updated_at: '2026-08-22T12:00:00.000Z'
+                conLineaBloqueada:
+                  summary: Línea sin stock suficiente — marcada y fuera del total (AC-6)
+                  value:
+                    cart:
+                      id: 9b2f8c1e-4d5a-4f6b-8c7d-1e2f3a4b5c6d
+                      items:
+                        - slug: taco-fischer-sx-8mm
+                          name: Taco Fischer SX 8mm (x50)
+                          image_url: https://cdn.example.com/taco.jpg
+                          quantity: 3
+                          unit_price_ars_cents: 320000
+                          currency: ARS
+                          subtotal_ars_cents: 960000
+                          availability: insufficient_stock
+                          available_quantity: 1
+                          max_quantity: 1
+                          price_changed: false
+                      item_count: 1
+                      total_quantity: 3
+                      total_ars_cents: 0
+                      has_blocking_issues: true
+                      updated_at: '2026-08-22T12:00:00.000Z'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    RateLimited:
+      description: |
+        Presupuesto del throttler `cart` excedido (security-standards §7.3):
+        `CART_RATE_LIMIT_MAX` lecturas por minuto y por IP.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+        Cache-Control:
+          description: |
+            `no-store` también acá: un 429 cacheado en el edge convertiría el
+            rate-limit en un DoS.
+          schema: { type: string }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    CartEnvelope:
+      type: object
+      required: [cart]
+      properties:
+        cart:
+          $ref: '#/components/schemas/Cart'
+    Cart:
+      type: object
+      required:
+        - id
+        - items
+        - item_count
+        - total_quantity
+        - total_ars_cents
+        - has_blocking_issues
+        - updated_at
+      properties:
+        id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          description: |
+            `null` cuando todavía no hay carrito. Conocer este id **no** da acceso:
+            el acceso es la cookie `dsm_cart`.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        item_count:
+          type: integer
+          description: Líneas distintas (no unidades).
+        total_quantity:
+          type: integer
+          description: Unidades, incluidas las de las líneas bloqueadas.
+        total_ars_cents:
+          type: integer
+          description: |
+            Suma de los subtotales de las líneas `available` **solamente**
+            (OQ-BE-4). Un total que incluyera lo no comprable sería un número que
+            el checkout va a desmentir.
+        has_blocking_issues:
+          type: boolean
+          description: |
+            `true` si alguna línea no es `available`. Es la señal con la que US-008
+            impide avanzar al pago.
+        updated_at:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+    CartItem:
+      type: object
+      required:
+        - slug
+        - name
+        - image_url
+        - quantity
+        - unit_price_ars_cents
+        - currency
+        - subtotal_ars_cents
+        - availability
+        - max_quantity
+        - price_changed
+      properties:
+        slug:
+          type: string
+          description: |
+            Identificador **público** del producto (convención de US-002/US-003:
+            los DTO del storefront no exponen `id`).
+        name: { type: string }
+        image_url:
+          oneOf:
+            - type: string
+            - type: 'null'
+        quantity:
+          type: integer
+          minimum: 1
+        unit_price_ars_cents:
+          type: integer
+          description: Precio **vigente** en centavos ARS (IVA incluido), no la instantánea.
+        currency:
+          type: string
+          enum: [ARS]
+        subtotal_ars_cents:
+          type: integer
+          description: |
+            `unit_price_ars_cents × quantity`. Se calcula también en las líneas
+            bloqueadas, aunque no entren en el total.
+        availability:
+          type: string
+          enum: [available, insufficient_stock, unavailable]
+          description: |
+            `available`: publicado y con stock ≥ cantidad.
+            `insufficient_stock`: publicado con stock < cantidad (AC-6).
+            `unavailable`: `draft` o `archived` (AC-6).
+        available_quantity:
+          type: integer
+          description: |
+            Presente sólo cuando la línea pide más de lo que hay. Divulgación
+            **acotada y deliberada** del nivel de stock (OQ-BE-2): el dato ya es
+            sondeable con el 409, vive sólo detrás de la cookie del carrito, y sin
+            él el stepper del FE tendría que aprender su límite fallando.
+        max_quantity:
+          type: integer
+          description: '`min(stock, CART_MAX_QTY_PER_LINE)` — techo del stepper.'
+        price_changed:
+          type: boolean
+          description: |
+            `true` si el precio vigente difiere de la instantánea del último toque.
+            El cambio se **muestra**, no se aplica en silencio (es dinero).
+        previous_unit_price_ars_cents:
+          type: integer
+          description: Presente sólo si `price_changed` es `true`.
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            URI del catálogo **cerrado** de esta superficie:
+            `dsm:cart/insufficient-stock`, `dsm:cart/too-many-items`,
+            `dsm:catalog/not-found`, `dsm:auth/csrf`, `dsm:catalog/http-422` y
+            `dsm:catalog/http-429`.
+          examples: ['dsm:catalog/http-429']
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene el token del carrito ni su hash.'
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
