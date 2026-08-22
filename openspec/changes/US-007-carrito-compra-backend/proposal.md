@@ -7,151 +7,198 @@ variant: null
 language: es
 ---
 
-# US-007 Backend — Carrito de compra guest
+# US-007 Backend — Carrito de compra del invitado (identidad por cookie, sin reserva de stock)
 
 ## Why
 
-US-003 dejó la ficha de producto pública y navegable. Lo que falta para que el
-loop de compra del PRD arranque es el paso intermedio: **poder juntar productos
-antes de pagar**. US-008 (checkout) está `blocked_by: [US-007]`, así que esta US
-es el cuello de botella del resto del loop comercial.
+El catálogo ya se puede navegar y leer: US-001 dio el panel del dueño, US-002 la
+navegación por categorías y US-003 la ficha pública. Pero el loop de compra del PRD
+(§3.1) se corta justo ahí: **hoy no hay forma de acumular lo que el cliente quiere
+comprar**. `packages/db/prisma/schema.prisma` no conoce `carts` ni `cart_items`, y
+`apps/api` no tiene ninguna superficie pública de **escritura** — todo lo que escribe
+está detrás de `AdminGuard` o del seam de auth.
 
-El backend de esta US es más chico de lo que parece — cuatro operaciones sobre
-dos tablas — y su dificultad está concentrada en **tres invariantes que son
-fáciles de romper y caros de detectar**:
+US-007 introduce la primera de esas dos cosas nuevas: un **carrito que funciona sin
+cuenta**. El PRD trata el guest checkout como el camino principal (§2.1 capacidad 4,
+§7 rol «Invitado») y las cuentas de US-014 como retención, no como requisito. Así que
+el carrito no puede colgar de la sesión de cliente: necesita **su propia identidad**,
+persistente entre visitas (AC-4), no adivinable y no enumerable.
 
-1. **El carrito no reserva stock** (AC-8, ADR-0008). Es contraintuitivo: la
-   lectura natural de "agregar al carrito" es "apartar la unidad". ADR-0008
-   decidió lo contrario a propósito —el stock se descuenta recién al aprobarse el
-   pago— y el precio de esa decisión es que **dos clientes pueden tener el último
-   tornillo en su carrito y sólo uno se lo lleva**. El backend tiene que aceptar
-   eso sin disimularlo: nada de reservas, nada de contadores intermedios.
+La segunda cosa nueva es más delicada: es la **primera superficie pública con
+escritura** del proyecto que no es auth. Eso arrastra la lista completa de §7 de
+`security-standards` — rate-limit propio, CSRF sobre una cookie que no es la de
+sesión, `Cache-Control: no-store`, cotas de tamaño — y un threat model de una
+frontera que hasta ahora no existía.
 
-2. **Los precios son siempre los vigentes** (AC-9). Un carrito que muestra el
-   precio de la semana pasada es una promesa que el mostrador no puede cumplir, y
-   en una ferretería —donde los precios se mueven con la inflación— eso pasa de
-   ser un caso raro a ser el caso normal.
-
-3. **El carrito es una capacidad al portador**. Quien tiene la cookie tiene el
-   carrito. No hay contraseña que lo proteja, así que el token tiene que ser
-   impredecible y no filtrarse — el mismo estándar que un token de sesión.
-
-Ninguno de los tres se ve al mirar la UI. Los tres se rompen en silencio.
+Lo que el carrito **no** hace también es load-bearing: **no reserva ni descuenta
+stock** (AC-8). ADR-0008 ya decidió que el inventario se decrementa sólo al aprobarse
+el pago, con un `UPDATE` condicional atómico, y descartó explícitamente la
+alternativa de reservar con TTL. Este change respeta esa decisión sin enmendarla: el
+carrito **mira** el stock para no dejar pedir más de lo que hay (AC-5), y lo vuelve a
+mirar cada vez que se lee (AC-6), pero nunca lo toca.
 
 ## What changes
 
-### Migración (aditiva)
+**Modelo de datos** — dos tablas nuevas, aditivas, ninguna existente se modifica:
 
-Dos tablas nuevas, `carts` y `cart_items`, exactamente como las declara el DER
-del E2E §8. **Ninguna tabla existente se toca**: `products` no gana columnas de
-reserva ni contadores, que es la contracara concreta de AC-8 y ADR-0008.
+- `carts` — el carrito, identificado por el **hash** de un token opaco que viaja en
+  una cookie `httpOnly` propia (`dsm_cart`). Con `expires_at` (ventana de retención
+  deslizante de **7 días**, OQ-BE-1) y `customer_id` nullable del DER (E2E §8), creada
+  pero sin escritor en esta US.
+- `cart_items` — una línea por producto (`UNIQUE (cart_id, product_id)`), con
+  `quantity` (`CHECK >= 1`) y `unit_price_ars_cents` como **instantánea** del precio
+  al momento de tocar la línea — usada sólo para detectar cambios de precio, nunca
+  para calcular importes.
 
-### Superficie HTTP — módulo `cart` nuevo (E2E §6 lo declara)
+**Superficie HTTP** — tres endpoints públicos bajo `/v1/cart`, todos **naturalmente
+idempotentes** (`api-standards.md` §10.5), sin máquina de `Idempotency-Key`:
 
-| Ruta | Código | AC |
+| Endpoint | Qué hace | AC |
 |---|---|---|
-| `GET /v1/cart` | 200 | AC-1, AC-6, AC-7, AC-9 |
-| `POST /v1/cart/items` | 201 | AC-1, AC-5, AC-10 |
-| `PATCH /v1/cart/items/{itemId}` | 200 | AC-2, AC-5 |
-| `DELETE /v1/cart/items/{itemId}` | 204 | AC-3 |
+| `GET /v1/cart` | Devuelve el carrito con precios **vigentes**, subtotales, total y el estado de disponibilidad por línea. Nunca crea carrito. | AC-4, AC-6, AC-7, AC-9 |
+| `PUT /v1/cart/items/{slug}` | Fija la cantidad **absoluta** de un producto (crea la línea si no existe). Crea el carrito y emite la cookie si no había. | AC-1, AC-2, AC-5, AC-10 |
+| `DELETE /v1/cart/items/{slug}` | Quita la línea. Idempotente: quitar lo que no está devuelve el carrito igual. | AC-3 |
 
-Superficie **pública** (sin auth): el carrito es guest por definición. La
-identidad es la cookie `dsm_cart`, un token opaco reusado de la primitiva que
-construyó US-014 (`auth/tokens/opaque-token.ts`).
+El producto se identifica por **`slug`**, no por UUID: es la convención pública ya
+establecida por US-002/US-003, cuyos DTO deliberadamente no exponen `id` para no
+filtrar identificadores internos.
 
-### Cálculo de importes
+**Identidad del carrito invitado**:
 
-El total y los subtotales se calculan **contra el precio vivo** del producto en
-cada lectura. `cart_items.unit_price_ars_cents` guarda el precio **al agregar** y
-se usa sólo para señalar que cambió (`price_changed: true`), nunca para calcular.
+- Token opaco de 256 bits (CSPRNG), guardado **hasheado** (SHA-256) — misma
+  disciplina que ADR-0011 para los refresh tokens: una fuga de base no entrega
+  carritos usables.
+- Cookie `dsm_cart` (`HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`) + cookie
+  legible `dsm_cart_csrf` = HMAC del token, para el double-submit de §7.5.
+- El id del carrito **nunca** viaja en la URL: la superficie es estructuralmente
+  inmune a IDOR, no depende de un chequeo de propiedad que alguien pueda olvidar.
 
-### Disponibilidad por ítem
+**Reglas de negocio**:
 
-Cada ítem se devuelve con su estado: `available`, `unpublished` o `out_of_stock`
-(AC-6). El carrito **no borra solo** los ítems que dejaron de estar disponibles —
-sacarle algo del carrito a alguien sin avisarle es peor que mostrárselo tachado.
+- **Stock**: se valida contra `products.stock` al escribir (AC-5, rechazo 409 con la
+  cantidad disponible) y se re-evalúa al leer (AC-6). **Nunca** se reserva ni
+  decrementa (AC-8, ADR-0008).
+- **Precio**: todos los importes se calculan con el precio **vigente** de `products`
+  en cada lectura (AC-9). La instantánea guardada sólo alimenta un flag
+  `price_changed` para que el cambio sea **visible**, no silencioso.
+- **Disponibilidad**: un producto despublicado, archivado o sin stock suficiente deja
+  la línea marcada y prende `has_blocking_issues` a nivel carrito (AC-6). La línea
+  **no** se borra sola.
+- **Agregar lo no publicado** devuelve exactamente el **mismo 404** que un slug
+  inexistente (AC-10) — la misma indistinguibilidad que US-003 fijó para la ficha, o
+  el carrito se vuelve un oráculo de enumeración del catálogo oculto.
 
-## ACs de US-007 cubiertos
+**Controles de borde** (`security-standards.md` §7): tercer throttler nombrado
+`cart` por IP (lecturas y escrituras con presupuestos distintos), `CartCsrfGuard`
+(double-submit firmado + `Origin` de la allowlist), `Cache-Control: no-store` en toda
+la superficie del carrito, `PUT`/`DELETE` agregados a la allowlist de métodos CORS,
+cota de líneas por carrito y de cantidad por línea.
 
-| AC | Cobertura backend | Nota |
+**Observabilidad**: `CartEventsService` con 6 eventos de negocio sin PII
+(`cart.item_added`, `cart.item_quantity_changed`, `cart.item_removed`, `cart.viewed`,
+`cart.stock_limit_rejected`, `cart.item_unavailable`) — insumo de conversión para
+US-016 y señal de demanda por encima del stock para el dueño.
+
+## ACs de US-007 cubiertos (capa backend)
+
+| AC | Cubierto | Nota |
 |---|---|---|
-| **AC-1** agregar producto | `POST /cart/items` + `GET /cart` | |
-| **AC-2** editar cantidad | `PATCH /cart/items/{id}` | |
-| **AC-3** quitar producto | `DELETE /cart/items/{id}` | |
-| **AC-4** persistencia entre visitas | Cookie `dsm_cart` + fila `carts` | TTL **7 días** (OQ-BE-2) |
-| **AC-5** cantidad limitada al stock | Validación en agregar y editar | Revalidación en checkout: US-008 |
-| **AC-6** producto no disponible | `availability` por ítem en `GET /cart` | El bloqueo de avanzar al pago es US-008 |
-| **AC-7** carrito vacío | `GET /cart` → `items: []`, totales en 0 | El estado vacío visual es FE |
-| **AC-8** no reserva ni descuenta stock | **Negative space** — test que lo prueba | |
-| **AC-9** precios vigentes | Cálculo contra el precio vivo | |
-| **AC-10** no se agregan no publicados | Validación en agregar + `GET` marca | |
+| AC-1 agregar producto | ✅ | `PUT /v1/cart/items/{slug}`; la respuesta trae cantidad, precio unitario vigente, subtotal y total |
+| AC-2 editar cantidad | ✅ | mismo endpoint, semántica absoluta |
+| AC-3 quitar producto | ✅ | `DELETE`, idempotente |
+| AC-4 persistencia entre visitas | ✅ | cookie persistente + fila en Postgres, ventana deslizante de **7 días desde la última escritura** (OQ-BE-1); el costo —volver a las dos semanas y encontrarlo vacío— está declarado en `design.md` |
+| AC-5 cantidad limitada al stock | ✅ | rechazo 409 con la cantidad disponible; revalidación en checkout es de US-008 |
+| AC-6 producto no disponible | ✅ (backend) | la lectura marca la línea y prende `has_blocking_issues`; **impedir el avance al pago** lo ejecuta US-008 con esa señal |
+| AC-7 carrito vacío | ✅ | `GET` sin cookie → 200 con carrito vacío, sin crear nada |
+| AC-8 no reserva ni descuenta | ✅ | verificado por test: el `stock` del producto no cambia en todo el ciclo |
+| AC-9 precios vigentes | ✅ | recálculo en cada lectura + `no-store` + flag `price_changed` |
+| AC-10 no se agregan no publicados | ✅ | 404 idéntico al de un slug inexistente |
+
+La parte de **UI** de todos ellos (stepper, estado vacío, avisos) es de la capa FE.
 
 ## Out of scope
 
-- **Checkout, datos del comprador y pago** — US-008 / US-009. Acá el carrito se
-  arma; nadie avanza a nada.
-- **Bloquear el avance al pago con ítems no disponibles** — el backend **marca**
-  la indisponibilidad (AC-6); impedir el checkout es de US-008, que es quien tiene
-  el endpoint donde impedirlo.
-- **Descuento de stock** — US-010, al aprobarse el pago (ADR-0008).
-- **Fusión del carrito guest con la cuenta al loguearse** — fuera de alcance por
-  decisión de la US y ratificado en OQ-BE-3.
-- **Cupones y descuentos** — fuera de v1.
-- **Purga programada de carritos vencidos** — necesita BullMQ y Redis no está
-  provisionado (ADR-0004). Se hace limpieza oportunista acotada, igual que en
-  US-014. `Deferred: US-019 / operaciones — owner: Arquitecto`.
+- **Checkout, datos del comprador y pago** — US-008 / US-009. Este change no crea
+  órdenes ni toca `orders`.
+- **Decremento y reintegro de stock** — US-010 (ADR-0008). El carrito sólo lee stock.
+- **Fusión del carrito invitado con la cuenta al iniciar sesión** — fuera de v1 por
+  decisión de la US (§4). La columna `carts.customer_id` se crea (está en el DER)
+  pero **ningún endpoint la escribe** en esta US.
+  `Deferred: US futura de fusión — owner: PO` (ver OQ-BE-3).
+- **Descuentos, cupones, envío** — fuera de v1 (US §4).
+- **Reserva de stock con expiración** — descartada en ADR-0008, alternativa A.
+- **Vaciar el carrito entero** (`DELETE /v1/cart`) — ningún AC lo pide; se agrega
+  cuando exista la necesidad.
+- **Job programado de purga de carritos vencidos** — Redis/BullMQ no está
+  aprovisionado (mismo estado que en US-006/ADR-0012). Esta US hace purga
+  **oportunista** al resolver un carrito vencido.
+  `Deferred: US-019 / operaciones — owner: Arquitecto`.
+- **Tests de carga (k6) y E2E cross-service (Playwright)** — de `/plan-qa`, no
+  dev-owned (`qa-backend-standards.md` §2.1).
 
 ## Standards consultados
 
-- `backend-node-standards.md` §2 (controller fino), §4 (DTO en el borde), §5
-  (repositorio como único punto de ORM; transacción para casos multi-escritura),
-  §6 (errores de dominio → RFC 7807), §7 (fail-fast de config).
-- `security-standards.md` §3.7 (token opaco ≥128 bits de un CSPRNG), §7.3
-  (rate-limit), §7.4 (atributos de cookie).
-- `api-standards.md` §5 (el contrato declara todo lo que la API expone), §8
-  (RFC 7807), §12 (429 con `Retry-After` y `RateLimit-*`).
-- `observability-standards.md` §9 (sin PII en logs ni métricas).
-- E2E §6 (módulo `cart`), §8 (DER), §17 (p95 escritura < 500 ms), §18 (eventos).
-- ADR-0008 (el stock se descuenta al aprobar el pago, nunca antes).
+| Standard | Secciones aplicadas |
+|---|---|
+| `base-standards.md` | §1 KISS/YAGNI (sin máquina de idempotencia, sin reserva, sin cola) |
+| `backend-standards.md` | capas handler→service→repository, errores, validación |
+| `backend-node-standards.md` | §2 capas · §3 DI por token · §4 DTO + ValidationPipe whitelist · §5 Prisma + repositorio + `$transaction` + migración aditiva · §6 errores de dominio + filtro RFC 7807 · §7 config validada fail-fast · §9 logs pino |
+| `api-standards.md` | §2 URLs (recurso plural, sub-recurso a un nivel) · §5 formato de respuesta (dinero en centavos, snake_case) · §8 errores RFC 7807 · §10.5 operaciones naturalmente idempotentes · §12 headers de rate-limit |
+| `security-standards.md` | §2 STRIDE · §6 validación de entrada · §7.1 headers + `no-store` · §7.2 CORS (métodos) · §7.3 rate-limit de escritura pública · §7.4 cookies · §7.5 CSRF con auth por cookie |
+| `observability-standards.md` | §9 sin PII en logs/métricas; cardinalidad de contadores |
+| `testing-standards.md` / `qa-backend-standards.md` | §14 pirámide, AAA; suites dev-owned vs QA |
+| `documentation-standards.md` | §11.1 README del servicio + OpenAPI publicado + runbook |
 
-## Open questions
+## Decisiones cerradas (ex-open questions)
 
-- **OQ-BE-1 — El DER guarda `unit_price_ars_cents` pero AC-9 exige precios
-  vigentes.** `[Resolved: 2026-08-20 — decisión del PO: se guarda como "precio al
-  agregar" y los importes se calculan SIEMPRE contra el precio vivo. El valor
-  guardado no participa del cálculo; sirve para devolver `price_changed: true` y
-  que el cliente se entere de que el precio se movió. Cumple el DER y AC-9 a la
-  vez, y agrega un aviso que ninguno de los dos pedía pero que evita la peor
-  versión del problema: enterarse del precio nuevo recién en el checkout.]`
+Las seis preguntas que este plan escaló están **resueltas por el PO el 2026-08-22**.
+No queda ninguna abierta: el plan se ejecuta completo desde T0.1. El fundamento de
+cada una vive en `design.md` §Decisiones cerradas.
 
-- **OQ-BE-2 — AC-4 pide "un período definido" de persistencia sin dar el
-  número.** `[Resolved: 2026-08-20 — decisión del PO: 7 días.` Se planteó el
-  trade-off: 7 días deja la tabla chica y con menos carritos fantasma, pero en una
-  ferretería la compra suele postergarse —esperar el cobro, consultar medidas,
-  comparar— y un carrito que se vence antes de que la persona vuelva cuesta
-  conversión. **Si la métrica de "carritos recuperados" de US-016 muestra caída,
-  éste es el primer número a revisar.**`]`
+| Id | Pregunta | Decisión | Estado |
+|---|---|---|---|
+| OQ-BE-1 | Ventana de persistencia del carrito invitado | **7 días** deslizantes desde la última escritura (`CART_TTL_DAYS = 7`) — **distinta de la recomendación** de este plan (proponía 30). Costo aceptado y declarado en `design.md`: quien vuelve a las dos semanas encuentra el carrito vacío | `[Resolved: 2026-08-22]` |
+| OQ-BE-2 | ¿El carrito muestra cuántas unidades quedan? | Sí, **sólo** en la superficie del carrito (`available_quantity` cuando pide de más, `max_quantity` para el stepper). La ficha y el listado siguen con el booleano de US-003 | `[Resolved: 2026-08-22]` |
+| OQ-BE-3 | Fusión invitado ↔ cuenta | En v1 **no pasa nada**: el carrito del invitado sigue accesible por su cookie. Política registrada para la US futura: **sumar cantidades** con tope al stock. No se implementa acá | `[Resolved: 2026-08-22]` |
+| OQ-BE-4 | ¿El total incluye las líneas no comprables? | **No**: `total_ars_cents` suma sólo lo comprable; el ítem sigue visible y marcado, fuera de la suma | `[Resolved: 2026-08-22]` |
+| OQ-BE-5 | Semántica de agregar | **`PUT` que fija la cantidad**, idempotente por `api-standards.md` §10.5 — sin `Idempotency-Key` | `[Resolved: 2026-08-22]` |
+| OQ-BE-6 | Purga de carritos vencidos | **Oportunista** en esta US + job programado diferido. Con 7 días la purga oportunista alcanza y el job pierde urgencia | `[Resolved: 2026-08-22]` |
 
-- **OQ-BE-3 — `carts.customer_id` existe en el DER pero la fusión guest→cuenta
-  está fuera de alcance.** `[Resolved: 2026-08-20 — decisión del PO: US-007 no
-  mira la sesión en absoluto. El carrito se identifica ÚNICAMENTE por la cookie, y
-  `customer_id` queda creado y sin escribir, con el diferimiento documentado —
-  mismo patrón que US-014 usó con `deleted_at`. Loguearse no cambia nada del
-  carrito. Consecuencia a no perder de vista: un cliente que arma el carrito
-  deslogueado y después entra a su cuenta **sigue viendo el mismo carrito** (la
-  cookie no cambia), que es el comportamiento deseable; lo que no existe todavía
-  es reconciliar DOS carritos.]`
+## References
 
-- **OQ-BE-4 — ¿Qué pasa si el mismo producto se agrega dos veces?**
-  `[Resolved: 2026-08-20 — se suma la cantidad sobre la fila existente en vez de
-  crear una segunda, con un UNIQUE (cart_id, product_id) que lo hace imposible de
-  violar. Dos filas del mismo producto obligarían al FE a decidir cuál mostrar y
-  harían ambiguo el PATCH por `itemId`.]`
+- User story: [`docs/user-stories/US-007-carrito-compra.md`](../../../docs/user-stories/US-007-carrito-compra.md)
+- PRD: [`docs/product/prd.md`](../../../docs/product/prd.md) §2.1 capacidad 4, §3.1 (loop y casos borde), §6 (retención), §7 (rol Invitado)
+- E2E: [`docs/product/design-e2e.md`](../../../docs/product/design-e2e.md) §6.1 (`CartModule`), §8 (DER `CARTS`/`CART_ITEMS`), §14 (trust boundaries), §17 (NFRs), §18 (observabilidad), §20 (ADR)
+- ADR-0008 — decremento de stock al aprobar el pago (**gobierna AC-5 y AC-8**)
+- ADR-0002 — Postgres único (el carrito vive en Postgres, no en Redis)
+- ADR-0011 — almacén server-side de tokens hasheados (precedente del token de carrito)
+- ADR-0010 — namespace de URLs storefront vs admin
+- Specs vivas: [`openspec/specs/catalogo/`](../../specs/catalogo/) — al archivar, estos
+  tres endpoints forman la capacidad nueva `openspec/specs/carrito/`
+- Changes de referencia: `US-003-ficha-producto-pdp-backend` (superficie pública,
+  anti-enumeración, caché), `US-014-registro-login-backend` (cookies, CSRF,
+  throttler, tokens opacos hasheados)
 
-## Referencias
-
-- US: `docs/user-stories/US-007-carrito-compra.md`
-- E2E: `docs/product/design-e2e.md` §6 (componentes), §8 (DER), §17 (NFR)
-- ADR-0008: `docs/architecture/decisions/0008-decrement-inventory-on-approved-payment.md`
-- Contrato vivo de la capacidad: `openspec/specs/catalogo/contracts/openapi.yaml`
-- Primitiva de token reusada: `apps/api/src/auth/tokens/opaque-token.ts` (US-014)
+> **Plan regenerado el 2026-08-20 — colisión de sesiones. Ratificado por el PO el
+> 2026-08-22.** Una sesión paralela ya había commiteado un plan para este mismo change
+> (18 tasks, commit **`cf1f011`** — *"docs(openspec): US-007 backend — plan del carrito
+> guest (18 tasks, 7 h)"*); al planificar de nuevo se sobrescribió. **El plan anterior
+> está intacto en git y respaldado** en
+> [`openspec/changes/_backups/2026-08-20-US-007-carrito-compra-backend/`](../_backups/2026-08-20-US-007-carrito-compra-backend/)
+> — se conserva, no se borra.
+>
+> Los dos convergen en lo esencial (token opaco hasheado en la cookie, `expires_at`
+> agregado al DER, creación perezosa del carrito, precios vigentes, AC-8 probado como
+> invariante, purga oportunista). El PO se quedó con **este** por tres brechas
+> verificadas contra el backup y contra el código: (a) el plan anterior **no
+> contemplaba CSRF** sobre la cookie del carrito, y `security-standards.md` §7.5 es
+> *Mandatory* cuando la autenticación viaja en cookies; (b) **no declaraba
+> `Cache-Control: no-store`**, del que depende AC-9; (c) **no agregaba `DELETE` a la
+> allowlist de métodos CORS** — `bootstrap.ts` declara hoy
+> `methods: ['GET','POST','PATCH','OPTIONS']`, así que el `DELETE` que ese plan
+> proponía habría fallado el preflight en el navegador. Además, este plan usa `PUT` de
+> cantidad absoluta en vez de `POST` relativo (idempotente por §10.5, sin
+> `Idempotency-Key`) y escaló seis decisiones al PO en vez de fijarlas — las seis
+> quedaron resueltas el 2026-08-22 (ver §Decisiones cerradas). Coincidencia notable:
+> la retención de **7 días** que el plan anterior fijaba por su cuenta es la que el PO
+> terminó eligiendo.

@@ -76,7 +76,7 @@
   blocked_by: [US-001]
 - id: US-007
   slug: carrito-compra
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]
