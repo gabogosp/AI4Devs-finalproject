@@ -1,6 +1,12 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ImportFormat } from './detect-format';
+import { ENRICHMENT_QUEUE, EnrichmentQueue } from './enrichment-queue';
 import {
   ImportJobsRepository,
   JobCounters,
@@ -44,6 +50,7 @@ export class ImportRunner implements OnApplicationBootstrap {
   constructor(
     private readonly jobs: ImportJobsRepository,
     private readonly imports: ImportsService,
+    @Inject(ENRICHMENT_QUEUE) private readonly enrichment: EnrichmentQueue,
     config: ConfigService,
   ) {
     this.batchSize = config.get<number>('IMPORT_BATCH_SIZE') ?? 200;
@@ -175,7 +182,7 @@ export class ImportRunner implements OnApplicationBootstrap {
       await this.jobs.markCompleted(jobId, { ...contadores, reportTruncated });
       cerrado = true;
 
-      this.notificarEnriquecimiento(idsParaEnriquecer);
+      await this.notificarEnriquecimiento(idsParaEnriquecer);
     } catch (error) {
       const code = this.codigoDeFalloGlobal(error);
       await this.jobs
@@ -197,14 +204,23 @@ export class ImportRunner implements OnApplicationBootstrap {
   }
 
   /**
-   * Punto de inyección de la cola de enriquecimiento (AC-3). En T4.4 pasa a
-   * delegar en el puerto `EnrichmentQueue`; hasta entonces la marca durable
-   * `products.enrichment_done = false` ya quedó en la base, así que la cola se
-   * puede reconstruir con un `SELECT`.
+   * Encola el enriquecimiento de los productos creados y de los que cambiaron su
+   * descripción base (AC-3). **Una sola llamada** por trabajo: encolar por fila
+   * serían 5.000 mensajes para un archivo al tope.
+   *
+   * Se llama DESPUÉS de cerrar el trabajo como `completed` y con el fallo
+   * atrapado acá: la cola es una consecuencia del import, no una condición de su
+   * éxito. Un Redis caído no puede convertir en `failed` un import que ya
+   * escribió el catálogo — el dueño volvería a subir un archivo ya aplicado.
    */
-  protected notificarEnriquecimiento(ids: string[]): void {
-    if (ids.length > 0) {
-      this.logger.log(`import: ${ids.length} producto(s) pendientes de enriquecer`);
+  private async notificarEnriquecimiento(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    try {
+      await this.enrichment.enqueue(ids);
+    } catch (error) {
+      this.logger.error(
+        `import: falló el encolado de enriquecimiento (${ids.length} productos siguen marcados en la base): ${(error as Error).message}`,
+      );
     }
   }
 

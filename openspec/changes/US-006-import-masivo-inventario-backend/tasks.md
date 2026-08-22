@@ -352,7 +352,7 @@ language: es
     < 1 s (el event loop no está bloqueado); insertar a mano un job `running` con
     `heartbeat_at` de hace 10 min y bootear ⇒ `failed` / `interrupted`)
 
-- [ ] T4.4 Puerto `EnrichmentQueue` + adapter no-op + marca durable (AC-3)
+- [x] T4.4 Puerto `EnrichmentQueue` + adapter no-op + marca durable (AC-3)
   - **Pattern**: interfaz + token de inyección (`provide: ENRICHMENT_QUEUE`) inyectada por el
     service — `per backend-node-standards.md §3 — depender de interfaces/tokens, no de clases
     concretas, donde ayuda a sustituir/testear`. Mismo patrón que el puerto de mailer de

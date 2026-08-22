@@ -5,6 +5,7 @@ import { HealthModule } from '../health/health.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriesRepository } from '../categories/categories.repository';
 import { ProductsRepository } from '../products/products.repository';
+import { LoggingEnrichmentQueue } from './enrichment-queue';
 import { ImportJobsRepository } from './import-jobs.repository';
 import { ImportRunner } from './import-runner';
 import { ImportsService } from './imports.service';
@@ -35,7 +36,7 @@ describe('ImportRunner (integration)', () => {
     const config = {
       get: <T>(clave: string): T => valores[clave] as unknown as T,
     } as ConfigService;
-    return new ImportRunner(jobs, service, config);
+    return new ImportRunner(jobs, service, new LoggingEnrichmentQueue(), config);
   };
 
   const csv = (filas: number, valido = true): Buffer => {
