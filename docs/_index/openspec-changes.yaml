@@ -343,6 +343,16 @@
   assignee: bce7ffb7
   branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
   pr-url: null
+  # DESARROLLO CERRADO 2026-08-22 (/develop-backend): 24/24 tasks en [x] + los 6
+  # prerequisitos. Suite-level: apps/api lint + typecheck limpios; test 89/90 suites
+  # (937/939 tests) y test:e2e 37/38 con el ÚNICO rojo en
+  # src/common/e2e-security-edge.spec.ts (2 tests de preflight del surface admin),
+  # reproducido idéntico en un worktree sobre 16fabe0 ⇒ PREEXISTENTE, no regresión de
+  # US-007. Los 4 yaml OpenAPI sin errores de spectral. `pnpm -r lint` y `pnpm -r test`
+  # quedan rojos por trabajo de otras disciplinas en vuelo en la misma rama (US-014
+  # frontend-web commit de15d10; US-006 e2e-imports-upload), no por este change.
+  # 5 desviaciones AS-BUILT documentadas en tasks.md §Reconciliación AS-BUILT.
+  # Estado: In Progress hasta que /commit abra el PR.
   created: 2026-08-20
   completed-at: null
   archived-at: null
@@ -382,6 +392,174 @@
   branch: null
   pr-url: null
   created: 2026-08-20
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-009-pago-mercadopago-backend
+  us-id: US-009
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-009-pago-mercadopago.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 9,8 h AI-asistido / ~19 h tradicional (28 tasks). US §7 presupuesta BE-US-009 en
+  # 10-16 h: el tradicional excede el techo ~3 h por trabajo que la US da por resuelto
+  # al describirlo como «integración con MercadoPago + medio simulado detrás de flag» —
+  # la PRIMERA llamada saliente del camino crítico del proyecto (timeout + reintentos +
+  # backoff con jitter + circuit breaker + adaptador falso, ~3,5 h de las cuales la US
+  # no presupuesta ninguna, porque en apps/api hoy no existe un solo control de
+  # resiliencia del que copiar: el único adaptador externo, ResendMailer de US-014, corre
+  # fuera del camino de respuesta), y las DOS capas del flag del simulado en vez de un
+  # `if` en el handler (montaje condicional del controller + fallo de arranque en
+  # producción). La integración en sí —preferencia, init_point, retorno— son ~4 h.
+  #
+  # BLOQUEANTE al cerrar el planning (en rojo, a propósito): US-008 backend NO ESTÁ
+  # PLANIFICADO. Este change lee `orders`/`order_items` y no los crea, y necesita del
+  # contrato de US-008 una columna `orders.access_token_hash` + un `order_token` opaco
+  # en el 201 de POST /v1/checkout. Es la única obligación que US-009 impone a una US
+  # todavía sin planificar (OQ-BE-1) y conviene ratificarla con el Arquitecto antes de
+  # ejecutar: rehacer el seam después cuesta más que decidirlo ahora.
+  #
+  # ALCANCE: la tabla `payments` es de este change; `orders`/`order_items` son de US-008;
+  # el webhook, la confirmación de la orden y el decremento de stock son de US-010
+  # (ADR-0008). Se deja el seam `PaymentConfirmationPort` con un adaptador no-op, así que
+  # al cerrar este change un pago aprobado NO confirma la orden — estado intermedio
+  # declarado en tasks.md §Pre-requisitos y en el runbook (T7.2).
+  #
+  # DEVIACIONES DECLARADAS en design.md: 3 columnas sobre el DER del E2E §8
+  # (preference_id, init_point, updated_at) + cardinalidad ORDERS→PAYMENTS de 0..1 a
+  # 0..N con a lo sumo un `pending` (índice único parcial, OQ-BE-2) + presupuesto p95 de
+  # POST /v1/payments a 2 s en vez de los 500 ms de escritura del E2E §17 (contiene una
+  # llamada a un tercero; la parte propia sí cumple ≤ 120 ms) + idempotencia natural en
+  # vez de la máquina de Idempotency-Key de api-standards §10.1 (§10.5 en espíritu).
+  # Sin ADR nuevo: ADR-0006 gobierna el proveedor y el simulado, ADR-0008 el stock.
+  #
+  # 6 preguntas abiertas para el PO/Arquitecto, NINGUNA bloquea el arranque: todas
+  # tienen default implementado (seam US-008, 5 reintentos por orden, cookie 2 h,
+  # /latest devuelve order_status + total, preferencia a 24 h, simulado on en staging).
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment US-009 — 6 gatillos (secreto MP_ACCESS_TOKEN,
+  # feature flag con gate de release por ADR-0006, migración dependiente de US-008,
+  # superficie pública con dinero, dependencia externa nueva en el camino crítico, URL
+  # pública HTTPS del webhook que consume US-010).
+  estimate-hours: 9.8
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-005-enriquecimiento-ia-embeddings-backend
+  us-id: US-005
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 13,4 h AI-asistido / ~26 h tradicional (28 tasks). US §7 presupuesta BE-US-005 en 16-24 h:
+  # el tradicional excede el techo ~2 h por trabajo que la US daba por
+  # resuelto con BullMQ — el ejecutor, el claim por lease, el backoff durable, el limitador de
+  # RPM y el cooldown. Con la cola aprovisionada ese trabajo lo habría aportado la
+  # infraestructura. Se suma la costura de curación de AC-7 (PATCH admin), que US-001 nunca
+  # construyó y sin la cual el AC no es verificable de punta a punta.
+  #
+  # DECISIÓN DE ARQUITECTURA tomada durante el planning (2026-08-22, opción (a) del Arquitecto):
+  # ejecutor IN-PROCESS en apps/api con contrato durable en Postgres, porque REDIS_URL no está
+  # aprovisionado (US-019 T1.3 abierta) y apps/worker es un README. Eso CONTRADICE una
+  # suposición declarada de ADR-0012 ("US-005 consumes that marker once the queue exists"), así
+  # que el plan abre ADR-0014 en T0.1 — número 0014 y no 0013 porque el 0013 lo reclama
+  # (condicionalmente) el plan FE de US-014.
+  #
+  # SECUENCIA: comparte lane C con US-006 (import). El puerto EnrichmentQueue lo define este
+  # change en src/enrichment/ports/; si /develop-backend US-006 lo creó antes en
+  # src/imports/enrichment/, T3.5 lo mueve. T0.2 toca packages/db/prisma/schema.prisma, que es
+  # superficie compartida con US-006/US-007: el pre-requisito exige working tree limpio ahí.
+  #
+  # 5 preguntas abiertas para el PO, NINGUNA bloquea el arranque: todas con default
+  # implementado (texto fuente del embedding, ventana de la corrida inicial ≈5,5 h —que es la
+  # Q-4 abierta del E2E §23—, no exponer el texto enriquecido en la ficha, defaults del HNSW,
+  # 5 intentos antes de abandonar).
+  estimate-hours: 13.4
+  assignee: sin-identificar  # plan escrito en sesión de planning; ejecutor sin confirmar
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-008-checkout-guest-backend
+  us-id: US-008
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-008-checkout-guest.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 8,6 h AI-asistido / ~17 h tradicional (20 tasks). US §7 presupuesta BE-US-008 en
+  # 6-10 h: el tradicional excede el techo ~7 h por trabajo que la US da por resuelto al
+  # describirlo como «endpoint de checkout que crea la orden» — (a) el esquema son DOS
+  # tablas con 9 constraints y 5 deviaciones declaradas del DER, tres de ellas por
+  # exigencia de AC-8 (el DER modela el consentimiento como un booleano y el AC pide
+  # marca temporal y trazabilidad legal); (b) es la PRIMERA PII EN REPOSO del proyecto,
+  # lo que convierte §9 de observability-standards en una fase propia con guardián
+  # automático en vez de una nota al pie; (c) el seam con el carrito exige tocar el
+  # wiring de CartModule, que hoy sólo exporta CartEventsService. El caso de uso en sí
+  # —validar, snapshotear, insertar— son ~4 h.
+  #
+  # DESBLOQUEA A US-009: este plan RESUELVE OQ-BE-1 del change de pagos entregando
+  # `orders.access_token_hash` + el `order_token` (hex de 64) en el 201 de POST
+  # /v1/checkout, con la forma exacta que su contrato declara. Al cerrar T0.1 + T2.3,
+  # US-009-pago-mercadopago-backend queda ejecutable; T6.3 cierra formalmente la OQ en
+  # el proposal de ese change. Orden de despliegue no negociable: US-008 → US-009.
+  #
+  # ALCANCE: `orders` + `order_items` son de este change; `payments` es de US-009; la
+  # confirmación, el decremento de stock y la limpieza de órdenes abandonadas son de
+  # US-010 (ADR-0008). La orden nace INERTE: no retiene stock, no mueve plata y es
+  # invisible para el panel del dueño (pending_payment). `delivered_at` y `customer_id`
+  # se crean por el DER y quedan SIN ESCRITOR (US-012 y US-015).
+  #
+  # DEVIACIONES DECLARADAS en design.md: 5 columnas sobre el DER del E2E §8 —
+  # access_token_hash (el seam de US-009), consent_accepted_at + consent_terms_version
+  # (AC-8 pide marca temporal y trazabilidad legal; el DER sólo tiene el booleano),
+  # orders.updated_at, y order_items.product_name + product_sku (la orden es un registro
+  # comercial: renombrar un producto no puede reescribir el email de US-011 ni el panel
+  # de US-012) — más CHECK (consent_accepted = true), que hace estructuralmente imposible
+  # una orden sin consentimiento, y la ausencia de Idempotency-Key (deviación de
+  # api-standards §10.1: el recurso creado es inerte, el riesgo que §10 protege es el
+  # doble cobro y acá no hay cobro; cualquier forma de reuso acoplaría este change con el
+  # de pagos en ambos sentidos). Sin ADR nuevo: ADR-0008 gobierna el stock, ADR-0006 la
+  # ausencia de datos de tarjeta.
+  #
+  # 5 preguntas abiertas, NINGUNA bloquea el arranque (todas con default implementado).
+  # Las dos que conviene decidir ANTES de ejecutar:
+  #   OQ-BE-4 — ¿número legible de pedido? Hoy no (YAGNI, ningún AC lo pide), pero
+  #             US-011 (email) y US-012 (panel) casi seguro lo van a querer para que el
+  #             dueño y el comprador hablen del mismo pedido por teléfono; agregarlo
+  #             después es una migración con sequence.
+  #   OQ-BE-5 — retención/borrado de la PII del comprador INVITADO. El PRD §6 fija 12
+  #             meses + anonimización y NINGUNA US lo implementa (US-020 cubre sólo
+  #             cuentas registradas). Es exposición legal (Ley 25.326), no deuda técnica
+  #             cosmética: la recomendación es abrir una US de retención antes de
+  #             producción.
+  #
+  # DEPLOYMENT: no requiere /plan-deployment propio (migración aditiva, sin secretos
+  # nuevos, sin feature flag), pero SÍ conviene coordinarlo con el de US-009 — este
+  # change cambia el perfil de riesgo del proyecto al introducir PII en reposo, y su
+  # migración es la que habilita la de `payments`.
+  estimate-hours: 8.6
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-22
   completed-at: null
   archived-at: null
   archive-path: null

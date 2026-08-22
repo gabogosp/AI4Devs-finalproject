@@ -557,25 +557,64 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
-- [ ] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] **Esquema materializado == `design.md` §Persistencia (F40)**:
+> Corrida el **2026-08-22** al cerrar las 24 tasks. Las **suites del carrito están
+> todas verdes**; los dos rojos que quedan en el runner completo son **ajenos a este
+> change** y están documentados abajo con su evidencia.
+
+- [x] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
+      → **89 de 90 suites verdes / 937 de 939 tests**. El único rojo es
+      `src/common/e2e-security-edge.spec.ts` (2 tests: el preflight
+      `OPTIONS /v1/admin/categories` devuelve 404 y `access-control-max-age` sale
+      `NaN`). **Falla PREEXISTENTE, no una regresión**: se reprodujo idéntica en un
+      `git worktree` sobre `16fabe0` (el commit anterior al arranque de US-007), sin
+      una sola línea de este change. El preflight de `/v1/cart/*` **sí** funciona y
+      está cubierto en `e2e-cart-security` (`Allow-Methods` con `PUT` y `DELETE`,
+      `Allow-Credentials: true`, origen exacto reflejado). Queda como hallazgo para
+      el audit del borde HTTP, fuera del alcance de esta US.
+- [x] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
+      → **37 de 38 suites verdes / 300 de 302 tests**; el mismo spec preexistente es
+      el único rojo.
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+- [x] **Esquema materializado == `design.md` §Persistencia (F40)**:
       `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=cart-schema`
-- [ ] Contratos válidos:
+      → 12 tests verdes: conjunto **exacto** de columnas (6 en `carts`, 7 en
+      `cart_items`), los 5 índices por nombre, los 2 `CHECK` ejercidos contra la base
+      y las 3 FKs con su regla real (CASCADE, RESTRICT, SET NULL). Ninguna tabla
+      existente modificada.
+- [x] Contratos válidos:
       `npx @stoplight/spectral-cli lint openspec/changes/US-007-carrito-compra-backend/contracts/openapi/*.yaml && npx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml`
-- [ ] **AC-8 — el carrito nunca toca el stock (ADR-0008)**:
+      → los 4 yaml sin errores (el publicado conserva 8 warnings preexistentes de
+      `operation-operationId` en rutas admin de US-001).
+- [x] **AC-8 — el carrito nunca toca el stock (ADR-0008)**:
       `pnpm --filter @dsm/api test -- --testPathPattern=e2e-cart-stock`
-      (el spec lee `products.stock` antes y después del ciclo completo y falla si cambió
-      en un solo caso)
-- [ ] **Sin regresión de las superficies entregadas**:
+      → 9 tests verdes. `products.stock` leído antes y después del ciclo completo es
+      idéntico, la fila de `products` no cambia ni en `updated_at`, y dos carritos
+      pueden tener las mismas 3 unidades cada uno.
+- [x] **Sin regresión de las superficies entregadas**:
       `pnpm --filter @dsm/api test -- --testPathPattern='e2e-storefront|e2e-auth|e2e-rbac|e2e-products|e2e-categories'`
-      (storefront US-002/US-003, auth US-014 y admin US-001 responden igual — el tercer
-      throttler, el `no-store` por prefijo y la extracción de `verifyRequestOrigin` son
-      los tres puntos donde una regresión sería silenciosa)
-- [ ] **Ningún token de carrito escapa por respuesta ni por log**:
+      → **25 suites / 178 tests verdes**. Los tres puntos donde una regresión sería
+      silenciosa quedaron cubiertos: el tercer throttler (test de independencia con
+      las 3 superficies), el `no-store` por prefijo (la ficha conserva su
+      `Cache-Control` acotado) y la extracción de `verifyRequestOrigin` (los specs de
+      CSRF de auth corren **sin editarse**).
+- [x] **Ningún token de carrito escapa por respuesta ni por log**:
       `pnpm --filter @dsm/api test -- --testPathPattern='e2e-cart-events|e2e-cart-security'`
+      → 41 tests verdes, incluidos el volcado completo de logs (sin el token, sin su
+      hash SHA-256 y sin el valor CSRF derivado) y los tres cuerpos de respuesta.
 - [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+      → **`pnpm -r typecheck` verde** en los 3 paquetes. Los otros dos están rojos por
+      trabajo **de otras disciplinas en vuelo en la misma rama**, no por este change:
+      - `pnpm -r lint`: 4 errores de `no-unused-vars` en
+        `apps/web/src/lib/http/customerSession.test.ts`, introducidos por el commit
+        `de15d10` (US-014 frontend-web).
+      - `pnpm -r test`: `src/imports/e2e-imports-upload.spec.ts` (US-006 backend, en
+        curso — el error es de tipos de Prisma sobre `failed_count`) y el
+        `e2e-security-edge` preexistente de arriba.
+
+      **No se toca ninguno de los dos**: son de otro dueño y arreglarlos desde acá
+      pisaría trabajo en curso. El gate se cierra cuando esas dos tasks cierren; lo
+      que este change controla (`@dsm/api` lint + typecheck + sus 12 suites del
+      carrito) está verde.
 
 ---
 
@@ -627,3 +666,27 @@ language: es
 | Decremento/reintegro de stock | — | `Deferred: US-010 — owner: Arquitecto` (ADR-0008) |
 | Regla de rate-limit de borde sobre `/v1/cart/*` en Cloudflare | — | `Deferred: US-019 (infraestructura) — owner: Arquitecto` (defensa en profundidad, no reemplaza T4.3) |
 | Carga k6 del carrito, E2E de navegador y BDD de aceptación cross-stack | — | `Deferred: /plan-qa US-007 — owner: QA` (`qa-backend-standards.md` §2.1) |
+
+---
+
+## Reconciliación AS-BUILT (cerrada el 2026-08-22)
+
+Cinco desviaciones de implementación respecto de la letra del plan. Ninguna cambia
+una decisión de `design.md`; las cinco quedan acá para que el audit no las lea como
+deriva silenciosa.
+
+| # | Lo que decía el plan | Lo construido | Por qué |
+|---|---|---|---|
+| 1 | T3.3: `upsert + slide` dentro de `prisma.$transaction`, y T2.3 expone `slide(cart, res)` | La transacción vive en `CartsRepository.upsertItemAndTouch` / `deleteItemAndTouch`; `CartTokenService` expone `nextExpiration()` + `refreshCookies()` en vez de `slide()` | Las dos cosas no podían convivir: la transacción tiene que envolver las **dos escrituras** (línea + `expires_at`) y ningún service puede tocar `PrismaService` (T2.1), pero la emisión de la cookie **no** es transaccionable. La propiedad que `slide` garantizaba —`expires_at` y `Max-Age` derivados del mismo `CART_TTL_DAYS`— sigue verificada en `cart-token.service.spec` y extremo a extremo en `e2e-cart-persistence` |
+| 2 | T2.2: `ProductsRepository.findManyBySlugs` como lectura de las líneas del carrito | Se agregó además `findManyByIds` (misma proyección, tampoco filtra estado) | `cart_items` referencia `product_id`, no `slug`: la lectura del carrito **no puede** partir de slugs. `findManyBySlugs` no quedó sin uso — es la que resuelve el `DELETE`, que necesita un slug **sin** filtro de publicados para poder quitar una línea archivada (AC-6) |
+| 3 | T1.3: el guard verifica `Origin` y el double-submit | El guard **corta antes** de verificar `Origin` cuando no hay cookie `dsm_cart` | Es el caso que el propio Exit criterion declara («una primera escritura sin cookie de carrito pasa el guard»): sin cookie no hay valor que derivar ni carrito que secuestrar. Verificar `Origin` primero habría hecho fallar el primer «agregar al carrito» de todo cliente nuevo que no manda `Origin` |
+| 4 | T4.1: `CartDto.from()` emite exactamente 7 claves | Se cumple, y el controller las envuelve en `{ "cart": … }` | Es la forma que declara `design.md` §Forma de la respuesta. `CartDto` sigue siendo el objeto de 7 claves que el spec ancla |
+| 5 | T7.1: ejemplo del carrito vacío en el yaml draft | El carrito vacío se documenta como **prosa** en la `description`; la nulabilidad se declara con `oneOf` + `type: 'null'` | Spectral 6.16.3 **aborta** (`Cannot read properties of null (reading 'enum')`) al validar cualquier ejemplo con valores `null`. Bisecado: el mismo archivo con el ejemplo sin nulos lintea limpio. Es un bug del linter, no del contrato; el spec publicado (OAS 3.0.3) lo declara con `nullable: true` |
+
+**F51 verificado mecánicamente**: `PrismaService` sólo aparece en
+`cart/carts.repository.ts` (el resto de `cart/` que lo importa son specs);
+`carts.customer_id` no tiene ningún escritor en código de producción (sólo lecturas y
+aserciones en tests, como declara la deferral); `max_quantity` y `available_quantity`
+no aparecen en `storefront/` ni en `products/` (OQ-BE-2: la divulgación queda acotada
+a la superficie del carrito); y los 9 archivos del módulo que declara `design.md`
+§Estructura de módulo existen con ese nombre.
