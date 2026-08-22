@@ -481,7 +481,7 @@ language: es
     acepta).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-cart-stock`
 
-- [ ] T6.4 e2e no disponible, precio vigente y no publicado (AC-6, AC-9, AC-10)
+- [x] T6.4 e2e no disponible, precio vigente y no publicado (AC-6, AC-9, AC-10)
   - **Exit criterion**: con el producto en el carrito, despublicarlo (`archived`) hace
     que la lectura lo devuelva con `availability: "unavailable"`,
     `has_blocking_issues: true` y **fuera** del `total_ars_cents`, **sin borrar la
