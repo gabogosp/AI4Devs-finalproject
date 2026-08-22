@@ -173,7 +173,7 @@ language: es
 
 ## Fase 2: Persistencia y resolución del carrito — 1,1 h
 
-- [ ] T2.1 `CartsRepository` — único punto de ORM de `carts` + `cart_items`
+- [x] T2.1 `CartsRepository` — único punto de ORM de `carts` + `cart_items`
   - **Pattern**: clase `@Injectable()` que envuelve `PrismaService`; el upsert de línea
     va sobre la clave compuesta única, no con un `findFirst` + `if` (que carreraría) —
     `per backend-node-standards.md §5 — el repositorio envuelve el ORM; transacción
