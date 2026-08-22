@@ -396,7 +396,7 @@ language: es
     lectura —N escrituras → 429 mientras el `GET` sigue en 200— y que el 429 trae los
     4 headers y el envelope `problem+json`)
 
-- [ ] T4.4 `Cache-Control: no-store` en `/v1/cart` + `PUT`/`DELETE` en CORS
+- [x] T4.4 `Cache-Control: no-store` en `/v1/cart` + `PUT`/`DELETE` en CORS
   - **Pattern**: extender el middleware de prefijo de `configureApp`
     (`bootstrap.ts`) —que ya estampa `no-store` en `/v1/admin`— para cubrir también
     `/v1/cart`, y agregar `PUT` y `DELETE` a `methods` de `app.enableCors` — `per
