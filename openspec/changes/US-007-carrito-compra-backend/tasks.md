@@ -531,7 +531,7 @@ language: es
     capacidad nueva `openspec/specs/carrito/`.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-007-carrito-compra-backend/contracts/openapi/*.yaml`
 
-- [ ] T7.2 Spec publicado del servicio + README + runbook
+- [x] T7.2 Spec publicado del servicio + README + runbook
   - **Pattern**: en `apps/api/docs/api/openapi.yaml` el `/v1` vive en `servers`, así que
     los paths se declaran **sin** el prefijo (`/cart`, no `/v1/cart`) — `per
     api-standards.md §5 — el contrato declara todo campo y ruta que la API expone`,

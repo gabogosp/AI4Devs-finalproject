@@ -204,3 +204,115 @@ usa el adapter de log, que escribe el token en el log para poder probar en local
 Con `NODE_ENV=production` y alguna faltante, **el arranque falla** — un deploy mal
 configurado caería al adapter de log y el reset "funcionaría" sin enviar un solo
 email, que nadie notaría hasta que un cliente no pueda recuperar su cuenta.
+
+## Carrito del invitado (US-007)
+
+Tres rutas **públicas** bajo `/v1/cart`, declaradas en `docs/api/openapi.yaml`
+con el tag `cart`. Es la primera superficie del servicio que **escribe sin
+autenticación**.
+
+| Ruta | Código | Notas |
+|---|---|---|
+| `GET /cart` | 200 | Nunca crea carrito ni emite cookie. Sin cookie devuelve el carrito **vacío**, no un 404 |
+| `PUT /cart/items/{slug}` | 200 | Fija la cantidad **absoluta**. Crea la línea y, si no había, el carrito |
+| `DELETE /cart/items/{slug}` | 200 | Idempotente: quitar lo que no está devuelve el carrito igual |
+
+Las tres devuelven el **carrito completo**, así el cliente nunca tiene que
+adivinar el estado ni encadenar un `GET`.
+
+### Semántica absoluta del `PUT`
+
+El cuerpo (`{ "quantity": n }`) **fija** la cantidad; no la suma. Eso hace la
+operación naturalmente idempotente (`api-standards` §10.5) y evita la maquinaria
+de `Idempotency-Key`: un reintento de red nunca compra de más. **El FE tiene que
+mandar `actual + 1`** para un botón «Agregar» — lo sabe, porque toda respuesta
+trae la cantidad vigente. Un doble clic con el mismo payload deja 1 unidad, no 2.
+
+El producto se identifica por **`slug`** (los DTO del storefront no exponen `id`).
+El carrito **no** aparece en ninguna URL: la identidad es la cookie, así que la
+superficie es estructuralmente inmune a IDOR.
+
+### Cookies y CSRF — cuál se lee en `/v1/cart/*`
+
+| Cookie | HttpOnly | Path | Vida |
+|---|---|---|---|
+| `dsm_cart` | sí | `/` | `CART_TTL_DAYS` |
+| `dsm_cart_csrf` | **no** | `/` | `CART_TTL_DAYS` |
+
+`dsm_cart` lleva un token opaco de 256 bits; en base vive **sólo su hash**
+(SHA-256), igual que los refresh de ADR-0011. Nunca viaja en el cuerpo de una
+respuesta ni se escribe en un log.
+
+**Cuidado con la cookie del double-submit — no es la misma que en auth:**
+
+| Superficie | Header | Se lee de la cookie |
+|---|---|---|
+| `/v1/auth/*` | `X-CSRF-Token` | `dsm_csrf` (derivada del `jti` del access) |
+| `/v1/cart/*` | `X-CSRF-Token` | **`dsm_cart_csrf`** (derivada del token del carrito) |
+
+Los dos usan HMAC con `JWT_SECRET`, pero **sobre sujetos distintos**: el valor de
+la sesión no abre el carrito y viceversa. Un invitado no tiene `jti`, así que el
+mecanismo de US-014 no se podía reusar tal cual.
+
+`PUT` y `DELETE` exigen el header **y** un `Origin` de `CORS_ALLOWED_ORIGINS`
+(su ausencia también se rechaza, fail closed). La **primera** escritura de un
+cliente nuevo —la que todavía no manda `dsm_cart`— pasa sin double-submit: no hay
+carrito que secuestrar ni valor que derivar. El `GET` no exige CSRF: es seguro.
+
+### Rate limit (por IP, throttler `cart`)
+
+| Superficie | Límite |
+|---|---|
+| `GET /cart` | `CART_RATE_LIMIT_MAX` (120 / min) |
+| `PUT` / `DELETE` | `CART_WRITE_RATE_LIMIT_MAX` (30 / min) |
+
+Los presupuestos se cuentan **por endpoint**, y el throttler `cart` es
+independiente de `auth` y `storefront`: agotar uno no consume los otros. Igual que
+en auth, esto depende de `TRUST_PROXY_HOPS` en el deploy.
+
+### Retención: 7 días desde la última **escritura**
+
+`CART_TTL_DAYS` (default **7**) fija a la vez el `Max-Age` de las dos cookies y
+`carts.expires_at`. Los dos números salen del mismo valor a propósito: una cookie
+viva apuntando a una fila vencida es un carrito que «desaparece» sin explicación.
+
+La ventana **se desliza sólo en escrituras**. Abrir el carrito sin tocarlo no lo
+renueva: la persistencia que promete AC-4 es de 7 días **de actividad**, no de
+calendario desde la última visita.
+
+> **Costo declarado y aceptado** (decisión del PO, OQ-BE-1): quien arma un carrito
+> y vuelve **a las dos semanas lo encuentra vacío**, sin aviso y sin forma de
+> recuperarlo — la fila ya no existe. En una ferretería el gremio que cotiza,
+> junta materiales y compra al cobrar el trabajo pasa de 7 días con facilidad, así
+> que el caso no es marginal. Es una variable de entorno justamente para poder
+> **subirla sin deploy de código** si aparecen reclamos.
+
+Los carritos vencidos se purgan de forma **oportunista**: la fila se borra al
+primer intento de usarla vencida (con sus líneas, por `ON DELETE CASCADE`). No hay
+job programado — está diferido a US-019 porque Redis/BullMQ todavía no está
+aprovisionado.
+
+### El carrito no reserva ni descuenta stock
+
+Lo mira para no dejar pedir más de lo que hay (409 `dsm:cart/insufficient-stock`
+con `available_quantity`) y lo vuelve a mirar en cada lectura (`availability` +
+`has_blocking_issues`), pero **nunca lo escribe** (ADR-0008). Dos clientes pueden
+tener las mismas últimas unidades en su carrito: es la consecuencia que ADR-0008
+aceptó, y se resuelve al aprobarse el pago (US-010) con un `UPDATE` condicional.
+Los importes se calculan **siempre** con el precio vigente; la instantánea guardada
+sólo prende `price_changed`.
+
+### Variables de entorno
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `CART_TTL_DAYS` | 7 | Ventana de retención (cookie **y** fila) |
+| `CART_MAX_ITEMS` | 50 | Líneas distintas por carrito → 409 |
+| `CART_MAX_QTY_PER_LINE` | 99 | Unidades por línea → 422 |
+| `CART_RATE_LIMIT_TTL_MS` | 60000 | Ventana del throttler `cart` |
+| `CART_RATE_LIMIT_MAX` | 120 | Lecturas por ventana e IP |
+| `CART_WRITE_RATE_LIMIT_MAX` | 30 | Escrituras por ventana e IP |
+
+La cookie del carrito **reusa `AUTH_COOKIE_SECURE`**: no hay una segunda variable
+para el mismo concepto, porque dos flags para «¿emito cookies `Secure`?» terminan
+con una superficie endurecida y la otra no.

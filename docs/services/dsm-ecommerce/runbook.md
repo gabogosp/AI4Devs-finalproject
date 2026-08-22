@@ -92,6 +92,8 @@ Aplica a `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_K
 | **Cola BullMQ atascada** | Media | Jobs encolados sin drenar (enriquecimiento/emails) | Revisar jobs fallidos / dead-letter en el dashboard de la cola; verificar que Redis esté up y que el `worker` esté corriendo; reprocesar los fallidos. |
 | **Gemini caído / rate-limited** | Baja | Búsqueda semántica y enriquecimiento degradados | **Sin acción**: la búsqueda degrada a full-text automáticamente y los jobs reintentan con backoff. Si persiste, subir cuota. |
 | **Resend caído** | Baja | No salen emails transaccionales | Los jobs reintentan; verificar estado del proveedor. No bloquea la compra. |
+| **«Se me borró el carrito»** (reclamo de cliente, US-007) | Baja | **No es un bug.** La identidad del carrito del invitado **es la cookie** `dsm_cart`, y el carrito vive **7 días desde la última escritura** (`CART_TTL_DAYS`), no desde la última visita. Borrar cookies, cambiar de navegador o de dispositivo, o volver pasada la ventana ⇒ carrito vacío. **No hay forma de recuperarlo**: la fila se borró y el token en claro no se guarda en ninguna parte (sólo su hash), así que tampoco se puede buscar por token desde una consola. | 1. Confirmar el patrón con el cliente (¿limpió el navegador? ¿cuánto tiempo pasó? ¿otro dispositivo?). 2. Explicar que el carrito no se pierde por un error del sistema y que los productos siguen en el catálogo. 3. **Si los reclamos se repiten**, subir `CART_TTL_DAYS` en Railway — es una variable de entorno, **no requiere deploy de código** (sí un restart del servicio). Gatillo cuantitativo: reclamos recurrentes o `cart.viewed` sobre carritos vacíos **con** cookie presente subiendo de forma sostenida. 4. No inventar un carrito a mano en la base: sin el token del cliente, esa fila es inalcanzable. |
+| **Tabla `carts` creciendo** (carritos vencidos) | Baja | La purga es **oportunista**: una fila vencida se borra recién cuando alguien intenta usarla, y sus líneas se van por `ON DELETE CASCADE`. Un carrito abandonado por un cliente que nunca vuelve queda como fila muerta. El job programado de barrido está **diferido** (OQ-BE-6 / US-019: Redis y BullMQ todavía no están aprovisionados). | Con el volumen esperado (miles de filas) es irrelevante durante meses; con `CART_TTL_DAYS = 7` la purga oportunista se dispara seguido. Si hiciera falta limpiar a mano: `DELETE FROM carts WHERE expires_at <= now();` — es seguro (la cascada se lleva `cart_items`) y **nunca** toca `products`: el carrito no reserva ni descuenta stock (ADR-0008). |
 
 ## 5. Problemas conocidos
 
@@ -101,6 +103,7 @@ Aplica a `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_K
 | **Sin sink de retención de logs** | Activo (Q-E, diferido) | Sentry cubre errores; los logs de Railway rotan. Sin auditoría de logs a largo plazo — deuda consciente. |
 | **Sin dominio custom** | Activo (2026-08-16) | Se usan los subdominios `*.up.railway.app` con TLS de Railway. DNS/TLS custom en Cloudflare → `/plan-deployment`. |
 | **`worker` sin config de deploy** | Activo | `apps/worker` es placeholder; su `railway.json` llega con US-005. |
+| **Sin job de purga de carritos vencidos** (US-007) | Activo (diferido, OQ-BE-6) | La purga oportunista al resolver alcanza con la ventana de **7 días**; el barrido programado necesita BullMQ (US-019). Deuda anotada con dueño, sin urgencia mientras la tabla siga en miles de filas. |
 
 ## 6. Procedimientos de recuperación
 
@@ -137,5 +140,10 @@ Revisar consumo en Railway / Neon / Cloudflare / Gemini. Sospechosos habituales:
 **On-call**: `[pendiente — equipo de una persona; rotación formal se define en /plan-deployment]`.
 
 ## 8. Última actualización
+
+**2026-08-22** — US-007 (carrito del invitado): filas de day-2 «se me borró el
+carrito» y «tabla `carts` creciendo» en §4, y la deuda del job de purga en §5. La
+retención es de **7 días desde la última escritura** y se cambia por variable de
+entorno (`CART_TTL_DAYS`), sin deploy de código.
 
 **2026-08-16** — esqueleto creado en US-019 T0.2 (fuente: E2E §18.5). Próxima revisión obligatoria: al cerrar las fases cloud de US-019 (T4.1–T4.3, para completar dashboards/alertas) y en `/plan-deployment` (on-call, checklist pre-prod, dominio/TLS).
