@@ -323,7 +323,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Fase 3: Guards y accesibilidad (AC-4) — `design.md` D5
 
-- [ ] **T3.1** Guard AC-4: cero red y cero datos sensibles (0.3 h)
+- [x] **T3.1** Guard AC-4: cero red y cero datos sensibles (0.3 h)
 
   - **Pattern**: el criterio de AC-4 es **comportamental**, así que se prueba con un espía
     sobre `globalThis.fetch` — **por debajo** de `customFetch`, el único choke point de red
@@ -354,7 +354,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
     o la URL ganan precio, SKU, email, token o cualquier parámetro además de `text`.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/contact/noBackend.test.tsx`
 
-- [ ] **T3.2** Accesibilidad: axe sobre header y footer (0.3 h)
+- [x] **T3.2** Accesibilidad: axe sobre header y footer (0.3 h)
 
   - **Pattern**: mismo patrón que `a11y.test.tsx` de US-003 (`qa-frontend-standards.md` §23.6):
     ```tsx
