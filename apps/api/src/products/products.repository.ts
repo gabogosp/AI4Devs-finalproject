@@ -28,6 +28,37 @@ export interface CreateProductData {
 
 export type UpdateProductData = Prisma.ProductUncheckedUpdateInput;
 
+/** Lo que la reconciliación por SKU del import necesita saber de un producto ya existente. */
+export interface ImportProductRef {
+  id: string;
+  slug: string;
+  description_raw: string | null;
+  status: string;
+}
+
+/**
+ * Fila del import lista para escribir. `descriptionRaw` e `imageUrl` en
+ * `undefined` significan **"no cambiar ese campo"** (OQ-BE-2), que es lo que
+ * permite el archivo de sólo precios del día 2 sin vaciar el catálogo.
+ */
+export interface ImportUpsertData {
+  sku: string;
+  /** Slug propuesto por el allocator. Sólo se usa al **crear**. */
+  slug: string;
+  name: string;
+  descriptionRaw?: string;
+  priceArsCents: number;
+  stock: number;
+  categoryId: string;
+  imageUrl?: string;
+}
+
+export interface ImportUpsertResult {
+  outcome: 'created' | 'updated';
+  id: string;
+  slug: string;
+}
+
 export interface Pagination {
   limit: number;
   offset: number;
@@ -203,6 +234,112 @@ export class ProductsRepository {
   async update(id: string, data: UpdateProductData): Promise<Product> {
     try {
       return await this.prisma.product.update({ where: { id }, data });
+    } catch (error) {
+      throw this.translate(error);
+    }
+  }
+
+  /**
+   * Lectura por SKUs del import (US-006 T3.2): una consulta para todo el lote,
+   * indexada por `sku`. Devuelve sólo lo que la reconciliación necesita decidir
+   * —¿existe?, ¿cambió la descripción?— y no el producto entero.
+   */
+  async findManyBySkus(skus: string[]): Promise<Map<string, ImportProductRef>> {
+    if (skus.length === 0) return new Map();
+    const rows = await this.prisma.product.findMany({
+      where: { sku: { in: skus } },
+      select: {
+        id: true,
+        sku: true,
+        slug: true,
+        description_raw: true,
+        status: true,
+      },
+    });
+    return new Map(
+      rows.map((r) => [
+        r.sku,
+        {
+          id: r.id,
+          slug: r.slug,
+          description_raw: r.description_raw,
+          status: r.status,
+        },
+      ]),
+    );
+  }
+
+  /**
+   * Alta o actualización de una fila del import, atómica (US-006 T3.2).
+   *
+   * Lo que **no** se toca al actualizar es tan importante como lo que sí:
+   *
+   * - `slug`: regla heredada de US-003 — la URL ya pudo indexarse y regenerarla
+   *   la rompería. Un import que renombra "Heladera" a "Heladera Exhibidora"
+   *   mantiene `/productos/heladera`.
+   * - `status`: AC-9 — el import **no publica ni despublica**. Publicar es una
+   *   decisión explícita del dueño sobre un producto que ya revisó.
+   * - `sku`: es la clave de la reconciliación.
+   *
+   * `enrichment_done` vuelve a `false` sólo si cambió `description_raw` (E2E
+   * §9.3): re-enriquecer un producto al que sólo le movieron el precio sería
+   * pagarle a Gemini por un resultado idéntico.
+   */
+  async upsertFromImport(
+    data: ImportUpsertData,
+  ): Promise<ImportUpsertResult> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existente = await tx.product.findUnique({
+          where: { sku: data.sku },
+          select: { id: true, slug: true, description_raw: true },
+        });
+
+        if (existente === null) {
+          const creado = await tx.product.create({
+            data: {
+              sku: data.sku,
+              slug: data.slug,
+              name: data.name,
+              description_raw: data.descriptionRaw ?? null,
+              price_ars_cents: data.priceArsCents,
+              stock: data.stock,
+              status: 'draft',
+              category_id: data.categoryId,
+              image_url: data.imageUrl ?? null,
+              enrichment_done: false,
+            },
+            select: { id: true, slug: true },
+          });
+          return { outcome: 'created' as const, id: creado.id, slug: creado.slug };
+        }
+
+        // `undefined` = la celda vino vacía ⇒ no cambiar ese campo (OQ-BE-2).
+        const cambiaDescripcion =
+          data.descriptionRaw !== undefined &&
+          data.descriptionRaw !== existente.description_raw;
+
+        const actualizado = await tx.product.update({
+          where: { id: existente.id },
+          data: {
+            name: data.name,
+            price_ars_cents: data.priceArsCents,
+            stock: data.stock,
+            category_id: data.categoryId,
+            ...(data.descriptionRaw !== undefined
+              ? { description_raw: data.descriptionRaw }
+              : {}),
+            ...(data.imageUrl !== undefined ? { image_url: data.imageUrl } : {}),
+            ...(cambiaDescripcion ? { enrichment_done: false } : {}),
+          },
+          select: { id: true, slug: true },
+        });
+        return {
+          outcome: 'updated' as const,
+          id: actualizado.id,
+          slug: actualizado.slug,
+        };
+      });
     } catch (error) {
       throw this.translate(error);
     }

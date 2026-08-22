@@ -204,8 +204,7 @@ describe('ProductsRepository (products.repository, integration)', () => {
     });
   });
 
-  describe('findSlugsByPrefixes (US-006 T2.2 — una query por lote)', () => {
-    it('trae los slugs de varias bases y no los ajenos', async () => {
+  describe('findSlugsByPrefixes (US-006 T2.2 — una query por lote)', () => {    it('trae los slugs de varias bases y no los ajenos', async () => {
       await repo.create({ ...base('HEL-001'), slug: 'heladera' });
       await repo.create({ ...base('HEL-002'), slug: 'heladera-2' });
       await repo.create({ ...base('MEC-003'), slug: 'mecha-3' });
@@ -220,6 +219,135 @@ describe('ProductsRepository (products.repository, integration)', () => {
     it('sin bases no consulta y devuelve vacío', async () => {
       await repo.create({ ...base('HEL-003'), slug: 'heladera' });
       expect(await repo.findSlugsByPrefixes([])).toEqual([]);
+    });
+  });
+
+  describe('findManyBySkus (US-006 T3.2 — reconciliación por SKU)', () => {
+    it('devuelve un mapa sólo con los skus que existen', async () => {
+      await repo.create({ ...base('REF-A'), slug: 'a' });
+      await repo.create({ ...base('REF-B'), slug: 'b' });
+
+      const mapa = await repo.findManyBySkus(['REF-A', 'REF-B', 'REF-INEXISTENTE']);
+
+      expect(mapa.size).toBe(2);
+      expect(mapa.get('REF-A')!.slug).toBe('a');
+      expect(mapa.get('REF-INEXISTENTE')).toBeUndefined();
+    });
+
+    it('sin skus devuelve un mapa vacío sin consultar', async () => {
+      expect((await repo.findManyBySkus([])).size).toBe(0);
+    });
+  });
+
+  describe('upsertFromImport (US-006 T3.2)', () => {
+    const fila = (over: Record<string, unknown> = {}) => ({
+      sku: 'IMP-1',
+      slug: 'heladera-importada',
+      name: 'Heladera importada',
+      priceArsCents: 150000,
+      stock: 7,
+      categoryId,
+      ...over,
+    });
+
+    it('un sku nuevo se crea en draft, con enrichment_done en false', async () => {
+      const r = await repo.upsertFromImport(fila());
+
+      expect(r.outcome).toBe('created');
+      const p = (await repo.findById(r.id))!;
+      expect(p.status).toBe('draft');
+      expect(p.enrichment_done).toBe(false);
+      expect(p.price_ars_cents).toBe(150000);
+      expect(p.stock).toBe(7);
+    });
+
+    it('el mismo sku se actualiza sin tocar slug, status ni el id', async () => {
+      const creado = await repo.create({
+        ...base('IMP-2'),
+        slug: 'heladera',
+        status: 'published',
+        name: 'Heladera',
+      });
+
+      const r = await repo.upsertFromImport(
+        fila({ sku: 'IMP-2', slug: 'heladera-exhibidora', name: 'Heladera Exhibidora' }),
+      );
+
+      expect(r.outcome).toBe('updated');
+      expect(r.id).toBe(creado.id);
+      const p = (await repo.findById(creado.id))!;
+      expect(p.name).toBe('Heladera Exhibidora');
+      // El slug propuesto se ignora: la URL ya pudo indexarse (regla de US-003).
+      expect(p.slug).toBe('heladera');
+      // AC-9: el import no publica ni despublica.
+      expect(p.status).toBe('published');
+      expect(p.sku).toBe('IMP-2');
+      expect(await prisma.product.count()).toBe(1);
+    });
+
+    it('una celda vacía NO pisa la descripción ni la imagen persistidas', async () => {
+      const creado = await repo.create({
+        ...base('IMP-3'),
+        slug: 'con-datos',
+        description_raw: 'descripción del local',
+        image_url: 'https://cdn.example.com/vieja.jpg',
+      });
+
+      // `descriptionRaw` e `imageUrl` ausentes = celda vacía = no cambiar.
+      await repo.upsertFromImport(fila({ sku: 'IMP-3' }));
+
+      const p = (await repo.findById(creado.id))!;
+      expect(p.description_raw).toBe('descripción del local');
+      expect(p.image_url).toBe('https://cdn.example.com/vieja.jpg');
+    });
+
+    it('la misma descripción NO reabre el enriquecimiento', async () => {
+      const creado = await repo.create({
+        ...base('IMP-4'),
+        slug: 'ya-enriquecida',
+        description_raw: 'igual',
+      });
+      await prisma.product.update({
+        where: { id: creado.id },
+        data: { enrichment_done: true },
+      });
+
+      await repo.upsertFromImport(fila({ sku: 'IMP-4', descriptionRaw: 'igual' }));
+
+      // Re-enriquecer un producto al que sólo le movieron el precio es pagarle a
+      // Gemini por un resultado idéntico.
+      expect((await repo.findById(creado.id))!.enrichment_done).toBe(true);
+    });
+
+    it('una descripción distinta vuelve a marcar el enriquecimiento pendiente', async () => {
+      const creado = await repo.create({
+        ...base('IMP-5'),
+        slug: 'cambia-descripcion',
+        description_raw: 'vieja',
+      });
+      await prisma.product.update({
+        where: { id: creado.id },
+        data: { enrichment_done: true },
+      });
+
+      await repo.upsertFromImport(fila({ sku: 'IMP-5', descriptionRaw: 'nueva' }));
+
+      const p = (await repo.findById(creado.id))!;
+      expect(p.description_raw).toBe('nueva');
+      expect(p.enrichment_done).toBe(false);
+    });
+
+    it('un slug ya tomado devuelve ConflictError con field slug (no "SKU duplicado")', async () => {
+      await repo.create({ ...base('OTRO'), slug: 'heladera' });
+
+      const error = await repo
+        .upsertFromImport(fila({ sku: 'IMP-6', slug: 'heladera' }))
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(ConflictError);
+      expect(error.fieldErrors).toEqual([
+        { field: 'slug', message: 'URL de producto duplicada' },
+      ]);
     });
   });
 

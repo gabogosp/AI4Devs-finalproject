@@ -255,7 +255,7 @@ language: es
     `purgeOlderThan(90)` con un job de 100 días y otro de 10 ⇒ borra 1 y sus filas de error
     desaparecen, el otro queda)
 
-- [ ] T3.2 `ProductsRepository` — lectura por SKUs y upsert de import
+- [x] T3.2 `ProductsRepository` — lectura por SKUs y upsert de import
   - **Exit criterion**: expone `findManyBySkus(skus[])` (una consulta, devuelve
     `Map<sku, {id, slug, description_raw, status}>`) y `upsertFromImport(data)` que en **una**
     `prisma.$transaction` crea (con `slug`, `status:'draft'` y `enrichment_done:false`) o
