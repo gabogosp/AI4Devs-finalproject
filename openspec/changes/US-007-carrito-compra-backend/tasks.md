@@ -217,7 +217,7 @@ language: es
     devuelve los 3 y `findPublishedBySlug` sigue devolviendo `null` para los 2 ocultos;
     el e2e de la ficha de US-003 sigue en 404 para el archivado — sin regresión)
 
-- [ ] T2.3 `CartTokenService` — resolver, crear, deslizar y purgar
+- [x] T2.3 `CartTokenService` — resolver, crear, deslizar y purgar
   - **Pattern**: reusa `newToken()` / `hashToken()` de
     `apps/api/src/auth/tokens/opaque-token.ts` (256 bits de CSPRNG, hash SHA-256) —
     `per security-standards.md §3.7 — token opaco ≥ 128 bits de un CSPRNG, almacenado
