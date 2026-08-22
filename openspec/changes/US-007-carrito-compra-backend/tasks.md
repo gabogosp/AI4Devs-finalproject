@@ -262,7 +262,7 @@ language: es
     produce un cuerpo **`toEqual`** al esperado sin claves extra; los casos existentes
     del filtro siguen verdes sin editarse)
 
-- [ ] T3.2 `buildCartView` — función pura de precio vigente y disponibilidad
+- [x] T3.2 `buildCartView` — función pura de precio vigente y disponibilidad
   - **Pattern**: función pura `buildCartView(items, products, limits): CartView` sin
     tipos de framework ni acceso a base, para poder ejercer las reglas de precio y
     stock sin HTTP ni Postgres — `per backend-node-standards.md §2 — la lógica de
