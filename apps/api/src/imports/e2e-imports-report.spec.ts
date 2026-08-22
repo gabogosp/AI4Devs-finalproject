@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { parse } from 'csv-parse/sync';
 import request from 'supertest';
-import { adminToken, bootTestApp, customerToken } from '../../test/e2e-app';
+import { adminToken, bootTestApp, customerToken, nuevaIpDeTest } from '../../test/e2e-app';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImportsModule } from './imports.module';
 import { celdaCsv } from './report-csv';
@@ -17,17 +17,26 @@ import { celdaCsv } from './report-csv';
 describe('GET /v1/admin/imports/{id}/report (e2e-imports-report)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  /**
+   * IP propia por test: el `POST` tiene presupuesto de 3/hora por IP (T5.5), así
+   * que sin esto el cuarto request de la suite recibiría 429 en lugar del código
+   * que el test está verificando. El límite no está mal puesto — son los tests
+   * los que tienen que hablar desde IPs distintas.
+   */
+  let ip: string;
 
   const post = (buffer: Buffer) =>
     request(app.getHttpServer())
       .post('/v1/admin/imports')
       .set('Authorization', `Bearer ${adminToken()}`)
+      .set('X-Forwarded-For', ip)
       .attach('file', buffer, 'catalogo.csv');
 
   const getReport = (id: string) =>
     request(app.getHttpServer())
       .get(`/v1/admin/imports/${id}/report`)
-      .set('Authorization', `Bearer ${adminToken()}`);
+      .set('Authorization', `Bearer ${adminToken()}`)
+      .set('X-Forwarded-For', ip);
 
   const csv = (lineas: string[]) =>
     Buffer.from(
@@ -49,13 +58,16 @@ describe('GET /v1/admin/imports/{id}/report (e2e-imports-report)', () => {
     );
 
   beforeAll(async () => {
+    process.env.TRUST_PROXY_HOPS = '1';
     app = await bootTestApp([ImportsModule]);
     prisma = app.get(PrismaService);
   });
   afterAll(async () => {
     await app?.close();
+    delete process.env.TRUST_PROXY_HOPS;
   });
   beforeEach(async () => {
+    ip = nuevaIpDeTest();
     await limpiar();
     await new Promise((r) => setTimeout(r, 30));
     await limpiar();

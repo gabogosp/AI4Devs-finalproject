@@ -484,7 +484,7 @@ language: es
 
 ## Fase 6: Observabilidad — 0,3 h
 
-- [ ] T6.1 Eventos `import.*` agregados, sin PII ni cardinalidad por trabajo
+- [x] T6.1 Eventos `import.*` agregados, sin PII ni cardinalidad por trabajo
   - **Pattern**: extender `CatalogEventName` con `'import.started' | 'import.completed' |
     'import.failed'` y agregar a `CatalogEventsService.emit` un quinto parámetro **opcional**
     `fields?: Record<string, string|number|boolean|null>` que se vuelca al log estructurado —

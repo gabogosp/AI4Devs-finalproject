@@ -8,6 +8,7 @@ import {
 import { importConfigStub } from '../../test/import-config';
 import { ImportJobsRepository } from './import-jobs.repository';
 import { ImportRunner } from './import-runner';
+import { CatalogEventsService } from '../observability/catalog-events.service';
 import { ImportsService } from './imports.service';
 
 /**
@@ -74,7 +75,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
     // Estado previo: dos productos ya importados, uno de ellos ya enriquecido.
     const previo = await nuevoJob();
     const cola = new ColaEspia();
-    await new ImportRunner(jobs, service, cola, config).run(
+    await new ImportRunner(jobs, service, cola, new CatalogEventsService(), config).run(
       previo.id,
       csv([
         'VIEJO-DESC,Viejo con descripcion,1000,1,Ferretería,original',
@@ -87,7 +88,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
     // Import real: 2 altas + 1 update de descripción + 1 update de sólo precio.
     const job = await nuevoJob();
     const cola2 = new ColaEspia();
-    await new ImportRunner(jobs, service, cola2, config).run(
+    await new ImportRunner(jobs, service, cola2, new CatalogEventsService(), config).run(
       job.id,
       csv([
         'NUEVO-1,Nuevo uno,1000,1,Ferretería,alta',
@@ -118,7 +119,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
   it('la marca durable en la base coincide con lo encolado (AC-3 sin cola)', async () => {
     const previo = await nuevoJob();
     const cola = new ColaEspia();
-    await new ImportRunner(jobs, service, cola, config).run(
+    await new ImportRunner(jobs, service, cola, new CatalogEventsService(), config).run(
       previo.id,
       csv(['VIEJO-PRECIO,Viejo de precio,1000,1,Ferretería,intacta']),
       'csv',
@@ -127,7 +128,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
 
     const job = await nuevoJob();
     const cola2 = new ColaEspia();
-    await new ImportRunner(jobs, service, cola2, config).run(
+    await new ImportRunner(jobs, service, cola2, new CatalogEventsService(), config).run(
       job.id,
       csv([
         'NUEVO-1,Nuevo uno,1000,1,Ferretería,alta',
@@ -151,7 +152,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
     const job = await nuevoJob();
 
     await expect(
-      new ImportRunner(jobs, service, new ColaQueFalla(), config).run(
+      new ImportRunner(jobs, service, new ColaQueFalla(), new CatalogEventsService(), config).run(
         job.id,
         csv(['NUEVO-1,Nuevo uno,1000,1,Ferretería,alta']),
         'csv',
@@ -173,7 +174,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
     const job = await nuevoJob();
     const cola = new ColaEspia();
 
-    await new ImportRunner(jobs, service, cola, config).run(
+    await new ImportRunner(jobs, service, cola, new CatalogEventsService(), config).run(
       job.id,
       // Todas inválidas: no hay nada para enriquecer.
       csv(['MAL-1,Malo,0,1,Ferretería,x']),

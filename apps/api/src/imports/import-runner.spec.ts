@@ -8,6 +8,7 @@ import { ProductsRepository } from '../products/products.repository';
 import { LoggingEnrichmentQueue } from './enrichment-queue';
 import { ImportJobsRepository } from './import-jobs.repository';
 import { ImportRunner } from './import-runner';
+import { CatalogEventsService } from '../observability/catalog-events.service';
 import { ImportsService } from './imports.service';
 
 /**
@@ -33,6 +34,7 @@ describe('ImportRunner (integration)', () => {
       jobs,
       service,
       new LoggingEnrichmentQueue(),
+      new CatalogEventsService(),
       importConfigStub(over),
     );
 

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ImportFormat } from './detect-format';
+import { CatalogEventsService } from '../observability/catalog-events.service';
 import { ENRICHMENT_QUEUE, EnrichmentQueue } from './enrichment-queue';
 import {
   ImportJobsRepository,
@@ -51,6 +52,7 @@ export class ImportRunner implements OnApplicationBootstrap {
     private readonly jobs: ImportJobsRepository,
     private readonly imports: ImportsService,
     @Inject(ENRICHMENT_QUEUE) private readonly enrichment: EnrichmentQueue,
+    private readonly events: CatalogEventsService,
     config: ConfigService,
   ) {
     this.batchSize = config.get<number>('IMPORT_BATCH_SIZE') ?? 200;
@@ -120,8 +122,16 @@ export class ImportRunner implements OnApplicationBootstrap {
     let reportTruncated = false;
     let cerrado = false;
 
+    const comenzoEn = Date.now();
+
     try {
-      await this.jobs.markRunning(jobId);
+      const job = await this.jobs.markRunning(jobId);
+      // Un evento por TRABAJO, no por fila: un import de 5.000 filas produce dos
+      // líneas de evento, no 5.000. El formato del archivo es una dimensión sana
+      // (dos valores posibles); el id del trabajo va al log, no a la métrica.
+      this.events.emit('import.started', jobId, null, undefined, {
+        source_format: job.source_format,
+      });
 
       let lote: ParsedRow[] = [];
       const erroresDelLote: RowErrorData[] = [];
@@ -182,6 +192,14 @@ export class ImportRunner implements OnApplicationBootstrap {
       await this.jobs.markCompleted(jobId, { ...contadores, reportTruncated });
       cerrado = true;
 
+      this.events.emit('import.completed', jobId, null, undefined, {
+        created: contadores.createdCount,
+        updated: contadores.updatedCount,
+        failed: contadores.failedCount,
+        categories_created: contadores.categoriesCreatedCount,
+        duration_ms: Date.now() - comenzoEn,
+      });
+
       await this.notificarEnriquecimiento(idsParaEnriquecer);
     } catch (error) {
       const code = this.codigoDeFalloGlobal(error);
@@ -189,6 +207,11 @@ export class ImportRunner implements OnApplicationBootstrap {
         .markFailed(jobId, code, (error as Error).message)
         .catch(() => undefined);
       cerrado = true;
+      // Sólo el código, nunca el mensaje: el mensaje puede citar contenido del
+      // archivo (por ejemplo, qué columnas trae) y el evento es agregado.
+      this.events.emit('import.failed', jobId, null, undefined, {
+        error_code: code,
+      });
       this.logger.error(
         `import ${jobId}: fallo global (${code}): ${(error as Error).message}`,
       );

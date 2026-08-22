@@ -4,8 +4,7 @@ import request from 'supertest';
 import {
   adminToken,
   bootTestApp,
-  customerToken,
-} from '../../test/e2e-app';
+  customerToken, nuevaIpDeTest } from '../../test/e2e-app';
 import { PrismaService } from '../prisma/prisma.service';
 import { ImportsModule } from './imports.module';
 
@@ -20,6 +19,13 @@ import { ImportsModule } from './imports.module';
 describe('POST /v1/admin/imports (e2e-imports-upload, AC-6/AC-8/AC-11)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  /**
+   * IP propia por test: el `POST` tiene presupuesto de 3/hora por IP (T5.5), así
+   * que sin esto el cuarto request de la suite recibiría 429 en lugar del código
+   * que el test está verificando. El límite no está mal puesto — son los tests
+   * los que tienen que hablar desde IPs distintas.
+   */
+  let ip: string;
 
   const CSV_OK = [
     'sku,nombre,precio,stock,categoria',
@@ -30,7 +36,8 @@ describe('POST /v1/admin/imports (e2e-imports-upload, AC-6/AC-8/AC-11)', () => {
   const post = () =>
     request(app.getHttpServer())
       .post('/v1/admin/imports')
-      .set('Authorization', `Bearer ${adminToken()}`);
+      .set('Authorization', `Bearer ${adminToken()}`)
+      .set('X-Forwarded-For', ip);
 
   /**
    * Espera a que el trabajo agendado termine.
@@ -53,11 +60,13 @@ describe('POST /v1/admin/imports (e2e-imports-upload, AC-6/AC-8/AC-11)', () => {
   });
 
   beforeAll(async () => {
+    process.env.TRUST_PROXY_HOPS = '1';
     app = await bootTestApp([ImportsModule]);
     prisma = app.get(PrismaService);
   });
   afterAll(async () => {
     await app?.close();
+    delete process.env.TRUST_PROXY_HOPS;
   });
   const limpiar = () =>
     prisma.$executeRawUnsafe(
@@ -65,6 +74,7 @@ describe('POST /v1/admin/imports (e2e-imports-upload, AC-6/AC-8/AC-11)', () => {
     );
 
   beforeEach(async () => {
+    ip = nuevaIpDeTest();
     // Doble barrido con una pausa: el runner de un import anterior —de otro test
     // o de otra corrida de la suite— puede tener una escritura en vuelo cuando
     // arranca este test, y aparecería como productos "fantasma" en los conteos
@@ -79,6 +89,7 @@ describe('POST /v1/admin/imports (e2e-imports-upload, AC-6/AC-8/AC-11)', () => {
       const antes = await conteos();
       const res = await request(app.getHttpServer())
         .post('/v1/admin/imports')
+        .set('X-Forwarded-For', ip)
         .attach('file', Buffer.from(CSV_OK), 'catalogo.csv');
 
       expect(res.status).toBe(401);
@@ -90,6 +101,7 @@ describe('POST /v1/admin/imports (e2e-imports-upload, AC-6/AC-8/AC-11)', () => {
       const res = await request(app.getHttpServer())
         .post('/v1/admin/imports')
         .set('Authorization', `Bearer ${customerToken()}`)
+        .set('X-Forwarded-For', ip)
         .attach('file', Buffer.from(CSV_OK), 'catalogo.csv');
 
       expect(res.status).toBe(403);
