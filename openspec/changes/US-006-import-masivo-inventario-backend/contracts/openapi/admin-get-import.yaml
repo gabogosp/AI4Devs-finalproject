@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /admin/imports/{id}
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-006. Estado, progreso y filas rechazadas del trabajo de
+    importación (AC-5, AC-7). Al archivar el change extiende la capacidad
+    existente `openspec/specs/catalogo/`.
+
+    Es el endpoint que el panel consulta en **loop** mientras el import corre, así
+    que **no consume** el presupuesto de 3 imports/hora del `POST`: mirar la barra
+    de progreso no puede dejar al dueño sin poder importar.
+servers:
+  - url: /v1
+tags:
+  - name: admin-imports
+    description: Importación masiva del catálogo (US-006). Sólo admin.
+paths:
+  /admin/imports/{id}:
+    get:
+      operationId: getImport
+      tags: [admin-imports]
+      summary: Estado y progreso del trabajo, con las filas rechazadas paginadas
+      description: |
+        El progreso que muestra el panel es `processed_rows / total_rows`, y
+        `total_rows` es `null` hasta que termina la lectura del archivo:
+        publicarlo antes sería inventarlo.
+
+        `error_code` es el fallo **global** del trabajo (por ejemplo
+        `interrupted`), no los errores por fila: esos viven en `errors[]` y en
+        `failed_count`. Cuando `report_truncated` es `true`, `errors[]` está
+        recortado al tope de persistencia (**1.000** filas,
+        `IMPORT_MAX_REPORT_ROWS`) mientras `failed_count` sigue contando el total
+        real.
+      security:
+        - adminBearer: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: UUID del trabajo. Un valor mal formado devuelve 422, no 400 ni 500.
+          schema: { type: string, format: uuid }
+        - in: query
+          name: limit
+          required: false
+          description: |
+            Filas rechazadas por página. Default **50**, máximo **200** — sin techo,
+            un `?limit=100000` sobre un import íntegramente malo sería un DoS.
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - in: query
+          name: offset
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Estado del trabajo.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportJob' }
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          description: |
+            `dsm:import/not-found` — no existe, o la retención de **90 días**
+            (`IMPORT_RETENTION_DAYS`) ya lo purgó.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422':
+          description: |
+            `dsm:catalog/validation` — `id` que no es UUID, o `limit`/`offset`
+            fuera de rango.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    ImportJob:
+      type: object
+      description: |
+        **Exactamente** estos campos. Nunca `idempotency_key` (es una credencial
+        de reintento del cliente) ni `heartbeat_at` (plumbing del reaper) ni
+        `created_by_subject`.
+      required:
+        - id
+        - status
+        - filename
+        - source_format
+        - total_rows
+        - processed_rows
+        - created_count
+        - updated_count
+        - failed_count
+        - categories_created_count
+        - error_code
+        - error_message
+        - report_truncated
+        - started_at
+        - finished_at
+        - created_at
+        - errors
+        - pagination
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        filename:
+          type: string
+          description: |
+            Nombre original del archivo, sólo como metadata — nunca se usó como
+            ruta (el storage es memoria).
+        source_format:
+          type: string
+          enum: [csv, xlsx]
+        total_rows:
+          type: [integer, 'null']
+          description: '`null` hasta que termina la lectura.'
+        processed_rows: { type: integer }
+        created_count: { type: integer }
+        updated_count: { type: integer }
+        failed_count:
+          type: integer
+          description: Total REAL de filas rechazadas, aun con el reporte recortado.
+        categories_created_count: { type: integer }
+        error_code:
+          type: [string, 'null']
+          description: |
+            Fallo global del trabajo: `interrupted` (el proceso se reinició y el
+            reaper lo cerró), `missing-columns`, `row-limit-exceeded`,
+            `unsupported-format`, `invalid-encoding` o `internal`. `null` si los
+            fallos fueron por fila.
+        error_message:
+          type: [string, 'null']
+        report_truncated:
+          type: boolean
+          description: '`true` si se dejaron de persistir filas al llegar a 1.000.'
+        started_at: { type: [string, 'null'], format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ImportRowError' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total:
+              type: integer
+              description: Filas rechazadas **persistidas** (≤ `failed_count`).
+    ImportRowError:
+      type: object
+      required: [row_number, sku, field, error_code, error_message]
+      properties:
+        row_number:
+          type: integer
+          description: 1-based sobre las filas de datos (el encabezado no cuenta).
+        sku: { type: [string, 'null'] }
+        field: { type: [string, 'null'], examples: ['precio'] }
+        error_code:
+          type: string
+          description: |
+            Catálogo **cerrado** por fila: `missing_required`, `invalid_sku`,
+            `name_too_long`, `invalid_price`, `invalid_stock`, `invalid_category`,
+            `invalid_image_url`, `duplicate_sku_in_file`, `slug_conflict`,
+            `write_failed`.
+          examples: ['invalid_price']
+        error_message:
+          type: string
+          description: Motivo en el idioma del dueño. Nunca nombra tablas ni columnas.
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          examples: ['dsm:import/not-found']
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }

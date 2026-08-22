@@ -539,7 +539,7 @@ language: es
 
 ## Fase 8: Contratos y documentación — 0,4 h
 
-- [ ] T8.1 Tres contratos OpenAPI draft (1 por endpoint) + lint
+- [x] T8.1 Tres contratos OpenAPI draft (1 por endpoint) + lint
   - **Pattern**: un yaml autocontenido por endpoint en `contracts/openapi/`
     (`admin-create-import`, `admin-get-import`, `admin-get-import-report`) con
     `components.schemas` de request/response, `components.responses` RFC 7807 con el `type`
