@@ -33,6 +33,25 @@ export interface Pagination {
   offset: number;
 }
 
+/**
+ * Proyección que consume la vista del carrito (US-007). Está declarada una vez
+ * para que las dos lecturas —por slug y por id— no puedan divergir en campos.
+ */
+const CART_PRODUCT_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  image_url: true,
+  price_ars_cents: true,
+  stock: true,
+  status: true,
+} as const;
+
+export type CartProduct = Pick<
+  Product,
+  'id' | 'slug' | 'name' | 'image_url' | 'price_ars_cents' | 'stock' | 'status'
+>;
+
 /** Único punto de acceso al ORM para `products` (§5). Traduce códigos Prisma. */
 @Injectable()
 export class ProductsRepository {
@@ -119,32 +138,24 @@ export class ProductsRepository {
    * Una sola query para todo el conjunto: la lectura del carrito está acotada por
    * `CART_MAX_ITEMS`, pero un N+1 acá sería 50 round-trips por `GET`.
    */
-  findManyBySlugs(slugs: string[]): Promise<
-    Array<
-      Pick<
-        Product,
-        | 'id'
-        | 'slug'
-        | 'name'
-        | 'image_url'
-        | 'price_ars_cents'
-        | 'stock'
-        | 'status'
-      >
-    >
-  > {
+  findManyBySlugs(slugs: string[]): Promise<CartProduct[]> {
     if (slugs.length === 0) return Promise.resolve([]);
     return this.prisma.product.findMany({
       where: { slug: { in: slugs } },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        image_url: true,
-        price_ars_cents: true,
-        stock: true,
-        status: true,
-      },
+      select: CART_PRODUCT_SELECT,
+    });
+  }
+
+  /**
+   * Igual que `findManyBySlugs` pero por id — es la forma en que la **lectura del
+   * carrito** llega a los productos, porque `cart_items` referencia `product_id`.
+   * Tampoco filtra por estado, por la misma razón (AC-6: marcar, no ocultar).
+   */
+  findManyByIds(ids: string[]): Promise<CartProduct[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.prisma.product.findMany({
+      where: { id: { in: ids } },
+      select: CART_PRODUCT_SELECT,
     });
   }
 

@@ -116,6 +116,75 @@ export class CartsRepository {
     return count > 0;
   }
 
+  /**
+   * Fija la línea **y** desliza la ventana en una sola transacción, devolviendo el
+   * carrito ya recargado.
+   *
+   * Las dos escrituras van juntas (§5 — transacción para casos de uso
+   * multi-escritura): una línea agregada con la ventana sin deslizar deja un
+   * carrito que el cliente acaba de tocar y que vence antes de lo que debería.
+   */
+  async upsertItemAndTouch(
+    data: UpsertItemData,
+    expiresAt: Date,
+  ): Promise<CartWithItems> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.cartItem.upsert({
+          where: {
+            cart_id_product_id: {
+              cart_id: data.cartId,
+              product_id: data.productId,
+            },
+          },
+          create: {
+            cart_id: data.cartId,
+            product_id: data.productId,
+            quantity: data.quantity,
+            unit_price_ars_cents: data.unitPriceArsCents,
+          },
+          update: {
+            quantity: data.quantity,
+            unit_price_ars_cents: data.unitPriceArsCents,
+          },
+        });
+        return await tx.cart.update({
+          where: { id: data.cartId },
+          data: { expires_at: expiresAt },
+          include: { items: true },
+        });
+      });
+    } catch (error) {
+      throw this.translate(error);
+    }
+  }
+
+  /**
+   * Quita la línea **y** desliza la ventana en una sola transacción. Devuelve el
+   * carrito recargado y si había algo que borrar (para el evento de negocio).
+   */
+  async deleteItemAndTouch(
+    cartId: string,
+    productId: string,
+    expiresAt: Date,
+  ): Promise<{ cart: CartWithItems; removed: boolean }> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const { count } = await tx.cartItem.deleteMany({
+          where: { cart_id: cartId, product_id: productId },
+        });
+        const cart = await tx.cart.update({
+          where: { id: cartId },
+          data: { expires_at: expiresAt },
+          include: { items: true },
+        });
+        return { cart, removed: count > 0 };
+      });
+    } catch (error) {
+      throw this.translate(error);
+    }
+  }
+
   /** Líneas distintas del carrito (no unidades) — insumo de `CART_MAX_ITEMS`. */
   countItems(cartId: string): Promise<number> {
     return this.prisma.cartItem.count({ where: { cart_id: cartId } });

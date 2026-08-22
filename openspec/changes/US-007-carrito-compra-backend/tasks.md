@@ -286,7 +286,7 @@ language: es
     la suma de las disponibles y `has_blocking_issues` es `true`; carrito todo
     disponible ⇒ `has_blocking_issues` es `false`)
 
-- [ ] T3.3 `CartService.setItem` — agregar y editar cantidad (AC-1, AC-2, AC-5, AC-10)
+- [x] T3.3 `CartService.setItem` — agregar y editar cantidad (AC-1, AC-2, AC-5, AC-10)
   - **Pattern**: resolver producto publicado → validar stock → `ensure` carrito →
     upsert + `slide` dentro de `prisma.$transaction` — `per backend-node-standards.md
     §5 — transacción para casos de uso multi-escritura, sin escrituras parciales ante

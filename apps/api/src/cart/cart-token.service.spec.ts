@@ -122,23 +122,26 @@ describe('CartTokenService (integration)', () => {
     });
   });
 
-  describe('slide', () => {
+  describe('nextExpiration + refreshCookies (deslizamiento)', () => {
+    // `slide` se partió en estos dos (T3.3): el movimiento de `expires_at` tiene
+    // que viajar DENTRO de la transacción que escribe la línea, así que el caso de
+    // uso pide el vencimiento y el repositorio lo aplica. Lo que se prueba acá
+    // sigue siendo la misma propiedad: los dos números salen del MISMO
+    // `CART_TTL_DAYS`, así la cookie y la fila no pueden vencer en momentos
+    // distintos.
     it('expires_at y el Max-Age de la cookie salen del MISMO CART_TTL_DAYS', async () => {
       const sesion = await service.ensure(fakeReq(), fakeRes());
-      await prisma.cart.update({
-        where: { id: sesion.cart.id },
-        data: { expires_at: new Date(Date.now() + 60_000) },
-      });
-
       const res = fakeRes();
       const antes = Date.now();
-      const deslizado = await service.slide(sesion, res);
+
+      const vencimiento = service.nextExpiration();
+      const deslizado = await carts.touch(sesion.cart.id, vencimiento);
+      service.refreshCookies(sesion, res);
 
       const ventanaMs = TTL_DIAS * 86_400_000;
-      const esperado = antes + ventanaMs;
       // Tolerancia de 5 s: lo que importa es que los dos derivan del mismo número.
       expect(
-        Math.abs(deslizado.expires_at.getTime() - esperado),
+        Math.abs(deslizado.expires_at.getTime() - (antes + ventanaMs)),
       ).toBeLessThan(5_000);
       for (const cookie of res.emitidas) {
         expect(cookie.opts.maxAge).toBe(ventanaMs);
@@ -149,7 +152,7 @@ describe('CartTokenService (integration)', () => {
       const sesion = await service.ensure(fakeReq(), fakeRes());
       const res = fakeRes();
 
-      await service.slide(sesion, res);
+      service.refreshCookies(sesion, res);
 
       expect(res.emitidas.map((c) => c.name)).toEqual([
         CART_COOKIE,
@@ -158,35 +161,14 @@ describe('CartTokenService (integration)', () => {
       expect(res.emitidas[0].value).toBe(sesion.token);
     });
 
-    it('conserva las líneas del carrito recibido', async () => {
-      const sesion = await service.ensure(fakeReq(), fakeRes());
-      const cat = await prisma.category.create({
-        data: { name: `C ${Date.now()}`, slug: `c-${Date.now()}` },
-      });
-      const producto = await prisma.product.create({
-        data: {
-          sku: `SLIDE-${Date.now()}`,
-          slug: `slide-${Date.now()}`,
-          name: 'X',
-          price_ars_cents: 1000,
-          stock: 5,
-          status: 'published',
-          category_id: cat.id,
-        },
-      });
-      await carts.upsertItem({
-        cartId: sesion.cart.id,
-        productId: producto.id,
-        quantity: 2,
-        unitPriceArsCents: 1000,
-      });
-      const conLinea = (await service.resolve(
-        fakeReq({ [CART_COOKIE]: sesion.token }),
-      ))!;
-
-      const deslizado = await service.slide(conLinea, fakeRes());
-
-      expect(deslizado.items).toHaveLength(1);
+    it('nextExpiration siempre cae en el futuro, a la ventana declarada', () => {
+      const antes = Date.now();
+      expect(service.nextExpiration().getTime()).toBeGreaterThan(antes);
+      expect(
+        Math.abs(
+          service.nextExpiration().getTime() - (antes + TTL_DIAS * 86_400_000),
+        ),
+      ).toBeLessThan(5_000);
     });
   });
 

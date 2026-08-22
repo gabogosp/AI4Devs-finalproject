@@ -50,7 +50,7 @@ export class CartTokenService {
   }
 
   private nuevoVencimiento(): Date {
-    return new Date(Date.now() + this.ttlDays * 86_400_000);
+    return this.nextExpiration();
   }
 
   /**
@@ -99,21 +99,24 @@ export class CartTokenService {
   }
 
   /**
-   * Desliza la ventana: mueve `expires_at` a `now + CART_TTL_DAYS` y re-emite las
-   * cookies con el `Max-Age` derivado del mismo valor.
+   * Fin de la ventana de retención para una escritura que ocurre **ahora**.
    *
-   * Sólo en escrituras. Deslizar en `GET` obligaría a escribir en base en cada
-   * lectura, y re-estampar sólo la cookie dejaría el desfase que este diseño evita
-   * a propósito. Consecuencia declarada: la persistencia de AC-4 es de 7 días de
-   * **actividad**, no de calendario desde la última visita.
+   * Público a propósito: el caso de uso lo pasa al repositorio para que el
+   * deslizamiento de `expires_at` viaje en la **misma transacción** que la
+   * escritura de la línea, y el `Max-Age` de la cookie salga del mismo valor. Los
+   * dos números tienen un solo origen: `CART_TTL_DAYS`.
    */
-  async slide(session: CartSession, res: Response): Promise<CartWithItems> {
-    const actualizado = await this.carts.touch(
-      session.cart.id,
-      this.nuevoVencimiento(),
-    );
+  nextExpiration(): Date {
+    return new Date(Date.now() + this.ttlDays * 86_400_000);
+  }
+
+  /**
+   * Re-emite las cookies del carrito tras una escritura (deslizamiento del lado
+   * del cliente). Nunca desde un `GET`: eso volvería mutante una operación segura
+   * y dejaría la cookie y la fila desfasadas.
+   */
+  refreshCookies(session: CartSession, res: Response): void {
     this.emitirCookies(res, session.token);
-    return { ...actualizado, items: session.cart.items };
   }
 
   private emitirCookies(res: Response, token: string): void {
