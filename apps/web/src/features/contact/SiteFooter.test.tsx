@@ -59,3 +59,27 @@ describe('Canal de contacto en toda página pública (AC-1)', () => {
     expect(screen.getByText('contenido')).toBeInTheDocument();
   });
 });
+
+describe('Canal de contacto en el header (AC-1)', () => {
+  it('el header ofrece el enlace de WhatsApp con el mismo mensaje genérico', () => {
+    render(StorefrontLayout({ children: <p>contenido</p> }));
+
+    const header = screen.getByRole('banner');
+    expect(
+      within(header).getByRole('link', { name: 'WhatsApp' }),
+    ).toHaveAttribute('href', whatsappHref(WHATSAPP_MESSAGES.general));
+  });
+
+  it('header y footer se distinguen entre sí para un lector de pantalla', () => {
+    render(StorefrontLayout({ children: <p>contenido</p> }));
+
+    // Dos entradas, con nombres accesibles DISTINTOS: listar los enlaces de la
+    // página no debe mostrar dos filas idénticas sin forma de diferenciarlas.
+    const enlaces = screen.getAllByRole('link', {
+      name: /WhatsApp|Hablá con nosotros/,
+    });
+    expect(enlaces).toHaveLength(2);
+    expect(new Set(enlaces.map((e) => e.textContent)).size).toBe(2);
+  });
+});
+

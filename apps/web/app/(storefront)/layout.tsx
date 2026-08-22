@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { CategoryNav } from '@/features/storefront/CategoryNav';
 import { SiteFooter } from '@/features/contact/SiteFooter';
+import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
+import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
 
 /**
  * Layout del storefront público (ADR-0010: la raíz es pública).
@@ -21,7 +23,7 @@ export default function StorefrontLayout({ children }: { children: ReactNode }) 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center p-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
           <Link
             href="/"
             className="flex items-baseline gap-2 focus:outline-none focus-visible:shadow-focus"
@@ -33,6 +35,14 @@ export default function StorefrontLayout({ children }: { children: ReactNode }) 
               Refrigeración y Ferretería
             </span>
           </Link>
+          {/* Variante discreta y nombre accesible distinto al del footer: un
+              lector de pantalla que liste los enlaces no muestra dos entradas
+              idénticas. */}
+          <WhatsAppLink
+            variant="ghost"
+            label="WhatsApp"
+            message={WHATSAPP_MESSAGES.general}
+          />
         </div>
         <CategoryNav />
       </header>

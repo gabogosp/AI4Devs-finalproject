@@ -295,7 +295,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
     expect(link).toHaveAttribute('href', whatsappHref(WHATSAPP_MESSAGES.general));
     ```
 
-- [ ] **T2.2** Enlace de WhatsApp en el header del storefront (0.2 h)
+- [x] **T2.2** Enlace de WhatsApp en el header del storefront (0.2 h)
 
   - **Pattern**: mismo componente, variante discreta, junto al wordmark (`design-system.md`
     §7.10: el top-nav lleva el enlace de WhatsApp). El resto del top-nav —buscador, carrito,
