@@ -494,7 +494,7 @@ language: es
     salvo `instance`** (404 `dsm:catalog/not-found`) y ninguno crea línea (AC-10).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-cart-availability`
 
-- [ ] T6.5 e2e de la frontera de seguridad (CSRF, cookie, aislamiento de carritos)
+- [x] T6.5 e2e de la frontera de seguridad (CSRF, cookie, aislamiento de carritos)
   - **Exit criterion**: una escritura con la cookie de carrito pero **sin**
     `X-CSRF-Token` devuelve **403 `dsm:auth/csrf`**; con el valor de otro carrito → 403;
     sin `Origin` → 403; con `Origin` fuera de la allowlist → 403; con todo correcto →
