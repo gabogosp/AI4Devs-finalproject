@@ -180,7 +180,7 @@ language: es
 
 ## Fase 2: Política de slug compartida y asignación por lote — 0,8 h
 
-- [ ] T2.1 Extraer `resolveSlug` — refactor de comportamiento invariante
+- [x] T2.1 Extraer `resolveSlug` — refactor de comportamiento invariante
   - **Pattern**: Extract Method sobre `ProductsService.deriveUniqueSlug` hacia una función
     pura en `apps/api/src/common/slug.ts`:
     ```ts
