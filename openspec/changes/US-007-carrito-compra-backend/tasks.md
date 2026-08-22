@@ -470,7 +470,7 @@ language: es
     devuelve el vacío **y la fila ya no está** (purga oportunista).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-cart-persistence`
 
-- [ ] T6.3 e2e límite de stock y no-reserva (AC-5, AC-8)
+- [x] T6.3 e2e límite de stock y no-reserva (AC-5, AC-8)
   - **Exit criterion**: con `stock: 3`, un `PUT` de `quantity: 4` devuelve **409
     `dsm:cart/insufficient-stock`** con `available_quantity: 3` y **la línea no se
     crea**; `quantity: 3` pasa (AC-5). **Invariante AC-8**: leído `products.stock`
