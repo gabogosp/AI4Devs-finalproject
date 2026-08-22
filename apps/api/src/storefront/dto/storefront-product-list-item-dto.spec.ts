@@ -17,6 +17,7 @@ describe('StorefrontProductListItemDto', () => {
     status: 'published',
     category_id: 'cat-1',
     image_url: 'https://cdn/img.jpg',
+    enrichment_done: false,
     created_at: new Date('2026-01-01T00:00:00Z'),
     updated_at: new Date('2026-01-02T00:00:00Z'),
     ...over,

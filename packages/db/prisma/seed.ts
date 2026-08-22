@@ -13,11 +13,17 @@ const categories = [
 
 // El `slug` va explícito (no derivado acá) para que el dato de demo sea estable
 // entre corridas: la derivación server-side vive en el service de la API.
+//
+// `status` explícito para que el MVP se vea poblado apenas se siembra: la
+// mayoría queda `published` (visible en el storefront) con variedad para mostrar
+// los estados de la ficha — con stock, SIN stock (AC-4) y sin imagen (AC-6, el FE
+// pone placeholder). Uno queda `draft` a propósito: NO aparece en el storefront y
+// su slug devuelve 404 (AC-7) — además le da al admin algo para publicar en la demo.
 const products = [
-  { sku: "REF-001", slug: "compresor-1-4-hp", name: "Compresor 1/4 HP", price_ars_cents: 8500000, stock: 12, category: "refrigeracion" },
-  { sku: "REF-002", slug: "gas-refrigerante-r134a-1kg", name: "Gas refrigerante R134a 1kg", price_ars_cents: 2200000, stock: 30, category: "refrigeracion" },
-  { sku: "FER-001", slug: "taladro-percutor-650w", name: "Taladro percutor 650W", price_ars_cents: 4500000, stock: 8, category: "ferreteria" },
-  { sku: "ELE-001", slug: "cable-unipolar-2-5mm-x100m", name: "Cable unipolar 2.5mm x100m", price_ars_cents: 3800000, stock: 20, category: "electricidad" },
+  { sku: "REF-001", slug: "compresor-1-4-hp", name: "Compresor 1/4 HP", price_ars_cents: 8500000, stock: 12, category: "refrigeracion", status: "published", image_url: null },
+  { sku: "REF-002", slug: "gas-refrigerante-r134a-1kg", name: "Gas refrigerante R134a 1kg", price_ars_cents: 2200000, stock: 30, category: "refrigeracion", status: "published", image_url: null },
+  { sku: "FER-001", slug: "taladro-percutor-650w", name: "Taladro percutor 650W", price_ars_cents: 4500000, stock: 0, category: "ferreteria", status: "published", image_url: null }, // AC-4: sin stock
+  { sku: "ELE-001", slug: "cable-unipolar-2-5mm-x100m", name: "Cable unipolar 2.5mm x100m", price_ars_cents: 3800000, stock: 20, category: "electricidad", status: "draft", image_url: null }, // AC-7: draft → 404
 ];
 
 async function main() {
@@ -36,7 +42,7 @@ async function main() {
     await prisma.product.upsert({
       where: { sku: p.sku },
       update: { ...rest, category_id: bySlug[category] },
-      create: { ...rest, category_id: bySlug[category], status: "draft" },
+      create: { ...rest, category_id: bySlug[category] },
     });
   }
 

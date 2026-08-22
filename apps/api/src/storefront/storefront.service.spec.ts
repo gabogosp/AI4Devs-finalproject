@@ -17,6 +17,7 @@ describe('StorefrontService.getPublishedProduct', () => {
     status: 'published',
     category_id: 'cat-1',
     image_url: null,
+    enrichment_done: false,
     created_at: new Date(),
     updated_at: new Date(),
     category: {
