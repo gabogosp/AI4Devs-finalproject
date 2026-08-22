@@ -1,6 +1,6 @@
-import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import { bootTestApp } from '../../test/e2e-app';
+import { importConfigStub } from '../../test/import-config';
 import { HealthModule } from '../health/health.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriesRepository } from '../categories/categories.repository';
@@ -21,23 +21,20 @@ describe('ImportRunner (integration)', () => {
   const jobs = new ImportJobsRepository(prisma);
   const products = new ProductsRepository(prisma);
   const categories = new CategoriesRepository(prisma);
-  const service = new ImportsService(products, categories);
+  const service = new ImportsService(
+    products,
+    categories,
+    jobs,
+    importConfigStub(),
+  );
 
-  const runner = (over: Record<string, number> = {}): ImportRunner => {
-    const valores: Record<string, number> = {
-      IMPORT_BATCH_SIZE: 50,
-      IMPORT_MAX_ROWS: 5_000,
-      IMPORT_MAX_UNCOMPRESSED_BYTES: 33_554_432,
-      IMPORT_MAX_REPORT_ROWS: 1_000,
-      IMPORT_JOB_STALE_MS: 120_000,
-      IMPORT_RETENTION_DAYS: 90,
-      ...over,
-    };
-    const config = {
-      get: <T>(clave: string): T => valores[clave] as unknown as T,
-    } as ConfigService;
-    return new ImportRunner(jobs, service, new LoggingEnrichmentQueue(), config);
-  };
+  const runner = (over: Record<string, number> = {}): ImportRunner =>
+    new ImportRunner(
+      jobs,
+      service,
+      new LoggingEnrichmentQueue(),
+      importConfigStub(over),
+    );
 
   const csv = (filas: number, valido = true): Buffer => {
     const lineas = ['sku,nombre,precio,stock,categoria'];

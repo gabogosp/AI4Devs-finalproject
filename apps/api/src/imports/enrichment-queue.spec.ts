@@ -1,4 +1,3 @@
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriesRepository } from '../categories/categories.repository';
 import { ProductsRepository } from '../products/products.repository';
@@ -6,6 +5,7 @@ import {
   EnrichmentQueue,
   LoggingEnrichmentQueue,
 } from './enrichment-queue';
+import { importConfigStub } from '../../test/import-config';
 import { ImportJobsRepository } from './import-jobs.repository';
 import { ImportRunner } from './import-runner';
 import { ImportsService } from './imports.service';
@@ -22,7 +22,12 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
   const jobs = new ImportJobsRepository(prisma);
   const products = new ProductsRepository(prisma);
   const categories = new CategoriesRepository(prisma);
-  const service = new ImportsService(products, categories);
+  const service = new ImportsService(
+    products,
+    categories,
+    jobs,
+    importConfigStub(),
+  );
 
   class ColaEspia implements EnrichmentQueue {
     llamadas: string[][] = [];
@@ -37,17 +42,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
     }
   }
 
-  const config = {
-    get: <T>(clave: string): T =>
-      (({
-        IMPORT_BATCH_SIZE: 50,
-        IMPORT_MAX_ROWS: 5_000,
-        IMPORT_MAX_UNCOMPRESSED_BYTES: 33_554_432,
-        IMPORT_MAX_REPORT_ROWS: 1_000,
-        IMPORT_JOB_STALE_MS: 120_000,
-        IMPORT_RETENTION_DAYS: 90,
-      }) as Record<string, number>)[clave] as unknown as T,
-  } as ConfigService;
+  const config = importConfigStub();
 
   const csv = (lineas: string[]): Buffer =>
     Buffer.from(

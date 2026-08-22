@@ -397,7 +397,7 @@ language: es
     `detail` **no** contiene `price_ars_cents` ni `products`; el spec preexistente del filtro
     sigue verde)
 
-- [ ] T5.2 `POST /v1/admin/imports` — multipart, caps, idempotencia y concurrencia (AC-6, AC-8, AC-11)
+- [x] T5.2 `POST /v1/admin/imports` — multipart, caps, idempotencia y concurrencia (AC-6, AC-8, AC-11)
   - **Pattern**: `@UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize, files: 1 } }))`
     y traducción del `LIMIT_FILE_SIZE` de multer a `FileTooLargeError` — `per
     security-standards.md §6.4 — size cap enforced before buffering the body (reject

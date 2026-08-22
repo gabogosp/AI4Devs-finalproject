@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { ImportJob } from '@dsm/db';
 import { CategoriesRepository } from '../categories/categories.repository';
 import {
   ImportProductRef,
@@ -11,7 +13,22 @@ import {
 import { slugify } from '../common/slug';
 import { BatchSlugAllocator } from './batch-slug-allocator';
 import { CategoryResolver } from './category-resolver';
+import { detectFormat, ImportFormat } from './detect-format';
+import { ImportJobsRepository } from './import-jobs.repository';
+import {
+  FileTooLargeError,
+  ImportAlreadyRunningError,
+} from './import-errors';
+import { readRows } from './read-rows';
 import { ParsedRow, RowError, RowErrorCode } from './row-schema';
+
+/** Resultado de preparar un import: el trabajo listo para encolar (o su réplica). */
+export interface PreparedImport {
+  job: ImportJob;
+  format: ImportFormat;
+  /** `true` si la `Idempotency-Key` ya tenía un trabajo: no se creó nada nuevo. */
+  replayed: boolean;
+}
 
 /**
  * Resultado de procesar una fila: se escribió (y qué pasó) o se rechazó.
@@ -43,10 +60,112 @@ export class ImportContext {
 
 @Injectable()
 export class ImportsService {
+  private readonly maxFileBytes: number;
+  private readonly maxRows: number;
+  private readonly maxUncompressedBytes: number;
+
   constructor(
     private readonly products: ProductsRepository,
     private readonly categories: CategoriesRepository,
-  ) {}
+    private readonly jobs: ImportJobsRepository,
+    config: ConfigService,
+  ) {
+    this.maxFileBytes = config.get<number>('IMPORT_MAX_FILE_BYTES') ?? 4_194_304;
+    this.maxRows = config.get<number>('IMPORT_MAX_ROWS') ?? 5_000;
+    this.maxUncompressedBytes =
+      config.get<number>('IMPORT_MAX_UNCOMPRESSED_BYTES') ?? 33_554_432;
+  }
+
+  /**
+   * Valida el archivo y crea el trabajo, **en ese orden** (AC-6): formato,
+   * encoding, encabezados y tope de filas se resuelven antes de escribir nada,
+   * así un archivo que no sirve devuelve 4xx y deja el catálogo —y la tabla de
+   * trabajos— exactamente como estaban.
+   *
+   * No procesa: encolar el trabajo es del llamador, después del 202 (AC-7).
+   */
+  async prepareImport(input: {
+    buffer: Buffer;
+    filename: string;
+    idempotencyKey?: string;
+    subject?: string;
+  }): Promise<PreparedImport> {
+    // 1. Reintento con la misma clave: se devuelve el trabajo original sin crear
+    //    otro (api-standards §10). Un doble click del panel no dispara dos
+    //    imports del mismo archivo.
+    if (input.idempotencyKey) {
+      const previo = await this.jobs.findByIdempotencyKey(input.idempotencyKey);
+      if (previo !== null) {
+        return {
+          job: previo,
+          format: previo.source_format as ImportFormat,
+          replayed: true,
+        };
+      }
+    }
+
+    // 2. El cap de tamaño, otra vez. El borde HTTP ya lo aplica en el multipart;
+    //    esto cubre cualquier otro camino de entrada (defensa en profundidad).
+    if (input.buffer.length > this.maxFileBytes) {
+      throw new FileTooLargeError(this.maxFileBytes);
+    }
+
+    // 3. Un solo trabajo vigente (ADR-0012). Se chequea antes de gastar tiempo
+    //    en parsear un archivo que no se va a procesar igual.
+    if ((await this.jobs.findActive()) !== null) {
+      throw new ImportAlreadyRunningError();
+    }
+
+    // 4. Formato por contenido y validación del archivo completo. Lanza 415/422
+    //    sin haber tocado la base.
+    const format = detectFormat(input.buffer, input.filename);
+    await this.preflight(input.buffer, format);
+
+    try {
+      const job = await this.jobs.create({
+        filename: input.filename,
+        fileSizeBytes: input.buffer.length,
+        sourceFormat: format,
+        idempotencyKey: input.idempotencyKey,
+        createdBySubject: input.subject,
+      });
+      return { job, format, replayed: false };
+    } catch (error) {
+      // Carrera de dos requests con la misma clave: gana el primero y el segundo
+      // devuelve su trabajo, que es lo mismo que hubiera pasado secuencialmente.
+      if (error instanceof ConflictError && input.idempotencyKey) {
+        const ganador = await this.jobs.findByIdempotencyKey(
+          input.idempotencyKey,
+        );
+        if (ganador !== null) {
+          return {
+            job: ganador,
+            format: ganador.source_format as ImportFormat,
+            replayed: true,
+          };
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Recorre el archivo para validar encabezados y tope de filas antes de crear
+   * el trabajo. Se descarta lo leído: procesar es del runner.
+   *
+   * Sí, el archivo se lee dos veces. Es el precio de AC-6 —"formato o columnas
+   * inválidas ⇒ 4xx sin crear el trabajo"—, y está acotado por el cap de tamaño:
+   * la alternativa sería crear un trabajo que nace `failed`, y entonces el panel
+   * tendría que explicarle al dueño un import que nunca existió.
+   */
+  private async preflight(buffer: Buffer, format: ImportFormat): Promise<void> {
+    for await (const fila of readRows(buffer, format, {
+      maxRows: this.maxRows,
+      maxUncompressedBytes: this.maxUncompressedBytes,
+    })) {
+      void fila;
+    }
+  }
 
   createContext(): ImportContext {
     return new ImportContext(

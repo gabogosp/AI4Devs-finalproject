@@ -291,6 +291,23 @@ describe('readRows — XLSX', () => {
     expect(crecimiento).toBeLessThan(declarado);
   });
 
+  it('lee el MISMO archivo varias veces en el mismo proceso (regresión del bug de exceljs)', async () => {
+    // No es un test redundante: leer dos xlsx seguidos en un proceso fallaba el
+    // ~50 % de las veces por un `this.model` sin guardia dentro de exceljs, y el
+    // camino real hace exactamente eso (preflight del POST + lectura del runner).
+    const buffer = await xlsx([
+      ['sku', 'nombre', 'precio', 'stock', 'categoria'],
+      ['REF-1', 'Heladera', '1000,50', 2, 'Refrigeración'],
+      ['REF-2', 'Mecha', '900', 5, 'Herramientas'],
+    ]);
+
+    for (let intento = 0; intento < 5; intento += 1) {
+      const filas = await juntar(readRows(buffer, 'xlsx', LIMITES));
+      expect(filas).toHaveLength(2);
+      expect(filas[0].cells.sku).toBe('REF-1');
+    }
+  });
+
   it('supera el cap de filas y corta', async () => {
     const filas: unknown[][] = [
       ['sku', 'nombre', 'precio', 'stock', 'categoria'],

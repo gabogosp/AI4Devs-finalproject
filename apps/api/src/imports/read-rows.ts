@@ -1,4 +1,3 @@
-import { Readable } from 'node:stream';
 import { parse } from 'csv-parse';
 import ExcelJS from 'exceljs';
 import { slugify } from '../common/slug';
@@ -10,11 +9,12 @@ import { MissingColumnsError, RowLimitExceededError, UnsupportedFormatError } fr
  *
  * Dos decisiones gobiernan este módulo:
  *
- * 1. **Se lee de a una fila, no el archivo entero en memoria** (§6.6). El xlsx va
- *    por `WorkbookReader` (streaming) y el CSV por el parser en modo lazy: cuando
+ * 1. **El CSV se lee de a una fila** (§6.6), con el parser en modo lazy: cuando
  *    el consumidor corta, el parser deja de trabajar. Sin esto, el cap de filas
  *    sería decorativo — habríamos pagado el costo de leer todo antes de decidir
- *    que el archivo era demasiado grande.
+ *    que el archivo era demasiado grande. El xlsx **no** puede leerse en
+ *    streaming con exceljs 4.4 (ver la nota extensa en `leerXlsx`), así que ahí
+ *    el cap de expansión declarada es el que acota la memoria.
  * 2. **El cap de expansión se chequea antes de descomprimir** (zip bomb). Un
  *    xlsx de 100 KiB puede declarar gigabytes de contenido; el que descomprime
  *    primero y mide después ya perdió.
@@ -167,86 +167,78 @@ async function* leerXlsx(
     );
   }
 
-  // La fuente se conserva en una variable propia porque hay que poder
-  // destruirla (ver el `finally`) y el tipo público de `WorkbookReader` no
-  // expone el stream que guarda internamente.
-  const fuente = Readable.from(buffer);
-  const reader = new ExcelJS.stream.xlsx.WorkbookReader(fuente, {
-    entries: 'emit',
-    sharedStrings: 'cache',
-    worksheets: 'emit',
-  });
+  // Se usa el lector **completo** (`xlsx.load`) y no el `WorkbookReader` en
+  // streaming, en contra de lo que decía el plan. El motivo no es preferencia:
+  // `WorkbookReader` de exceljs 4.4.0 tiene una carrera al leer varios archivos
+  // en un mismo proceso —`_parseWorksheet` usa `this.model` sin guardia y los
+  // sharedStrings pueden no estar parseados todavía—, y el camino real lee dos
+  // veces (el preflight del `POST` y después el runner). Medido en este repo:
+  // ~50 % de las lecturas consecutivas terminaban en un `TypeError` interno (500
+  // para el dueño) o, peor, en filas leídas VACÍAS, que se habrían reportado como
+  // "faltan las columnas requeridas" sobre un archivo perfecto. `xlsx.load`: 20
+  // de 20 lecturas idénticas y correctas.
+  //
+  // La defensa que el streaming aportaba —no volar la memoria con una zip bomb—
+  // no se pierde: la da el chequeo de expansión declarada de arriba, que corre
+  // ANTES de descomprimir, más el cap de 4 MiB del archivo subido.
+  const libro = new ExcelJS.Workbook();
+  try {
+    await libro.xlsx.load(buffer);
+  } catch {
+    // Un zip que no es un xlsx (un .zip de fotos renombrado, por ejemplo) llega
+    // hasta acá porque comparte los magic bytes. No es un 500: es un formato que
+    // no soportamos.
+    throw new UnsupportedFormatError();
+  }
+
+  // Sólo la primera hoja: un archivo con varias hojas de catálogo sería una
+  // ambigüedad que el esquema v1 no define.
+  const hoja = libro.worksheets[0];
+  if (hoja === undefined) {
+    throw new MissingColumnsError([...COLUMNAS_REQUERIDAS]);
+  }
 
   let columnas: (string | null)[] | null = null;
   let rowNumber = 0;
   let bytesConsumidos = 0;
 
-  // Se toma la PRIMERA hoja y nada más, con un iterador explícito en vez de un
-  // `for await`. Dos razones, las dos aprendidas del comportamiento real de
-  // exceljs 4.4 y no de su documentación:
-  //   1. Un archivo con varias hojas de catálogo sería una ambigüedad que el
-  //      esquema v1 no define.
-  //   2. Pedirle la hoja siguiente, o abandonar la iteración sin destruir el
-  //      stream, hace que el reader siga parseando por su cuenta y explote con
-  //      un `TypeError` interno que TAPA nuestro error de dominio: el 422 del
-  //      dueño se convertiría en un 500. El `finally` destruye la fuente antes
-  //      de que nuestra excepción termine de propagar.
-  const hojas = reader[Symbol.asyncIterator]();
-  try {
-    const primera = await hojas.next();
-    if (primera.done) {
-      throw new MissingColumnsError([...COLUMNAS_REQUERIDAS]);
-    }
+  for (let i = 1; i <= hoja.rowCount; i += 1) {
+    const valores = (hoja.getRow(i).values ?? []) as unknown[];
+    // `row.values` es 1-based con un hueco en 0.
+    const celdas = valores.slice(1).map(celdaATexto);
 
-    for await (const row of primera.value) {
-      const valores = row.values as unknown[];
-      // `row.values` es 1-based con un hueco en 0.
-      const celdas = valores.slice(1).map(celdaATexto);
-      bytesConsumidos += celdas.reduce((acc, c) => acc + c.length, 0);
-      if (bytesConsumidos > limits.maxUncompressedBytes) {
-        throw new UnsupportedFormatError(
-          'El Excel declara más contenido del que se puede procesar. Exportalo como CSV o dividilo.',
-        );
-      }
-
-      if (columnas === null) {
-        columnas = resolverColumnas(celdas);
-        continue;
-      }
-
-      // Una fila enteramente vacía es ruido de planilla (Excel arrastra filas
-      // formateadas sin contenido), no una fila de producto inválida.
-      if (celdas.every((c) => c === '')) continue;
-
-      rowNumber += 1;
-      if (rowNumber > limits.maxRows) {
-        throw new RowLimitExceededError(limits.maxRows);
-      }
-
-      const cells: Record<string, string> = {};
-      columnas.forEach((col, i) => {
-        if (col !== null) cells[col] = celdas[i] ?? '';
-      });
-      yield { rowNumber, cells };
+    bytesConsumidos += celdas.reduce((acc, c) => acc + c.length, 0);
+    if (bytesConsumidos > limits.maxUncompressedBytes) {
+      throw new UnsupportedFormatError(
+        'El Excel declara más contenido del que se puede procesar. Exportalo como CSV o dividilo.',
+      );
     }
 
     if (columnas === null) {
-      // Un xlsx sin ninguna fila: no hay encabezado, así que faltan las 5.
-      throw new MissingColumnsError([...COLUMNAS_REQUERIDAS]);
+      if (celdas.every((c) => c === '')) continue; // filas vacías antes del encabezado
+      columnas = resolverColumnas(celdas);
+      continue;
     }
-  } finally {
-    // Orden deliberado: primero se corta la fuente, después se cierra el
-    // iterador de hojas. Si se deja abierto, exceljs reanuda su parseo por su
-    // cuenta y termina lanzando un `TypeError` interno de forma asíncrona, que
-    // en el mejor caso ensucia el test de otro caso y en el peor se convierte en
-    // un 500 para el dueño. El error de cierre se descarta a propósito: acá ya
-    // decidimos qué le devolvemos al usuario.
-    fuente.destroy();
-    try {
-      await hojas.return?.(undefined as never);
-    } catch {
-      /* el reader ya no importa: la respuesta la define nuestro error de dominio */
+
+    // Una fila enteramente vacía es ruido de planilla (Excel arrastra filas
+    // formateadas sin contenido), no una fila de producto inválida.
+    if (celdas.every((c) => c === '')) continue;
+
+    rowNumber += 1;
+    if (rowNumber > limits.maxRows) {
+      throw new RowLimitExceededError(limits.maxRows);
     }
+
+    const cells: Record<string, string> = {};
+    columnas.forEach((col, idx) => {
+      if (col !== null) cells[col] = celdas[idx] ?? '';
+    });
+    yield { rowNumber, cells };
+  }
+
+  if (columnas === null) {
+    // Un xlsx sin ninguna fila: no hay encabezado, así que faltan las 5.
+    throw new MissingColumnsError([...COLUMNAS_REQUERIDAS]);
   }
 }
 

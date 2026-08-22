@@ -1,6 +1,8 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriesRepository } from '../categories/categories.repository';
 import { ProductsRepository } from '../products/products.repository';
+import { importConfigStub } from '../../test/import-config';
+import { ImportJobsRepository } from './import-jobs.repository';
 import { ImportsService, RowOutcome } from './imports.service';
 import { ParsedRow, RowError } from './row-schema';
 
@@ -13,7 +15,12 @@ describe('ImportsService.processRow (integration)', () => {
   const prisma = new PrismaService();
   const products = new ProductsRepository(prisma);
   const categories = new CategoriesRepository(prisma);
-  const service = new ImportsService(products, categories);
+  const service = new ImportsService(
+    products,
+    categories,
+    new ImportJobsRepository(prisma),
+    importConfigStub(),
+  );
 
   const fila = (over: Partial<ParsedRow> = {}): ParsedRow => ({
     kind: 'row',
