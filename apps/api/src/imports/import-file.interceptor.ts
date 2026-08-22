@@ -26,10 +26,25 @@ const MAX_FILE_BYTES = Number(
  *
  * Nada se escribe a disco: no hay directorio temporal, así que el `filename` que
  * manda el cliente no puede ser una ruta. Se guarda sólo como metadata.
+ *
+ * Los límites de **partes** no son decorativos. El `multer` que arrastra
+ * `@nestjs/platform-express@10` es el `1.4.4-lts.1`, que tiene tres avisos `high`
+ * de DoS por multipart malformado (parcheados en 2.x, un salto que arrastra la
+ * versión de Nest y por eso no se decide acá). Acotar `files`, `parts`, `fields`
+ * y `fieldSize` reduce la superficie de esos vectores; el resto lo cubre que la
+ * ruta sea admin-only y esté limitada a 3 requests por hora.
  */
 const FileToMemory = FileInterceptor('file', {
   storage: memoryStorage(),
-  limits: { fileSize: MAX_FILE_BYTES, files: 1 },
+  limits: {
+    fileSize: MAX_FILE_BYTES,
+    files: 1,
+    // Un multipart legítimo de esta ruta tiene UNA parte de archivo y ninguna
+    // más; se deja holgura mínima para bordes de clientes HTTP.
+    parts: 4,
+    fields: 3,
+    fieldSize: 1_024,
+  },
 });
 
 /**
