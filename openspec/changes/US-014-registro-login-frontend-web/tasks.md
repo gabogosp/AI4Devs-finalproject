@@ -299,7 +299,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     pnpm --filter @dsm/web exec vitest run src/lib/http/csrf.test.ts src/lib/http/client.test.ts
     ```
 
-- [ ] **T0.6** Refresh single-flight con Web Lock, un reintento, cero bucles — **G-2** (0.6 h)
+- [x] **T0.6** Refresh single-flight con Web Lock, un reintento, cero bucles — **G-2** (0.6 h)
 
   Dos refresh en paralelo con rotación single-use hacen que el backend lea reuso y revoque la
   familia: el frontend desloguearía al usuario legítimo. Esta task existe para que eso no pase.
