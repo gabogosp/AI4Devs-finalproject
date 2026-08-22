@@ -210,7 +210,7 @@ language: es
     esos archivos antes de arrancar, re-pinear el SHA al commit inmediatamente anterior al
     primer commit de este change y anotarlo acá)
 
-- [ ] T2.2 `BatchSlugAllocator` + `findSlugsByPrefixes` — una query por lote
+- [x] T2.2 `BatchSlugAllocator` + `findSlugsByPrefixes` — una query por lote
   - **Pattern**: en `ProductsRepository`,
     `findMany({ where: { OR: bases.map(b => ({ slug: { startsWith: b } })) }, select: { slug: true } })`
     — una sola ida a la base por lote; el allocator mantiene un `Set` acumulador que vive todo

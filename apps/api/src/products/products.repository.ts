@@ -109,6 +109,23 @@ export class ProductsRepository {
   }
 
   /**
+   * Igual que `findSlugsByPrefix` pero para **varias** bases en una sola ida a
+   * la base (US-006 T2.2). El import de 5.000 filas haría 5.000 queries con la
+   * versión de a uno; con lotes de 200 hace 25.
+   *
+   * `OR` de prefijos y no `in` de slugs exactos: hay que ver también los slugs
+   * ya desambiguados (`heladera-2`) para no volver a proponerlos.
+   */
+  async findSlugsByPrefixes(bases: string[]): Promise<string[]> {
+    if (bases.length === 0) return [];
+    const rows = await this.prisma.product.findMany({
+      where: { OR: bases.map((base) => ({ slug: { startsWith: base } })) },
+      select: { slug: true },
+    });
+    return rows.map((r) => r.slug);
+  }
+
+  /**
    * Lectura pública del storefront (US-003 AC-1/AC-7/AC-8): sólo productos
    * `published`, con su categoría. Devuelve `null` (no lanza) para cualquier
    * no-match — draft, archived o inexistente colapsan al mismo `null`, así el

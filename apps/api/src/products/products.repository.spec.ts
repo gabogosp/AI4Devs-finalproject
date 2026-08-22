@@ -204,6 +204,25 @@ describe('ProductsRepository (products.repository, integration)', () => {
     });
   });
 
+  describe('findSlugsByPrefixes (US-006 T2.2 — una query por lote)', () => {
+    it('trae los slugs de varias bases y no los ajenos', async () => {
+      await repo.create({ ...base('HEL-001'), slug: 'heladera' });
+      await repo.create({ ...base('HEL-002'), slug: 'heladera-2' });
+      await repo.create({ ...base('MEC-003'), slug: 'mecha-3' });
+      await repo.create({ ...base('OTR-001'), slug: 'otro' });
+
+      const found = await repo.findSlugsByPrefixes(['heladera', 'mecha']);
+
+      expect(found.sort()).toEqual(['heladera', 'heladera-2', 'mecha-3']);
+      expect(found).not.toContain('otro');
+    });
+
+    it('sin bases no consulta y devuelve vacío', async () => {
+      await repo.create({ ...base('HEL-003'), slug: 'heladera' });
+      expect(await repo.findSlugsByPrefixes([])).toEqual([]);
+    });
+  });
+
   describe('findManyBySlugs (US-007 T2.2 — lectura de las líneas del carrito)', () => {
     beforeEach(async () => {
       await repo.create({ ...base('CART-PUB'), slug: 'pub', status: 'published' });
