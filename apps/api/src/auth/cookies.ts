@@ -16,6 +16,20 @@ export const REFRESH_COOKIE = 'dsm_refresh';
 export const CSRF_COOKIE = 'dsm_csrf';
 
 /**
+ * Cookies del carrito del invitado (US-007). Viven acá y no en un módulo propio
+ * por la misma razón que las de sesión: los atributos §7.4 tienen **un** hogar.
+ * Un `res.cookie('dsm_cart', …)` suelto en el controller del carrito es
+ * exactamente el modo de perder el `HttpOnly` en la próxima ruta que alguien
+ * agregue.
+ *
+ * `dsm_cart` **es** la identidad del carrito: no hay id en la URL ni chequeo de
+ * propiedad que se pueda olvidar. Por eso lleva el token opaco (256 bits) y
+ * nunca sale en un cuerpo de respuesta — sólo como `Set-Cookie`.
+ */
+export const CART_COOKIE = 'dsm_cart';
+export const CART_CSRF_COOKIE = 'dsm_cart_csrf';
+
+/**
  * El refresh se acota a `/v1/auth`. No es cosmético: es la única cookie que
  * puede reabrir una sesión, y limitar su `path` significa que no viaja en cada
  * petición al catálogo. Menos superficie por la que filtrarse en un log de
@@ -103,4 +117,63 @@ export function clearSessionCookies(res: Response, secure: boolean): void {
   res.clearCookie(ACCESS_COOKIE, { ...comunes, path: '/' });
   res.clearCookie(REFRESH_COOKIE, { ...comunes, path: REFRESH_COOKIE_PATH });
   res.clearCookie(CSRF_COOKIE, { ...comunes, httpOnly: false, path: '/' });
+}
+
+export interface CartCookies {
+  /** Token opaco del carrito, en claro. En base sólo vive su hash. */
+  token: string;
+  /** Double-submit del carrito: `deriveCsrfToken(token, JWT_SECRET)`. */
+  csrfToken: string;
+}
+
+export interface CartCookieOptions {
+  /** `CART_TTL_DAYS` — el MISMO valor del que se deriva `carts.expires_at`. */
+  ttlDays: number;
+  /** `AUTH_COOKIE_SECURE` — se reusa; no hay una segunda variable del carrito. */
+  secure: boolean;
+}
+
+/**
+ * Emite las dos cookies del carrito del invitado (US-007 T1.1).
+ *
+ * `Path=/` en las dos: el carrito se toca desde `/v1/cart` pero el FE necesita
+ * leer el valor CSRF desde cualquier página (la ficha, el listado), así que
+ * acotar el path como se hace con el refresh sería contraproducente acá.
+ *
+ * El `maxAge` sale del **mismo** `CART_TTL_DAYS` que fija `carts.expires_at`.
+ * Que los dos se deriven del mismo número es lo que evita el peor de los casos:
+ * una cookie viva apuntando a una fila vencida, es decir un carrito que
+ * "desaparece" sin explicación.
+ */
+export function setCartCookies(
+  res: Response,
+  tokens: CartCookies,
+  opts: CartCookieOptions,
+): void {
+  const { secure } = opts;
+  const maxAge = opts.ttlDays * 24 * 60 * 60_000;
+
+  res.cookie(CART_COOKIE, tokens.token, {
+    httpOnly: true, // un XSS en el storefront no se lleva carritos
+    secure,
+    sameSite: 'lax',
+    path: '/',
+    maxAge,
+  });
+
+  res.cookie(CART_CSRF_COOKIE, tokens.csrfToken, {
+    httpOnly: false, // el frontend la lee para armar el header X-CSRF-Token
+    secure,
+    sameSite: 'lax',
+    path: '/',
+    maxAge,
+  });
+}
+
+/** Borra las dos cookies del carrito con el MISMO `Path` de emisión. */
+export function clearCartCookies(res: Response, secure: boolean): void {
+  const comunes = { secure, sameSite: 'lax' as const, path: '/' };
+
+  res.clearCookie(CART_COOKIE, { ...comunes, httpOnly: true });
+  res.clearCookie(CART_CSRF_COOKIE, { ...comunes, httpOnly: false });
 }

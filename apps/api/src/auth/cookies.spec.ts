@@ -2,10 +2,14 @@ import express, { Response } from 'express';
 import request from 'supertest';
 import {
   ACCESS_COOKIE,
+  CART_COOKIE,
+  CART_CSRF_COOKIE,
+  clearCartCookies,
   clearSessionCookies,
   CSRF_COOKIE,
   deriveCsrfToken,
   REFRESH_COOKIE,
+  setCartCookies,
   setSessionCookies,
 } from './cookies';
 
@@ -148,6 +152,122 @@ describe('cookies de sesión (§7.4)', () => {
 
     it('base64url: viaja en un header sin escapar', () => {
       expect(deriveCsrfToken('jti-123', SECRETO)).toMatch(/^[A-Za-z0-9_-]+$/);
+    });
+  });
+});
+
+/**
+ * US-007 T1.1 — cookies del carrito del invitado. Mismo enfoque: se verifican los
+ * `Set-Cookie` que salen por el cable, no los argumentos.
+ */
+describe('cookies del carrito del invitado (US-007, §7.4)', () => {
+  const CART = { token: 'cart-token-abc', csrfToken: 'cart-csrf-def' };
+  const CART_OPTS = { ttlDays: 7, secure: true };
+
+  describe('setCartCookies', () => {
+    it('emite exactamente las dos', async () => {
+      const { cookies } = await emitir((res) =>
+        setCartCookies(res, CART, CART_OPTS),
+      );
+      expect(cookies).toHaveLength(2);
+      expect(buscar(cookies, CART_COOKIE)).toBeTruthy();
+      expect(buscar(cookies, CART_CSRF_COOKIE)).toBeTruthy();
+    });
+
+    it('dsm_cart es HttpOnly y dsm_cart_csrf NO (double-submit)', async () => {
+      const { cookies } = await emitir((res) =>
+        setCartCookies(res, CART, CART_OPTS),
+      );
+      expect(buscar(cookies, CART_COOKIE)).toContain('HttpOnly');
+      // El FE tiene que poder leerla para reenviarla en X-CSRF-Token; un
+      // atacante en otro origen puede provocar que el navegador la mande, pero
+      // no leerla.
+      expect(buscar(cookies, CART_CSRF_COOKIE)).not.toContain('HttpOnly');
+    });
+
+    it('las dos llevan Path=/ y SameSite=Lax', async () => {
+      const { cookies } = await emitir((res) =>
+        setCartCookies(res, CART, CART_OPTS),
+      );
+      for (const n of [CART_COOKIE, CART_CSRF_COOKIE]) {
+        expect(buscar(cookies, n)).toContain('Path=/;');
+        expect(buscar(cookies, n)).toContain('SameSite=Lax');
+      }
+    });
+
+    it('Max-Age = CART_TTL_DAYS × 86400 (7 días = 604800 s) en las dos', async () => {
+      // Cookie y fila (`carts.expires_at`) se derivan del MISMO CART_TTL_DAYS:
+      // así no puede quedar una cookie viva apuntando a una fila vencida.
+      const { cookies } = await emitir((res) =>
+        setCartCookies(res, CART, CART_OPTS),
+      );
+      for (const n of [CART_COOKIE, CART_CSRF_COOKIE]) {
+        expect(buscar(cookies, n)).toContain('Max-Age=604800');
+      }
+    });
+
+    it('el Max-Age se deriva del ttlDays recibido, no de una constante', async () => {
+      const { cookies } = await emitir((res) =>
+        setCartCookies(res, CART, { ttlDays: 1, secure: true }),
+      );
+      expect(buscar(cookies, CART_COOKIE)).toContain('Max-Age=86400');
+    });
+
+    it('con secure:false desaparece Secure; con true aparece', async () => {
+      const sin = await emitir((res) =>
+        setCartCookies(res, CART, { ...CART_OPTS, secure: false }),
+      );
+      for (const n of [CART_COOKIE, CART_CSRF_COOKIE]) {
+        expect(buscar(sin.cookies, n)).not.toContain('Secure');
+      }
+
+      const con = await emitir((res) => setCartCookies(res, CART, CART_OPTS));
+      for (const n of [CART_COOKIE, CART_CSRF_COOKIE]) {
+        expect(buscar(con.cookies, n)).toContain('Secure');
+      }
+    });
+
+    it('el token del carrito viaja SÓLO en la cookie', async () => {
+      // No hay cuerpo de respuesta que lo lleve: la identidad es la cookie.
+      const { cookies } = await emitir((res) =>
+        setCartCookies(res, CART, CART_OPTS),
+      );
+      expect(buscar(cookies, CART_COOKIE)).toContain(CART.token);
+      expect(buscar(cookies, CART_CSRF_COOKIE)).not.toContain(CART.token);
+    });
+  });
+
+  describe('clearCartCookies', () => {
+    it('borra las dos con Max-Age=0 y el mismo Path de emisión', async () => {
+      const { cookies } = await emitir((res) => clearCartCookies(res, true));
+      expect(cookies).toHaveLength(2);
+      for (const n of [CART_COOKIE, CART_CSRF_COOKIE]) {
+        const c = buscar(cookies, n);
+        expect(c).toContain('Path=/;');
+        expect(c).toMatch(/Max-Age=0|Expires=Thu, 01 Jan 1970/);
+      }
+    });
+  });
+
+  describe('las cookies de sesión de US-014 no cambian', () => {
+    it('sigue emitiendo dsm_access, dsm_refresh y dsm_csrf idénticas', async () => {
+      const { cookies } = await emitir((res) =>
+        setSessionCookies(res, TOKENS, OPTS),
+      );
+      expect(cookies).toHaveLength(3);
+      expect(buscar(cookies, ACCESS_COOKIE)).toContain('Max-Age=900');
+      expect(buscar(cookies, REFRESH_COOKIE)).toContain('Path=/v1/auth');
+      expect(buscar(cookies, CSRF_COOKIE)).not.toContain('HttpOnly');
+      // Y ninguna cookie del carrito se cuela en el flujo de sesión.
+      expect(cookies.some((c) => c.startsWith(`${CART_COOKIE}=`))).toBe(false);
+    });
+
+    it('clearSessionCookies no toca las del carrito', async () => {
+      const { cookies } = await emitir((res) => clearSessionCookies(res, true));
+      expect(cookies).toHaveLength(3);
+      expect(
+        cookies.some((c) => c.startsWith(`${CART_CSRF_COOKIE}=`)),
+      ).toBe(false);
     });
   });
 });

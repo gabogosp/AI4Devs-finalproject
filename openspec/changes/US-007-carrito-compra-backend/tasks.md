@@ -105,7 +105,7 @@ language: es
 
 ## Fase 1: Identidad del invitado y borde de seguridad — 1,0 h
 
-- [ ] T1.1 Cookies del carrito en el módulo de cookies existente
+- [x] T1.1 Cookies del carrito en el módulo de cookies existente
   - **Pattern**: agregar `CART_COOKIE = 'dsm_cart'`, `CART_CSRF_COOKIE = 'dsm_cart_csrf'`,
     `setCartCookies(res, { token, csrfToken }, { ttlDays, secure })` y
     `clearCartCookies(res, secure)` **dentro de** `apps/api/src/auth/cookies.ts`, que
