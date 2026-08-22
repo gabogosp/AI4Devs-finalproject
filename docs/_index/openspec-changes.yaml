@@ -317,7 +317,8 @@
   # COLISION DE SESIONES (2026-08-20): una sesion paralela ya habia commiteado un plan
   # para este mismo change (157/376/237 lineas) y su entrada stub en este indice
   # (status Draft, estimate 7, sin campos de fecha). Al planificar de nuevo se
-  # sobrescribio. El plan anterior esta INTACTO en git (HEAD 0193e53) y respaldado en
+  # sobrescribio. El plan anterior esta INTACTO en git (commit cf1f011, "docs(openspec):
+  # US-007 backend — plan del carrito guest (18 tasks, 7 h)") y respaldado en
   # openspec/changes/_backups/2026-08-20-US-007-carrito-compra-backend/. Los dos planes
   # convergen en lo esencial (token opaco hasheado, expires_at agregado al DER, creacion
   # perezosa, precios vigentes, AC-8 como invariante probada, purga oportunista); el
