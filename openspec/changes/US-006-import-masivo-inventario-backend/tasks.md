@@ -376,7 +376,7 @@ language: es
 
 ## Fase 5: Borde HTTP — 1,5 h
 
-- [ ] T5.1 Errores de dominio `dsm:import/*` + títulos 413/415
+- [x] T5.1 Errores de dominio `dsm:import/*` + títulos 413/415
   - **Pattern**: subclases de la `DomainError` existente con `readonly status` y
     `readonly type` — `per backend-node-standards.md §6 — errores de dominio tipados mapeados
     centralmente, nunca HttpException ad-hoc en services`.

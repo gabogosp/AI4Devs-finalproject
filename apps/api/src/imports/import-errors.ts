@@ -82,3 +82,43 @@ export class RowLimitExceededError extends DomainError {
     );
   }
 }
+
+/**
+ * 413 — el archivo pesa más que el cap. Se responde **antes** de bufferizarlo
+ * entero (§6.4): medir después de haber aceptado los bytes es no tener cap.
+ */
+export class FileTooLargeError extends DomainError {
+  readonly status = 413;
+  readonly type = 'dsm:import/file-too-large';
+
+  constructor(maxBytes: number) {
+    const mib = Math.round((maxBytes / 1_048_576) * 10) / 10;
+    super(`El archivo supera el máximo de ${mib} MiB.`);
+  }
+}
+
+/**
+ * 409 — ya hay un import vigente. Con un solo ejecutor (ADR-0012), dos trabajos
+ * simultáneos competirían por el mismo catálogo; y para el dueño, dos imports a
+ * la vez son casi siempre un doble click, no una intención.
+ */
+export class ImportAlreadyRunningError extends DomainError {
+  readonly status = 409;
+  readonly type = 'dsm:import/already-running';
+
+  constructor() {
+    super(
+      'Ya hay una importación en curso. Esperá a que termine antes de subir otro archivo.',
+    );
+  }
+}
+
+/** 404 — el trabajo no existe (o ya se purgó por retención). */
+export class ImportNotFoundError extends DomainError {
+  readonly status = 404;
+  readonly type = 'dsm:import/not-found';
+
+  constructor() {
+    super('No se encontró esa importación.');
+  }
+}

@@ -49,6 +49,11 @@ const TITLES: Record<number, string> = {
   403: 'Forbidden',
   404: 'Not Found',
   409: 'Conflict',
+  // 413/415 los estrenó la superficie de import (US-006 T5.1): sin ellos, un
+  // archivo demasiado grande devolvía el `title` genérico 'Error' y el cliente
+  // no tenía de dónde sacar qué pasó más que del `type`.
+  413: 'Payload Too Large',
+  415: 'Unsupported Media Type',
   422: 'Unprocessable Entity',
   429: 'Too Many Requests',
   500: 'Internal Server Error',
