@@ -327,7 +327,7 @@ language: es
 
 ## Fase 4: Borde HTTP — 1,1 h
 
-- [ ] T4.1 DTOs de entrada y de respuesta
+- [x] T4.1 DTOs de entrada y de respuesta
   - **Pattern**: `class-validator` en el DTO de entrada + DTO de respuesta con
     `static from(view)` — `per backend-node-standards.md §4 — todo input de controller
     es un DTO validado en el borde; DTO de respuesta separado de la entidad de
