@@ -127,7 +127,7 @@ language: es
     `UnsupportedFormatError`; `Buffer.from('Refrigeración','latin1')` → `InvalidEncodingError`;
     el resultado no contiene `�`)
 
-- [ ] T1.2 Lectura en streaming CSV/XLSX con caps de filas y de expansión (AC-6, AC-11)
+- [x] T1.2 Lectura en streaming CSV/XLSX con caps de filas y de expansión (AC-6, AC-11)
   - **Pattern**: `csv-parse` con `{ bom: true, columns: normalizeHeader, relax_column_count: true }`
     y `exceljs` `WorkbookReader` (streaming) — nunca cargar el workbook entero — con contador
     de bytes descomprimidos que **aborta** el stream al superar el cap; encabezados
