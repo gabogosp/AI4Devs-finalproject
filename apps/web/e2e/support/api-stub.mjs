@@ -144,6 +144,101 @@ const CATEGORY_BY_SLUG = new Map([
 let products = initialCatalog();
 let browseProducts = initialBrowseCatalog();
 
+// --- Fixture de auth de cliente (US-014) ---------------------------------
+//
+// El journey de auth necesita un backend que emita cookies con los atributos
+// REALES: la topología (T0.3) y AC-9 se prueban leyendo `context.cookies()`,
+// no el DOM. Un stub que devolviera el token en el body probaría otra cosa.
+
+const CUSTOMER_ID = '55555555-5555-4555-8555-555555555555';
+
+const initialCustomers = () =>
+  new Map([
+    [
+      'ana@example.com',
+      {
+        id: CUSTOMER_ID,
+        email: 'ana@example.com',
+        name: 'Ana Gómez',
+        password: 'Contrasena-Valida-1',
+        locked: false,
+      },
+    ],
+    [
+      'bloqueada@example.com',
+      {
+        id: '66666666-6666-4666-8666-666666666666',
+        email: 'bloqueada@example.com',
+        name: 'Cuenta Bloqueada',
+        password: 'Contrasena-Valida-1',
+        locked: true,
+      },
+    ],
+  ]);
+
+let customers = initialCustomers();
+/** Tokens de reset emitidos: `token → { email, usado }`. */
+let resetTokens = new Map();
+
+const RESET_TOKEN_VALIDO = 'reset-token-valido';
+const RESET_TOKEN_USADO = 'reset-token-usado';
+const RESET_TOKEN_VENCIDO = 'reset-token-vencido';
+
+const initialResetTokens = () =>
+  new Map([
+    [RESET_TOKEN_VALIDO, { email: 'ana@example.com', usado: false }],
+    [RESET_TOKEN_USADO, { email: 'ana@example.com', usado: true }],
+    [RESET_TOKEN_VENCIDO, { email: 'ana@example.com', vencido: true }],
+  ]);
+
+/** Sesiones vivas por token de acceso, para que `/auth/me` y logout sean reales. */
+let sessions = new Map();
+
+const nuevoToken = (prefijo) =>
+  `${prefijo}-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+
+/**
+ * Emite las tres cookies con los atributos que el backend usa de verdad
+ * (§7.4): `dsm_refresh` acotada a `/v1/auth` para que no viaje en cada
+ * request al catálogo, y `dsm_csrf` **legible por JS** a propósito — es la
+ * mitad del double-submit.
+ */
+function emitirSesion(res, customer) {
+  const access = nuevoToken('access');
+  const csrf = nuevoToken('csrf');
+  sessions.set(access, { customerId: customer.id, csrf });
+  res.setHeader('Set-Cookie', [
+    `dsm_access=${access}; HttpOnly; SameSite=Lax; Path=/; Max-Age=900`,
+    `dsm_refresh=${nuevoToken('refresh')}; HttpOnly; SameSite=Lax; Path=/v1/auth; Max-Age=604800`,
+    `dsm_csrf=${csrf}; SameSite=Lax; Path=/; Max-Age=900`,
+  ]);
+  return { access, csrf };
+}
+
+const leerCookies = (req) =>
+  Object.fromEntries(
+    (req.headers.cookie ?? '')
+      .split(';')
+      .map((c) => c.trim().split('='))
+      .filter((p) => p.length === 2),
+  );
+
+/**
+ * 401 **idéntico** para contraseña incorrecta, cuenta inexistente y cuenta
+ * bloqueada (AC-5). Un solo helper para los tres: si cada caso armara su
+ * respuesta, la divergencia se colaría en el primer cambio.
+ */
+const credencialesInvalidas = (res) =>
+  problem(res, 401, 'dsm:auth/invalid-credentials', 'Unauthorized', {
+    detail: 'Email o contraseña incorrectos',
+  });
+
+const problem = (res, status, type, title, extra = {}) => {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/problem+json');
+  res.end(JSON.stringify({ type, title, status, ...extra }));
+};
+
 /** Log de requests: permite probar AC-7 contra lo que el servidor PIDIÓ. */
 const requestLog = [];
 
@@ -237,6 +332,13 @@ const server = createServer(async (req, res) => {
     const scope = url.searchParams.get('scope');
     if (scope === null || scope === 'pdp') products = initialCatalog();
     if (scope === null || scope === 'catalog') browseProducts = initialBrowseCatalog();
+    // `auth` es su propio alcance: un spec de auth que resetea NO puede pisarle
+    // el catálogo a un spec de PDP corriendo en paralelo (fullyParallel).
+    if (scope === null || scope === 'auth') {
+      customers = initialCustomers();
+      resetTokens = initialResetTokens();
+      sessions = new Map();
+    }
     // El log NO se limpia acá a propósito: es diagnóstico append-only, no
     // estado del fixture. Si el reset lo borrara, un spec corriendo en paralelo
     // (fullyParallel) vaciaría el log de otro en medio de su aserción — una
@@ -253,6 +355,127 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'GET' && path.startsWith('/v1/')) {
     requestLog.push({ url: req.url, path, query: url.search });
+  }
+
+  // --- Superficie de auth de cliente (US-014) ---
+  if (path.startsWith('/v1/auth/') || path === '/v1/auth/me') {
+    const body = req.method === 'POST' ? await readBody(req) : {};
+    const cookies = leerCookies(req);
+
+    // Header de fuerza para el 429: AC-10 necesita un 429 determinista, y
+    // gatillarlo por volumen real haría el spec lento y flaky.
+    if (req.headers['x-force-rate-limit'] === '1') {
+      res.setHeader('Retry-After', '42');
+      return problem(res, 429, 'dsm:auth/rate-limited', 'Too Many Requests', {
+        detail: 'Demasiados intentos. Probá de nuevo en un rato.',
+      });
+    }
+
+    if (req.method === 'POST' && path === '/v1/auth/register') {
+      const email = String(body.email ?? '').trim().toLowerCase();
+      if (customers.has(email)) {
+        return problem(res, 409, 'dsm:auth/registration-failed', 'Conflict', {
+          detail: 'No se pudo completar el registro',
+        });
+      }
+      const customer = {
+        id: nuevoToken('cust'),
+        email,
+        name: String(body.name ?? 'Cliente'),
+        password: String(body.password ?? ''),
+        locked: false,
+      };
+      customers.set(email, customer);
+      emitirSesion(res, customer);
+      return json(res, 201, {
+        data: { id: customer.id, email: customer.email, name: customer.name },
+      });
+    }
+
+    if (req.method === 'POST' && path === '/v1/auth/login') {
+      const email = String(body.email ?? '').trim().toLowerCase();
+      const customer = customers.get(email);
+      // Los tres casos colapsan al mismo helper: es AC-5 por construcción.
+      if (!customer || customer.locked || customer.password !== body.password) {
+        return credencialesInvalidas(res);
+      }
+      emitirSesion(res, customer);
+      return json(res, 200, {
+        data: { id: customer.id, email: customer.email, name: customer.name },
+      });
+    }
+
+    // `refresh` y `logout` son escrituras autenticadas por cookie: exigen el
+    // header CSRF (double-submit) y un Origin declarado.
+    if (
+      req.method === 'POST' &&
+      (path === '/v1/auth/refresh' || path === '/v1/auth/logout')
+    ) {
+      const sesion = sessions.get(cookies.dsm_access);
+      const csrfHeader = req.headers['x-csrf-token'];
+      if (!csrfHeader || !req.headers.origin) {
+        return problem(res, 403, 'dsm:auth/csrf-failed', 'Forbidden', {
+          detail: 'Falta el token CSRF o el origen',
+        });
+      }
+      if (!sesion || csrfHeader !== sesion.csrf) {
+        return problem(res, 403, 'dsm:auth/csrf-failed', 'Forbidden', {
+          detail: 'Token CSRF inválido',
+        });
+      }
+      if (path === '/v1/auth/logout') {
+        sessions.delete(cookies.dsm_access);
+        res.setHeader('Set-Cookie', [
+          'dsm_access=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+          'dsm_refresh=; HttpOnly; SameSite=Lax; Path=/v1/auth; Max-Age=0',
+          'dsm_csrf=; SameSite=Lax; Path=/; Max-Age=0',
+        ]);
+        res.statusCode = 204;
+        return res.end();
+      }
+      const customer = [...customers.values()].find(
+        (c) => c.id === sesion.customerId,
+      );
+      emitirSesion(res, customer);
+      return json(res, 200, {
+        data: { id: customer.id, email: customer.email, name: customer.name },
+      });
+    }
+
+    if (req.method === 'GET' && path === '/v1/auth/me') {
+      const sesion = sessions.get(cookies.dsm_access);
+      if (!sesion) return credencialesInvalidas(res);
+      const customer = [...customers.values()].find(
+        (c) => c.id === sesion.customerId,
+      );
+      return json(res, 200, {
+        data: { id: customer.id, email: customer.email, name: customer.name },
+      });
+    }
+
+    if (req.method === 'POST' && path === '/v1/auth/password-reset/request') {
+      // 202 SIEMPRE (AC-11): exista o no el email. Es la anti-enumeración.
+      res.statusCode = 202;
+      return res.end();
+    }
+
+    if (req.method === 'POST' && path === '/v1/auth/password-reset/confirm') {
+      const registro = resetTokens.get(String(body.token ?? ''));
+      // Vencido, usado e inexistente dan el MISMO 400: distinguirlos diría si
+      // el token existió alguna vez.
+      if (!registro || registro.usado || registro.vencido) {
+        return problem(res, 400, 'dsm:auth/invalid-reset-token', 'Bad Request', {
+          detail: 'El enlace no es válido o ya se usó. Pedí uno nuevo.',
+        });
+      }
+      const customer = customers.get(registro.email);
+      customer.password = String(body.password ?? '');
+      registro.usado = true;
+      sessions = new Map(); // confirmar revoca TODAS las sesiones
+      return json(res, 200, { data: { ok: true } });
+    }
+
+    return notFound(res);
   }
 
   // --- Superficie pública de categorías (US-002) ---

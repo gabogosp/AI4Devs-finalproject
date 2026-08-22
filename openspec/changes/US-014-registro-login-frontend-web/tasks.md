@@ -60,7 +60,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 ## Pre-requisitos
 
-- [ ] **P1 — BLOQUEANTE: US-018 FE cerrada y `apps/web` sin cambios sin commitear**
+- [x] **P1 — BLOQUEANTE: US-018 FE cerrada y `apps/web` sin cambios sin commitear**
 
   > **DESVIACIÓN AUTORIZADA (2026-08-22, PO)** — el gate sigue **en rojo** y no se marca verde.
   > Estado al ejecutar: `apps/web` **limpio** (la condición que protege del barrido de trabajo
@@ -74,6 +74,11 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
   > Esto es un alcance parcial deliberado, contrario a la instrucción "no scopea parcial" de este
   > mismo gate: se registra acá para que quede como decisión y no como olvido. **P1 se re-corre
   > entero antes de la Fase 1.**
+  >
+  > **Re-corrido 2026-08-22 durante la Fase 0: EN VERDE.** US-018 FE cerró 14/14 (último commit
+  > `aef893a`) y `apps/web` está limpio, así que las dos condiciones se cumplen y la desviación
+  > deja de aplicar. El layout y el header quedan disponibles: la Fase 1 puede montar el
+  > `AccountMenu` sin restricción de alcance.
       (`design.md` §Riesgos, `proposal.md` §Secuencia)
 
   Esta misma sesión (`9a385021`) tiene US-018 a mitad de ejecución y US-014 FE toca **el mismo**
@@ -176,7 +181,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
        orval usa sólo cuando la operación **no** declara `operationId` — el caso del login admin
        (`PostAdminAuthLoginResponse`), no el de estas siete.)*
 
-- [ ] **T0.2** Stub E2E: superficie `/v1/auth/*` con `Set-Cookie` real (0.6 h)
+- [x] **T0.2** Stub E2E: superficie `/v1/auth/*` con `Set-Cookie` real (0.6 h)
 
   El fetch de auth ocurre en el navegador, pero el journey E2E necesita un backend que emita
   cookies con los atributos reales; sin él no se puede probar ni la topología (T0.3) ni AC-9.

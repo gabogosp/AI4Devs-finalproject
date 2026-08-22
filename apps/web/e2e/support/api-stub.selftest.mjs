@@ -143,6 +143,175 @@ try {
     'log de requests: registra la query string',
     log.some((r) => r.url.includes('limit=20') && r.url.includes('offset=20')),
   );
+
+  // --- Superficie de auth de cliente (US-014 T0.2) ---
+  await fetch(`${BASE}/__reset?scope=auth`, { method: 'POST' });
+
+  const postAuth = (ruta, body, headers = {}) =>
+    fetch(`${BASE}/v1/auth/${ruta}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify(body ?? {}),
+    });
+
+  const login = await postAuth('login', {
+    email: 'ana@example.com',
+    password: 'Contrasena-Valida-1',
+  });
+  const cookiesLogin = login.headers.getSetCookie();
+  check('login válido → 200', login.status === 200, `status ${login.status}`);
+  check(
+    'login emite las tres cookies',
+    ['dsm_access', 'dsm_refresh', 'dsm_csrf'].every((c) =>
+      cookiesLogin.some((sc) => sc.startsWith(`${c}=`)),
+    ),
+    cookiesLogin.join(' | '),
+  );
+  check(
+    'dsm_access es HttpOnly y dsm_csrf NO (double-submit)',
+    cookiesLogin.some((c) => c.startsWith('dsm_access=') && c.includes('HttpOnly')) &&
+      cookiesLogin.some((c) => c.startsWith('dsm_csrf=') && !c.includes('HttpOnly')),
+  );
+  check(
+    'dsm_refresh se acota a /v1/auth (no viaja al catálogo)',
+    cookiesLogin.some((c) => c.startsWith('dsm_refresh=') && c.includes('Path=/v1/auth')),
+  );
+
+  // AC-5: los tres 401 tienen que ser indistinguibles.
+  const malPass = await postAuth('login', { email: 'ana@example.com', password: 'x' });
+  const noExiste = await postAuth('login', { email: 'nadie@example.com', password: 'x' });
+  const bloqueada = await postAuth('login', {
+    email: 'bloqueada@example.com',
+    password: 'Contrasena-Valida-1',
+  });
+  const cuerpos = await Promise.all([malPass.json(), noExiste.json(), bloqueada.json()]);
+  check(
+    'AC-5: contraseña mala, cuenta inexistente y cuenta bloqueada dan 401 idéntico',
+    [malPass, noExiste, bloqueada].every((r) => r.status === 401) &&
+      new Set(cuerpos.map((c) => JSON.stringify(c))).size === 1,
+    JSON.stringify(cuerpos),
+  );
+  check(
+    'ninguno de los tres 401 emite cookies',
+    [malPass, noExiste, bloqueada].every((r) => r.headers.getSetCookie().length === 0),
+  );
+
+  const dup = await postAuth('register', {
+    email: 'ana@example.com',
+    password: 'Otra-Contrasena-1',
+    name: 'Ana',
+  });
+  check('registro con email existente → 409 genérico', dup.status === 409);
+  check(
+    'el 409 no menciona el email (anti-enumeración)',
+    !JSON.stringify(await dup.json()).includes('ana@example.com'),
+  );
+
+  const alta = await postAuth('register', {
+    email: 'nueva@example.com',
+    password: 'Contrasena-Valida-1',
+    name: 'Nueva',
+  });
+  check('registro nuevo → 201 con sesión inmediata (AC-1)', alta.status === 201);
+  check('el registro emite cookies', alta.headers.getSetCookie().length === 3);
+
+  // CSRF: las escrituras autenticadas exigen header Y origin.
+  const accessCookie = cookiesLogin
+    .find((c) => c.startsWith('dsm_access='))
+    .split(';')[0];
+  const csrfValor = cookiesLogin
+    .find((c) => c.startsWith('dsm_csrf='))
+    .split(';')[0]
+    .split('=')[1];
+
+  const sinCsrf = await postAuth('logout', {}, { Cookie: accessCookie, Origin: BASE });
+  check('logout sin X-CSRF-Token → 403', sinCsrf.status === 403);
+
+  const sinOrigin = await postAuth('logout', {}, {
+    Cookie: accessCookie,
+    'X-CSRF-Token': csrfValor,
+  });
+  check('logout sin Origin → 403', sinOrigin.status === 403);
+
+  const me = await fetch(`${BASE}/v1/auth/me`, { headers: { Cookie: accessCookie } });
+  check('me con sesión → 200', me.status === 200);
+
+  const logout = await postAuth('logout', {}, {
+    Cookie: accessCookie,
+    Origin: BASE,
+    'X-CSRF-Token': csrfValor,
+  });
+  check('logout con CSRF y Origin → 204', logout.status === 204);
+  check(
+    'logout expira las cookies (Max-Age=0)',
+    logout.headers.getSetCookie().every((c) => c.includes('Max-Age=0')),
+  );
+
+  const meDespues = await fetch(`${BASE}/v1/auth/me`, {
+    headers: { Cookie: accessCookie },
+  });
+  check('tras logout la sesión no sirve → 401', meDespues.status === 401);
+
+  // AC-11: 202 siempre, exista o no el email.
+  const resetExiste = await postAuth('password-reset/request', { email: 'ana@example.com' });
+  const resetNoExiste = await postAuth('password-reset/request', { email: 'nadie@example.com' });
+  check(
+    'AC-11: reset-request da 202 exista o no la cuenta',
+    resetExiste.status === 202 && resetNoExiste.status === 202,
+  );
+
+  const confirmVencido = await postAuth('password-reset/confirm', {
+    token: 'reset-token-vencido',
+    password: 'Nueva-Contrasena-1',
+  });
+  const confirmUsado = await postAuth('password-reset/confirm', {
+    token: 'reset-token-usado',
+    password: 'Nueva-Contrasena-1',
+  });
+  const confirmInexistente = await postAuth('password-reset/confirm', {
+    token: 'no-existe',
+    password: 'Nueva-Contrasena-1',
+  });
+  const cuerposReset = await Promise.all([
+    confirmVencido.json(),
+    confirmUsado.json(),
+    confirmInexistente.json(),
+  ]);
+  check(
+    'AC-7: token vencido, usado e inexistente dan el MISMO 400',
+    [confirmVencido, confirmUsado, confirmInexistente].every((r) => r.status === 400) &&
+      new Set(cuerposReset.map((c) => JSON.stringify(c))).size === 1,
+  );
+
+  const confirmOk = await postAuth('password-reset/confirm', {
+    token: 'reset-token-valido',
+    password: 'Nueva-Contrasena-1',
+  });
+  check('reset con token válido → 200', confirmOk.status === 200);
+  const reuso = await postAuth('password-reset/confirm', {
+    token: 'reset-token-valido',
+    password: 'Otra-Mas-1',
+  });
+  check('el token de reset es de un solo uso → 400 al reusarlo', reuso.status === 400);
+
+  const forzado = await postAuth('login', {}, { 'X-Force-Rate-Limit': '1' });
+  check('AC-10: 429 forzado trae Retry-After', forzado.status === 429 &&
+    forzado.headers.get('retry-after') === '42');
+
+  // Aislamiento: resetear auth NO puede tocar el catálogo ni la PDP.
+  await fetch(`${BASE}/v1/admin/products/33333333-3333-4333-8333-333333333333`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ price_ars_cents: 888888 }),
+  });
+  await fetch(`${BASE}/__reset?scope=auth`, { method: 'POST' });
+  const pdpTrasAuth = await (await fetch(`${BASE}/v1/products/ventilador-de-techo`)).json();
+  check(
+    'reset scope=auth NO restaura la PDP (aislamiento de fixtures)',
+    pdpTrasAuth.price_ars_cents === 888888,
+    `precio ${pdpTrasAuth.price_ars_cents}`,
+  );
+
 } catch (error) {
   failures += 1;
   console.error(`  ✗ error inesperado: ${error.message}`);
