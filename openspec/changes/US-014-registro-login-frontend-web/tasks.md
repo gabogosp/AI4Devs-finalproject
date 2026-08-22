@@ -246,7 +246,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
   - **ADR**: si la prueba pasa, levantar **ADR-0013** ("el navegador sólo habla con el origen del
     sitio para la superficie de sesión") vía `/write-adr` — US-007 y US-015 heredan la decisión.
 
-- [ ] **T0.4** `FetchInit.session: 'customer'` en el mutator — dos modelos, un choke point (0.5 h)
+- [x] **T0.4** `FetchInit.session: 'customer'` en el mutator — dos modelos, un choke point (0.5 h)
 
   - **Pattern**:
     ```ts
@@ -276,7 +276,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     *(los tests existentes del panel corren en la misma invocación: si el camino sin marca se
     hubiera movido, fallan)*
 
-- [ ] **T0.5** CSRF: `X-CSRF-Token` desde `dsm_csrf`, sólo donde el backend lo exige (0.3 h)
+- [x] **T0.5** CSRF: `X-CSRF-Token` desde `dsm_csrf`, sólo donde el backend lo exige (0.3 h)
 
   - **Pattern**:
     ```ts

@@ -61,6 +61,16 @@ describe('customFetch (servidor)', () => {
     });
   });
 
+  it('session: customer en SERVIDOR lanza — nada personalizado se renderiza en server (T0.4)', async () => {
+    stubFetch();
+
+    // Si esto no lanzara, un Server Component podría renderizar contenido de
+    // una persona y Next lo guardaría en la Data Cache — servido después a otra.
+    await expect(
+      customFetch('/v1/auth/me', { session: 'customer' }),
+    ).rejects.toMatchObject({ appError: { kind: 'server' } });
+  });
+
   it('dos llamadas idénticas producen los mismos headers (clave de caché estable)', async () => {
     const spy = stubFetch();
 

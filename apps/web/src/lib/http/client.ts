@@ -1,6 +1,7 @@
 import { publicEnv } from '../env';
 import { getAuthToken } from './authToken';
 import { AppErrorException, mapProblemToAppError, networkError } from './errors';
+import { readCsrfToken, requiereCsrf } from './csrf';
 
 /**
  * **Mutator del cliente generado** (orval `override.mutator`) y único punto de
@@ -34,6 +35,14 @@ const DEFAULT_TIMEOUT_MS = 15_000;
  */
 export type FetchInit = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
+  /**
+   * Marca la llamada como parte de la **sesión del cliente** (US-014).
+   *
+   * Son dos modelos de auth que conviven en un solo choke point: el panel usa
+   * `Bearer` desde memoria, el cliente usa cookies que el navegador maneja
+   * solo. Sin esta marca el comportamiento es exactamente el de antes.
+   */
+  session?: 'customer';
 };
 
 function hex(len: number): string {
@@ -62,9 +71,27 @@ export async function customFetch<T>(
 ): Promise<T> {
   const isServer = typeof window === 'undefined';
 
-  const absolute = url.startsWith('http')
-    ? url
-    : `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${url}`;
+  // La sesión del cliente es **sólo de navegador** (design.md D3): las cookies
+  // las maneja el navegador, y un Server Component que renderizara contenido
+  // personalizado lo metería en la Data Cache de Next — cacheado y servido a
+  // otra persona. Lanzar acá lo vuelve imposible por accidente, no por
+  // disciplina.
+  if (init.session === 'customer' && isServer) {
+    throw new AppErrorException({
+      kind: 'server',
+      message: 'La sesión del cliente es sólo de navegador (design.md D3)',
+    });
+  }
+
+  // Same-origin a propósito (ADR-0013): el rewrite de Next lleva la llamada al
+  // API, y así la cookie aterriza en el dominio del sitio y vuelve. Una URL
+  // absoluta al API rompería la topología entera.
+  const absolute =
+    init.session === 'customer'
+      ? url
+      : url.startsWith('http')
+        ? url
+        : `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${url}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
@@ -84,9 +111,25 @@ export async function customFetch<T>(
     if (token) headers.set('authorization', `Bearer ${token}`);
   }
 
+  // Double-submit sólo donde el backend lo exige: escrituras de la sesión del
+  // cliente. Si la cookie no está, la llamada sale SIN header y el 403 se
+  // propaga — fail closed. Inventar un valor sólo cambiaría el 403 por un
+  // error más confuso.
+  if (init.session === 'customer' && requiereCsrf(init.method)) {
+    const csrf = readCsrfToken();
+    if (csrf) headers.set('x-csrf-token', csrf);
+  }
+
   let res: Response;
   try {
-    res = await fetch(absolute, { ...init, headers, signal: controller.signal });
+    res = await fetch(absolute, {
+      ...init,
+      headers,
+      signal: controller.signal,
+      // Sin `include` el navegador no manda las cookies ni guarda las que
+      // vuelven, aunque el rewrite esté bien: la topología no alcanza sola.
+      ...(init.session === 'customer' ? { credentials: 'include' as const } : {}),
+    });
   } catch {
     throw new AppErrorException(networkError());
   } finally {
