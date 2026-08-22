@@ -100,6 +100,55 @@ export class CartService {
     return this.render(cart);
   }
 
+  /**
+   * Lee el carrito. **Operación segura**: no crea carrito, no emite cookie y no
+   * desliza la ventana (`api-standards.md` §3.1).
+   *
+   * Sin cookie, con una cookie huérfana o con la fila vencida devuelve el carrito
+   * **vacío** con 200 (AC-7): «no tengo carrito» es un estado válido del recurso,
+   * no un recurso ausente. Y si creara uno al mirar, cualquier crawler dejaría una
+   * fila por visita.
+   */
+  async getCart(req: Request): Promise<CartView> {
+    const session = await this.cartToken.resolve(req);
+    return this.render(session?.cart ?? null);
+  }
+
+  /**
+   * Quita una línea (AC-3). Idempotente: quitar algo que no está devuelve el
+   * carrito igual, sin error — un `DELETE` reintentado por la red no puede fallar.
+   *
+   * El producto se resuelve **sin filtrar estado**: una línea de un producto
+   * archivado (AC-6) tiene que poder sacarse del carrito. Si se resolviera con el
+   * filtro de publicados, el cliente quedaría con una línea bloqueada e
+   * imposible de quitar.
+   */
+  async removeItem(
+    req: Request,
+    res: Response,
+    slug: string,
+  ): Promise<CartView> {
+    const session = await this.cartToken.resolve(req);
+    if (!session) return this.render(null);
+
+    const [product] = await this.products.findManyBySlugs([slug]);
+    const tieneLinea =
+      product !== undefined &&
+      session.cart.items.some((item) => item.product_id === product.id);
+    // Nada que borrar: se devuelve el carrito tal cual y no se desliza la ventana
+    // (no hubo actividad sobre el carrito).
+    if (!tieneLinea) return this.render(session.cart);
+
+    const { cart } = await this.carts.deleteItemAndTouch(
+      session.cart.id,
+      product.id,
+      this.cartToken.nextExpiration(),
+    );
+    this.cartToken.refreshCookies(session, res);
+
+    return this.render(cart);
+  }
+
   /** Arma la vista con los precios vigentes leídos en ESTA request (AC-9). */
   private async render(cart: CartWithItems | null): Promise<CartView> {
     if (!cart) return buildCartView(null, [], { maxQtyPerLine: this.maxQtyPerLine });

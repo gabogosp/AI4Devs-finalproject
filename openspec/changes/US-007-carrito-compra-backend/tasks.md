@@ -306,7 +306,7 @@ language: es
     la línea 51 con `CART_MAX_ITEMS=50` lanza `CartTooManyItemsError`; ningún mock de
     `ProductsRepository` recibe llamadas de escritura)
 
-- [ ] T3.4 `CartService.getCart` y `removeItem` (AC-3, AC-4, AC-6, AC-7, AC-9)
+- [x] T3.4 `CartService.getCart` y `removeItem` (AC-3, AC-4, AC-6, AC-7, AC-9)
   - **Pattern**: `getCart` es **seguro**: resuelve, lee y renderiza; **no** crea carrito
     ni emite cookie — `per api-standards.md §3.1 — GET no tiene efectos de lado` y
     `per security-standards.md §7.5 — una operación con efectos nunca va por GET`.

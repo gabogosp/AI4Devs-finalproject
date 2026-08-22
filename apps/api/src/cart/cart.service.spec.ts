@@ -311,3 +311,150 @@ describe('CartService.setItem (AC-1, AC-2, AC-5, AC-10)', () => {
     });
   });
 });
+
+describe('CartService.getCart (AC-4, AC-6, AC-7, AC-9)', () => {
+  it('sin cookie devuelve el carrito vacío y NO crea nada', async () => {
+    const { service, req, cartsMock, emitidas } = armar({ conCookie: false });
+
+    const view = await service.getCart(req);
+
+    expect(view).toEqual({
+      id: null,
+      items: [],
+      item_count: 0,
+      total_quantity: 0,
+      total_ars_cents: 0,
+      has_blocking_issues: false,
+      updated_at: null,
+    });
+    expect(cartsMock.create).not.toHaveBeenCalled();
+    expect(emitidas).toEqual([]);
+  });
+
+  it('con una cookie huérfana devuelve el vacío, sin error', async () => {
+    const { service, req, cartsMock } = armar({ cartEnBase: null });
+
+    const view = await service.getCart(req);
+
+    expect(view.id).toBeNull();
+    expect(cartsMock.create).not.toHaveBeenCalled();
+  });
+
+  it('con carrito devuelve las líneas con el precio VIGENTE (AC-9)', async () => {
+    const { service, req } = armar({
+      cartEnBase: carrito([linea({ quantity: 2, unit_price_ars_cents: 100_000 })]),
+      productos: [producto({ price_ars_cents: 120_000 })],
+    });
+
+    const view = await service.getCart(req);
+
+    expect(view.items[0].unit_price_ars_cents).toBe(120_000);
+    expect(view.items[0].subtotal_ars_cents).toBe(240_000);
+    expect(view.items[0].price_changed).toBe(true);
+    expect(view.items[0].previous_unit_price_ars_cents).toBe(100_000);
+    expect(view.total_ars_cents).toBe(240_000);
+  });
+
+  it('una línea de producto archivado se devuelve MARCADA, no se omite (AC-6)', async () => {
+    const { service, req } = armar({
+      cartEnBase: carrito([linea({ quantity: 1 })]),
+      productos: [producto({ status: 'archived' })],
+    });
+
+    const view = await service.getCart(req);
+
+    expect(view.items).toHaveLength(1);
+    expect(view.items[0].availability).toBe('unavailable');
+    expect(view.has_blocking_issues).toBe(true);
+    expect(view.total_ars_cents).toBe(0);
+  });
+
+  it('no desliza la ventana ni emite cookie: el GET es seguro', async () => {
+    const { service, req, cartsMock, emitidas } = armar({
+      cartEnBase: carrito([linea()]),
+      productos: [producto()],
+    });
+
+    await service.getCart(req);
+
+    expect(cartsMock.touch).not.toHaveBeenCalled();
+    expect(cartsMock.upsertItemAndTouch).not.toHaveBeenCalled();
+    expect(emitidas).toEqual([]);
+  });
+});
+
+describe('CartService.removeItem (AC-3)', () => {
+  it('borra la línea y devuelve el carrito recalculado', async () => {
+    const { service, req, res, cartsMock } = armar({
+      cartEnBase: carrito([linea()]),
+      productos: [producto()],
+    });
+    cartsMock.deleteItemAndTouch.mockResolvedValue({
+      cart: carrito(),
+      removed: true,
+    });
+
+    const view = await service.removeItem(req, res, 'taco-fischer');
+
+    expect(cartsMock.deleteItemAndTouch).toHaveBeenCalledWith(
+      CART_ID,
+      'prod-1',
+      expect.any(Date),
+    );
+    expect(view.items).toEqual([]);
+    expect(view.total_ars_cents).toBe(0);
+  });
+
+  it('resuelve el producto SIN filtrar estado: una línea archivada se puede quitar (AC-6)', async () => {
+    const { service, req, res, cartsMock, productsMock } = armar({
+      cartEnBase: carrito([linea()]),
+      publicado: null, // el catálogo público ya no lo devuelve
+      productos: [producto({ status: 'archived' })],
+    });
+    cartsMock.deleteItemAndTouch.mockResolvedValue({
+      cart: carrito(),
+      removed: true,
+    });
+
+    await service.removeItem(req, res, 'taco-fischer');
+
+    expect(productsMock.findManyBySlugs).toHaveBeenCalledWith(['taco-fischer']);
+    expect(cartsMock.deleteItemAndTouch).toHaveBeenCalled();
+  });
+
+  it('quitar algo que no está en el carrito no lanza y no borra nada (idempotente)', async () => {
+    const { service, req, res, cartsMock } = armar({
+      cartEnBase: carrito([linea({ product_id: 'otro-producto' })]),
+      productos: [producto()],
+    });
+
+    const view = await service.removeItem(req, res, 'taco-fischer');
+
+    expect(cartsMock.deleteItemAndTouch).not.toHaveBeenCalled();
+    expect(view.id).toBe(CART_ID);
+  });
+
+  it('un slug inexistente devuelve el carrito igual, sin borrar', async () => {
+    const { service, req, res, cartsMock } = armar({
+      cartEnBase: carrito([linea()]),
+      productos: [],
+    });
+
+    await service.removeItem(req, res, 'no-existe');
+
+    expect(cartsMock.deleteItemAndTouch).not.toHaveBeenCalled();
+  });
+
+  it('sin carrito devuelve el vacío y NO crea uno', async () => {
+    const { service, req, res, cartsMock, emitidas } = armar({
+      conCookie: false,
+    });
+
+    const view = await service.removeItem(req, res, 'taco-fischer');
+
+    expect(view.id).toBeNull();
+    expect(cartsMock.create).not.toHaveBeenCalled();
+    expect(cartsMock.deleteItemAndTouch).not.toHaveBeenCalled();
+    expect(emitidas).toEqual([]);
+  });
+});

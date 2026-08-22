@@ -9,7 +9,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '../common/errors/domain-errors';
-import { slugify } from '../common/slug';
+import { resolveSlug, slugify } from '../common/slug';
 import {
   assertPublishable,
   assertValidTransition,
@@ -59,14 +59,7 @@ export class ProductsService {
       );
     }
     const taken = new Set(await this.repo.findSlugsByPrefix(base));
-    if (!taken.has(base)) {
-      return base;
-    }
-    let ordinal = 2;
-    while (taken.has(`${base}-${ordinal}`)) {
-      ordinal += 1;
-    }
-    return `${base}-${ordinal}`;
+    return resolveSlug(base, taken);
   }
 
   list(page: Pagination): Promise<{ data: Product[]; total: number }> {
