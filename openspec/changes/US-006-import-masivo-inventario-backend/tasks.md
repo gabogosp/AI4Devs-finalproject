@@ -233,7 +233,7 @@ language: es
 
 ## Fase 3: Repositorios (único punto de ORM) — 0,9 h
 
-- [ ] T3.1 `ImportJobsRepository`
+- [x] T3.1 `ImportJobsRepository`
   - **Pattern**: clase `@Injectable()` que envuelve `PrismaService` y traduce `P2002` a error
     de dominio, espejando `ProductsRepository` — `per backend-node-standards.md §5` y `§6 —
     nunca escapa un error crudo del ORM`.
