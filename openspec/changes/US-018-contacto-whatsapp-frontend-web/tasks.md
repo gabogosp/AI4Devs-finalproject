@@ -238,7 +238,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Fase 2: El enlace en toda página pública (AC-1) — `design.md` D2, D3
 
-- [ ] **T2.1** `SiteFooter` + montaje en el layout `(storefront)` (0.5 h)
+- [x] **T2.1** `SiteFooter` + montaje en el layout `(storefront)` (0.5 h)
 
   - **Pattern**: el sitio **no tiene footer**; éste es el primero. Server Component, montado
     en el layout del route group para que aparezca en toda página pública **sin tocar ninguna

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { CategoryNav } from '@/features/storefront/CategoryNav';
+import { SiteFooter } from '@/features/contact/SiteFooter';
 
 /**
  * Layout del storefront público (ADR-0010: la raíz es pública).
@@ -8,6 +9,13 @@ import { CategoryNav } from '@/features/storefront/CategoryNav';
  * Wordmark + `CategoryNav` (US-002 AC-1: los rubros son navegables e
  * indexables desde cualquier página pública, incluida la ficha). El resto del
  * top-nav —buscador, carrito, cuenta— es `Deferred: US-004/US-007`.
+ *
+ * El `SiteFooter` (US-018 AC-1) se monta acá para que el canal de contacto esté
+ * en toda página pública sin que ninguna página lo repita.
+ *
+ * ⚠ Sin `loading.tsx` en ningún nivel de `(storefront)`: la boundary de Suspense
+ * transmite el shell con el status 200 ya comprometido y vuelve imposible un 404
+ * real (US-003 `design.md` D1.bis; gap F59).
  */
 export default function StorefrontLayout({ children }: { children: ReactNode }) {
   return (
@@ -29,6 +37,7 @@ export default function StorefrontLayout({ children }: { children: ReactNode }) 
         <CategoryNav />
       </header>
       <main className="flex-1">{children}</main>
+      <SiteFooter />
     </div>
   );
 }
