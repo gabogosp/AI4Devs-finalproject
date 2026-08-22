@@ -16,6 +16,31 @@ export interface ProblemDetails {
   detail: string;
   instance: string;
   errors?: FieldError[];
+  /** Extension members de RFC 7807 §3.2 (ver `DomainError.extensions`). */
+  [extension: string]: unknown;
+}
+
+/**
+ * Campos que un extension member NO puede pisar: son el contrato del envelope.
+ * Sin esta guarda, un error de dominio podría cambiar su propio `status` del
+ * cuerpo y dejarlo distinto del status HTTP.
+ */
+const CAMPOS_RESERVADOS = new Set([
+  'type',
+  'title',
+  'status',
+  'detail',
+  'instance',
+  'errors',
+]);
+
+function extensionesDe(error: DomainError): Record<string, unknown> {
+  if (!error.extensions) return {};
+  return Object.fromEntries(
+    Object.entries(error.extensions).filter(
+      ([clave]) => !CAMPOS_RESERVADOS.has(clave),
+    ),
+  );
 }
 
 const TITLES: Record<number, string> = {
@@ -52,6 +77,7 @@ export function mapErrorToProblem(
       detail: exception.message,
       instance,
       ...(exception.fieldErrors ? { errors: exception.fieldErrors } : {}),
+      ...extensionesDe(exception),
     };
   }
 

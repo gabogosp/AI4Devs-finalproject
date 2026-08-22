@@ -12,11 +12,26 @@ export abstract class DomainError extends Error {
   abstract readonly status: number;
   abstract readonly type: string;
   readonly fieldErrors?: FieldError[];
+  /**
+   * **Extension members** de RFC 7807 §3.2 — datos estructurados propios del
+   * problema, que el filtro esparce como campos de primer nivel del cuerpo.
+   *
+   * Existe para que un dato como `available_quantity` (el 409 de stock del
+   * carrito, US-007) viaje como número y no incrustado en una frase del `detail`
+   * que el frontend tenga que parsear con una regex. Cambio aditivo: un error que
+   * no las declara produce exactamente el mismo cuerpo que antes.
+   */
+  readonly extensions?: Record<string, unknown>;
 
-  constructor(message: string, fieldErrors?: FieldError[]) {
+  constructor(
+    message: string,
+    fieldErrors?: FieldError[],
+    extensions?: Record<string, unknown>,
+  ) {
     super(message);
     this.name = new.target.name;
     this.fieldErrors = fieldErrors;
+    this.extensions = extensions;
   }
 }
 

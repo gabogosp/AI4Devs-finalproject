@@ -242,7 +242,7 @@ language: es
 
 ## Fase 3: Dominio del carrito — 1,3 h
 
-- [ ] T3.1 Errores `dsm:cart/*` + extension members RFC 7807
+- [x] T3.1 Errores `dsm:cart/*` + extension members RFC 7807
   - **Pattern**: subclases de la `DomainError` existente con `readonly status` y
     `readonly type`; `DomainError` gana un `readonly extensions?: Record<string, unknown>`
     que `mapErrorToProblem` esparce en el cuerpo — `per api-standards.md §8 — envelope
