@@ -32,6 +32,12 @@ tags:
       escritura sin autenticación. La identidad es la cookie `dsm_cart` (token
       opaco, guardado hasheado): no viaja en ningún cuerpo ni en ninguna URL. No
       reserva ni descuenta stock (AC-8, ADR-0008).
+  - name: admin-imports
+    description: >-
+      Importación masiva del catálogo desde CSV/XLSX (US-006). Sólo admin. El POST
+      responde 202 y el trabajo corre en segundo plano (ADR-0012); el progreso se
+      consulta por GET. Límites vigentes: 5.000 filas, 4 MiB de archivo, 32 MiB
+      descomprimidos y 3 imports por hora por IP.
   - name: health
     description: Liveness / readiness
 security:
@@ -561,6 +567,112 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/CartEnvelope' } } }
         '403': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/CartRateLimited' }
+  /admin/imports:
+    post:
+      operationId: createImport
+      tags: [admin-imports]
+      summary: Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
+      description: >-
+        Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo
+        `file`. El formato se decide por CONTENIDO (magic bytes), no por la
+        extensión ni por el Content-Type. El archivo se valida ANTES de crear el
+        trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos
+        devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1:
+        requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales
+        `descripcion`, `imagen_url`; las desconocidas se ignoran. El precio va en
+        ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un
+        import vigente a la vez (409); un reintento con la misma `Idempotency-Key`
+        devuelve 200 con el mismo trabajo.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: 'Clave de reintento (api-standards §10): la réplica devuelve 200 con el mismo id.'
+          schema: { type: string, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'CSV o XLSX. Máximo 4 MiB (IMPORT_MAX_FILE_BYTES) y 5.000 filas (IMPORT_MAX_ROWS).'
+      responses:
+        '202':
+          description: Trabajo creado y encolado (todavía sin procesar)
+          headers:
+            Location:
+              schema: { type: string }
+              description: URL del estado del trabajo.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ImportCreated' } } }
+        '200':
+          description: Réplica de una Idempotency-Key ya usada (no se creó otro trabajo)
+          headers:
+            Location:
+              schema: { type: string }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ImportCreated' } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '413': { $ref: '#/components/responses/Problem' }
+        '415': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/ImportRateLimited' }
+  /admin/imports/{id}:
+    get:
+      operationId: getImport
+      tags: [admin-imports]
+      summary: Estado, progreso y filas rechazadas del trabajo (AC-5, AC-7)
+      description: >-
+        El progreso del panel es `processed_rows / total_rows`, y `total_rows` es
+        null hasta que termina la lectura. `error_code` es el fallo GLOBAL del
+        trabajo (`interrupted`, `missing-columns`, …), no los errores por fila.
+        Este GET no consume el presupuesto del POST: el panel hace polling.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - name: limit
+          in: query
+          description: 'Filas rechazadas por página. Default 50, máximo 200.'
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ImportJob' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /admin/imports/{id}/report:
+    get:
+      operationId: getImportReport
+      tags: [admin-imports]
+      summary: CSV descargable de las filas rechazadas (AC-5)
+      description: >-
+        Todas las filas rechazadas persistidas (hasta IMPORT_MAX_REPORT_ROWS =
+        1.000), sin paginar. Las celdas van neutralizadas contra inyección de
+        fórmulas (security-standards §6.3): el destino es una planilla. Un trabajo
+        sin errores devuelve sólo el encabezado, no 404. Si el reporte está
+        recortado, la última línea lo declara.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: 'CSV UTF-8 con encabezado fila,sku,campo,codigo,motivo'
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              description: 'Siempre attachment con nombre generado por el servidor: import-{id}-errores.csv'
+          content:
+            text/csv:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
 components:
   securitySchemes:
     adminBearer:
@@ -644,6 +756,20 @@ components:
         RateLimit-Remaining: { schema: { type: integer } }
         RateLimit-Reset: { schema: { type: integer } }
         Cache-Control: { schema: { type: string } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ImportRateLimited:
+      description: >-
+        Presupuesto de la superficie de import excedido (§7.3): IMPORT_RATE_LIMIT_MAX
+        = 3 imports por hora y por IP, sobre el throttler `auth`. Los GET de estado
+        y de reporte NO consumen este presupuesto. Incluye Retry-After y las
+        cabeceras RateLimit-* (api-standards §12).
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
@@ -1058,3 +1184,78 @@ components:
             properties:
               field: { type: string }
               message: { type: string }
+    ImportCreated:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [pending, running, completed, failed] }
+    ImportJob:
+      type: object
+      description: >-
+        Estado del trabajo. NO incluye `idempotency_key` (credencial de reintento
+        del cliente) ni `heartbeat_at` (plumbing del reaper) ni
+        `created_by_subject`.
+      required:
+        [id, status, filename, source_format, total_rows, processed_rows,
+         created_count, updated_count, failed_count, categories_created_count,
+         error_code, error_message, report_truncated, started_at, finished_at,
+         created_at, errors, pagination]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [pending, running, completed, failed] }
+        filename: { type: string, description: 'Metadata del archivo subido; nunca se usó como ruta.' }
+        source_format: { type: string, enum: [csv, xlsx] }
+        total_rows:
+          type: integer
+          nullable: true
+          description: 'null hasta que termina la lectura del archivo.'
+        processed_rows: { type: integer }
+        created_count: { type: integer }
+        updated_count: { type: integer }
+        failed_count:
+          type: integer
+          description: 'Total REAL de filas rechazadas, aun con el reporte recortado.'
+        categories_created_count: { type: integer }
+        error_code:
+          type: string
+          nullable: true
+          description: >-
+            Fallo global: `interrupted` (el proceso se reinició y el reaper lo
+            cerró), `missing-columns`, `row-limit-exceeded`, `unsupported-format`,
+            `invalid-encoding` o `internal`. null si los fallos fueron por fila.
+        error_message: { type: string, nullable: true }
+        report_truncated:
+          type: boolean
+          description: 'true si se dejaron de persistir filas al llegar a IMPORT_MAX_REPORT_ROWS.'
+        started_at: { type: string, format: date-time, nullable: true }
+        finished_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ImportRowError' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          description: '`total` son las filas rechazadas PERSISTIDAS (≤ failed_count).'
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    ImportRowError:
+      type: object
+      required: [row_number, sku, field, error_code, error_message]
+      properties:
+        row_number:
+          type: integer
+          description: '1-based sobre las filas de datos (el encabezado no cuenta).'
+        sku: { type: string, nullable: true }
+        field: { type: string, nullable: true, example: 'precio' }
+        error_code:
+          type: string
+          description: >-
+            Catálogo cerrado por fila: missing_required, invalid_sku,
+            name_too_long, invalid_price, invalid_stock, invalid_category,
+            invalid_image_url, duplicate_sku_in_file, slug_conflict, write_failed.
+          example: 'invalid_price'
+        error_message: { type: string }

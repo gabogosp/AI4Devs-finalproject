@@ -316,3 +316,153 @@ sólo prende `price_changed`.
 La cookie del carrito **reusa `AUTH_COOKIE_SECURE`**: no hay una segunda variable
 para el mismo concepto, porque dos flags para «¿emito cookies `Secure`?» terminan
 con una superficie endurecida y la otra no.
+
+## Importación masiva de inventario (US-006)
+
+Tres rutas admin, todas bajo `AdminGuard`:
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/v1/admin/imports` | Recibe el archivo, lo valida y responde **202** con el `id` del trabajo |
+| `GET` | `/v1/admin/imports/{id}` | Estado, progreso y filas rechazadas paginadas |
+| `GET` | `/v1/admin/imports/{id}/report` | CSV descargable de las filas rechazadas |
+
+El `POST` **no procesa el archivo**: el trabajo corre en segundo plano dentro del
+proceso del API (ADR-0012, mientras Redis no esté aprovisionado) detrás del mismo
+contrato asíncrono que tendrá con la cola. El progreso se consulta por `GET`.
+
+### Esquema de columnas v1 (fijo)
+
+| Encabezado | Requerido | Regla |
+|---|---|---|
+| `sku` | **sí** | 1..64 caracteres, único dentro del archivo |
+| `nombre` | **sí** | 1..200 caracteres, sin caracteres de control |
+| `precio` | **sí** | ARS con IVA incluido, `> 0`, hasta 2 decimales |
+| `stock` | **sí** | entero `>= 0` |
+| `categoria` | **sí** | 1..120 caracteres; se normaliza a slug para reconciliar |
+| `descripcion` | no | 0..2000 caracteres |
+| `imagen_url` | no | esquema **`https:`** únicamente, ≤ 2048 caracteres |
+
+El encabezado se reconoce **normalizado** con la misma `slugify()` de la app, así
+que `Descripción`, `DESCRIPCION` y `descripcion` son la misma columna. Un
+encabezado desconocido se **ignora**; si falta uno **requerido**, se rechaza el
+archivo entero con `422 dsm:import/missing-columns` enumerando cuáles faltan.
+
+**El separador de miles se rechaza.** `1.234` es ambiguo entre 1,234 y 1234, y
+adivinar sobre el precio de un catálogo es inaceptable: sólo dígitos y un
+separador decimal (`1234,56` o `1234.56`). Los centavos se calculan con aritmética
+entera, nunca con `parseFloat * 100`.
+
+**Una celda vacía en columna opcional significa «no cambiar ese campo»**: es lo
+que permite subir un archivo de ajuste de precios sin borrar las descripciones ya
+cargadas. En una columna **requerida**, una celda vacía invalida la fila
+(`missing_required`), así que un archivo de sólo precios tiene que traer las cinco
+columnas requeridas con su valor vigente.
+
+### Límites vigentes
+
+| Límite | Valor | Qué pasa al excederlo |
+|---|---|---|
+| Tamaño del archivo | **4 MiB** | `413 dsm:import/file-too-large` |
+| Filas de datos | **5.000** | `422 dsm:import/row-limit-exceeded` |
+| Expansión de un XLSX | **32 MiB** | `415 dsm:import/unsupported-format` |
+| Imports por hora y por IP | **3** | `429` con `Retry-After` |
+| Filas del reporte | **1.000** | se marca `report_truncated`; `failed_count` sigue siendo el total real |
+
+> **El tope de 5.000 filas coincide con el catálogo objetivo del proyecto**, así
+> que **no queda margen**: cuando el catálogo crezca, el archivo hay que partirlo
+> en dos y subirlo de a uno. Es una decisión consciente del PO (OQ-BE-3, se eligió
+> el tope ajustado sobre el holgado), y está acá para que se sepa por la
+> documentación y no por un `422` en el peor momento. Subirlo es cambiar
+> `IMPORT_MAX_ROWS`, sin deploy de código.
+
+### Qué se toca y qué no al reconciliar por SKU
+
+Un SKU nuevo **crea** el producto; uno existente lo **actualiza**. Re-importar el
+mismo archivo no duplica nada.
+
+- `slug`: **no se recalcula** al renombrar. La URL ya pudo indexarse y regenerarla
+  la rompería (regla heredada de US-003).
+- `status`: **el import no publica ni despublica**. El archivo no tiene columna de
+  estado y no la va a tener: publicar es una decisión del dueño sobre un producto
+  que ya revisó. Los nuevos nacen `draft`.
+- `enrichment_done`: vuelve a `false` al crear y **sólo** si cambió
+  `description_raw` — re-enriquecer un producto al que sólo le movieron el precio
+  es pagarle al proveedor de IA por el mismo resultado.
+
+Una categoría referenciada que no existe **se crea** como rubro raíz, normalizada:
+«Plomería», «plomeria» y «PLOMERÍA» son un solo rubro.
+
+### Códigos de error por fila (catálogo cerrado)
+
+Aparecen en `errors[].error_code` del `GET` y en la columna `codigo` del CSV.
+
+| `error_code` | Cuándo |
+|---|---|
+| `missing_required` | falta una celda requerida (`sku`, `nombre`, `precio`, `stock`, `categoria`) |
+| `invalid_sku` | sku de más de 64 caracteres o con caracteres no imprimibles |
+| `name_too_long` | texto libre inválido: `nombre` > 200, `descripcion` > 2000 o con caracteres de control |
+| `invalid_price` | no numérico, `<= 0`, más de 2 decimales, separador de miles o fuera de rango |
+| `invalid_stock` | no entero, negativo o fuera de rango |
+| `invalid_category` | categoría de más de 120 caracteres, con controles, o que no se pudo resolver |
+| `invalid_image_url` | URL no `https:`, mal formada o de más de 2048 caracteres |
+| `duplicate_sku_in_file` | el sku aparece más de una vez: se procesa **la primera** aparición |
+| `slug_conflict` | no se pudo generar una URL única ni tras reintentar |
+| `write_failed` | la escritura de esa fila falló; las demás del lote sí se escribieron |
+
+Los errores del **archivo entero** son distintos y viajan como RFC 7807:
+`dsm:import/unsupported-format` (415), `dsm:import/file-too-large` (413),
+`dsm:import/missing-columns` (422), `dsm:import/row-limit-exceeded` (422),
+`dsm:import/invalid-encoding` (422), `dsm:import/already-running` (409) y
+`dsm:import/not-found` (404).
+
+Un archivo que no está en **UTF-8** se rechaza en vez de decodificarse con
+reemplazos: un catálogo con «Refrigeraci�n» en la base es peor que un import que
+falla, porque el error lo descubre el cliente en el storefront.
+
+### El frontend tiene que invalidar el catálogo al completarse el import
+
+El backend **no tiene canal** hacia el renderizado de Next: cuando el panel vea
+`status: "completed"`, tiene que llamar a `revalidateCatalog()`. Sin eso, el
+storefront puede seguir sirviendo **precios viejos** después de un ajuste masivo.
+Queda del lado de FE-US-006; es un corte a coordinar, no un detalle de UI.
+
+### Runbook: import interrumpido o atascado en `running`
+
+El ejecutor vive en el proceso del API, así que un redeploy lo mata a mitad de
+camino y el trabajo queda `running` en la base.
+
+1. Al arrancar, la API **cierra sola** los trabajos sin latido reciente
+   (`IMPORT_JOB_STALE_MS`, default 2 min) marcándolos `failed` con
+   `error_code = 'interrupted'`. Después de un reinicio, esperar ese margen.
+2. **Volver a subir el mismo archivo.** Es seguro: la reconciliación es por SKU,
+   así que lo ya importado se actualiza en vez de duplicarse.
+3. Si un `POST` devuelve `409 dsm:import/already-running` y **no** hay ningún
+   import corriendo de verdad, es un trabajo huérfano que todavía no fue barrido:
+   verificar con `GET /v1/admin/imports/{id}` el `heartbeat_at` del vigente y
+   esperar el barrido del próximo arranque.
+4. Los trabajos y sus filas de error se purgan a los **90 días**
+   (`IMPORT_RETENTION_DAYS`), de forma oportunista al arrancar la API. Un `GET` de
+   un import viejo puede devolver `404` por eso.
+
+### Variables de entorno
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `IMPORT_MAX_FILE_BYTES` | 4194304 | Cap del archivo subido (4 MiB) → 413 |
+| `IMPORT_MAX_ROWS` | 5000 | Cap de filas de datos → 422 |
+| `IMPORT_MAX_UNCOMPRESSED_BYTES` | 33554432 | Cap de expansión de un XLSX (32 MiB) → 415 |
+| `IMPORT_BATCH_SIZE` | 200 | Filas por lote del runner (cada cuánto publica progreso) |
+| `IMPORT_MAX_REPORT_ROWS` | 1000 | Filas rechazadas persistidas antes de truncar el reporte |
+| `IMPORT_JOB_STALE_MS` | 120000 | Antigüedad del latido para considerar un trabajo huérfano |
+| `IMPORT_RETENTION_DAYS` | 90 | Retención de trabajos y filas de error |
+| `IMPORT_RATE_LIMIT_MAX` | 3 | `POST` por ventana e IP |
+| `IMPORT_RATE_LIMIT_TTL_MS` | 3600000 | Ventana del presupuesto del `POST` (1 h) |
+
+Un valor inválido **hace fallar el arranque** (Zod, fail-fast §7): un cap que se
+degrada a su default por un typo es un cap que no existe.
+
+> **Diferido a US-005 / US-019**: el encolado real del enriquecimiento en BullMQ.
+> Hoy el import deja la marca durable `products.enrichment_done = false`, así que
+> `SELECT … WHERE enrichment_done = false` reconstruye el trabajo pendiente y no
+> se pierde nada mientras Redis no esté aprovisionado.

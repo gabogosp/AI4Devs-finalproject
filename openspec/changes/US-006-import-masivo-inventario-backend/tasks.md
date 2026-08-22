@@ -562,7 +562,7 @@ language: es
     catálogo), no una capacidad nueva.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-006-import-masivo-inventario-backend/contracts/openapi/*.yaml`
 
-- [ ] T8.2 Spec publicado del servicio + README + runbook
+- [x] T8.2 Spec publicado del servicio + README + runbook
   - **Pattern**: en `apps/api/docs/api/openapi.yaml` el `/v1` vive en `servers`, así que los
     paths se declaran **sin** el prefijo (`/admin/imports`, **no** `/v1/admin/imports`) —
     `per api-standards.md §5 — el contrato declara todo campo y ruta que la API expone`,
