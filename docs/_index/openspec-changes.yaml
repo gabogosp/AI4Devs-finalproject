@@ -281,7 +281,7 @@
   us-id: US-006
   discipline: backend
   variant: null
-  status: draft
+  status: in-progress
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null

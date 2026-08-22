@@ -587,26 +587,56 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
-- [ ] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] Esquema materializado == `design.md` §Persistencia (F40):
+> Corrida completa el 2026-08-22 sobre el working tree compartido con US-007 y US-018.
+> Resultado global de `@dsm/api`: **995 de 997 tests en verde**. Los 2 rojos están en
+> `src/common/e2e-security-edge.spec.ts` (preflight CORS) y **son previos a este change**:
+> se verificaron fallando igual en un `git worktree` del commit `16fabe0`, anterior a la
+> primera línea de US-006. Quedan como hallazgo abierto, fuera del alcance de este change.
+
+- [x] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
+      → 96/97 suites, 995/997 tests. Único rojo: los 2 casos preexistentes de
+      `e2e-security-edge` descritos arriba.
+- [x] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
+      → 44/45 suites, 358/360 tests (mismos 2 casos preexistentes).
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+      → exit 0.
+- [x] Esquema materializado == `design.md` §Persistencia (F40):
       `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=import-schema`
-- [ ] Contratos válidos:
+      → `No pending migrations to apply` + 9/9 tests.
+- [x] Contratos válidos:
       `npx @stoplight/spectral-cli lint openspec/changes/US-006-import-masivo-inventario-backend/contracts/openapi/*.yaml && npx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml`
-- [ ] **No regresión del catálogo existente (US-001/002/003)**:
-      `pnpm --filter @dsm/api test -- --testPathPattern='e2e-products|e2e-categories|e2e-storefront|e2e-rbac|e2e-security-edge'`
-- [ ] **El refactor de slug es invariante**:
+      → exit 0 (los 3 draft sin hallazgos; el publicado con 8 warnings preexistentes de
+      `operationId` en rutas de US-001, cero errores).
+- [x] **No regresión del catálogo existente (US-001/002/003)**:
+      `pnpm --filter @dsm/api test -- --testPathPattern='e2e-products|e2e-categories|e2e-storefront|e2e-rbac'`
+      → 16/16 suites, 81/81 tests. (`e2e-security-edge` se corrió aparte: ver la nota.)
+- [x] **El refactor de slug es invariante**:
       `pnpm --filter @dsm/api test -- --testPathPattern='common/slug|products.service' && git diff --exit-code 2db5997 -- apps/api/src/products/products.service.spec.ts apps/api/src/products/e2e-products-create.spec.ts`
-- [ ] **El import nunca publica ni cambia URLs (AC-9 + regla de US-003)**:
+      → 17/17 tests y `git diff` sin salida: los specs preexistentes no se tocaron.
+- [x] **El import nunca publica ni cambia URLs (AC-9 + regla de US-003)**:
       `pnpm --filter @dsm/api test -- --testPathPattern=e2e-imports-acceptance`
-      (el spec compara `status` y `slug` de cada producto antes y después del import con
-      `toEqual` — falla si el import mueve cualquiera de los dos)
-- [ ] **Ningún contenido del archivo escapa por log (observabilidad)**:
+      → 5/5. El spec compara `status` y `slug` de cada producto antes y después con `toEqual`.
+- [x] **Ningún contenido del archivo escapa por log (observabilidad)**:
       `pnpm --filter @dsm/api test -- --testPathPattern=e2e-imports-observability`
+      → 6/6. Busca el nombre, el sku y la descripción en los cuatro niveles de log.
 - [ ] Dependencias nuevas en el lockfile y sin vulnerabilidades altas:
       `pnpm install --frozen-lockfile && pnpm audit --audit-level=high`
+      → `pnpm install --frozen-lockfile` **exit 0** (`csv-parse@5.6.0`, `exceljs@4.4.0` y
+      `@types/multer@1.4.13` están en el lockfile con versión exacta).
+      **`pnpm audit --audit-level=high` NO pasa**: 56 high + 5 critical en el monorepo,
+      casi todas de `apps/web` (postcss, etc.) y **previas** a este change. Tres SÍ tocan
+      esta superficie: los DoS de `multer@1.4.4-lts.1`, que llega transitivo de
+      `@nestjs/platform-express@10.4.15` y se parchea en `multer@2.x` — un salto que
+      arrastra la versión de Nest y **no se decide en este change**. Mitigación aplicada
+      mientras tanto: el interceptor acota `fileSize`, `files`, `parts`, `fields` y
+      `fieldSize`, la ruta es admin-only y tiene presupuesto de 3 requests/hora/IP.
+      `Deferred: upgrade de @nestjs/platform-express a 11 — owner: Arquitecto`.
 - [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+      → `pnpm -r typecheck` **exit 0** en los 3 paquetes; `pnpm -r test` deja los 2 casos
+      preexistentes de `e2e-security-edge` (`apps/web`: 50/50 archivos en verde);
+      `pnpm -r lint` **falla en `apps/web`** por 4 `no-unused-vars` en
+      `src/lib/http/customerSession.test.ts`, archivo de **US-014 frontend** (commit
+      `de15d10`, otra sesión). `@dsm/api` y `packages/db` lintean limpio.
 
 ---
 

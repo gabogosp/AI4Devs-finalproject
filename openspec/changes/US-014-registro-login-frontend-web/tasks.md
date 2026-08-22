@@ -338,7 +338,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 ## Fase 1: Estado de sesión — `design.md` D6, D7
 
-- [ ] **T1.1** `accountService` — la capa hand-written sobre las operaciones generadas (0.4 h)
+- [x] **T1.1** `accountService` — la capa hand-written sobre las operaciones generadas (0.4 h)
 
   - **Pattern**:
     ```ts
