@@ -36,7 +36,7 @@ cat > .env <<'ENV'
 DATABASE_URL=postgresql://dsm:dsm@localhost:55432/dsm?schema=public
 JWT_SECRET=dev-secret-cambiar
 ADMIN_BOOTSTRAP_TOKEN=demo-admin-token
-CORS_ALLOWED_ORIGINS=http://localhost:3100
+CORS_ALLOWED_ORIGINS=http://localhost:3200
 ENV
 
 # 4. Esquema + datos de demo (3 productos publicados + 1 draft)
@@ -47,24 +47,30 @@ pnpm --filter @dsm/db seed
 pnpm --filter @dsm/api build
 pnpm --filter @dsm/web build
 
-# 6a. Levantar la API (puerto 3000)
-node dist/apps/api/src/main.js
+# 6a. Levantar la API (puerto 3000) — nest build deja el output anidado:
+node apps/api/dist/apps/api/src/main.js
 #    → en otra terminal:
-# 6b. Levantar el storefront (puerto 3100)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3100 pnpm --filter @dsm/web start
+# 6b. Levantar el storefront (puerto 3200)
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web start
 ```
 
+> **Puertos:** la API usa 3000 y el web 3200. Evitamos 3100 porque suele estar ocupado por
+> contenedores de otros proyectos (p.ej. un Loki). Si el 3000 ya tiene la API corriendo, saltá 6a.
+>
+> **CORS:** el storefront es SSR (los fetch salen del server, sin CORS). Si vas a usar el **panel
+> admin** (llamadas desde el browser), arrancá la API con `CORS_ALLOWED_ORIGINS=http://localhost:3200`.
+>
 > Alternativa rápida en modo dev (sin build): `pnpm --filter @dsm/api start:dev` y
-> `NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3100 pnpm --filter @dsm/web dev`.
+> `NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web dev`.
 
 ## URLs
 
 | Superficie | URL |
 |---|---|
-| Storefront (home) | http://localhost:3100 |
-| Ficha de producto | http://localhost:3100/productos/compresor-1-4-hp |
-| Navegación por categoría | http://localhost:3100/categorias/refrigeracion |
-| Panel admin (login) | http://localhost:3100/admin/acceso |
+| Storefront (home) | http://localhost:3200 |
+| Ficha de producto | http://localhost:3200/productos/compresor-1-4-hp |
+| Navegación por categoría | http://localhost:3200/categorias/refrigeracion |
+| Panel admin (login) | http://localhost:3200/admin/acceso |
 | API | http://localhost:3000/v1/products/compresor-1-4-hp |
 
 ## Recorrido de demo (lo que se ve)
