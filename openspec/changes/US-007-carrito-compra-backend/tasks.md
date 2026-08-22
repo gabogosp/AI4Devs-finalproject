@@ -446,7 +446,7 @@ language: es
 
 ## Fase 6: Cobertura e2e de los AC — 1,2 h
 
-- [ ] T6.1 e2e agregar, editar y quitar (AC-1, AC-2, AC-3)
+- [x] T6.1 e2e agregar, editar y quitar (AC-1, AC-2, AC-3)
   - **Exit criterion**: `PUT` de un producto publicado con `quantity: 2` devuelve 200
     con la línea (cantidad, precio unitario vigente, subtotal) y el `total_ars_cents`
     actualizado (AC-1); un segundo `PUT` con `quantity: 5` deja **una** línea de 5 y
