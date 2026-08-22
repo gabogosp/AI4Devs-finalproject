@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ImportJob } from '@dsm/db';
+import { ImportJob, ImportJobRow } from '@dsm/db';
 import { CategoriesRepository } from '../categories/categories.repository';
 import {
   ImportProductRef,
@@ -18,6 +18,7 @@ import { ImportJobsRepository } from './import-jobs.repository';
 import {
   FileTooLargeError,
   ImportAlreadyRunningError,
+  ImportNotFoundError,
 } from './import-errors';
 import { readRows } from './read-rows';
 import { ParsedRow, RowError, RowErrorCode } from './row-schema';
@@ -165,6 +166,31 @@ export class ImportsService {
     })) {
       void fila;
     }
+  }
+
+  /**
+   * Estado del trabajo con sus filas rechazadas paginadas (AC-5, AC-7).
+   *
+   * Un id inexistente es 404 y no un cuerpo vacío: el panel hace polling y tiene
+   * que poder distinguir "todavía no hay progreso" de "este trabajo no existe"
+   * (por ejemplo, porque la retención de 90 días ya se lo llevó).
+   */
+  async getJob(
+    id: string,
+    page: { limit: number; offset: number },
+  ): Promise<{
+    job: ImportJob;
+    errors: ImportJobRow[];
+    total: number;
+  }> {
+    const job = await this.jobs.findById(id);
+    if (job === null) throw new ImportNotFoundError();
+
+    const [errors, total] = await Promise.all([
+      this.jobs.findRowErrors(id, page),
+      this.jobs.countRowErrors(id),
+    ]);
+    return { job, errors, total };
   }
 
   createContext(): ImportContext {

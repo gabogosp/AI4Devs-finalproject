@@ -423,7 +423,7 @@ language: es
     `Location`; segundo POST inmediato → 409; POST repetido con la misma `Idempotency-Key` →
     200 con el mismo `id` y `count(import_jobs)` sin cambios)
 
-- [ ] T5.3 `GET /v1/admin/imports/{id}` — estado, progreso y filas rechazadas (AC-5, AC-7)
+- [x] T5.3 `GET /v1/admin/imports/{id}` — estado, progreso y filas rechazadas (AC-5, AC-7)
   - **Pattern**: DTO de respuesta con `static from(job, errors, page)`, separado de la entidad
     de persistencia; query `limit`/`offset` validada con `class-validator` como
     `ListProductsQueryDto` — `per backend-node-standards.md §4 — DTO de respuesta separado de

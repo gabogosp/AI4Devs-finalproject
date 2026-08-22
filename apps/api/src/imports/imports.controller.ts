@@ -1,7 +1,12 @@
 import {
   Controller,
+  Get,
   Headers,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Post,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -12,6 +17,10 @@ import { JwtService } from '@nestjs/jwt';
 import { Request, Response } from 'express';
 import { AdminGuard } from '../auth/admin.guard';
 import { ValidationError } from '../common/errors/domain-errors';
+import {
+  ImportJobQueryDto,
+  ImportJobResponseDto,
+} from './dto/import.dto';
 import { ImportFileInterceptor } from './import-file.interceptor';
 import { ImportRunner } from './import-runner';
 import { ImportsService } from './imports.service';
@@ -76,6 +85,30 @@ export class ImportsController {
     }
 
     return { id: job.id, status: job.status };
+  }
+
+  /**
+   * Estado, progreso y filas rechazadas del trabajo (AC-5, AC-7).
+   *
+   * El `ParseUUIDPipe` se construye con 422 explícito: su default es 400, y el
+   * resto de la API ya contesta 422 a un input inválido (ValidationPipe global).
+   * Un id mal formado no puede ser un 500 ni un 400 suelto en la única superficie
+   * que el panel consulta en loop.
+   */
+  @Get(':id')
+  async get(
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      }),
+    )
+    id: string,
+    @Query() query: ImportJobQueryDto,
+  ): Promise<ImportJobResponseDto> {
+    const page = { limit: query.limit, offset: query.offset };
+    const { job, errors, total } = await this.imports.getJob(id, page);
+    return ImportJobResponseDto.from(job, errors, { ...page, total });
   }
 
   /**
