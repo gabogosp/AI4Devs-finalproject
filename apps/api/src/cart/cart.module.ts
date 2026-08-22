@@ -7,6 +7,7 @@ import { CartsRepository } from './carts.repository';
 import { CartTokenService } from './cart-token.service';
 import { CartCsrfGuard } from './cart-csrf.guard';
 import { CartThrottlerGuard } from './cart-throttler.guard';
+import { CartEventsService } from '../observability/cart-events.service';
 
 /**
  * Módulo del carrito del invitado (US-007), `CartModule` del E2E §6.1.
@@ -24,6 +25,8 @@ import { CartThrottlerGuard } from './cart-throttler.guard';
     CartTokenService,
     CartCsrfGuard,
     CartThrottlerGuard,
+    CartEventsService,
   ],
+  exports: [CartEventsService],
 })
 export class CartModule {}

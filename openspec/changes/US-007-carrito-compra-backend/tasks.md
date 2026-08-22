@@ -423,7 +423,7 @@ language: es
 
 ## Fase 5: Observabilidad — 0,3 h
 
-- [ ] T5.1 `CartEventsService` — 6 eventos de negocio sin PII
+- [x] T5.1 `CartEventsService` — 6 eventos de negocio sin PII
   - **Pattern**: espejo de `CatalogEventsService` (contador en memoria + log pino
     estructurado) con su propia unión de nombres — `per observability-patterns §3.3 —
     el id va al log, NUNCA como dimensión de métrica (cardinalidad)` y

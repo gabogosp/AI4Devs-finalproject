@@ -10,6 +10,7 @@ import { NotFoundError } from '../common/errors/domain-errors';
 import { CartsRepository, CartWithItems } from './carts.repository';
 import { CartTokenService } from './cart-token.service';
 import { buildCartView, CartView } from './cart-view';
+import { CartEventsService } from '../observability/cart-events.service';
 
 /**
  * Mensaje único de 404: un slug inexistente, uno `draft` y uno `archived`
@@ -38,6 +39,7 @@ export class CartService {
     private readonly products: ProductsRepository,
     private readonly cartToken: CartTokenService,
     private readonly config: ConfigService,
+    private readonly events: CartEventsService,
   ) {}
 
   private get maxItems(): number {
@@ -46,6 +48,12 @@ export class CartService {
 
   private get maxQtyPerLine(): number {
     return this.config.get<number>('CART_MAX_QTY_PER_LINE', 99);
+  }
+
+  /** `traceparent` del cliente, para correlacionar el evento con la request. */
+  private static traceDe(req: Request): string | undefined {
+    const traceparent = req.headers?.traceparent;
+    return typeof traceparent === 'string' ? traceparent : undefined;
   }
 
   /**
@@ -69,6 +77,13 @@ export class CartService {
 
     // AC-5 — tope al stock disponible, sin reservarlo (AC-8).
     if (quantity > product.stock) {
+      // Demanda por encima del stock: señal de reposición para el dueño.
+      this.events.emit(
+        'cart.stock_limit_rejected',
+        product.id,
+        null,
+        CartService.traceDe(req),
+      );
       throw new InsufficientStockError(product.stock);
     }
 
@@ -97,6 +112,13 @@ export class CartService {
     );
     this.cartToken.refreshCookies(session, res);
 
+    this.events.emit(
+      esLineaNueva ? 'cart.item_added' : 'cart.item_quantity_changed',
+      product.id,
+      cart.id,
+      CartService.traceDe(req),
+    );
+
     return this.render(cart);
   }
 
@@ -111,7 +133,29 @@ export class CartService {
    */
   async getCart(req: Request): Promise<CartView> {
     const session = await this.cartToken.resolve(req);
-    return this.render(session?.cart ?? null);
+    const { view, products } = await this.renderConProductos(
+      session?.cart ?? null,
+    );
+
+    if (view.id !== null && view.items.length > 0) {
+      const trace = CartService.traceDe(req);
+      this.events.emit('cart.viewed', view.id, view.id, trace);
+
+      // AC-6 — una línea bloqueada es una venta que el cliente no puede cerrar:
+      // el dueño se entera por acá, no por un reclamo.
+      const idPorSlug = new Map(products.map((p) => [p.slug, p.id]));
+      for (const item of view.items) {
+        if (item.availability === 'available') continue;
+        this.events.emit(
+          'cart.item_unavailable',
+          idPorSlug.get(item.slug) ?? item.slug,
+          view.id,
+          trace,
+        );
+      }
+    }
+
+    return view;
   }
 
   /**
@@ -146,16 +190,35 @@ export class CartService {
     );
     this.cartToken.refreshCookies(session, res);
 
+    this.events.emit(
+      'cart.item_removed',
+      product.id,
+      cart.id,
+      CartService.traceDe(req),
+    );
+
     return this.render(cart);
   }
 
   /** Arma la vista con los precios vigentes leídos en ESTA request (AC-9). */
   private async render(cart: CartWithItems | null): Promise<CartView> {
-    if (!cart) return buildCartView(null, [], { maxQtyPerLine: this.maxQtyPerLine });
+    return (await this.renderConProductos(cart)).view;
+  }
+
+  /**
+   * Igual que `render` pero devolviendo también los productos leídos: la lectura
+   * necesita el `product.id` de las líneas bloqueadas para el evento de negocio, y
+   * la vista sólo expone el `slug`.
+   */
+  private async renderConProductos(
+    cart: CartWithItems | null,
+  ): Promise<{ view: CartView; products: CartProduct[] }> {
+    const limits = { maxQtyPerLine: this.maxQtyPerLine };
+    if (!cart) return { view: buildCartView(null, [], limits), products: [] };
 
     const products: CartProduct[] = await this.products.findManyByIds(
       cart.items.map((item) => item.product_id),
     );
-    return buildCartView(cart, products, { maxQtyPerLine: this.maxQtyPerLine });
+    return { view: buildCartView(cart, products, limits), products };
   }
 }

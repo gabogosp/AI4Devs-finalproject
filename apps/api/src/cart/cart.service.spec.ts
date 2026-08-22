@@ -10,6 +10,7 @@ import { CART_COOKIE } from '../auth/cookies';
 import { CartsRepository, CartWithItems } from './carts.repository';
 import { CartTokenService } from './cart-token.service';
 import { CartService } from './cart.service';
+import { CartEventsService } from '../observability/cart-events.service';
 
 /**
  * T3.3 / T3.4 — casos de uso del carrito con repositorios mockeados. Acá se
@@ -108,7 +109,8 @@ function armar(esc: Escenario = {}) {
   const carts = cartsMock as unknown as CartsRepository;
   const products = productsMock as unknown as ProductsRepository;
   const cartToken = new CartTokenService(carts, config);
-  const service = new CartService(carts, products, cartToken, config);
+  const events = new CartEventsService();
+  const service = new CartService(carts, products, cartToken, config, events);
 
   const req = {
     cookies: esc.conCookie === false ? {} : { [CART_COOKIE]: 'token-en-claro' },
