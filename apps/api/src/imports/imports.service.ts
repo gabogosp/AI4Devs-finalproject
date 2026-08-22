@@ -193,6 +193,20 @@ export class ImportsService {
     return { job, errors, total };
   }
 
+  /**
+   * Filas rechazadas COMPLETAS para el reporte descargable, sin paginar: el
+   * archivo se abre en una planilla y un reporte partido en páginas no sirve para
+   * arreglar el catálogo. El tope de persistencia (`IMPORT_MAX_REPORT_ROWS`) es lo
+   * que acota su tamaño.
+   */
+  async getReport(
+    id: string,
+  ): Promise<{ job: ImportJob; rows: ImportJobRow[] }> {
+    const job = await this.jobs.findById(id);
+    if (job === null) throw new ImportNotFoundError();
+    return { job, rows: await this.jobs.findAllRowErrors(id) };
+  }
+
   createContext(): ImportContext {
     return new ImportContext(
       new BatchSlugAllocator(this.products),

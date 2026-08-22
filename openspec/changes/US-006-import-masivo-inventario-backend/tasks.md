@@ -443,7 +443,7 @@ language: es
     con `?offset=50` los `row_number` son estrictamente mayores; dos `GET` durante un import
     de 500 filas ⇒ el segundo `processed_rows` es `>=` el primero y al menos uno es `> 0`)
 
-- [ ] T5.4 `GET /v1/admin/imports/{id}/report` — CSV con fórmulas neutralizadas
+- [x] T5.4 `GET /v1/admin/imports/{id}/report` — CSV con fórmulas neutralizadas
   - **Pattern**: prefijar con `'` toda celda que empiece con `=`, `+`, `-`, `@`, tab o CR
     antes de escribirla, y encomillar según RFC 4180 — `per security-standards.md §6.3 —
     encode for the destination context, at output time`. El sink acá es una planilla, no HTML.

@@ -22,6 +22,7 @@ import {
   ImportJobResponseDto,
 } from './dto/import.dto';
 import { ImportFileInterceptor } from './import-file.interceptor';
+import { buildReportCsv, reportFilename } from './report-csv';
 import { ImportRunner } from './import-runner';
 import { ImportsService } from './imports.service';
 
@@ -112,7 +113,34 @@ export class ImportsController {
   }
 
   /**
-   * `sub` del JWT admin: pseudónimo interno para trazar quién importó. No es PII.
+   * Reporte descargable de las filas rechazadas (AC-5).
+   *
+   * Se sirve como `text/csv` con `Content-Disposition: attachment` y un nombre
+   * generado por el servidor. Todas las celdas van neutralizadas contra inyección
+   * de fórmulas: el destino de este texto es una planilla, no un JSON.
+   */
+  @Get(':id/report')
+  async report(
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      }),
+    )
+    id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { job, rows } = await this.imports.getReport(id);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${reportFilename(job.id)}"`,
+    );
+    res.send(buildReportCsv(job, rows));
+  }
+
+  /** `sub` del JWT admin: pseudónimo interno para trazar quién importó. No es PII.
    *
    * Se **decodifica** sin volver a verificar porque el `AdminGuard` ya validó la
    * firma para dejar pasar este request; repetir la verificación sería pagarla dos
