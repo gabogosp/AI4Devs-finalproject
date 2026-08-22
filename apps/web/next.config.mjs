@@ -17,6 +17,26 @@ const securityHeaders = [
   },
 ];
 
+/**
+ * Origen del API para el rewrite de la superficie de sesión. Es **server-only**
+ * a propósito (sin `NEXT_PUBLIC_`): el navegador nunca habla con el API
+ * directamente para auth, así que exponerlo al bundle sería filtrar topología
+ * sin ganar nada (next-standards §8).
+ *
+ * Falla ruidoso si falta en producción: un rewrite que apunta a `undefined`
+ * devuelve 404 en el login, y ese síntoma no dice nada sobre la causa.
+ */
+function apiOrigin() {
+  const origin = process.env.API_INTERNAL_ORIGIN;
+  if (origin) return origin;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'API_INTERNAL_ORIGIN es obligatoria: sin ella el rewrite de /v1/auth/* apunta a undefined y el login devuelve 404.',
+    );
+  }
+  return 'http://localhost:3000';
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -30,6 +50,24 @@ const nextConfig = {
         hostname: process.env.NEXT_PUBLIC_IMAGE_CDN_HOST ?? 'localhost',
       },
     ],
+  },
+  /**
+   * La superficie de sesión viaja por el **origen del sitio** (US-014 OQ-FE-1,
+   * opción (a)). Motivo: las cookies que emite el API son host-only, y
+   * `up.railway.app` está en la Public Suffix List, así que el navegador trata
+   * al API y al sitio como sitios distintos — una cookie emitida por el API no
+   * vuelve nunca. Con el rewrite, el navegador sólo ve su propio origen y la
+   * cookie aterriza donde tiene que aterrizar.
+   *
+   * Es declarativo: no agrega un solo `fetch` crudo, así que F48 queda intacto.
+   */
+  async rewrites() {
+    return [
+      {
+        source: '/v1/auth/:path*',
+        destination: `${apiOrigin()}/v1/auth/:path*`,
+      },
+    ];
   },
   async headers() {
     return [

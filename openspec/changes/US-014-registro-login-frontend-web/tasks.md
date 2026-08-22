@@ -213,7 +213,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     asegura que `?scope=auth` no altera el catálogo — falla si cualquiera de las semánticas
     anteriores no se cumple)*
 
-- [ ] **T0.3** `rewrite` same-origin para `/v1/auth/*` — **y la prueba de que la cookie aterriza** (0.7 h)
+- [x] **T0.3** `rewrite` same-origin para `/v1/auth/*` — **y la prueba de que la cookie aterriza** (0.7 h)
 
   Es la premisa no verificada del plan. Se prueba antes de construir nada encima.
 

@@ -39,6 +39,9 @@ export default defineConfig({
       env: {
         NEXT_PUBLIC_API_BASE_URL: `http://localhost:${STUB_PORT}`,
         NEXT_PUBLIC_SITE_URL: `http://localhost:${PORT}`,
+        // Destino del rewrite de /v1/auth/* (US-014 T0.3). Server-only: el
+        // navegador nunca ve este origen, que es justamente el punto.
+        API_INTERNAL_ORIGIN: `http://localhost:${STUB_PORT}`,
       },
       reuseExistingServer: !process.env.CI,
       timeout: 180000,

@@ -97,3 +97,11 @@
   triggered-by: "US-006 — Redis sin aprovisionar (US-019 pendiente) y apps/worker vacío"
   supersedes: null
   superseded-by: null
+- id: ADR-0013
+  title: The browser talks only to the site origin for the session surface
+  status: Accepted
+  path: docs/architecture/decisions/0013-same-origin-session-surface.md
+  affects: [frontend-web, auth, security, deployment]
+  triggered-by: "US-014 FE OQ-FE-1 — up.railway.app está en la PSL: la cookie del API no vuelve"
+  supersedes: null
+  superseded-by: null
