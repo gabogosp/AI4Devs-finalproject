@@ -17,16 +17,24 @@ export function WhatsAppLink({
   message,
   variant = 'accent',
   className,
+  onClick,
 }: {
   /** Obligatorio: **es** el nombre accesible del enlace, no un adorno. */
   label: string;
   message?: string;
   variant?: 'accent' | 'ghost';
   className?: string;
+  /**
+   * Opcional y sin `'use client'` en este archivo: sin directiva el componente
+   * sirve como Server Component (header/footer, cero JS) y como cliente cuando
+   * lo renderiza un padre que sí la tiene (la ficha, que instrumenta el click).
+   */
+  onClick?: () => void;
 }) {
   return (
     <a
       href={whatsappHref(message)}
+      onClick={onClick}
       target="_blank"
       // Sin `noopener`, la pestaña destino puede manipular `window.opener`.
       rel="noopener noreferrer"

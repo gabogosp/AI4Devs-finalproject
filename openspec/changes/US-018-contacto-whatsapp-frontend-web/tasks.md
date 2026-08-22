@@ -281,9 +281,16 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
   - **Verify**:
     ```bash
     pnpm --filter @dsm/web test -- --run src/features/contact/SiteFooter.test.tsx \
-      && test -z "$(grep -rl 'use client' apps/web/src/features/contact)" \
+      && test -z "$(grep -rlE "^[[:space:]]*['\"]use client['\"]" apps/web/src/features/contact)" \
       && echo "OK — footer en el layout y sin JS de cliente"
     ```
+    > **Afinado durante la ejecución (2026-08-22)**: el grep buscaba la cadena suelta
+    > `use client` y daba rojo por un **comentario correcto** — el JSDoc de `WhatsAppLink`
+    > explica precisamente que el archivo NO lleva la directiva (para servir como Server
+    > Component en el footer y como cliente en la ficha). Ahora se busca la **directiva**
+    > anclada a inicio de línea, que es el criterio real. Mismo defecto que el plan ya había
+    > corregido en T1.3 con el literal `https://wa.me`.
+
     ```tsx
     // SiteFooter.test.tsx — se ejercita el LAYOUT, no sólo el componente suelto:
     // así el test falla si alguien construye el footer pero no lo monta.
@@ -418,7 +425,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Fase 5: Gates de despliegue y telemetría (**gated** — requieren ratificación)
 
-- [ ] **T5.1** Guard del número placeholder — `Gated: OQ-FE-12 (recomendación: opción c)` (0.3 h)
+- [x] **T5.1** Guard del número placeholder — `Gated: OQ-FE-12 (recomendación: opción c)` (0.3 h)
 
   - **Pattern**: gate **fuera** del build. Un guard dentro de `env.ts` mataría la suite E2E,
     porque el `webServer` de Playwright corre un build de producción real sin esa env:
@@ -450,7 +457,7 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
     *(se ejecuta el script en los tres escenarios y se asserta el exit code — no se greppea
     su contenido: F50)*
 
-- [ ] **T5.2** Evento `whatsapp_click` en la ficha sin stock — `Gated: OQ-FE-13 (recomendación: opción c)` (0.2 h)
+- [x] **T5.2** Evento `whatsapp_click` en la ficha sin stock — `Gated: OQ-FE-13 (recomendación: opción c)` (0.2 h)
 
   - **Pattern**: sólo en `ProductPurchase`, que **ya es** `'use client'` ⇒ costo marginal en
     bytes **cero**. El registro en `PUBLIC_EVENTS` es la parte que importa:

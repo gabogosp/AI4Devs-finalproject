@@ -11,7 +11,11 @@ export type BusinessEvent =
   // Storefront público: una vista de página de categoría. Mismo razonamiento
   // que `pdp_shown` — con la caché por tag, el `category.viewed` del backend
   // sólo ve los re-fetches post-invalidación y subcuenta estructuralmente.
-  | 'category_shown';
+  | 'category_shown'
+  // Storefront público: salida hacia el canal humano desde la ficha. Mide
+  // demanda perdida cuando no hay stock, y —desde el CTA del MVP— el camino de
+  // compra real mientras el carrito no exista.
+  | 'whatsapp_click';
 
 export interface EventProps {
   operator_id?: string;
@@ -38,6 +42,7 @@ export function setEventSink(next: Sink): void {
 const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'pdp_shown',
   'category_shown',
+  'whatsapp_click',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

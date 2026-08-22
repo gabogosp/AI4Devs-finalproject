@@ -25,8 +25,8 @@ describe('AC-4 — el contacto no toca la red', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 
     render(StorefrontLayout({ children: <p>x</p> })); // header + footer
-    render(<ProductPurchase inStock={false} productName="Heladera exhibidora" />);
-    render(<ProductPurchase inStock productName="Heladera exhibidora" />);
+    render(<ProductPurchase inStock={false} productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
+    render(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
 
     expect(fetchSpy).not.toHaveBeenCalled();
   });

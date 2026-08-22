@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/Button';
+import { track } from '@/lib/observability/events';
 import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
 import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
 
@@ -25,12 +26,22 @@ const OUT_OF_STOCK_COPY =
 export function ProductPurchase({
   inStock,
   productName,
+  productSlug,
   onAddToCart,
 }: {
   inStock: boolean;
   productName: string;
+  productSlug: string;
   onAddToCart?: () => void;
 }) {
+  /**
+   * Salida al canal humano. `context` distingue las dos superficies: sin stock
+   * mide demanda perdida; con stock mide el camino de compra real del MVP
+   * mientras el carrito no exista. Sin PII: nunca viaja el mensaje, el número
+   * ni nada del visitante.
+   */
+  const registrarClick = (context: 'pdp_out_of_stock' | 'pdp_in_stock') => () =>
+    track('whatsapp_click', { context, product_slug: productSlug });
   if (!inStock) {
     return (
       <div className="flex flex-col gap-3">
@@ -46,6 +57,7 @@ export function ProductPurchase({
         <WhatsAppLink
           label="Avisame por WhatsApp"
           message={WHATSAPP_MESSAGES.product(productName)}
+          onClick={registrarClick('pdp_out_of_stock')}
         />
       </div>
     );
@@ -60,6 +72,7 @@ export function ProductPurchase({
       <WhatsAppLink
         label="Comprar por WhatsApp"
         message={WHATSAPP_MESSAGES.product(productName)}
+        onClick={registrarClick('pdp_in_stock')}
       />
       <Button
         variant="accent"

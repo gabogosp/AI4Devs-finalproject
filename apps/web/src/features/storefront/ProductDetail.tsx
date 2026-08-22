@@ -57,7 +57,11 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
           <p className="text-xs text-gray-500">IVA incluido</p>
         </div>
 
-        <ProductPurchase inStock={product.in_stock} productName={product.name} />
+        <ProductPurchase
+          inStock={product.in_stock}
+          productName={product.name}
+          productSlug={product.slug}
+        />
 
         {product.description && (
           <div className="flex flex-col gap-2">
