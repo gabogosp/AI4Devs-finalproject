@@ -327,7 +327,7 @@ language: es
     escritura ⇒ `write_failed` y las demás filas del lote **sí** se escriben; celda
     `descripcion` vacía sobre un producto con descripción ⇒ la descripción sobrevive)
 
-- [ ] T4.3 `ImportRunner` — lotes, progreso, heartbeat y reaper (AC-5, AC-7)
+- [x] T4.3 `ImportRunner` — lotes, progreso, heartbeat y reaper (AC-5, AC-7)
   - **Pattern**: bucle por lotes de `IMPORT_BATCH_SIZE` con `await` entre lotes (cede el event
     loop) que actualiza `processed_rows` + contadores + `heartbeat_at`; disparo con
     `setImmediate` tras responder el 202; `OnApplicationBootstrap` invoca `reapStale` —
