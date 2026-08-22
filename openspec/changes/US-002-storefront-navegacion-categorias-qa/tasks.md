@@ -93,6 +93,30 @@ language: es
   - **Exit criterion**: TC-240 y TC-241 documentados en `qa/exploratory/charters.md` con misión, áreas, riesgos y heurísticas; marcados `execution_mode: manual` con su justificación.
   - **Verify**: `grep -q "TC-240" qa/exploratory/charters.md && grep -q "TC-241" qa/exploratory/charters.md`
 
+## Hallazgos fuera de alcance (no abren trabajo en esta US)
+
+- **H-1 — Un `429` del backend se convierte en un `500` en el storefront.**
+  - **Síntoma**: cuando la API responde `429` (rate limit del storefront, default
+    60 req/min), la página de ficha no lo trata como un caso esperado: el error
+    sube al boundary del segmento y el servidor devuelve **500**. Para un
+    buscador o un cliente, una limitación temporal se ve como una caída.
+  - **Cómo apareció**: TC-204 (sitemap) falló reportando que el sitemap anunciaba
+    una URL que devolvía 500. No era un producto roto — era el rate limit
+    disparado por el volumen de la propia suite. El diagnóstico costó tiempo
+    justamente porque el síntoma señalaba al sitemap y la causa estaba dos capas
+    más abajo.
+  - **Por qué importa**: el rate limit existe para picos de tráfico, que es
+    exactamente cuando el 500 aparecería — y un 500 no le dice al cliente ni al
+    crawler que reintente, mientras que un 429 con `Retry-After` sí. Además
+    ensucia la señal de errores de Sentry (US-019) mezclando saturación con
+    fallas reales.
+  - **Reproducción**: pegarle a `GET /v1/products/{slug}` más de
+    `STOREFRONT_RATE_LIMIT_MAX` veces en la ventana y luego cargar la ficha.
+  - **Fuera de alcance de US-002**: no lo cubre ningún AC de esta US; es
+    resiliencia del storefront ante degradación del backend (429/503/timeout),
+    transversal a todas las páginas públicas. **No se abre defecto acá** — queda
+    registrado para que el PO decida si merece US propia.
+
 ## Verification (suite-level)
 
 - [x] Aceptación verde — **22 escenarios** (incluye US-001 y US-003) *(2026-08-20)*
