@@ -958,3 +958,62 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: AUDIT-dsm-web-007-endurecimiento-panel-backend
+  us-id: null
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-web/2026-08-22/audit.md
+  audit-derived: true
+  # 1,8 h AI / ~3,5 h tradicional (6 tasks). FASE EXPAND de la migracion del panel a cookie
+  # httpOnly (AUDIT-DSM-WEB-007). Es chico porque la mitad ya existe: setSessionCookies emite
+  # las tres cookies desde US-014 y el seed crea la cuenta admin. Falta que AdminGuard las lea
+  # (hoy solo Bearer) y que el camino de bootstrapToken las emita (hoy solo el de credenciales).
+  # ADITIVO A PROPOSITO: al terminar, el guard acepta cookie O Bearer y el panel sigue
+  # funcionando sin cambiar una linea. Expand-and-contract sobre el borde de autenticacion, que
+  # es el unico lugar donde un despliegue a medias no puede dejar al dueno afuera de su tienda.
+  # Precedencia: la COOKIE gana sobre el header (es la que un script inyectado no puede leer).
+  # ORDEN OBLIGATORIO: antes que el change de frontend.
+  estimate-hours: 1.8
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-dsm-web-007-endurecimiento-panel-frontend-web
+  us-id: null
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-web/2026-08-22/audit.md
+  audit-derived: true
+  # 2,7 h AI / ~5,5 h tradicional (7 tasks). FASE DE MIGRACION: saca el JWT de sessionStorage,
+  # elimina authToken.ts, y el cliente pasa de Authorization a credentials:'include' + CSRF.
+  # EL GATE REAL NO ES OBVIO: el rewrite same-origin de ADR-0013 cubre /v1/auth/* y /v1/cart/*
+  # pero NO /v1/admin/*. Sin extenderlo la migracion funciona perfecto en local y EL PANEL QUEDA
+  # INACCESIBLE EN PRODUCCION (up.railway.app esta en la Public Suffix List, asi que la cookie
+  # del API nunca vuelve al host del sitio). De ahi que T3.1 sea un E2E contra la app CONSTRUIDA
+  # asertando sobre context.cookies(), calcado de auth-topology.spec.ts.
+  # El CSRF entra en la MISMA task que apaga el header: una ventana con cookie ambiente y sin
+  # double-submit seria estrictamente peor que el estado actual.
+  # isAuthenticated() pasa a ser OPTIMISTA reaccionando al 401 (design.md D3): con la cookie
+  # httpOnly el frontend no puede saber si hay sesion leyendola, y el mecanismo de reaccion ya
+  # existe (AppError kind:'unauthorized').
+  # DEFERRED tras este change: sacar el { token } del cuerpo y quitar la aceptacion de Bearer
+  # (fase de contraccion, solo segura una vez demostrado que nadie lo lee).
+  estimate-hours: 2.7
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null

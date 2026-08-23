@@ -182,14 +182,23 @@
   created: 2026-08-22
 - id: AUDIT-DSM-WEB-007
   title: "Admin token almacenado en `sessionStorage` — no en cookie `httpOnly`"
-  severity: Minor
+  severity: Major          # el reporte lo clasifica Major; el heurístico de extracción lo bajó a Minor
   category: "frontend-web"
   remediation-target: code
   source-audit: docs/audits/dsm-web/2026-08-22/audit.md
-  related-us: null
+  related-us: US-014
   status: deferred
-  confidence: medium
+  confidence: high
   created: 2026-08-22
+  # VÁLIDO (adminSession.ts:12 persiste en sessionStorage), pero NO se remedia inline: es un
+  # cambio de 6 superficies en 2 apps sobre el borde de autenticación — admin.guard.ts sólo lee
+  # Bearer, el camino de bootstrapToken no emite cookies, y el rewrite de ADR-0013 no cubre
+  # /v1/admin/* (sin eso la cookie NO vuelve en producción por la Public Suffix List).
+  # US-014 FE ya lo defirió a propósito: «panel del dueño migrado a cookies → Deferred: change
+  # de endurecimiento del panel — owner: Arquitecto», y tiene un task CERRADO que asserta que
+  # esos archivos no cambiaron (git diff --quiet HEAD -- apps/web/src/features/auth ...).
+  # Decisión del PO 2026-08-23: planificarlo como ese change (opción a). Ver
+  # openspec/changes/AUDIT-dsm-web-007-endurecimiento-panel-{backend,frontend-web}/
 - id: AUDIT-DSM-WEB-008
   title: "Sin `loading.tsx` global ni Suspense de streaming en el storefront layout"
   severity: Minor
