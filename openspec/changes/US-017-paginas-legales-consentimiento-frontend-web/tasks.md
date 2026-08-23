@@ -485,7 +485,10 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Fase 5: E2E sobre el HTML servido — 0,4 h
 
-- [ ] **T5.1** `e2e/legal-pages.spec.ts`: 200, sin login, enlazadas y en el sitemap (0,4 h)
+- [x] **T5.1** `e2e/legal-pages.spec.ts`: 200, sin login, enlazadas y en el sitemap (0,4 h) *(verde 2026-08-23 — 8 tests; F50: un solo `href="#"` pone rojo 3 casos)*
+  - **Hallazgo — mi commit de T3.2 había roto el build de producción**: `legalA11y.test.tsx` importaba `within` sin usarlo y `next build` corre lint. Los unit tests pasaban (vitest no lintea) y **CI no corre `build`** —el hallazgo que P2 ya dejó documentado—, así que sólo lo encontró el E2E, que sí buildea. Arreglado en este commit. Refuerza el caso de agregar `build` a CI para US-019.
+  - **`dateTime` en camelCase en el HTML servido**: React emite `<time dateTime="…">` y no `datetime`. No es un bug (los nombres de atributo son case-insensitive para el parser de HTML), pero el unit test de T1.1 pasa porque jsdom normaliza y el HTML crudo no. El assert del E2E es case-insensitive y lo documenta, para que nadie "arregle" el componente sin necesidad.
+  - **Un caso más que el plan**: el contexto sin cookies además verifica que las páginas **no dejen** cookies — complemento en runtime del guard estático de T4.2.
 
   - **Pattern**: se verifica el **HTML servido**, no el DOM hidratado — es lo que ve un crawler
     y un visitante sin JS, y es la mitad de AC-1/AC-2 que un test de componente no puede probar.
