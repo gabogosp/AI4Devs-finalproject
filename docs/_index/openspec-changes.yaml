@@ -21,6 +21,22 @@
 # Valor = id corto de la sesion, SOLO cuando ella lo confirmo de forma directa.
 # `sin-identificar` cuando no hay confirmacion — distinto de `null`, que significa
 # "nadie escribio el campo". Una correlacion plausible NO alcanza: va en comentario.
+# `sin-asignar` cuando el change esta PLANIFICADO pero nadie lo ejecuta todavia
+# (0 tasks cerradas). Es distinto de `sin-identificar`: ahi hay alguien trabajando
+# y no sabemos quien; aca no hay nadie.
+#
+# OBLIGATORIO AL CREAR LA ENTRADA (ratificado por el PO 2026-08-23). La convencion
+# ya se degrado una vez: se poblaron los 12 changes que existian el 2026-08-19 y
+# los 6 creados despues nacieron con `null`, asi que cuando aparecio un defecto
+# bloqueante no supimos a quien reportarlo. Un campo que se puebla una vez y no se
+# mantiene miente mas rapido de lo que informa. Todo `/plan-*-ticket` debe escribir
+# `assignee` en la entrada nueva: la sesion que planifica pone su id si ademas va a
+# ejecutar, y `sin-asignar` si no. Nunca `null`.
+#
+# La verificacion automatica de esto vive en el comando del framework
+# (`spekode/`, submodulo del repo privado ai-specs), que es COMPARTIDO por todos
+# los proyectos cliente: cambiarlo es un commit en ese otro repo y afecta a todos.
+# Queda planteado al PO, no aplicado unilateralmente desde aca.
 
 - name: US-001-admin-catalogo-productos-bootstrap-local-infrastructure
   us-id: US-001
@@ -488,7 +504,7 @@
   # CORRECCIÓN 2026-08-22: la entrada declaraba 9.8 h, pero las ocho fases de tasks.md
   # suman 12,3 h. El 9.8 era un número escrito antes de desglosar las fases. Vale el 12.3.
   estimate-hours: 12.3
-  assignee: null
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   branch: null
   pr-url: null
   created: 2026-08-22
@@ -607,7 +623,7 @@
   # PII antes de producción; ESA US TODAVÍA NO EXISTE (candidata US-021), este change sigue
   # sin implementar purga. OQ-BE-2 y OQ-BE-3 quedan con default.
   estimate-hours: 9.0
-  assignee: null
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   branch: null
   pr-url: null
   created: 2026-08-22
@@ -666,7 +682,7 @@
   # verificación del texto final; y (c) check-whatsapp-configured.mjs (US-018) sigue esperando
   # enganche en el mismo job.
   estimate-hours: 3.9
-  assignee: null
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   branch: null
   pr-url: null
   created: 2026-08-22
@@ -738,7 +754,7 @@
   # una: un deploy sin ella rompe login Y carrito. Ya falla ruidoso al arrancar; conviene
   # que quede dicho en el plan de despliegue de US-008/US-009.
   estimate-hours: 10.4
-  assignee: null
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   branch: null
   pr-url: null
   created: 2026-08-22
@@ -814,7 +830,7 @@
   # reescribe products (instantáneo con ~5.000 filas, pero conviene decirlo). Si se queda en
   # free tier, el despliegue debería documentar el techo de 15 RPM como limitación conocida.
   estimate-hours: 10.4
-  assignee: null
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   branch: null
   pr-url: null
   created: 2026-08-22
@@ -890,7 +906,7 @@
   # (plazo de abandono, 48 h) porque interactua con el vencimiento de 24 h de la preferencia
   # de MercadoPago que fijo US-009.
   estimate-hours: 13.6
-  assignee: null
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   branch: null
   pr-url: null
   created: 2026-08-22
