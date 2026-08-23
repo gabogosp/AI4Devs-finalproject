@@ -9,6 +9,7 @@ import { CatalogEventsModule } from '../observability/catalog-events.module';
 import { configureApp } from '../bootstrap';
 import { AuthModule } from '../auth/auth.module';
 import { CategoriesModule } from '../categories/categories.module';
+import { parseCorsOrigins } from '../config/env.validation';
 
 /**
  * Controles §7 del borde HTTP (security-standards): CORS con allowlist exacta
@@ -19,7 +20,26 @@ import { CategoriesModule } from '../categories/categories.module';
  * panel corre en otro origen que la API. Al auditarlo aparecieron también el
  * rate limit y los headers ausentes. Estos tests fijan los tres.
  */
-const ALLOWED = 'http://localhost:3200';
+
+/**
+ * El origen permitido se **deriva del entorno**, no se hardcodea.
+ *
+ * Hasta el 2026-08-22 este spec asumía `http://localhost:3200` y sus dos casos de
+ * preflight estaban rojos **desde el commit que los creó** (`276ce40`). La causa
+ * no era CORS: el `.env` de la raíz —no versionado, y con el puerto real del
+ * storefront— define `CORS_ALLOWED_ORIGINS=http://localhost:3100`, y
+ * `ConfigModule.forRoot()` lo carga **sobreescribiendo** el default que pone
+ * `test/jest.setup.js`. El spec pedía permiso para un origen que la allowlist no
+ * tenía, y con un origen no permitido el paquete `cors` no cortocircuita el
+ * `OPTIONS`: la request cae al router y devuelve 404.
+ *
+ * Derivarlo es además lo que ya hacían los demás specs del borde
+ * (`e2e-auth-session`, `e2e-auth-observability`): así el test verifica la política
+ * —refleja el origen exacto, nunca `*`— y no un puerto que depende de la máquina.
+ */
+const ALLOWED =
+  parseCorsOrigins(process.env.CORS_ALLOWED_ORIGINS ?? '')[0] ??
+  'http://localhost:3000';
 const FORBIDDEN = 'http://evil.example.com';
 
 describe('Borde HTTP — controles §7', () => {
@@ -57,7 +77,9 @@ describe('Borde HTTP — controles §7', () => {
     it('no hace match por sufijo (el bypass clásico)', async () => {
       const res = await request(app.getHttpServer())
         .options('/v1/admin/categories')
-        .set('Origin', 'http://localhost:3200.evil.com')
+        // Derivado del permitido: un origen que lo tiene como PREFIJO no puede
+        // pasar. Hardcodearlo dejaba el bypass sin probar si cambiaba el puerto.
+        .set('Origin', `${ALLOWED}.evil.com`)
         .set('Access-Control-Request-Method', 'GET');
 
       expect(res.headers['access-control-allow-origin']).toBeUndefined();
