@@ -293,6 +293,20 @@ language: es
 
 ## Verification (suite-level)
 
+> **Ejecutada el 2026-08-23 con el árbol quieto.** `@dsm/web`: 100 archivos / 648 tests (baseline
+> antes de esta US: 86/516). Monorepo: `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test` en 0 —
+> 126 suites / 1277 tests en `@dsm/api` + los 648 del web. Build de producción verde con las dos
+> rutas nuevas (`/admin/importar` estática, `/admin/importar/[id]` dinámica).
+>
+> Dos checks de esta lista fallaban **por cómo estaban escritos**, no por el código, y se corrigieron
+> acá: el grep de «tipos a mano» no excluía `src/api/generated` (donde esos tipos deben estar), y el
+> de `dangerouslySetInnerHTML` se disparaba contra un comentario que nombraba la API para explicar
+> que no se usa. Un guard que grita por su propia documentación se vuelve ruido y termina ignorado.
+>
+> Nota de entorno: el primer `build` murió con un `ENOENT` de `.next/server/pages-manifest.json`
+> después de compilar OK. No era el código: había **otro `next build` de otra sesión** corriendo
+> sobre el mismo `.next`. Se esperó a que terminara y el build salió verde sin cambiar nada.
+
 - [x] Unit + componente + integración del web pasan: `pnpm --filter @dsm/web test`
 - [x] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
 - [x] Build de producción verde (los Server/Client Components están bien separados):
