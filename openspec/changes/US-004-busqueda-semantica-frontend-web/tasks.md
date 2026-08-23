@@ -104,14 +104,14 @@
 
 ## Fase 1: Lógica pura — 0,75 h
 
-- [ ] **T1.1 `queryGuard.ts` — la regla de AC-5.** Normaliza (trim + colapso de espacios) y
+- [x] **T1.1 `queryGuard.ts` — la regla de AC-5.** Normaliza (trim + colapso de espacios) y
   decide si la consulta merece un request.
   - **Exit criterion**: `esConsultaUtil(q)` es `false` para `''`, `'  '`, `'a'` y `'  a  '`, y
     `true` desde 2 caracteres útiles; `normalizar(q)` colapsa espacios internos y **no** baja a
     minúsculas el texto que se envía (eso lo hace el servidor para su caché; el eco en pantalla
     tiene que mostrar lo que el cliente escribió).
   - **Verify**: `pnpm --filter @dsm/web test -- queryGuard`
-- [ ] **T1.2 `searchErrorCopy.ts` — el copy de los rechazos.** 422 (corta / larga), 429 con
+- [x] **T1.2 `searchErrorCopy.ts` — el copy de los rechazos.** 422 (corta / larga), 429 con
   `Retry-After`, 503 y fallo de red, en el tono de §10.2 (vos, sin jerga).
   - **Exit criterion**: los cinco casos devuelven un mensaje distinto, accionable y **sin** el
     `detail` crudo del servidor; el 429 incluye el tiempo de espera cuando el error lo trae y
