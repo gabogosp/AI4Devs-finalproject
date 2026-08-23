@@ -222,7 +222,7 @@ estimate-hours: 13.4
 
 ## Fase 2: Repositorio y persistencia del vector — 1,8 h
 
-- [ ] T2.1 `EnrichmentRepository.claimBatch` — claim atómico por lease (0,5 h)
+- [x] T2.1 `EnrichmentRepository.claimBatch` — claim atómico por lease (0,5 h)
   - **Pattern**: el `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED ...) RETURNING`
     completo está en `design.md` §Ejecución. Va por `$queryRaw` con parámetros posicionales
     (**nunca** interpolación de strings) — `per backend-node-standards.md §5 — el repositorio es
