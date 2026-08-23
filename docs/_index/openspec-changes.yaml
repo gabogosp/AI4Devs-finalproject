@@ -1,3 +1,32 @@
+# DESVIACIONES DECLARADAS DEL SCHEMA (2026-08-23) — leer antes de "corregir" datos de acá.
+#
+# `openspec-changes.schema.yaml` modela SÓLO changes derivados de una User Story, mientras el
+# skill `openspec-workflow` §«Audit-driven changes» y el comando /plan-from-audit PRESCRIBEN
+# changes con prefijo AUDIT-{target}-{NNN}-{slug}. El schema contradice al skill, y este repo
+# tiene 9 changes audit-derived. Las dos desviaciones son deliberadas:
+#
+#   1. `name` con prefijo AUDIT- (el pattern del schema exige ^US-[0-9]{3,}-…). Es el naming
+#      que el skill prescribe. Inventar un US-NNN sería peor: crearía una US fantasma en la
+#      trazabilidad PRD→US que el flow-auditor verifica.
+#   2. `discipline: docs` en 4 changes (el enum no lo tiene). El ejecutor es `doc-updater`, que
+#      existe como agente pero no tiene entrada en el enum. Marcarlos `backend` mentiría sobre
+#      quién los ejecuta.
+#
+# Lo que NO se desvía: el `name` de cada entrada coincide EXACTO con el nombre de la carpeta, y
+# la carpeta sí termina en su token de disciplina (…-docs, …-qa, …-backend, …-frontend-web).
+#
+# POR QUÉ ESTÁ ACÁ y no donde el skill dice: el skill prescribe openspec/config.yaml
+# (conventions.deviations) y ahí también está, pero ese archivo — igual que AGENTS.md y
+# docs/audits/ — está en .gitignore por el blindaje del entregable (para no fingerprint-ear el
+# framework). Ninguno sobrevive a un clon. Este índice sí se versiona, así que es el único
+# lugar durable para dejarlo dicho.
+#
+# Desaparece cuando el kernel agregue `docs` al enum y admita el prefijo AUDIT- en `name`.
+#
+# Gap adicional detectado: el `status` del schema es `in-progress` (con guion) y este repo usa
+# `in progress` (con espacio) en 11 entradas — la normalización de AUDIT-FLOW-007 fue hacia el
+# valor equivocado. No se toca ahora: cambiarlo son 11 ediciones y ningún consumidor lo valida.
+
 # Materialized index of OpenSpec changes.
 # Source of truth: openspec/changes/*/proposal.md frontmatter.
 # Owned per-entry by the planning agent that creates the change; status transitions
