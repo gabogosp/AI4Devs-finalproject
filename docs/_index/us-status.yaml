@@ -207,6 +207,14 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (frontend-web-developer)
   blocked_by: [US-001]
+  # 2026-08-23: el change de FE está IMPLEMENTED (12/12 tasks; 648 unit + 52 E2E verdes en
+  # @dsm/web). La US NO pasa a Done y son tres motivos concretos, no burocracia:
+  #   1. El checkbox de consentimiento y su captura son de US-008 (FE+BE) — el seam ya existe
+  #      (`CONSENT_COPY` en src/features/legal/routes.ts), pero nadie lo consume todavía.
+  #   2. El texto legal es PROVISIONAL con marcadores `[PENDIENTE: …]` visibles en la página.
+  #      Publicar así es incumplimiento con apariencia de cumplimiento. El gate es humano
+  #      (dueño + asesoría legal) porque el PO descartó el automático (OQ-FE-17 (a)).
+  #   3. OQ-FE-18 sigue abierta: ¿BE-US-017 existe o la absorbe US-008?
 - id: US-018
   slug: contacto-whatsapp
   status: In Progress

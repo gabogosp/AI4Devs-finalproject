@@ -13,7 +13,7 @@ heredan US-002/US-004/US-007/US-016 — no se re-decide por US.
 
 | Superficie | Rutas |
 |---|---|
-| Storefront (público, indexable) | `/` (home: rubros y subrubros), `/categorias/{slug}` (grilla paginada), `/productos/{slug}` (ficha), `/sitemap.xml`, `/robots.txt` |
+| Storefront (público, indexable) | `/` (home: rubros y subrubros), `/categorias/{slug}` (grilla paginada), `/productos/{slug}` (ficha), `/legales/privacidad`, `/legales/terminos`, `/sitemap.xml`, `/robots.txt` |
 | Panel del dueño (privado, `noindex`) | `/admin/acceso`, `/admin/productos`, `/admin/productos/nuevo`, `/admin/productos/{id}`, `/admin/categorias` |
 
 El panel responde con `X-Robots-Tag: noindex, nofollow` sobre `/admin/:path*`.
@@ -110,6 +110,40 @@ pnpm --filter @dsm/web typecheck
   ofrece un canal que no existe —el visitante escribe y nadie contesta—, que es peor que no
   ofrecerlo. El gate es `scripts/check-whatsapp-configured.mjs`, para enganchar al job de
   deploy (`Deferred: US-019`).
+
+### Páginas legales (US-017)
+
+- **Rutas**: `/legales/privacidad` y `/legales/terminos`. Son **públicas, sin login e
+  indexables a propósito** — no llevan `noindex`. Una política de privacidad que exige iniciar
+  sesión para leerse no cumple su función.
+- **Fuente única de las rutas**: `src/features/legal/routes.ts`. Ningún otro archivo escribe
+  `/legales/…` como literal, y un guard en `routes.test.ts` falla si aparece. **El checkout de
+  US-008 tiene que importar `LEGAL_ROUTES` y `CONSENT_COPY` desde ahí**, no escribir la ruta ni
+  el copy del consentimiento a mano: `CONSENT_COPY` ya existe justamente como ese seam.
+- **El contenido es código**: vive en `src/features/legal/content.ts` como dato tipado. No hay
+  CMS ni base de datos detrás, así que **cambiar una coma del texto legal es un deploy**. Es una
+  decisión consciente para dos documentos que cambian una vez por año; si el volumen o la
+  frecuencia crecen, ese es el disparador para reconsiderarla.
+- **Sin backend, sin cliente y sin telemetría**: son Server Components puros. Dos razones, y
+  ninguna es de performance: una página que cumple una obligación legal no puede caerse porque
+  la API esté caída, y **registrar quién leyó la política de privacidad** sería precisamente el
+  tipo de tratamiento que esa política tendría que declarar. Lo custodia
+  `src/features/legal/noBackendNoTracking.test.tsx`, que además del chequeo estático espía
+  `globalThis.fetch`, y el E2E verifica que las páginas tampoco **dejen** cookies.
+- **Versión y trazabilidad (AC-8)**: `LEGAL_TERMS_VERSION` en `content.ts` **debe** coincidir
+  con la `LEGAL_TERMS_VERSION` del backend, que es la que la orden guarda en
+  `orders.consent_terms_version` (US-008). Si divergen, la orden afirma que la persona aceptó
+  una versión que el sitio nunca publicó — un registro que contradice la evidencia, peor que no
+  tenerlo. Lo verifica `src/features/legal/versionContract.test.ts` en cada CI. **Al cambiar el
+  texto hay que subir la versión en los dos lados en el mismo cambio.**
+- ⚠ **Bloqueo de despliegue — el texto es PROVISIONAL**. Lo que falta está marcado
+  `[PENDIENTE: …]` **y se lee en la página publicada** (razón social, CUIT y domicilio legal;
+  plazo de retención). **No hay gate automático**: se descartó por decisión del PO
+  (OQ-FE-17 (a)), con el argumento de que un script que nadie invoca hasta que US-019 lo
+  engancha es protección de papel. Entonces la protección es humana y hay que nombrarla:
+  publicar antes de que el dueño y la asesoría legal entreguen el texto final **es
+  incumplimiento con apariencia de cumplimiento**, que es el peor de los dos estados. El gate
+  es el DoD de esta US más el checklist de despliegue de `Deferred: US-019`.
 
 ## Cuenta del cliente (US-014)
 

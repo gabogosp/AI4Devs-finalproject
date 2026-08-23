@@ -516,7 +516,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Fase 6: Documentación — 0,3 h
 
-- [ ] **T6.1** README del app: rutas legales, versionado y gate (0,3 h)
+- [x] **T6.1** README del app: rutas legales, versionado y gate (0,3 h) *(verde 2026-08-23 — los 5 greps del Verify pasan)*
 
   - **Pattern**: se extiende el `## Mapa de rutas` con las dos rutas nuevas y se agrega una
     sección hermana de `### Canal de contacto (WhatsApp — US-018)`, con el mismo tono operativo
@@ -544,21 +544,20 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Verification (suite-level)
 
-- [ ] Unit + componente + a11y pasan: `pnpm --filter @dsm/web test`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción verde: `pnpm --filter @dsm/web build`
-- [ ] E2E completa verde (no sólo el spec nuevo — el footer cambió y lo tocan otros specs):
-      `pnpm --filter @dsm/web test:e2e`
-- [ ] **Sin regresión de US-018**: `pnpm --filter @dsm/web test -- --run src/features/contact` y
+- [x] Unit + componente + a11y pasan: `pnpm --filter @dsm/web test` *(verde: 100 archivos / 648 tests)*
+- [x] Lint + typecheck limpios *(verde: 0 hallazgos, 0 errores TS)*
+- [x] Build de producción verde *(verde con `API_INTERNAL_ORIGIN` seteada, como documentó P2. Las dos rutas legales salen `○` **estáticas prerenderizadas**, 144 B cada una — confirmación independiente de que no hay fetch ni cliente)*
+- [x] E2E completa verde *(verde: **52/52**)*
+- [x] **Sin regresión de US-018** *(verde: los 3 casos de `site-contact.spec.ts` y los de `src/features/contact`)*: `pnpm --filter @dsm/web test -- --run src/features/contact` y
       `pnpm --filter @dsm/web test:e2e e2e/site-contact.spec.ts` (el footer es el archivo que
       este change modifica: si el canal de WhatsApp o los datos del local se rompen, es acá)
-- [ ] **Sin regresión de US-002**: `pnpm --filter @dsm/web test -- --run src/features/storefront/sitemap.test.ts`
+- [x] **Sin regresión de US-002** *(verde en la suite completa)*: `pnpm --filter @dsm/web test -- --run src/features/storefront/sitemap.test.ts`
       (el sitemap es el otro archivo entregado que se modifica)
-- [ ] **El contrato de versión con el backend está verificado** (AC-8):
+- [x] **El contrato de versión con el backend está verificado** (AC-8) *(verde: 4 tests)*:
       `pnpm --filter @dsm/web test -- --run src/features/legal/versionContract.test.ts`
-- [ ] **Ninguna página legal depende de la API ni lleva tracking**:
+- [x] **Ninguna página legal depende de la API ni lleva tracking** *(verde: 15 tests)*:
       `pnpm --filter @dsm/web test -- --run src/features/legal/noBackendNoTracking.test.tsx`
-- [ ] CI del monorepo: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [~] CI del monorepo: `pnpm -r lint && pnpm -r typecheck && pnpm -r test` — **no se corrió la suite recursiva completa** (cuelga la sesión: `@dsm/api` son 1012 tests con integración Postgres). Lo que este change controla, `@dsm/web`, está **verde de punta a punta**: lint, typecheck, 648 unit, build y 52 E2E. No se tocó código ajeno.
       *(al planificar, `pnpm -r lint` y `pnpm -r test` están rojos por trabajo de otras
       disciplinas en vuelo —US-014 frontend en `customerSession.test.ts`, US-006 backend en
       `e2e-imports-upload`— y `apps/api/src/common/e2e-security-edge.spec.ts` falla desde antes

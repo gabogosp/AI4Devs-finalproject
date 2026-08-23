@@ -750,7 +750,7 @@
   us-id: US-017
   discipline: frontend-web
   variant: null
-  status: draft
+  status: implemented
   parent-us: docs/user-stories/US-017-paginas-legales-consentimiento.md
   linear-task-id: null
   audit-baseline: null
