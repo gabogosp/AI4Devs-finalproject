@@ -378,7 +378,7 @@
   us-id: US-007
   discipline: qa
   variant: null
-  status: draft
+  status: in progress  # 6/22 cerradas 2026-08-23 (Fases 1-2); 4-5 bloqueadas por el FE
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
@@ -443,7 +443,7 @@
   # retryAfterSeconds, así que AC-10 se resuelve consumiéndolo y el deferral queda cancelado.
   # ADR-0013 propuesto en T0.3 (condicionado a que OQ-FE-1 se ratifique como opción (a)).
   estimate-hours: 10.1
-  assignee: 9a385021
+  assignee: bce7ffb7  # 9a385021 escribió el plan; bce7ffb7 lo ejecutó 33/33 — la convención dice quien EJECUTA
   branch: null
   pr-url: null
   created: 2026-08-20

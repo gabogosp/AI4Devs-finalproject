@@ -529,30 +529,32 @@ retiro sin riesgo) → `Deferred: US-008 / US-009` · enganche del guard al pipe
 
 ## Verification (suite-level)
 
-- [ ] Unit + componente verdes: `pnpm --filter @dsm/web test`
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción OK: `pnpm --filter @dsm/web build`
-- [ ] E2E verde (specs de US-001/002/003 + el nuevo): `pnpm --filter @dsm/web test:e2e`
-- [ ] **AC-5 — fuente única**: ningún archivo fuera de `whatsapp.ts` (ni de los tests) construye `https://wa.me/`
+- [x] Unit + componente verdes: `pnpm --filter @dsm/web test`
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`
+- [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`
+- [x] Build de producción OK: `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web build`
+  *(la env la exige el guard que introdujo US-014 FE; sin ella el build falla — ver el hallazgo
+  reportado sobre el workflow de CI, que no la define)*
+- [x] E2E verde (specs de US-001/002/003 + el nuevo): `pnpm --filter @dsm/web test:e2e`
+- [x] **AC-5 — fuente única**: ningún archivo fuera de `whatsapp.ts` (ni de los tests) construye `https://wa.me/`
   ```bash
   test -z "$(grep -rl 'https://wa\.me' apps/web/src apps/web/app | grep -Ev '\.test\.(ts|tsx)$|features/contact/whatsapp\.ts$')" && echo OK
   ```
-- [ ] **Sin `loading.tsx` en `(storefront)`** (US-003 D1.bis / F59 — una boundary de Suspense
+- [x] **Sin `loading.tsx` en `(storefront)`** (US-003 D1.bis / F59 — una boundary de Suspense
   compromete el 200 y mata el 404 real). El `(admin)` **sí** tiene el suyo y debe conservarlo:
   ```bash
   test -z "$(find 'apps/web/app/(storefront)' -name loading.tsx)" && test -f 'apps/web/app/(admin)/loading.tsx' && echo OK
   ```
-- [ ] **AC-4 — sin red nueva**: el único `fetch` de la app sigue siendo `customFetch` (F48)
+- [x] **AC-4 — sin red nueva**: el único `fetch` de la app sigue siendo `customFetch` (F48)
   ```bash
   test -z "$(grep -rln 'fetch(' apps/web/src apps/web/app | grep -Ev '\.test\.(ts|tsx)$|lib/http/client\.ts$')" && echo OK
   ```
-- [ ] Codegen del contrato sin cambios (este change no toca la API):
+- [x] Codegen del contrato sin cambios (este change no toca la API):
   `test -z "$(git diff --name-only -- apps/web/src/api/generated)" && echo OK`
-- [ ] `dangerouslySetInnerHTML` sólo para JSON-LD (`security-standards` §6 / `frontend-standards` §12.1) — sin usos nuevos
-- [ ] Reconciliación contra el `design.md` completo (F51): D1–D11 construidas o con `Deferred:` declarado
-- [ ] Índice actualizado: `docs/_index/openspec-changes.yaml` refleja `status` y `estimate-hours`
-- [ ] PR describe el ticket US-018 y apunta a `openspec/changes/US-018-contacto-whatsapp-frontend-web/`
+- [x] `dangerouslySetInnerHTML` sólo para JSON-LD (`security-standards` §6 / `frontend-standards` §12.1) — sin usos nuevos
+- [x] Reconciliación contra el `design.md` completo (F51): D1–D11 construidas o con `Deferred:` declarado
+- [x] Índice actualizado: `docs/_index/openspec-changes.yaml` refleja `status` y `estimate-hours`
+- [x] PR describe el ticket US-018 y apunta a `openspec/changes/US-018-contacto-whatsapp-frontend-web/`
   (rama y commits per `git-workflow-standards.md`; este repo integra por
   `feature-entrega2-GOSP`, así que `branch` queda `null` hasta que exista el PR — F42/F45)
 </content>
