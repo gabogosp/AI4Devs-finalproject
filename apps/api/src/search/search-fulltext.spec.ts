@@ -167,3 +167,80 @@ describe('SearchRepository.fullText (integration, search-fulltext)', () => {
     }
   });
 });
+
+/**
+ * La normalización del score léxico (hallazgo del arnés de relevancia, T6.1).
+ *
+ * `ts_rank` y la similitud cosine viven en escalas distintas: **medido**, un match léxico exacto
+ * de SKU puntúa ~0,10 y un buen match vectorial ~0,85. Sin normalizar, el umbral
+ * `SEARCH_MIN_SCORE` —calibrado para cosine— haría que el camino degradado nunca reporte
+ * `confidence: high`, ni con la coincidencia más exacta posible, y el `blend` de
+ * `SEARCH_LEXICAL_WEIGHT` sumaría 0,10 contra 0,85: la perilla existiría y no haría nada.
+ */
+describe('SearchRepository.fullText — escala del score', () => {
+  const prisma = new PrismaService();
+  const config = new ConfigService({}) as unknown as ConfigService;
+  const repo = new SearchRepository(prisma, config);
+  const corrida = idDeCorrida();
+
+  beforeAll(async () => {
+    await prisma.$connect();
+    await prisma.$executeRawUnsafe(`DELETE FROM products WHERE slug LIKE 'esc-%'`);
+    const categoryId = await asegurarCategoria(prisma, `esc-${corrida}`, `Esc ${corrida}`);
+    for (const [clave, nombre] of [
+      ['exacto', `Amoladora angular ${corrida}`],
+      ['parcial', `Amoladora de banco distinta ${corrida}`],
+    ]) {
+      await prisma.product.create({
+        data: {
+          sku: `ESC-${corrida}-${clave}`,
+          slug: `esc-${corrida}-${clave}`,
+          name: nombre,
+          price_ars_cents: 100_000,
+          stock: 1,
+          status: 'published',
+          category_id: categoryId,
+        },
+      });
+    }
+  }, 60_000);
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  it('el mejor resultado vale 1: el score es comparable con el del kNN', async () => {
+    const resultados = (await repo.fullText(`amoladora angular ${corrida}`, 20)).filter((r) =>
+      r.slug.startsWith(`esc-${corrida}`),
+    );
+
+    expect(resultados.length).toBeGreaterThan(0);
+    expect(Number(resultados[0].score)).toBeCloseTo(1, 5);
+    // Y sigue siendo un ranking: los demás quedan por debajo, no todos en 1.
+    for (const r of resultados.slice(1)) {
+      expect(Number(r.score)).toBeLessThanOrEqual(1);
+      expect(Number(r.score)).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('el orden por relevancia se conserva tras normalizar', async () => {
+    const resultados = (await repo.fullText(`amoladora angular ${corrida}`, 20)).filter((r) =>
+      r.slug.startsWith(`esc-${corrida}`),
+    );
+    const scores = resultados.map((r) => Number(r.score));
+
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+    // El que tiene las dos palabras del nombre gana al que tiene una.
+    expect(resultados[0].slug).toBe(`esc-${corrida}-exacto`);
+  });
+
+  it('un acierto léxico exacto YA puede superar el umbral de confianza', async () => {
+    // Antes de normalizar, un ~0,10 contra `SEARCH_MIN_SCORE=0.55` hacía que toda respuesta
+    // degradada se viera dudosa aunque fuera perfecta.
+    const [top] = (await repo.fullText(`amoladora angular ${corrida}`, 20)).filter((r) =>
+      r.slug.startsWith(`esc-${corrida}`),
+    );
+
+    expect(Number(top.score)).toBeGreaterThan(0.55);
+  });
+});

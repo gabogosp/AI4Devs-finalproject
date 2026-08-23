@@ -1,0 +1,75 @@
+{
+  "_comentario": [
+    "Casos semilla del arnés de relevancia (US-004 T6.1, AC-2).",
+    "",
+    "Son 8 y no 30 a propósito: la batería completa es de QA (qa-plan de US-004, QA-004-REL-1).",
+    "Acá se entrega el ARNÉS ejecutable con casos suficientes para calibrar el umbral.",
+    "",
+    "Las consultas salen del PRD y del design-system —la primera es literalmente el ejemplo",
+    "que el readme usa para explicar el diferenciador— y cubren las cinco clases que el",
+    "qa-plan define: coloquial, técnico parcial, gremio, ambigua y negative-match.",
+    "",
+    "`expected` son SLUGS del catálogo de seed. Si el catálogo no los tiene, el script lo",
+    "reporta como `slug_inexistente` en vez de contarlo como fallo de relevancia: son dos",
+    "problemas distintos y confundirlos haría que un catálogo chico se lea como una búsqueda",
+    "mala."
+  ],
+  "cases": [
+    {
+      "id": "coloquial-colgar-cuadro",
+      "clase": "coloquial",
+      "query": "algo para colgar un cuadro en una pared dura",
+      "expected": ["taladro-percutor-650w"],
+      "por_que": "El ejemplo del readme. El cliente no sabe que necesita una mecha widia ni un tarugo: describe la tarea. Es el caso que justifica la búsqueda semántica sobre el catálogo de una ferretería."
+    },
+    {
+      "id": "coloquial-hacer-agujero-pared",
+      "clase": "coloquial",
+      "query": "necesito hacer un agujero en la pared",
+      "expected": ["taladro-percutor-650w"],
+      "por_que": "Misma intención, otras palabras. Si una anda y la otra no, el embedding está capturando las palabras y no el sentido."
+    },
+    {
+      "id": "tecnico-parcial-percutor",
+      "clase": "tecnico-parcial",
+      "query": "taladro percutor",
+      "expected": ["taladro-percutor-650w"],
+      "por_que": "El cliente que sí sabe el nombre técnico. Tiene que funcionar por las dos vías: es el caso donde el full-text también acierta, así que un fallo acá señala un problema de plomería y no de relevancia."
+    },
+    {
+      "id": "tecnico-parcial-sku",
+      "clase": "tecnico-parcial",
+      "query": "FER-001",
+      "expected": ["taladro-percutor-650w"],
+      "por_que": "Búsqueda por SKU exacto: el caso que el vector hace PEOR y el léxico hace perfecto. Es la razón por la que `sku` entra en el `search_document` y por la que existe la perilla `SEARCH_LEXICAL_WEIGHT`."
+    },
+    {
+      "id": "gremio-refrigerista-gas",
+      "clase": "gremio",
+      "query": "gas para cargar un equipo de aire",
+      "expected": ["gas-refrigerante-r134a-1kg"],
+      "por_que": "Un refrigerista pide por función, no por nombre comercial. Es el segmento que el PRD nombra explícitamente (plomeros, electricistas, refrigeristas)."
+    },
+    {
+      "id": "gremio-compresor",
+      "clase": "gremio",
+      "query": "compresor chico para heladera",
+      "expected": ["compresor-1-4-hp"],
+      "por_que": "«1/4 HP» es la especificación; «chico» es como se pide. El vector tiene que salvar esa distancia."
+    },
+    {
+      "id": "ambigua-algo-para-arreglar",
+      "clase": "ambigua",
+      "query": "algo para arreglar una pérdida de agua",
+      "expected": [],
+      "por_que": "Ambigua a propósito y sin producto correcto en el catálogo de seed: lo que se verifica es que la respuesta NO sea un callejón sin salida — tiene que traer `fallback.suggested_categories`. Un `expected` vacío significa «no exijo acierto, exijo que ofrezca salida»."
+    },
+    {
+      "id": "negative-match-sin-sentido",
+      "clase": "negative-match",
+      "query": "zapatillas de running talle 42",
+      "expected": [],
+      "por_que": "Nada que ver con una ferretería. El sistema tiene que decir `none` o `low` con fallback, y NO inventar un match con confianza alta. Un acierto acá sería una señal de que el umbral está demasiado bajo."
+    }
+  ]
+}

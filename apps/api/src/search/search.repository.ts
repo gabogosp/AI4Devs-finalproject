@@ -79,23 +79,52 @@ export class SearchRepository {
    * Encuentra por SKU y por palabra del nombre **aunque el producto no tenga embedding**, que
    * es lo que hace que AC-9 y AC-4 se sostengan juntos: el catálogo sigue siendo buscable
    * antes de la primera corrida del enriquecimiento.
+   *
+   * **El `score` se normaliza al mejor del conjunto, y eso no es cosmética.** `ts_rank` y la
+   * similitud cosine viven en escalas distintas: un match léxico exacto de SKU puntúa ~0,10 y
+   * un buen match vectorial ~0,85. Medido. Sin normalizar, dos cosas se rompen en silencio:
+   *
+   * 1. El umbral `SEARCH_MIN_SCORE` (0,55, calibrado para cosine) haría que el camino degradado
+   *    **nunca** reporte `confidence: high` — ni con la coincidencia más exacta posible—, así
+   *    que la respuesta del plan B siempre se vería dudosa aunque sea perfecta.
+   * 2. El `blend` de `SEARCH_LEXICAL_WEIGHT` sumaría 0,10 contra 0,85: la perilla existiría en
+   *    la config y no haría nada perceptible.
+   *
+   * La normalización es **relativa al resultado** (el mejor vale 1) porque un `ts_rank` no
+   * tiene techo absoluto contra el que dividir. La consecuencia hay que decirla: el `score` del
+   * camino léxico es un **rango relativo**, no una similitud absoluta comparable entre
+   * consultas distintas.
    */
   async fullText(consulta: string, limit: number): Promise<ScoredProduct[]> {
     return this.prisma.$queryRaw<ScoredProduct[]>`
-      SELECT p.slug,
-             p.name,
-             p.price_ars_cents,
-             p.stock,
-             p.image_url,
-             c.name AS category_name,
-             ts_rank(p.search_document, q) AS score
-        FROM products p
-        LEFT JOIN categories c ON c.id = p.category_id,
-             websearch_to_tsquery('spanish', ${consulta}) AS q
-       WHERE p.status = 'published'
-         AND p.search_document @@ q
-       ORDER BY score DESC
-       LIMIT ${limit}::int`;
+      WITH crudos AS (
+        SELECT p.slug,
+               p.name,
+               p.price_ars_cents,
+               p.stock,
+               p.image_url,
+               c.name AS category_name,
+               ts_rank(p.search_document, q) AS rank
+          FROM products p
+          LEFT JOIN categories c ON c.id = p.category_id,
+               websearch_to_tsquery('spanish', ${consulta}) AS q
+         WHERE p.status = 'published'
+           AND p.search_document @@ q
+         ORDER BY rank DESC
+         LIMIT ${limit}::int
+      )
+      SELECT slug,
+             name,
+             price_ars_cents,
+             stock,
+             image_url,
+             category_name,
+             -- NULLIF evita la division por cero cuando todos los rangos son 0 (posible con
+             -- pesos de tsvector nulos): en ese caso el score queda NULL, ordena al final por
+             -- NULLS LAST y el resultado se clasifica como poco confiable, que es lo correcto.
+             (rank / NULLIF(MAX(rank) OVER (), 0))::double precision AS score
+        FROM crudos
+       ORDER BY score DESC NULLS LAST`;
   }
 
   /**

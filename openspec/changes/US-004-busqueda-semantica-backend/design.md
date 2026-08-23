@@ -163,6 +163,45 @@ bajo el umbral; si no hay ninguno, de las categorías raíz con más productos p
 Mechas y brocas». Es honesto —dice dónde miró, no finge entender— y **no cuesta una
 llamada** (OQ-BE-3).
 
+#### Calibración medida del umbral (T6.2, 2026-08-23)
+
+> ⚠ **Medido sobre catálogo SIN enriquecer — recalibrar tras la primera corrida de US-005.**
+> Sin `GEMINI_API_KEY` el embedder de consultas queda `unavailable`, así que las 8 consultas
+> semilla corrieron **degradadas**: lo que la tabla mide es el camino **full-text**, no el
+> semántico. El catálogo de seed son 4 productos publicados y **0 con vector**
+> (`embedding_coverage: 0`).
+
+Barrido con `pnpm --filter @dsm/api relevance -- --sweep=0.4,0.5,0.55,0.6,0.7`:
+
+| `SEARCH_MIN_SCORE` | % acierto con confianza alta | % acierto en top-5 |
+|---|---|---|
+| 0,40 | 33,3 % | 33,3 % |
+| 0,50 | 33,3 % | 33,3 % |
+| **0,55** | 33,3 % | 33,3 % |
+| 0,60 | 33,3 % | 33,3 % |
+| 0,70 | 33,3 % | 33,3 % |
+
+**El umbral se queda en 0,55**, y la tabla explica por qué la decisión **no puede tomarse
+todavía**: el porcentaje es plano en los cinco valores. Eso no significa que el umbral no
+importe; significa que en esta corrida no hay ningún resultado cuyo score caiga *entre* 0,40 y
+0,70 — los dos aciertos son coincidencias léxicas normalizadas a 1,0 y los seis fallos no
+devuelven nada. Un barrido informativo necesita resultados en la zona gris, y esos aparecen
+recién con embeddings reales.
+
+**Hallazgo del arnés que sí cambió el código.** La primera corrida reveló que `ts_rank` y la
+similitud cosine viven en **escalas distintas**: un match léxico exacto de SKU puntuaba ~0,10
+contra un umbral de 0,55 calibrado para cosine. Consecuencias, las dos silenciosas:
+
+1. El camino degradado **nunca** podía reportar `confidence: high` —ni con la coincidencia más
+   exacta posible—, así que toda respuesta del plan B se veía dudosa aunque fuera perfecta.
+2. `blend` sumaba 0,10 contra 0,85: `SEARCH_LEXICAL_WEIGHT` existía en la configuración y su
+   efecto habría sido imperceptible. La perilla que el plan reserva para «si la batería no llega
+   al 70 %, subir el peso léxico» no habría funcionado.
+
+`fullText` ahora normaliza el `ts_rank` **al mejor del conjunto** (el top vale 1). La
+contrapartida hay que decirla: el score léxico pasa a ser un **rango relativo**, no una
+similitud absoluta comparable entre consultas distintas.
+
 ### D6 — Caché en proceso (tercera instancia de ADR-0012/0014)
 
 Se cachea **el vector de la consulta**, no los resultados. La distinción importa:

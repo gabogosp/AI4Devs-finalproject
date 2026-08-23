@@ -467,7 +467,7 @@ language: es
 
 ## Fase 6: Arnés de relevancia (AC-2) — 1,0 h
 
-- [ ] T6.1 Script ejecutable de la batería de relevancia
+- [x] T6.1 Script ejecutable de la batería de relevancia
   - **Pattern**: script en `apps/api/scripts/` que corre consultas contra la búsqueda real
     y reporta el porcentaje con ≥1 producto esperado en el top-5. **El arnés es
     dev-owned; la batería completa y el gate son de QA** (US §7, `qa-backend-standards.md`
@@ -490,7 +490,7 @@ language: es
     embeddings, el arnés mide sobre un catálogo sin enriquecer. `Deferred: /plan-qa US-004
     (batería de ~30) + US-005 (datos) — owner: QA`
 
-- [ ] T6.2 Calibración del umbral con el arnés
+- [x] T6.2 Calibración del umbral con el arnés
   - **Exit criterion**: queda documentado en `design.md` §D5 el valor de `SEARCH_MIN_SCORE`
     **medido** (no el 0,55 supuesto) sobre los 8 casos semilla, con la tabla de
     porcentaje por umbral probado (0,4 / 0,5 / 0,55 / 0,6 / 0,7). Si el catálogo todavía
