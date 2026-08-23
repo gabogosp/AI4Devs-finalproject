@@ -320,6 +320,23 @@ language: es
 ## Fase 4: Observabilidad — 0,8 h
 
 - [ ] T4.1 `SearchEventsService`
+  - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
+    `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
+    el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese
+    era exactamente el patrón que la auditoría encontró repetido cuatro veces, con
+    contadores invisibles desde afuera. `MetricsModule` es `@Global`, así que se inyecta
+    sin importarlo.
+    ```ts
+    constructor(@Optional() private readonly metrics?: MetricsService) {}
+    // en emit():
+    this.metrics?.increment('search', name);   // → dsm_search_events_total{event="..."}
+    ```
+    `@Optional()` sigue el precedente de `CatalogEventsService`: permite construir el
+    servicio a mano en los unit tests sin arrastrar el contenedor.
+    **Etiqueta única `event`** — ningún id de orden, de pago, de cliente ni el texto de
+    una búsqueda entra como dimensión (`observability-standards.md` §9; el spec de
+    `metrics.service.ts` tiene un assert que falla si alguien agrega una segunda clave).
+
   - **Pattern**: calco de `CatalogEventsService`/`AuthEventsService` — contador **por
     nombre de evento**, nunca una dimensión por consulta (cardinalidad infinita) — `per
     observability-standards.md §9` y `per observability-patterns §3.3`.
@@ -329,7 +346,9 @@ language: es
     consulta va en la línea de log** (decisión OQ-BE-5: es la única fuente del KPI de
     relevancia y de la demanda no cubierta) y **nunca** como etiqueta de métrica.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=search-events`
-    (los 6 nombres tipan; `count` incrementa por nombre; la línea de log contiene `query`,
+    (los 6 nombres tipan; `count` incrementa por nombre; **y el valor sale por
+    `MetricsService.render()` como `dsm_search_events_total{event="..."}`** —lo que el
+    contador local NO probaba; la línea de log contiene `query`,
     `result_count`, `confidence`, `degraded` y `trace_id`, y **nada más** —comparación de
     conjunto de claves; el contador **no** se segmenta por consulta: 50 consultas
     distintas dejan `count('search.performed') === 50` y **un solo** contador)

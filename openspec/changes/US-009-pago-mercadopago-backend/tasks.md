@@ -539,6 +539,23 @@ language: es
 ## Fase 5: Observabilidad — 0,6 h
 
 - [ ] T5.1 `PaymentEventsService`
+  - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
+    `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
+    el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese
+    era exactamente el patrón que la auditoría encontró repetido cuatro veces, con
+    contadores invisibles desde afuera. `MetricsModule` es `@Global`, así que se inyecta
+    sin importarlo.
+    ```ts
+    constructor(@Optional() private readonly metrics?: MetricsService) {}
+    // en emit():
+    this.metrics?.increment('payments', name);   // → dsm_payments_events_total{event="..."}
+    ```
+    `@Optional()` sigue el precedente de `CatalogEventsService`: permite construir el
+    servicio a mano en los unit tests sin arrastrar el contenedor.
+    **Etiqueta única `event`** — ningún id de orden, de pago, de cliente ni el texto de
+    una búsqueda entra como dimensión (`observability-standards.md` §9; el spec de
+    `metrics.service.ts` tiene un assert que falla si alguien agrega una segunda clave).
+
   - **Pattern**: calco de `AuthEventsService` — contador **por nombre de evento**
     (nunca una dimensión por orden: 5 000 órdenes serían 5 000 series) y el
     identificador **sólo** en la línea de log — `per observability-standards.md §9` y
@@ -550,7 +567,9 @@ language: es
     La firma **no acepta** email, nombre ni teléfono, y el módulo **no importa** nada
     de `orders` que los exponga.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payment-events`
-    (`payment-events.spec.ts`: los 8 nombres tipan; `count` incrementa por nombre; la
+    (`payment-events.spec.ts`: los 8 nombres tipan; `count` incrementa por nombre; **y el valor sale por
+    `MetricsService.render()` como `dsm_payments_events_total{event="..."}`** —lo que el
+    contador local NO probaba—; la
     línea logueada tiene `order_id`, `payment_id`, `trace_id` y **nada más**
     —comparación de claves exacta)
 

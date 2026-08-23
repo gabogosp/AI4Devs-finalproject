@@ -346,6 +346,23 @@ language: es
 ## Fase 4: Observabilidad y PII — 0,8 h
 
 - [ ] T4.1 `CheckoutEventsService`
+  - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
+    `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
+    el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese
+    era exactamente el patrón que la auditoría encontró repetido cuatro veces, con
+    contadores invisibles desde afuera. `MetricsModule` es `@Global`, así que se inyecta
+    sin importarlo.
+    ```ts
+    constructor(@Optional() private readonly metrics?: MetricsService) {}
+    // en emit():
+    this.metrics?.increment('checkout', name);   // → dsm_checkout_events_total{event="..."}
+    ```
+    `@Optional()` sigue el precedente de `CatalogEventsService`: permite construir el
+    servicio a mano en los unit tests sin arrastrar el contenedor.
+    **Etiqueta única `event`** — ningún id de orden, de pago, de cliente ni el texto de
+    una búsqueda entra como dimensión (`observability-standards.md` §9; el spec de
+    `metrics.service.ts` tiene un assert que falla si alguien agrega una segunda clave).
+
   - **Pattern**: calco de `CartEventsService` / `AuthEventsService` — contador **por
     nombre de evento** (nunca una dimensión por orden ni por email: haría explotar la
     cardinalidad) y el identificador **sólo** en la línea de log — `per
@@ -358,7 +375,9 @@ language: es
     email es reversible por diccionario, así que sigue siendo el dato con un paso extra —
     la misma nota que `AuthEventsService` dejó escrita).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=checkout-events`
-    (`checkout-events.spec.ts`: los 5 nombres tipan; `count` incrementa por nombre; la
+    (`checkout-events.spec.ts`: los 5 nombres tipan; `count` incrementa por nombre; **y el valor sale por
+    `MetricsService.render()` como `dsm_checkout_events_total{event="..."}`** —lo que el
+    contador local NO probaba—; la
     línea logueada tiene **exactamente** las claves `event`, `entity_id`, `trace_id`
     —comparación de conjunto de claves, falla si aparece una sexta)
 

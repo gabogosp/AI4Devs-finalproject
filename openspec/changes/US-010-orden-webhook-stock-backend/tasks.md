@@ -414,7 +414,24 @@ language: es
 
 ## Fase 7: Observabilidad — 1,6 h
 
-- [ ] T7.1 `OrderEventsService` con los 10 eventos
+- [ ] T7.1 `OrderEventsService`
+  - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
+    `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
+    el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese
+    era exactamente el patrón que la auditoría encontró repetido cuatro veces, con
+    contadores invisibles desde afuera. `MetricsModule` es `@Global`, así que se inyecta
+    sin importarlo.
+    ```ts
+    constructor(@Optional() private readonly metrics?: MetricsService) {}
+    // en emit():
+    this.metrics?.increment('orders', name);   // → dsm_orders_events_total{event="..."}
+    ```
+    `@Optional()` sigue el precedente de `CatalogEventsService`: permite construir el
+    servicio a mano en los unit tests sin arrastrar el contenedor.
+    **Etiqueta única `event`** — ningún id de orden, de pago, de cliente ni el texto de
+    una búsqueda entra como dimensión (`observability-standards.md` §9; el spec de
+    `metrics.service.ts` tiene un assert que falla si alguien agrega una segunda clave).
+ con los 10 eventos
   - **Pattern**: contador por nombre de evento, identificadores sólo en la línea de log —
     `per observability-standards.md §9`.
   - **Exit criterion**: declara `order.confirmed`, `order.cancelled_no_stock`,
@@ -422,7 +439,9 @@ language: es
     `payment.duplicate_ignored`, `stock.decrement_blocked`, `refund.enqueued`,
     `refund.failed`, `reconcile.recovered`, `cleanup.cancelled`. La firma **no acepta** PII.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=order-events`
-    (los 10 nombres tipan; `count` incrementa por nombre; el conjunto de claves de la línea
+    (los 10 nombres tipan; `count` incrementa por nombre; **y el valor sale por
+    `MetricsService.render()` como `dsm_orders_events_total{event="..."}`** —lo que el
+    contador local NO probaba; el conjunto de claves de la línea
     de log es exactamente el esperado)
 
 - [ ] T7.2 Instrumentación de los 10 eventos + el runbook
