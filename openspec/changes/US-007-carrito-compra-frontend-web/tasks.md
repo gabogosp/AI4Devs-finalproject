@@ -208,7 +208,7 @@ language: es
     asserta que `total_ars_cents` mostrado es **exactamente** el del `CartView` mockeado,
     incluso si la suma de subtotales de las líneas difiere —prueba que no se recalcula)
 
-- [ ] T2.2 `QuantityStepper` — acotado al stock y operable por teclado
+- [x] T2.2 `QuantityStepper` — acotado al stock y operable por teclado
   - **Pattern**: `per design-system §7.11 — stepper acotado al stock disponible; no permite
     superarlo` y `per qa-frontend-standards.md §19 — operable por teclado, nombre accesible
     por control`.
@@ -218,6 +218,14 @@ language: es
     Mientras la línea está mutando, ambos botones quedan deshabilitados (OQ-FE-1:
     pesimista) y los cambios se agrupan con debounce de **400 ms**. Operable con
     `Tab` + `Enter`/`Space` y con flechas ↑/↓ sobre el input.
+  - **Nota de ejecución (fake timers)**: el `Verify` pedía «con timers falsos», y así **no
+    funciona**: `vi.useFakeTimers()` falsea también `queueMicrotask`, `performance` y
+    `requestAnimationFrame`, y `userEvent`/RTL esperan promesas agendadas por ahí — los 5 casos
+    que dependían del reloj timeouteaban a 5 s cada uno, y acotar con `toFake` no alcanzó
+    (tres intentos). Se resolvió al revés: la ventana del debounce es **inyectable**
+    (`debounceMs`, default 400 en producción, 20 ms en el test) y se espera con `waitFor`.
+    Es determinista y prueba lo mismo. Un test asserta que el default sigue siendo 400 ms, así
+    que la inyección no puede volverse una puerta para cambiar el comportamiento real.
   - **Verify**: `pnpm --filter @dsm/web test -- QuantityStepper` (RTL + `userEvent`: con
     `max_quantity: 2` el «+» queda `disabled` al llegar a 2; en 1 el «−» está `disabled`;
     los `aria-label` contienen el nombre del producto; 5 clics rápidos producen **una sola**
