@@ -232,7 +232,7 @@ language: es
     llamada al callback (debounce, con timers falsos); con `mutating` ambos `disabled`;
     navegación completa por teclado sin mouse)
 
-- [ ] T2.3 `CartItemRow` — línea con precio, subtotal y avisos del contrato
+- [x] T2.3 `CartItemRow` — línea con precio, subtotal y avisos del contrato
   - **Pattern**: formato de moneda **sólo** por el helper existente
     `lib/format/currency.ts` (el mismo en server y client, `per design-system §7.4 — evita
     hydration mismatch`); estado de disponibilidad con texto, **nunca color como único
