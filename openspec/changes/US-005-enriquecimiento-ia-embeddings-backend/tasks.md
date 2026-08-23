@@ -438,7 +438,7 @@ estimate-hours: 13.4
     `ENRICHMENT_RATE_LIMIT_MAX=2` y 3 POST ⇒ el tercero es 429 con `Retry-After` presente;
     sin token ⇒ 401)
 
-- [ ] T4.3 `PATCH /v1/admin/products/{id}` acepta `description_enriched` → curada + re-embed (AC-7) (0,5 h)
+- [x] T4.3 `PATCH /v1/admin/products/{id}` acepta `description_enriched` → curada + re-embed (AC-7) (0,5 h)
   - **Pattern**: agregar el campo al `UpdateProductDto` existente (`@IsOptional() @IsString()`)
     y, en el service de productos, escribir `description_curated = true` +
     `enrichment_done = false` + `enrichment_source_hash = null` en la **misma** actualización —
@@ -458,7 +458,7 @@ estimate-hours: 13.4
     `description_curated` y `enrichment_done` sin cambios; PATCH de `description_raw` sobre un
     producto curado ⇒ `description_enriched` **idéntica** tras la corrida)
 
-- [ ] T4.4 Cableado del módulo (0,2 h)
+- [x] T4.4 Cableado del módulo (0,2 h)
   - **Pattern**: `EnrichmentModule` importado en `AppModule` con `ThrottlerModule` del throttler
     nombrado, siguiendo el orden y el estilo de los módulos existentes.
   - **Exit criterion**: la app **arranca** con el módulo cableado (y arranca igual sin

@@ -63,14 +63,19 @@ import { AuthEventsService } from '../observability/auth-events.service';
           limit: config.get<number>('CART_RATE_LIMIT_MAX', 120),
         },
         // §7.3 — cuarto throttler nombrado: el enriquecimiento IA (US-005). Es la única
-        // superficie donde un request de más cuesta PLATA (llamadas al proveedor), así que
-        // tiene su propio cubo en vez de compartir el de `auth`: si compartieran, unas
-        // cuantas corridas dejarían al dueño sin poder entrar al panel. `Number()` explícito
-        // porque `get()` lee process.env primero y ahí todo valor es string.
+        // superficie donde un request de más cuesta **plata** (llamadas pagas al proveedor).
+        //
+        // El `limit` de acá es un techo deliberadamente inalcanzable, y el presupuesto real
+        // (`ENRICHMENT_RATE_LIMIT_MAX`, 6/min) va como `@Throttle({ enrichment: … })` en el
+        // handler. La razón es concreta: `@nestjs/throttler` aplica **todos** los throttlers
+        // nombrados a **toda** ruta guardada, así que un tope chico acá se lo impondría
+        // también al storefront, al carrito y a auth — pasó, y rompió 8 suites. La
+        // alternativa era un `@SkipThrottle({ enrichment: true })` en cada controller ya
+        // existente y en todos los futuros; esto no se puede olvidar.
         {
           name: 'enrichment',
           ttl: Number(config.get('ENRICHMENT_RATE_LIMIT_TTL_MS') ?? 60_000),
-          limit: Number(config.get('ENRICHMENT_RATE_LIMIT_MAX') ?? 6),
+          limit: Number.MAX_SAFE_INTEGER,
         },
       ],
     }),

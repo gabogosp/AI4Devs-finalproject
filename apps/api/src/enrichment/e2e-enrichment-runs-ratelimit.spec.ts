@@ -38,16 +38,26 @@ describe('POST /v1/admin/enrichment/runs — rate-limit (e2e-enrichment-runs-rat
       { CatalogEventsModule },
       { configureApp },
       { EnrichmentModule },
+      { StorefrontModule },
     ] = await Promise.all([
       import('../config/config.module'),
       import('../prisma/prisma.module'),
       import('../observability/catalog-events.module'),
       import('../bootstrap'),
       import('./enrichment.module'),
+      // Una superficie ajena en la misma app: es lo que permite probar que el tope del
+      // enriquecimiento no se derrama sobre el resto de la API.
+      import('../storefront/storefront.module'),
     ]);
 
     const moduleRef = await Test.createTestingModule({
-      imports: [AppConfigModule, PrismaModule, CatalogEventsModule, EnrichmentModule],
+      imports: [
+        AppConfigModule,
+        PrismaModule,
+        CatalogEventsModule,
+        EnrichmentModule,
+        StorefrontModule,
+      ],
     }).compile();
     app = moduleRef.createNestApplication();
     configureApp(app);
@@ -111,5 +121,22 @@ describe('POST /v1/admin/enrichment/runs — rate-limit (e2e-enrichment-runs-rat
     }
 
     expect((await post(ip)).status).not.toBe(429);
+  });
+
+  it('el throttler `enrichment` NO le impone su tope a otras superficies', async () => {
+    // La regresión que este test ancla: `@nestjs/throttler` aplica TODOS los throttlers
+    // nombrados a TODA ruta guardada. Registrar el de enriquecimiento con su tope real (6/min)
+    // se lo impuso al storefront, al carrito y a auth — 8 suites en rojo. El tope real vive en
+    // el `@Throttle` del handler; el registro global lleva un techo inalcanzable.
+    const ip = '10.30.0.5';
+
+    // 12 lecturas públicas seguidas: seis veces el presupuesto del enriquecimiento, y muy
+    // por debajo del presupuesto propio del storefront (60/min).
+    for (let i = 0; i < 12; i += 1) {
+      const res = await request(app.getHttpServer())
+        .get('/v1/categories')
+        .set('X-Forwarded-For', ip);
+      expect(res.status).not.toBe(429);
+    }
   });
 });

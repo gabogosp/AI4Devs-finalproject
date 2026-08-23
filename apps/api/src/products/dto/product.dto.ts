@@ -51,6 +51,21 @@ export class UpdateProductDto {
   @IsString()
   description_raw?: string;
 
+  /**
+   * Texto **curado por el dueño** (US-005 T4.3, D8).
+   *
+   * Enviarlo declara «esta es mi versión»: se guarda, marca `description_curated = true` y
+   * deja el producto elegible para re-embeddear, de modo que el vector represente el texto
+   * del dueño y no el de la IA. Desde ahí, la IA **no lo pisa nunca más** (AC-7): sin esta
+   * marca, la próxima corrida sobrescribiría lo que el dueño escribió a mano y él lo
+   * descubriría mirando su propia tienda.
+   *
+   * No hay endpoint nuevo: es el mismo PATCH del panel, con el mismo `AdminGuard`.
+   */
+  @IsOptional()
+  @IsString()
+  description_enriched?: string;
+
   @IsOptional()
   @IsInt()
   @Min(1)

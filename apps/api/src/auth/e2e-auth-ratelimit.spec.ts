@@ -135,7 +135,7 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     });
   });
 
-  it('existen exactamente TRES throttlers nombrados: uno por superficie, no uno por ruta', () => {
+  it('existen exactamente CUATRO throttlers nombrados: uno por superficie, no uno por ruta', () => {
     // El plan de US-014 lo pedía explícito con dos: registrar un throttler por
     // ruta habría sido la salida fácil y habría dejado cada presupuesto sin
     // gobierno central; los límites por ruta van como `@Throttle` sobre el
@@ -146,10 +146,15 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     // superficie**: el límite más estricto de las escrituras del carrito es un
     // `@Throttle({ cart: … })` en el handler, no un throttler nuevo.
     //
+    // US-005 (T4.2) suma el cuarto, `enrichment` — la única superficie donde un request de
+    // más cuesta **plata** (llamadas pagas al proveedor de IA), y por eso no comparte el cubo
+    // de `auth`: unas cuantas corridas dejarían al dueño sin poder entrar al panel. Sigue
+    // siendo uno por superficie.
+    //
     // Se lee la configuración REAL que resolvió el contenedor, no el archivo
     // fuente: lo que gobierna en runtime es esto.
     const opciones = app.get<Array<{ name?: string }>>(getOptionsToken());
     const nombres = opciones.map((o) => o.name).sort();
-    expect(nombres).toEqual(['auth', 'cart', 'storefront']);
+    expect(nombres).toEqual(['auth', 'cart', 'enrichment', 'storefront']);
   });
 });
