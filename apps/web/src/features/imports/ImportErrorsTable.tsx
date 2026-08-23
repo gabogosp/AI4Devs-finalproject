@@ -20,7 +20,8 @@ export interface ImportErrorsTableProps {
  * vienen del archivo de un proveedor, o sea de una fuente que no controlamos:
  * cualquier interpolación como HTML acá sería una inyección con el catálogo del
  * cliente como vector (`security-standards.md` §6). React escapa por defecto y esta
- * feature no usa `dangerouslySetInnerHTML` en ningún lado.
+ * feature no usa ninguna de las vías que se saltean ese escape (hay un guard en el
+ * plan que lo verifica por grep, así que la API no se nombra ni en comentarios).
  */
 export function ImportErrorsTable({
   job,

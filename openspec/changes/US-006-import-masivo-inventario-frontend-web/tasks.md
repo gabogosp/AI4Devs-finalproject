@@ -275,7 +275,7 @@ language: es
 
 ## Fase 4: Observabilidad — 0,4 h
 
-- [ ] T4.1 Cuatro eventos agregados, sin contenido del archivo
+- [x] T4.1 Cuatro eventos agregados, sin contenido del archivo
   - **Pattern**: `track()` de `src/lib/observability/events.ts` con el sink ya existente; el fallo de
     red va por `captureError`, no por un evento — `per observability-patterns §3.3 (el id al log,
     nunca como dimensión de métrica) y frontend-standards.md §11.8`.
@@ -293,22 +293,25 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + componente + integración del web pasan: `pnpm --filter @dsm/web test`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción verde (los Server/Client Components están bien separados):
+- [x] Unit + componente + integración del web pasan: `pnpm --filter @dsm/web test`
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
+- [x] Build de producción verde (los Server/Client Components están bien separados):
       `pnpm --filter @dsm/web build`
-- [ ] **No regresión del panel ni del storefront**:
+- [x] **No regresión del panel ni del storefront**:
       `pnpm --filter @dsm/web test -- ProductList ProductForm storefront cart account`
-- [ ] **Sin tipos del contrato escritos a mano** (§3.1):
-      `! grep -rnE "interface (ImportJob|ImportRowError|ImportCreated)|type (ImportJob|ImportRowError) = \{" apps/web/src`
-- [ ] **Sin `dangerouslySetInnerHTML` en la feature** (§6):
+- [x] **Sin tipos del contrato escritos a mano** (§3.1):
+      `! grep -rnE "interface (ImportJob|ImportRowError|ImportCreated)|type (ImportJob|ImportRowError) = \{" apps/web/src --exclude-dir=generated`
+      (**corregido el 2026-08-23**: el check original no excluía `src/api/generated`, que es
+      justamente donde esos tipos **deben** estar; tal como estaba fallaba siempre, incluso con el
+      código correcto)
+- [x] **Sin `dangerouslySetInnerHTML` en la feature** (§6):
       `! grep -rn "dangerouslySetInnerHTML" apps/web/src/features/imports/`
-- [ ] **La revalidación del catálogo está cableada** (la costura que el backend no puede hacer):
+- [x] **La revalidación del catálogo está cableada** (la costura que el backend no puede hacer):
       `grep -q "revalidateCatalogSafely" apps/web/src/features/imports/ImportResult.tsx`
-- [ ] **El polling corta**: cubierto por T1.1; se re-corre acá porque una regresión ahí es una
+- [x] **El polling corta**: cubierto por T1.1; se re-corre acá porque una regresión ahí es una
       pestaña haciendo requests para siempre:
       `pnpm --filter @dsm/web test -- useImportJob`
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
 
 ---
 
