@@ -186,7 +186,7 @@
 
 ## Fase 3: Rutas y cableado — 0,75 h
 
-- [ ] **T3.1 `app/(storefront)/buscar/page.tsx`** — Server Component que lee `searchParams.q`,
+- [x] **T3.1 `app/(storefront)/buscar/page.tsx`** — Server Component que lee `searchParams.q`,
   aplica el guard, llama al servicio y compone. `metadata` con `robots: noindex, follow`.
   - **Exit criterion**: con `?q=` útil, el **HTML servido** contiene los nombres de los
     resultados (D2: no depende de JS); con `?q=a` (alcanzable a mano) **no llama al servicio** y
@@ -195,13 +195,20 @@
     T1.2 y la página **sigue navegable**; `generateMetadata` devuelve `robots.index === false`,
     `robots.follow === true` y un `title` con el eco de la consulta.
   - **Verify**: `pnpm --filter @dsm/web test -- buscar` y `pnpm --filter @dsm/web typecheck`
-- [ ] **T3.2 `SearchBar` montado en `app/(storefront)/layout.tsx`.** Reemplaza el comentario
+- [x] **T3.2 `SearchBar` montado en `app/(storefront)/layout.tsx`.** Reemplaza el comentario
   `Deferred: US-004`. Full-width en mobile (OQ-FE-3: sin overlay).
   - **Exit criterion**: el buscador aparece en **toda** página pública (el layout lo monta una
     vez); el layout **sigue siendo Server Component** —el `'use client'` vive en el `SearchBar`,
     que es hoja— y `CategoryNav` sigue renderizando en servidor, de lo que depende el SEO de
     US-002; el comentario `Deferred: US-004` ya no existe.
-  - **Verify**: `! grep -q "Deferred: US-004" "apps/web/app/(storefront)/layout.tsx" && ! grep -q "'use client'" "apps/web/app/(storefront)/layout.tsx" && pnpm --filter @dsm/web test -- CategoryNav storefront`
+  - **Verify**: `! grep -q "Deferred: US-004" "apps/web/app/(storefront)/layout.tsx" && ! head -1 "apps/web/app/(storefront)/layout.tsx" | grep -q "use client" && pnpm --filter @dsm/web test -- CategoryNav storefront`
+  - **Corrección del `Verify` (2026-08-23, familia F57)**: la forma original era
+    `! grep -q "'use client'" layout.tsx` sobre el archivo entero, y **no puede pasar nunca**:
+    el layout tiene un comentario que explica justamente por qué NO es cliente («el
+    `'use client'` vive en las hojas»), así que el grep se matchea a sí mismo contra la prosa
+    que documenta la regla. Borrar el comentario para que el grep pase sería tirar la
+    explicación para salvar la comprobación. La forma correcta mira **la primera línea**, que
+    es el único lugar donde la directiva tiene efecto.
 
 ## Fase 4: Observabilidad — 0,5 h
 

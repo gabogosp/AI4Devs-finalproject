@@ -7,9 +7,8 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, replace: vi.fn() }),
 }));
 
-const { SearchBar, INVITACION_CONSULTA_CORTA, PLACEHOLDER_BUSCADOR } = await import(
-  './SearchBar'
-);
+const { SearchBar, PLACEHOLDER_BUSCADOR } = await import('./SearchBar');
+const { INVITACION_CONSULTA_CORTA } = await import('./searchErrorCopy');
 
 afterEach(() => {
   push.mockClear();

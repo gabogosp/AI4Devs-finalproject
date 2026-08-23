@@ -4,14 +4,11 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { esConsultaUtil, normalizar } from './queryGuard';
+import { INVITACION_CONSULTA_CORTA } from './searchErrorCopy';
 
 /** §10.2: ejemplifica en vez de instruir. Muestra qué clase de consulta entiende. */
 export const PLACEHOLDER_BUSCADOR =
   "Describí lo que buscás: ej. 'algo para colgar un cuadro en pared dura'";
-
-/** La mitad cliente de AC-5: se explica qué falta, no se dice «inválido». */
-export const INVITACION_CONSULTA_CORTA =
-  'Contanos un poco más de lo que necesitás para poder buscarlo.';
 
 /**
  * Buscador del top-nav (design-system §7.12, `design.md` D1).

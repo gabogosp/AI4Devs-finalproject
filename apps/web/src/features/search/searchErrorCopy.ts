@@ -22,6 +22,15 @@ import { MIN_CARACTERES_UTILES } from './queryGuard';
  * apariencia y romperse con el primer cambio de redacción.
  */
 
+/**
+ * La mitad cliente de AC-5: se explica qué falta, no se dice «inválido». Vive
+ * acá y no en el `SearchBar` porque la page —Server Component— también la
+ * necesita, y importarla desde un módulo `'use client'` arrastraría ese módulo
+ * al grafo del servidor para leer un string.
+ */
+export const INVITACION_CONSULTA_CORTA =
+  'Contanos un poco más de lo que necesitás para poder buscarlo.';
+
 export const COPY_CONSULTA_CORTA = `Escribí al menos ${MIN_CARACTERES_UTILES} caracteres para buscar.`;
 
 /**

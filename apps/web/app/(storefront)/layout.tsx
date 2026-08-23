@@ -8,13 +8,19 @@ import { AccountMenu } from '@/features/account/AccountMenu';
 import { SessionProvider } from '@/features/account/SessionProvider';
 import { CartProvider } from '@/features/cart/CartProvider';
 import { CartBadge } from '@/features/cart/CartBadge';
+import { SearchBar } from '@/features/search/SearchBar';
 
 /**
  * Layout del storefront público (ADR-0010: la raíz es pública).
  *
  * Wordmark + `CategoryNav` (US-002 AC-1: los rubros son navegables e
- * indexables desde cualquier página pública, incluida la ficha). El buscador del
- * top-nav sigue siendo `Deferred: US-004`; el carrito llegó con US-007.
+ * indexables desde cualquier página pública, incluida la ficha). El buscador
+ * llegó con US-004 y el carrito con US-007.
+ *
+ * El `SearchBar` se monta **acá y una sola vez**, que es lo que lo hace
+ * aparecer en toda página pública sin que ninguna página lo repita. Es hoja
+ * cliente (`useRouter` + estado del input); montarlo no vuelve cliente a este
+ * layout.
  *
  * El `SiteFooter` (US-018 AC-1) se monta acá para que el canal de contacto esté
  * en toda página pública sin que ninguna página lo repita.
@@ -60,6 +66,13 @@ export default function StorefrontLayout({ children }: { children: ReactNode }) 
             <CartBadge />
             <AccountMenu />
           </div>
+        </div>
+        {/*
+          Fila propia y full-width en mobile (OQ-FE-3: sin overlay full-screen).
+          En el desktop se acota solo por el `md:max-w-md` del componente.
+        */}
+        <div className="mx-auto max-w-5xl px-4 pb-3">
+          <SearchBar />
         </div>
         <CategoryNav />
       </header>
