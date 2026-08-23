@@ -314,7 +314,7 @@ language: es
     número sube sin remontar) **y** `! grep -q "'use client'" "apps/web/app/(storefront)/layout.tsx"`
     **y** `pnpm --filter @dsm/web test -- CategoryNav` (los specs de US-002 pasan sin editarse)
 
-- [ ] T3.3 `AddToCartButton` + `MiniCart` (AC-1, sin redirigir)
+- [x] T3.3 `AddToCartButton` + `MiniCart` (AC-1, sin redirigir)
   - **Pattern**: `per design-system §7.11 — mini-cart que baja desde arriba (bottom-sheet en
     mobile) con «Agregado ✓» + «Ir al carrito»; NO interrumpe la navegación (no redirige)`.
     `role="status"`, no `alert`: agregar algo no es un error (`per design-system §7.6`).

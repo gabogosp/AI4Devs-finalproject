@@ -27,7 +27,19 @@ export type BusinessEvent =
   | 'logout'
   | 'password_reset_requested'
   | 'password_reset_completed'
-  | 'session_expired';
+  | 'session_expired'
+  // Carrito del invitado (US-007). Sin PII y sin el token del carrito: el `slug`
+  // del producto es público y no identifica a nadie. `cart_blocked_checkout` es el
+  // interesante para el dueño — mide demanda perdida por falta de stock, la misma
+  // señal que el backend emite del otro lado.
+  //
+  // Nombres en `snake_case` como el resto de este módulo; el plan los escribía
+  // con punto (`cart.item_added`), que es la convención del BACKEND, no la de acá.
+  | 'cart_item_added'
+  | 'cart_quantity_changed'
+  | 'cart_item_removed'
+  | 'cart_viewed'
+  | 'cart_blocked_checkout';
 
 export interface EventProps {
   operator_id?: string;
