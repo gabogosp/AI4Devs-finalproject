@@ -14,20 +14,25 @@ created: 2026-08-22
 > `perl -e 'alarm N; exec @ARGV' -- <cmd>`) y que **falla si el criterio no se cumple** (F50: se
 > ejercita el comportamiento, no se greppea su presencia). Comandos desde la **raíz del repo**.
 >
-> **Estimación dual**: **~4,2 h AI-asistido / ~7 h tradicional** (13 tasks + 4 pre-requisitos;
+> **Estimación dual**: **~3,9 h AI-asistido / ~6,5 h tradicional** (12 tasks + 4 pre-requisitos;
 > las horas por task son AI-asistido, ~0,32 h/task — la misma densidad que el plan de US-018,
 > 11 tasks en 3,2 h). La US §7 presupuesta `FE-US-017` en **4-6 h tradicional**: **se excede en
-> ~1-3 h**, con causa. Lo que la US presupuestó —«páginas SSR de privacidad y términos +
-> enlaces en el footer»— son ~2 h de las 4,2: el footer ya existe (US-018 dejó el hueco
+> ~0,5-2,5 h**, con causa. Lo que la US presupuestó —«páginas SSR de privacidad y términos +
+> enlaces en el footer»— son ~2 h de las 3,9: el footer ya existe (US-018 dejó el hueco
 > marcado) y no hay consumo de API ni estados asíncronos que modelar. Lo que **no** presupuestó
-> y sí cuesta es todo lo que convierte los AC de «verdad declarada» en «propiedad verificada»:
-> el **gate que impide publicar el texto provisional** (AC-6 no se cumple con una nota en un
-> doc), el **chequeo de deriva de la versión contra el backend** (AC-8 es una igualdad entre dos
+> y sí cuesta es lo que convierte los AC de «verdad declarada» en «propiedad verificada»: el
+> **chequeo de deriva de la versión contra el backend** (AC-8 es una igualdad entre dos
 > sistemas, no un campo), el **guard de no-dependencia y no-tracking** (AC-7 + US §9) y la
 > **fuente única de rutas** que el checkout de US-008 va a consumir.
 >
-> Si OQ-FE-16 y OQ-FE-17 se ratifican como «(a) sólo documentarlo», caen T4.1 y T4.3 y el total
-> baja a **~3,7 h / ~6 h** — dentro del techo, a cambio de que AC-6 y AC-8 queden sin guard.
+> **Decisiones del PO ratificadas el 2026-08-22** (ver `proposal.md` §Preguntas abiertas):
+> OQ-FE-15 **(a)** rutas bajo `/legales/` · OQ-FE-16 **(b)** chequeo de deriva de la versión ·
+> OQ-FE-17 **(a)** sin gate automático del texto provisional. Consecuencia de la tercera: **cae
+> la task del gate de despliegue** (era T4.1, −0,3 h) y con ella el campo `status` del módulo de
+> contenido —sin lector, sería dato muerto (`AGENTS.md` §1.2)—. La protección contra publicar el
+> texto provisional queda **humana**: el DoD de la US ya la lista («texto legal final provisto y
+> revisado por el dueño / asesoría legal — gate de producción») y los marcadores `[PENDIENTE: …]`
+> quedan **visibles en la página**, así que cualquiera que la abra ve que está incompleta.
 
 ## Matriz de trazabilidad (AC → tasks)
 
@@ -37,29 +42,32 @@ created: 2026-08-22
 | AC-2 | Página de términos pública e indexable | T0.1, T1.1, T1.2, **T2.1**, T2.2, T5.1 | **construido acá** |
 | AC-3 | Enlaces desde el footer | T0.2, **T3.1**, T5.1 | **construido acá** (el footer existe: US-018) |
 | AC-4 | Enlace + consentimiento desde el checkout | **T0.2** (seam: `LEGAL_ROUTES` + `CONSENT_COPY`), T6.1 | **seam acá**; el checkbox y la captura son de `Deferred: US-008` |
-| AC-5 | Contenido acorde a la Ley 25.326 | **T0.1** (estructura + test de los 4 bloques) | **mecanismo acá**; texto final `Deferred: PO/cliente` |
-| AC-6 | No se opera sin las páginas | **T4.1** (gate de deploy), **T4.2** (guard sin backend), T5.1 | **construido acá**; enganche al pipeline `Deferred: US-019` |
+| AC-5 | Contenido acorde a la Ley 25.326 | **T0.1** (estructura + schema Zod que exige los 4 bloques) | **mecanismo acá**; texto final `Deferred: PO/cliente` |
+| AC-6 | No se opera sin las páginas | **T4.2** (guard sin backend), **T5.1** (e2e: existen, 200, enlazadas) | **construido acá** por construcción: las páginas son reales y enlazadas. Que el **texto** no sea el provisional es gate **humano** del DoD (OQ-FE-17 (a)) |
 | AC-7 | Páginas públicas sin login | T2.1, **T5.1** (e2e sin cookies), T4.2 | **construido acá** |
-| AC-8 | Trazabilidad de la versión aceptada | **T0.1** (versión publicada), **T4.3** (deriva vs backend) | **mitad FE acá**; el registro por orden es de `Deferred: US-008` |
+| AC-8 | Trazabilidad de la versión aceptada | **T0.1** (versión publicada), **T4.3** (test de deriva vs backend) | **mitad FE acá**; el registro por orden es de `Deferred: US-008` |
 
 **Cobertura no-AC del `design.md` (F51 — toda declaración tiene task o `Deferred:`)**:
 D1 contenido como módulo tipado, sin `dangerouslySetInnerHTML` → T0.1, T1.1 ·
-D2 dos rutas explícitas bajo `/legales/` → T2.1 (disparador de refactor documentado, sin task) ·
+D2 dos rutas explícitas bajo `/legales/` (OQ-FE-15 (a)) → T2.1 (disparador de refactor
+documentado, sin task) ·
 D3 fuente única de rutas con tres consumidores → T0.2, T3.1, T6.1 ·
 D4 Server Components puros, sin fetch y **sin telemetría** → T2.1, **T4.2** ·
-D5 versión en el código y no en env → T0.1, T4.3 ·
+D5 versión en el código y no en env, verificada contra el backend (OQ-FE-16 (b)) → T0.1, T4.3 ·
 jerarquía de headings + ancho de lectura sin plugin `prose` → T1.1, T3.2 ·
 metadata con canonical absoluta, sin JSON-LD → T1.2 ·
 sitemap que sobrevive la degradación del árbol → T2.2 ·
 recomendación de despliegue → T6.1 + `/plan-deployment`.
 
-**Diferidos declarados**: texto legal definitivo → `Deferred: PO/asesoría legal — gate de
-producción (DoD de la US)` · checkbox de consentimiento y su captura → `Deferred: US-008 (FE+BE)`
-· enganche del gate al job de deploy → `Deferred: US-019 (infra es dueña del pipeline)` ·
-igualdad de la versión en el entorno de producción (Railway) → `Deferred: US-019` · horarios del
-local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer documento legal (cambios y
-devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Deferred: fuera de v1
-(US §4)` · `BE-US-017` → `Deferred: OQ-FE-18 (Arquitecto) — probablemente absorbida por US-008`.
+**Diferidos y descartados declarados**: texto legal definitivo → `Deferred: PO/asesoría legal —
+gate de producción (DoD de la US)` · **gate automático del texto provisional → DESCARTADO por
+decisión del PO (OQ-FE-17 (a))**: no se construye `check-legal-content.mjs` ni el campo `status`;
+la protección es el DoD + los marcadores `[PENDIENTE: …]` visibles en la página, y el checklist de
+despliegue de `Deferred: US-019` · checkbox de consentimiento y su captura → `Deferred: US-008
+(FE+BE)` · igualdad de la versión en el entorno de producción (Railway) → `Deferred: US-019` ·
+horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer documento legal →
+`Deferred: sin AC que lo pida` · banner de cookies → `Deferred: fuera de v1 (US §4)` ·
+`BE-US-017` → `Deferred: OQ-FE-18 (Arquitecto) — probablemente absorbida por US-008`.
 
 ---
 
@@ -123,8 +131,6 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
       /** Fecha ISO. MISMA versión que registra `orders.consent_terms_version` (US-008). */
       version: string;
       effective_date: string;
-      /** `draft` bloquea el despliegue (AC-6, T4.1). Sólo el dueño lo pasa a `final`. */
-      status: 'draft' | 'final';
       required: {
         controller: LegalSection;  // responsable del tratamiento
         purpose: LegalSection;     // finalidad del uso de los datos
@@ -138,20 +144,22 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
 
     export const LEGAL_DOCUMENTS: Record<'privacidad' | 'terminos', LegalDocumentContent> = { … };
     ```
-    El texto provisional lleva los datos que **hoy son ciertos** (nombre de fantasía, dirección
-    del local, email de contacto de `docs/project-config.yml`) y marca lo que falta con
-    `[PENDIENTE: …]` — el marcador que T4.1 usa para bloquear el despliegue.
+    **Sin campo `status`** (decisión del PO, OQ-FE-17 (a)): no hay gate que lo lea, y un campo sin
+    lector es dato muerto (`AGENTS.md` §1.2). Lo que sí queda es que el texto provisional lleve
+    los datos que **hoy son ciertos** (nombre de fantasía, dirección del local, email de contacto
+    de `docs/project-config.yml`) y marque lo que falta con `[PENDIENTE: …]` **en el propio
+    texto** — así el hueco es visible en la página para cualquiera que la abra, incluido quien
+    esté por publicar. La protección real es el gate humano del DoD de la US.
 
     La validación de forma se exporta como **schema Zod** (`zod` ya es dependencia del app y es
-    la convención de `src/lib/env.ts`), para que la usen los tres consumidores: el test de AC-5,
-    el gate de T4.1 y quien edite el contenido:
+    la convención de `src/lib/env.ts`), para que la usen el test de AC-5 y quien edite el
+    contenido:
     ```ts
     export const legalDocumentSchema = z.object({
       slug: z.enum(['privacidad', 'terminos']),
       title: z.string().min(1),
       version: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      status: z.enum(['draft', 'final']),
       required: z.object({
         controller: sectionSchema, purpose: sectionSchema,
         rights: sectionSchema, contact: sectionSchema,
@@ -161,11 +169,11 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
     ```
   - **Exit criterion**: existen los dos documentos con los **cuatro** bloques obligatorios no
     vacíos; `version` y `effective_date` son fechas ISO (`YYYY-MM-DD`) y **coinciden entre sí**;
-    `status` es `'draft'` en los dos (el texto final es del dueño); `LEGAL_TERMS_VERSION` es
-    igual a la `version` del documento de términos. Ningún `paragraphs` contiene `<` (si apareciera
-    HTML, el renderizado lo escaparía y el texto legal saldría roto en pantalla). El schema Zod
-    **rechaza** un documento al que le falte cualquiera de los cuatro bloques o que los tenga
-    vacíos.
+    `LEGAL_TERMS_VERSION` es igual a la `version` del documento de términos. Ningún `paragraphs`
+    contiene `<` (si apareciera HTML, el renderizado lo escaparía y el texto legal saldría roto
+    en pantalla). El schema Zod **rechaza** un documento al que le falte cualquiera de los cuatro
+    bloques o que los tenga vacíos. El texto provisional conserva sus marcadores `[PENDIENTE: …]`
+    visibles.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/content.test.ts`
     (casos: los dos documentos **parsean** con `legalDocumentSchema`; una copia con
     `required.rights` borrado **falla** el parse —así AC-5 se ejercita, no se declara—; otra con
@@ -396,48 +404,17 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
 
 ---
 
-## Fase 4: Guards y gate de producción — 0,8 h
+## Fase 4: Guards — 0,5 h
 
-- [ ] **T4.1** `check-legal-content.mjs`: el texto provisional no llega a producción (AC-6) (0,3 h)
-
-  - **Pattern**: gate **fuera** del build, hermano exacto de `check-whatsapp-configured.mjs`
-    (OQ-FE-12 resuelta como «script en el job de deploy»). Un guard en el módulo o en `env.ts`
-    rompería el build local y la suite E2E, que corren a propósito con el texto provisional:
-    ```js
-    // apps/web/scripts/check-legal-content.mjs
-    const MARCADORES = ['[PENDIENTE', 'TODO', 'Lorem ipsum'];
-    const problemas = [];
-    for (const doc of Object.values(LEGAL_DOCUMENTS)) {
-      if (doc.status !== 'final') problemas.push(`${doc.slug}: status="${doc.status}"`);
-      const texto = JSON.stringify(doc);
-      for (const m of MARCADORES)
-        if (texto.includes(m)) problemas.push(`${doc.slug}: contiene "${m}"`);
-    }
-    if (problemas.length > 0) {
-      console.error(
-        'Contenido legal provisional — NO se puede publicar (US-017 AC-6, Ley 25.326):\n' +
-        problemas.map((p) => `  - ${p}`).join('\n') +
-        '\nEl texto final lo provee el dueño / asesoría legal (US §10).',
-      );
-      process.exit(1);
-    }
-    ```
-    Lee el contenido con `tsx`/`node --experimental-strip-types` o, si el runner no lo soporta,
-    con un `JSON.parse` de un export serializado — la decisión concreta la toma el ejecutor y la
-    documenta; lo que **no** es negociable es que el gate lea la **misma** fuente que la página
-    (un gate que lee una copia no protege nada).
-  - **Exit criterion**: el script sale **1** mientras algún documento esté en `draft` o conserve
-    un marcador de relleno, e imprime **qué** documento y **por qué**; sale **0** cuando los dos
-    están en `final` y sin marcadores. El enganche al job de deploy queda `Deferred: US-019`.
-  - **Verify**:
-    ```bash
-    ( node apps/web/scripts/check-legal-content.mjs; test $? -eq 1 ) \
-      && ( LEGAL_CONTENT_FIXTURE=final node apps/web/scripts/check-legal-content.mjs ) \
-      && echo "OK — el gate bloquea el provisional y deja pasar el final"
-    ```
-    (se ejecuta el script en los dos escenarios y se asserta el **exit code**, no su contenido:
-    F50. El fixture `final` es el mecanismo que el ejecutor documente para simular el texto
-    aprobado sin editar el contenido real)
+> **T4.1 (gate de despliegue del texto provisional) — DESCARTADA por decisión del PO
+> (OQ-FE-17 (a), 2026-08-22).** No se construye `check-legal-content.mjs` ni el campo `status`.
+> El argumento de la opción (a) es defendible: un script que **nadie invoca** hasta que US-019
+> enganche el pipeline es protección de papel, y el DoD de la US ya tiene el gate humano
+> («texto legal final provisto y revisado por el dueño / asesoría legal»). El riesgo residual
+> queda **escrito y con dueño**: si alguien despliega antes de que llegue el texto final, el
+> sitio publica legales incompletos —visibles, porque los `[PENDIENTE: …]` se leen en la
+> página— y eso es incumplimiento con apariencia de cumplimiento. Mitigación acordada: el
+> checklist de despliegue de `Deferred: US-019` lo lista, y T6.1 lo documenta en el README.
 
 - [ ] **T4.2** Guard: sin backend, sin cliente, sin tracking (AC-6, AC-7, US §9) (0,3 h)
 
@@ -458,36 +435,44 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
     una obligación legal no puede caerse porque la API esté caída, y el §9 prohíbe tracking acá.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/noBackendNoTracking.test.tsx`
 
-- [ ] **T4.3** Chequeo de deriva de la versión contra el backend (AC-8) — `Gated: OQ-FE-16 (recomendación: opción b)` (0,2 h)
+- [ ] **T4.3** Test de deriva de la versión contra el backend (AC-8) — `OQ-FE-16 (b) ratificada` (0,2 h)
 
-  - **Pattern**: se extiende `check-legal-content.mjs` (un solo gate, no dos scripts) con la
-    comparación contra el default declarado del backend. El backend llena
-    `orders.consent_terms_version` desde `LEGAL_TERMS_VERSION`; si los dos valores difieren, la
-    orden afirma que se aceptó una versión que el sitio nunca publicó:
-    ```js
-    const envBackend = readFileSync('apps/api/.env.example', 'utf8');
+  - **Pattern**: con T4.1 descartada, el chequeo **no** vive en un script de deploy: vive en la
+    **suite**, que sí corre en cada CI. Es estrictamente más fuerte que la opción original —el
+    script dependía de que US-019 lo enganchara— y no cuesta nada más. El test lee el default
+    declarado por el backend y lo compara con la versión publicada:
+    ```ts
+    // apps/web/src/features/legal/versionContract.test.ts
+    const envBackend = readFileSync('../api/.env.example', 'utf8');
     const declarada = envBackend.match(/^LEGAL_TERMS_VERSION=(.+)$/m)?.[1]?.trim();
-    if (declarada === undefined)
-      fallar('apps/api/.env.example no declara LEGAL_TERMS_VERSION (lo agrega US-008 T0.x).');
-    if (declarada !== LEGAL_DOCUMENTS.terminos.version)
-      fallar(`Deriva de versión: FE publica ${LEGAL_DOCUMENTS.terminos.version} y el backend declara ${declarada}.`);
+
+    it('la versión publicada es la que el backend registra en la orden (AC-8)', () => {
+      // Si el backend no la declara, no hay contrato que verificar: es un fallo, no un skip.
+      expect(declarada).toBeDefined();
+      expect(declarada).toBe(LEGAL_DOCUMENTS.terminos.version);
+    });
     ```
     — per `documentation-standards.md` §11 (un contrato entre dos sistemas se verifica, no se
     documenta y se espera).
-  - **Exit criterion**: el gate falla con mensaje explícito cuando la versión del FE y la
-    declarada por el backend difieren, y **también** cuando el backend todavía no la declara
-    (hoy es el caso: `apps/api/.env.example` no la tiene — verificado al planificar). Lo que este
-    chequeo **no** cubre —que el valor configurado en Railway coincida— queda
-    `Deferred: US-019`, declarado.
+
+    **Toca un archivo de otra disciplina, una línea**: hoy `apps/api/.env.example` **no declara**
+    `LEGAL_TERMS_VERSION` (verificado al planificar), así que esta task agrega
+    `LEGAL_TERMS_VERSION=2026-06-15` con un comentario que apunta a US-008. Es aditivo, sin
+    código, y US-008 lo va a necesitar igual; si esa sesión lo agrega en paralelo, el conflicto es
+    de una línea. Si el Arquitecto prefiere que US-017 no toque `apps/api`, la alternativa es
+    dejar esta task `Gated:` hasta que US-008 declare la variable — pero entonces AC-8 queda sin
+    verificación en el medio.
+  - **Exit criterion**: el test **falla** si la versión del FE y la declarada por el backend
+    difieren, y **también** si el backend no la declara. `apps/api/.env.example` queda con la
+    variable y su comentario. Lo que este test **no** cubre —que el valor configurado en Railway
+    coincida— queda `Deferred: US-019`, declarado.
   - **Verify**:
     ```bash
-    ( node apps/web/scripts/check-legal-content.mjs 2>&1 | grep -q 'LEGAL_TERMS_VERSION' ) \
-      && echo "OK — el gate reporta el estado del contrato de versión con el backend"
+    pnpm --filter @dsm/web test -- --run src/features/legal/versionContract.test.ts \
+      && grep -q '^LEGAL_TERMS_VERSION=' apps/api/.env.example
     ```
-    *(se ejercita el camino de falla real del repo de hoy: el backend aún no declara la variable.
-    Cuando US-008 la agregue con el mismo valor, este comando deja de encontrar el mensaje y la
-    task se re-verifica con el caso de deriva —cambiar una versión en un fixture y ver el exit 1—;
-    el ejecutor lo anota al cerrar)*
+    (y el ejecutor comprueba la fuerza del test —F50— cambiando la versión del `.env.example` a
+    otro valor y viendo que **falla**, antes de dejarlo en el correcto)
 
 ---
 
@@ -528,17 +513,20 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
     — per `documentation-standards.md` §11.1.
   - **Exit criterion**: el README documenta (a) las dos rutas y que son públicas e indexables,
     (b) que el contenido vive en `src/features/legal/content.ts` y **cambiarlo es un deploy**,
-    (c) que `status: 'draft'` **bloquea el despliegue** y quién lo pasa a `final` (el dueño),
-    (d) que la `version` tiene que coincidir con `LEGAL_TERMS_VERSION` del backend y por qué
-    (la orden registra esa versión — US-008), y (e) que el checkbox del checkout debe consumir
-    `LEGAL_ROUTES` / `CONSENT_COPY` y no escribir la ruta a mano.
+    (c) que el texto es **provisional** hasta que el dueño entregue el final, que los marcadores
+    `[PENDIENTE: …]` se leen en la página y que **no hay gate automático** (decisión del PO,
+    OQ-FE-17 (a)): publicar antes de tener el texto final es incumplimiento y la protección es el
+    DoD de la US + el checklist de despliegue de US-019, (d) que la `version` tiene que coincidir
+    con `LEGAL_TERMS_VERSION` del backend y por qué (la orden registra esa versión — US-008), con
+    el test que lo verifica, y (e) que el checkbox del checkout debe consumir `LEGAL_ROUTES` /
+    `CONSENT_COPY` y no escribir la ruta a mano.
   - **Verify**:
     ```bash
     grep -q '/legales/privacidad' apps/web/README.md \
       && grep -q '/legales/terminos' apps/web/README.md \
       && grep -q 'LEGAL_TERMS_VERSION' apps/web/README.md \
       && grep -q 'CONSENT_COPY' apps/web/README.md \
-      && grep -qi "status: 'draft'" apps/web/README.md \
+      && grep -q 'PENDIENTE' apps/web/README.md \
       && echo OK
     ```
 
@@ -556,8 +544,8 @@ devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Defer
       este change modifica: si el canal de WhatsApp o los datos del local se rompen, es acá)
 - [ ] **Sin regresión de US-002**: `pnpm --filter @dsm/web test -- --run src/features/storefront/sitemap.test.ts`
       (el sitemap es el otro archivo entregado que se modifica)
-- [ ] **El gate de producción bloquea hoy** (y esto es lo correcto, no un fallo):
-      `node apps/web/scripts/check-legal-content.mjs; test $? -eq 1`
+- [ ] **El contrato de versión con el backend está verificado** (AC-8):
+      `pnpm --filter @dsm/web test -- --run src/features/legal/versionContract.test.ts`
 - [ ] **Ninguna página legal depende de la API ni lleva tracking**:
       `pnpm --filter @dsm/web test -- --run src/features/legal/noBackendNoTracking.test.tsx`
 - [ ] CI del monorepo: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`

@@ -11,11 +11,17 @@ created: 2026-08-22
 # US-017 Frontend Web — Páginas legales + consentimiento
 
 > **Lo que este change entrega y lo que no**: entrega las **dos páginas legales** que hoy no
-> existen, su **versionado visible** y los **enlaces desde el footer**, más el gate que impide
-> publicar con texto provisional. **No** entrega el checkbox de consentimiento del checkout:
-> ese vive en la superficie de US-008, que todavía no tiene plan de frontend. Lo que sí
-> entrega para él es la **fuente única de rutas legales** que ese checkbox tiene que consumir,
-> para que no nazca con un `href="#"` como el que hoy tiene el copy del design-system §10.2.
+> existen, su **versionado visible** y los **enlaces desde el footer**. **No** entrega el
+> checkbox de consentimiento del checkout: ese vive en la superficie de US-008, que todavía no
+> tiene plan de frontend. Lo que sí entrega para él es la **fuente única de rutas legales** que
+> ese checkbox tiene que consumir, para que no nazca con un `href="#"` como el que hoy tiene el
+> copy del design-system §10.2.
+>
+> **Decisiones del PO ratificadas el 2026-08-22**: OQ-FE-15 **(a)** rutas bajo `/legales/` ·
+> OQ-FE-16 **(b)** chequeo de deriva de la versión (implementado como test de la suite) ·
+> OQ-FE-17 **(a)** **sin gate automático** del texto provisional — la barrera es humana (DoD de
+> la US) y el riesgo residual queda declarado en §Preguntas abiertas y en `design.md` D6.
+> OQ-FE-18 sigue abierta y **no bloquea**.
 
 ## Why
 
@@ -54,13 +60,15 @@ igualdad **verificable**, no confiada.
   en el route group `(storefront)`, así que heredan header, `CategoryNav` y footer sin tocar
   ninguna otra página. Sin login, sin JavaScript de cliente, sin una sola llamada a la API.
 - **El contenido como módulo tipado** (`src/features/legal/content.ts`): documentos con
-  `version`, `effective_date`, `status: 'draft' | 'final'` y secciones. El texto vive en el
-  repo —el E2E §3 (capacidad 10) declara «páginas estáticas SSR», no un endpoint— y su
-  estructura obliga a que estén los cuatro bloques que exige la Ley 25.326 (AC-5): responsable
-  del tratamiento, finalidad, derechos del titular y canal de contacto.
+  `version`, `effective_date` y secciones. El texto vive en el repo —el E2E §3 (capacidad 10)
+  declara «páginas estáticas SSR», no un endpoint— y su estructura obliga a que estén los cuatro
+  bloques que exige la Ley 25.326 (AC-5): responsable del tratamiento, finalidad, derechos del
+  titular y canal de contacto. Lo que falta del texto va marcado con `[PENDIENTE: …]`, **visible
+  en la página**.
 - **Versión visible en la página** (AC-8, mitad FE): cada documento muestra su versión y desde
-  cuándo rige. Es la mitad humana de la trazabilidad; la mitad de máquina es el chequeo de
-  deriva contra `LEGAL_TERMS_VERSION` del backend.
+  cuándo rige. Es la mitad humana de la trazabilidad; la mitad de máquina es un **test de
+  contrato** que compara esa versión con `LEGAL_TERMS_VERSION` del backend y falla en CI si
+  derivan (OQ-FE-16 (b) ratificada).
 - **Enlaces en el footer** (AC-3): `SiteFooter` reemplaza el comentario de US-018 por los dos
   enlaces reales, tomados de la **fuente única** `src/features/legal/routes.ts`. Aparecen en
   toda página pública porque el footer ya está montado en el layout del route group.
@@ -71,11 +79,11 @@ igualdad **verificable**, no confiada.
 - **Las páginas entran al sitemap** (AC-1/AC-2, indexabilidad): `buildSitemap` las agrega
   **antes** de su rama de degradación, así siguen listadas incluso cuando el árbol de
   categorías falla — hoy ese camino devuelve sólo la home.
-- **Gate de producción del texto provisional** (AC-6): `scripts/check-legal-content.mjs` falla
-  si algún documento sigue en `status: 'draft'` o conserva marcadores de relleno. Mismo patrón
-  y mismo lugar que el gate del número de WhatsApp (`check-whatsapp-configured.mjs`, OQ-FE-12
-  resuelta como «script en el job de despliegue»): el guard va donde está el riesgo —publicar—,
-  no en el build local ni en la suite.
+- **Sin gate automático del texto provisional** (OQ-FE-17 (a) ratificada): no se construye
+  `check-legal-content.mjs` ni el campo `status`. El texto provisional lleva marcadores
+  `[PENDIENTE: …]` **dentro del propio texto**, así que se leen en la página, y la barrera contra
+  publicarlo es el **gate humano del DoD** de la US más el checklist de despliegue de US-019.
+  Riesgo residual aceptado y escrito: ver `design.md` D6.
 - **Guard de no-dependencia** (AC-6, AC-7): un test que **falla** si mañana alguien enruta el
   contenido legal por la API, le agrega telemetría o lo vuelve Client Component. Una página que
   cumple una obligación legal no puede caerse porque la API esté caída, y el §9 de la US
@@ -130,6 +138,7 @@ Verificado leyendo los archivos, no asumido:
 | `apps/web/src/features/legal/legalMetadata.test.ts` | **nuevo** |
 | `apps/web/src/features/legal/legalA11y.test.tsx` | **nuevo** — axe sobre las dos páginas |
 | `apps/web/src/features/legal/noBackendNoTracking.test.tsx` | **nuevo** — guard AC-6/AC-7/§9 |
+| `apps/web/src/features/legal/versionContract.test.ts` | **nuevo** — igualdad de versión con el backend (AC-8) |
 | `apps/web/app/(storefront)/legales/privacidad/page.tsx` | **nuevo** |
 | `apps/web/app/(storefront)/legales/terminos/page.tsx` | **nuevo** |
 | `apps/web/src/features/contact/SiteFooter.tsx` | **modificado** — los dos enlaces reales |
@@ -137,9 +146,8 @@ Verificado leyendo los archivos, no asumido:
 | `apps/web/src/features/storefront/sitemap.ts` | **modificado** — las dos URLs legales |
 | `apps/web/src/features/storefront/sitemap.test.ts` | **modificado** — incluidas aun degradando |
 | `apps/web/e2e/legal-pages.spec.ts` | **nuevo** — SSR 200, sin login, enlazadas, en el sitemap |
-| `apps/web/scripts/check-legal-content.mjs` | **nuevo** — gate de despliegue |
-| `apps/web/scripts/check-legal-content.test.mjs` | **nuevo** |
-| `apps/web/README.md` | **modificado** — sección de páginas legales + versionado + gate |
+| `apps/web/README.md` | **modificado** — páginas legales, versionado, riesgo del texto provisional |
+| `apps/api/.env.example` | **modificado — ⚠ cruza disciplina**: una línea, `LEGAL_TERMS_VERSION=2026-06-15` + comentario a US-008. Sin ella el contrato de AC-8 tiene un solo extremo declarado y no se puede verificar. Si el Arquitecto lo veta, T4.3 queda `Gated:` hasta que US-008 la agregue |
 
 ## Consumo de API
 
@@ -162,13 +170,16 @@ verifica es OQ-FE-16.
 - [ ] **AC-4** — El checkbox del checkout enlaza a las dos páginas. → **seam acá**
       (`routes.ts` + copy §10.2); el checkbox y la captura son de **US-008**
 - [ ] **AC-5** — Contenido con responsable, finalidad, derechos y contacto. → **estructura y
-      texto provisional acá**, con test que falla si falta un bloque; **texto final del dueño**
+      texto provisional acá**, con schema Zod que rechaza un documento incompleto; **texto final
+      del dueño**
 - [ ] **AC-6** — No se opera en producción sin las páginas publicadas y enlazadas. →
-      **construido acá** (gate de despliegue + guard de no-dependencia + e2e de los enlaces)
+      **construido acá por construcción** (las páginas existen, están enlazadas y hay e2e que lo
+      prueba sobre el HTML servido) + guard de no-dependencia. Que el **texto** no sea el
+      provisional es **gate humano** del DoD (OQ-FE-17 (a))
 - [ ] **AC-7** — Accesibles sin iniciar sesión. → **construido acá** (route group público,
       verificado en e2e sin cookies)
 - [ ] **AC-8** — Queda registrada la versión aceptada. → **mitad FE acá** (versión publicada +
-      chequeo de deriva); el registro por orden es de **US-008**
+      **test de contrato** contra `LEGAL_TERMS_VERSION`); el registro por orden es de **US-008**
 
 ## Estándares consultados
 
@@ -198,57 +209,67 @@ verifica es OQ-FE-16.
 
 ## Preguntas abiertas
 
-> Ninguna bloquea el arranque: las cuatro tienen un default implementado. Las tasks marcadas
-> `Gated:` en `tasks.md` esperan ratificación.
+> **Tres de cuatro resueltas por el PO el 2026-08-22.** Ninguna task queda `Gated:`; el plan se
+> ejecuta completo desde T0.1. Se conservan las alternativas descartadas porque el fundamento es
+> lo que impide que la próxima US vuelva a abrir la misma discusión.
 
 - **OQ-FE-15 — ¿Qué URLs llevan las páginas legales?**
+  `[Resolved: 2026-08-22 — opción (a): `/legales/privacidad` + `/legales/terminos`]`
   Las URLs de un documento legal son **permanentes en la práctica**: se citan en emails, en el
   checkout y eventualmente en papel; cambiarlas después rompe enlaces que no controlamos.
-  - **(a) `/legales/privacidad` + `/legales/terminos`** ← **recomendada**. Agrupa la superficie
-    legal bajo un prefijo, deja lugar para un tercer documento sin re-decidir nada, y hace
-    trivial una regla de caché o de robots por prefijo si algún día hace falta.
-  - **(b) `/privacidad` + `/terminos`** — más cortas y frecuentes en e-commerce AR; a cambio
-    ocupan la raíz, que es el namespace de las páginas de producto/categoría de ADR-0010.
-  - **(c) Ruta dinámica `/legales/[doc]`** con `generateStaticParams` — DRY, pero agrega una
-    rama de `notFound()` y un parámetro validable para dos valores conocidos. Con dos
-    documentos, es maquinaria sin uso.
+  - **(a) `/legales/privacidad` + `/legales/terminos`** ← **elegida**. Agrupa la superficie
+    legal bajo un prefijo, deja lugar para un tercer documento sin re-decidir nada, y no ocupa
+    el namespace raíz que ADR-0010 reserva a la navegación de catálogo.
+  - (b) `/privacidad` + `/terminos` — más cortas y frecuentes en e-commerce AR; a cambio ocupan
+    la raíz. Descartada.
+  - (c) Ruta dinámica `/legales/[doc]` con `generateStaticParams` — DRY, pero agrega una rama de
+    `notFound()` y un parámetro validable para dos valores conocidos. Descartada; el disparador
+    para promoverla (un tercer documento) queda escrito en `design.md` D2.
 
 - **OQ-FE-16 — ¿Cómo se garantiza que la versión publicada sea la que registra la orden (AC-8)?**
+  `[Resolved: 2026-08-22 — opción (b): chequeo de deriva en el repo]`
   El backend de US-008 llena `consent_terms_version` desde `LEGAL_TERMS_VERSION`; la página
   publica la versión del módulo de contenido. Son dos valores en dos sistemas.
-  - **(a) Nada: sólo documentarlo.** Costo 0, protección 0 — la deriva es silenciosa y produce
-    exactamente el daño que AC-8 quiere evitar (una orden que dice haber aceptado una versión
-    que el sitio nunca publicó).
-  - **(b) Chequeo de deriva en CI contra `apps/api/.env.example` + gate de deploy** ←
-    **recomendada**. El script compara la versión del módulo de contenido con el default
-    declarado del backend y **falla** si difieren o si la variable no existe. Cubre el error
-    real y frecuente —alguien edita el texto, sube la versión del FE y se olvida del BE— y deja
-    la mitad de producción (que el valor de Railway coincida) al gate de despliegue de US-019,
-    declarada, no silenciosa. Requiere que US-008 backend haya declarado la variable en su
-    `.env.example`: hoy **no existe** (verificado), así que esta task nace `Gated:`.
-  - **(c) Fuente única en un archivo raíz** (`legal/version.json`) que consuman los dos apps.
-    Es la única que elimina la deriva por construcción, pero mete al backend en la ecuación
-    (su config hoy es 100 % env con Zod, y mezclar archivo + env abre la pregunta de cuál gana)
-    y toca una disciplina que no es esta. Si el Arquitecto la prefiere, es un cambio chico en
-    ambos planes — mejor decidirlo ahora que después de que US-008 esté construida.
+  - (a) Nada: sólo documentarlo. Descartada — la deriva es silenciosa y produce exactamente el
+    daño que AC-8 quiere evitar.
+  - **(b) Chequeo de deriva en el repo** ← **elegida**. Con el gate de despliegue descartado
+    (OQ-FE-17 (a)), el chequeo se implementa como **test de la suite**
+    (`versionContract.test.ts`) en vez de script: corre en cada CI y no depende de que US-019
+    enganche nada, así que termina siendo **más fuerte** que la propuesta original. Requiere que
+    `apps/api/.env.example` declare la variable —hoy no lo hace—, así que **esta US la agrega**:
+    una línea aditiva, sin código, marcada en §Superficies afectadas como cruce de disciplina.
+  - (c) Fuente única en un archivo raíz (`legal/version.json`) consumido por los dos apps —
+    elimina la deriva por construcción, pero mete al backend en la ecuación (su config es 100 %
+    env con Zod) y toca otra disciplina. Descartada por ahora; sigue disponible si el Arquitecto
+    la prefiere antes de que US-008 se construya.
 
 - **OQ-FE-17 — ¿Qué hace el sistema mientras el texto legal sea provisional?**
-  El texto final es un insumo del dueño (US §10) y puede tardar. El riesgo no es no tenerlo:
-  es **publicarlo sin darse cuenta**.
-  - **(a) Nada** — el texto provisional puede llegar a producción y el sitio queda incumpliendo
-    con apariencia de cumplir. Es el peor de los tres.
-  - **(b) `status: 'draft'` bloquea el despliegue** ← **recomendada**. El módulo declara el
-    estado del documento y `check-legal-content.mjs` falla mientras sea `draft` o queden
-    marcadores de relleno. Local y tests siguen funcionando con el provisional (no bloquea el
-    desarrollo, como pide la US §10) y publicar exige un acto explícito: reemplazar el texto y
-    cambiar el estado.
-  - **(c) Banner visible «borrador»** en la página — honesto con el visitante, pero admite que
-    el sitio esté en producción con legales incompletos, que es justo lo que AC-6 prohíbe.
+  `[Resolved: 2026-08-22 — opción (a): sin gate automático]`
+  - **(a) Nada automático** ← **elegida por el PO**. No se construye `check-legal-content.mjs` ni
+    el campo `status`. Fundamento defendible: el script no correría hasta que US-019 enganche el
+    pipeline (protección de papel), y el **DoD de la US ya tiene el gate donde la decisión se
+    toma**: «texto legal final provisto y revisado por el dueño / asesoría legal».
+  - (b) `status: 'draft'` bloquea el despliegue — *era la recomendación de este plan*. Descartada.
+  - (c) Banner visible «borrador» en la página. Descartada.
 
-- **OQ-FE-18 — ¿Sigue existiendo `BE-US-017` o queda absorbida?** *(para el Arquitecto)*
-  La US §7 le asigna al backend «servir el contenido legal + versionado». Pero el E2E §3 fija
-  el contenido como **páginas estáticas SSR** (sin endpoint) y el plan de US-008 backend ya se
-  quedó con el versionado (`LEGAL_TERMS_VERSION` + `consent_terms_version` + su `CHECK`). Con
-  eso, a `BE-US-017` no le queda trabajo propio. Conviene declararlo —absorbida por US-008— en
-  vez de dejar una task fantasma que el flow-auditor va a leer como disciplina sin cobertura.
-  Este plan **no depende** de la respuesta.
+  > **Riesgo residual, aceptado y declarado**: si alguien despliega antes de que llegue el texto
+  > final, el sitio publica legales incompletos — incumplimiento **con apariencia de
+  > cumplimiento**, que es peor que no tener las páginas. Tres mitigaciones no-automáticas: los
+  > marcadores `[PENDIENTE: …]` van **dentro del texto** y se leen en la página; el DoD de la US
+  > lo lista como gate de producción; y T6.1 lo escribe en el README junto al checklist de
+  > despliegue de `Deferred: US-019`. Efecto lateral: **cae el campo `status`** del módulo de
+  > contenido, porque sin gate no tendría lector y sería dato muerto (`AGENTS.md` §1.2).
+
+- **OQ-FE-18 — ¿Sigue existiendo `BE-US-017` o queda absorbida?** *(para el Arquitecto — sin
+  resolver; **no bloquea** este plan)*
+  La US §7 le asigna al backend «servir el contenido legal + versionado». Pero el E2E §3 fija el
+  contenido como **páginas estáticas SSR** (sin endpoint) y el plan de US-008 backend ya se quedó
+  con el versionado (`LEGAL_TERMS_VERSION` + `consent_terms_version` + su `CHECK`). Con eso, a
+  `BE-US-017` no le queda trabajo propio.
+  - **(a) Declararla absorbida por US-008** — recomendada: una nota en la §7 de la US y en el
+    índice, reversible en un minuto. Evita que el flow-auditor lea una disciplina sin cobertura.
+  - (b) Dejarla abierta «por si aparece algo» — el costo es una task fantasma que nadie va a
+    cerrar y que va a aparecer en cada auditoría de flujo.
+  - (c) Darle contenido real (endpoint de legales versionado en base) — contradice el E2E §3 y
+    exigiría CR del diseño E2E. Sólo tiene sentido si el negocio va a editar los textos sin
+    deploy, que nadie pidió.

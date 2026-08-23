@@ -109,16 +109,45 @@ pantalla es de US-008.
 
 ## Decisión D5: cómo se verifica la versión (AC-8) sin acoplar los dos apps
 
+`[Resolved: 2026-08-22 — PO, OQ-FE-16 opción (b)]`
+
 La versión vive **en el módulo de contenido** (junto al texto que versiona) y **no** en una env
 del frontend. Poner `NEXT_PUBLIC_LEGAL_TERMS_VERSION` habría permitido que un deploy publicara
 una versión que no corresponde al texto compilado — precisamente el fallo que AC-8 quiere
 evitar, con un mecanismo que lo hace más fácil.
 
-La igualdad con el backend se chequea en el repo (OQ-FE-16, recomendación (b)):
-`check-legal-content.mjs` compara `LEGAL_DOCUMENTS.terms.version` con el default de
-`LEGAL_TERMS_VERSION` declarado en `apps/api/.env.example` y falla si difieren. Cubre el error
-frecuente (editar el texto y olvidar el backend). Lo que **no** cubre —que el valor configurado
-en Railway coincida— queda declarado como `Deferred: US-019`, no como supuesto.
+La igualdad con el backend se verifica **en la suite**, no en un script de despliegue:
+`versionContract.test.ts` lee el default declarado en `apps/api/.env.example` y lo compara con
+`LEGAL_DOCUMENTS.terminos.version`. Al caer el gate de OQ-FE-17 (a), la suite es el único lugar
+que corre solo en cada CI — y por eso termina siendo **más fuerte** que la idea original, que
+dependía de que US-019 enganchara un script al pipeline.
+
+Consecuencia declarada: esta US agrega **una línea** a `apps/api/.env.example`
+(`LEGAL_TERMS_VERSION=2026-06-15` + comentario apuntando a US-008), porque un contrato con un
+solo extremo declarado no se puede verificar. Es aditivo y sin código. Lo que el test **no**
+cubre —que el valor configurado en Railway coincida— queda `Deferred: US-019`.
+
+## Decisión D6: el texto provisional no tiene gate automático
+
+`[Resolved: 2026-08-22 — PO, OQ-FE-17 opción (a)]`
+
+Se evaluó bloquear el despliegue con un `status: 'draft'` en el módulo de contenido leído por un
+script (`check-legal-content.mjs`, hermano del gate del número de WhatsApp). **El PO eligió no
+construirlo**, y el argumento se sostiene: el script no correría hasta que US-019 enganche el
+pipeline, así que sería protección de papel; y el DoD de la US ya tiene el gate donde el riesgo
+se decide —«texto legal final provisto y revisado por el dueño / asesoría legal»—.
+
+Consecuencias, escritas para que nadie las descubra después:
+
+- **Cae el campo `status`** del tipo de documento: sin lector, sería dato muerto (`AGENTS.md`
+  §1.2). El módulo queda con `version` + `effective_date`, que sí tienen lectores (la página y
+  el test de contrato).
+- **El texto provisional se auto-anuncia**: los `[PENDIENTE: …]` van dentro del texto, así que
+  se **leen en la página**. Quien esté por publicar y abra `/legales/terminos` ve el hueco.
+- **Riesgo residual aceptado**: si alguien despliega antes de que llegue el texto final, el
+  sitio publica legales incompletos. Es incumplimiento con apariencia de cumplimiento, y la
+  única barrera es humana. Queda en el checklist de despliegue de `Deferred: US-019` y en el
+  README (T6.1).
 
 ## Approach
 
@@ -142,8 +171,9 @@ Fuera del feature, tres extensiones acotadas de código existente:
 - `src/features/storefront/sitemap.ts` — las dos URLs legales, **antes** de la rama de
   degradación (hoy un fallo del árbol devuelve sólo la home; las páginas legales no dependen del
   árbol, así que no tienen por qué desaparecer del sitemap cuando la API falla).
-- `scripts/check-legal-content.mjs` — gate de despliegue, hermano de
-  `check-whatsapp-configured.mjs`.
+- `apps/api/.env.example` — **una línea**: `LEGAL_TERMS_VERSION=2026-06-15` con un comentario que
+  apunta a US-008. Cruza la frontera de disciplina a propósito y por lo mínimo: un contrato con
+  un solo extremo declarado no se puede verificar (D5).
 
 ### Forma del contenido
 
@@ -161,8 +191,6 @@ export interface LegalDocument {
   /** Fecha ISO. Es la MISMA que registra `orders.consent_terms_version` (US-008). */
   version: string;
   effective_date: string;
-  /** `draft` bloquea el despliegue (AC-6). Sólo el dueño lo pasa a `final`. */
-  status: 'draft' | 'final';
   /** Bloques obligatorios de la Ley 25.326 — el test de AC-5 los exige por clave. */
   required: {
     controller: LegalSection;   // responsable del tratamiento
@@ -200,23 +228,24 @@ del PRD es que se encuentren los **productos**.
 ## Mapa de estados de UI
 
 No hay operación asíncrona, así que no hay máquina de estados de datos. Los estados que sí
-existen son de **contenido y de entorno**:
+existen son de **contenido**, y su transición es humana (D6: sin gate automático):
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Publicada: status = final
-    [*] --> Provisional: status = draft
-    Provisional --> Publicada: el dueño entrega el texto final
-    Provisional --> DeployBloqueado: intento de despliegue
-    DeployBloqueado --> Provisional: el gate falla con exit != 0
-    Publicada --> [*]
+    [*] --> Provisional: texto con marcadores [PENDIENTE: …]
+    Provisional --> Final: el dueño / asesoría entrega el texto
+    Final --> [*]
     note right of Provisional
-        Local y tests funcionan igual:
-        el desarrollo no se bloquea (US §10).
+        Los marcadores se LEEN en la página:
+        el hueco se auto-anuncia.
+        Publicar así es incumplimiento —
+        la barrera es el DoD de la US, no un script
+        (decisión del PO, OQ-FE-17 (a)).
     end note
-    note right of DeployBloqueado
-        check-legal-content.mjs
-        (enganche al pipeline: US-019)
+    note right of Final
+        Cambiar el texto sube `version`,
+        y el test de contrato exige que el backend
+        declare la misma (AC-8).
     end note
 ```
 
@@ -228,16 +257,16 @@ modo de falla real es que la API esté caída, y ahí la página sirve 200 igual
 
 | Capa | Qué cubre | Dónde |
 |---|---|---|
-| **Unit** (Vitest) | los 4 bloques de la Ley 25.326 por documento; forma de `version` (ISO) e igualdad `version === effective_date` cuando corresponde; rutas de fuente única; `CONSENT_COPY` sin `#`; metadata (canonical absoluta, título, longitud de description); sitemap con las dos URLs **incluso degradando** | `src/features/legal/*.test.ts`, `src/features/storefront/sitemap.test.ts` |
+| **Unit** (Vitest) | los 4 bloques de la Ley 25.326 por documento (schema Zod que **rechaza** un documento incompleto); forma de `version` (ISO) e igualdad con `effective_date`; **igualdad con `LEGAL_TERMS_VERSION` del backend** (AC-8); rutas de fuente única; `CONSENT_COPY` sin `#`; metadata (canonical absoluta, título, longitud de description); sitemap con las dos URLs **incluso degradando** | `src/features/legal/*.test.ts`, `src/features/storefront/sitemap.test.ts` |
 | **Componente** (RTL) | `LegalDocument`: `<h1>` único, un `<h2>` por sección, versión visible con `<time>`; `SiteFooter` con los dos enlaces y sus nombres accesibles | `LegalDocument.test.tsx`, `SiteFooter.test.tsx` |
 | **A11y** (axe) | las dos páginas sin violaciones; jerarquía de headings | `legalA11y.test.tsx` |
 | **Guards** | sin `fetch`/cliente HTTP, sin `'use client'`, sin telemetría en el camino legal | `noBackendNoTracking.test.tsx` |
 | **E2E** (Playwright) | las dos rutas devuelven **200 con el contenido en el HTML servido** y sin cookies (AC-7); el footer de cualquier página pública las enlaza (AC-3); aparecen en `/sitemap.xml`; el panel no las enlaza en su chrome | `e2e/legal-pages.spec.ts` |
-| **Gate** (node) | el script falla con `draft` y con marcadores de relleno; pasa con `final` | `scripts/check-legal-content.test.mjs` |
 
-Fuera de esta capa (van a `/plan-qa`): revisión de contenido legal por el dueño/asesoría (no es
-test automatizable), BDD de aceptación cross-stack y la verificación del checkbox del checkout
-(pertenece a US-008).
+Fuera de esta capa: la revisión del contenido legal por el dueño/asesoría (no es test
+automatizable y **es el gate de producción** tras la decisión OQ-FE-17 (a)), el BDD de
+aceptación cross-stack y la verificación del checkbox del checkout (pertenece a US-008) — van a
+`/plan-qa`.
 
 ## Trade-offs
 
@@ -245,33 +274,37 @@ test automatizable), BDD de aceptación cross-stack y la verificación del check
 |---|---|---|
 | Contenido en el repo (D1) | Cero infra, versionado auditable en git, testeable, sirve con la API caída | Cambiar una coma del texto legal es un deploy |
 | Dos rutas explícitas (D2) | Sin rama `notFound()` ni parámetro que validar; type safety total | Metadata y page duplicadas (3 líneas cada una); un tercer documento pide refactor |
-| Versión en el código, no en env (D5) | Imposible publicar una versión que no corresponda al texto compilado | Subir la versión exige tocar dos repos-lógicos (FE y el `.env.example` del BE) — mitigado por el chequeo de deriva |
+| Versión en el código, no en env (D5) | Imposible publicar una versión que no corresponda al texto compilado | Subir la versión exige tocar dos lugares (el módulo del FE y el `.env.example` del BE) — el test de contrato lo caza en CI |
 | Sin telemetría (D4) | Cero JS de cliente en las páginas; cumple US §9 | No se sabrá cuánta gente lee los términos (nadie va a decidir nada con ese dato) |
-| Gate en el job de deploy, no en el build (OQ-FE-17 (b)) | El desarrollo local y la suite funcionan con texto provisional; publicar exige acto explícito | Depende de que US-019 enganche el script al pipeline: hasta entonces el guard existe pero nadie lo invoca (declarado, no silencioso) |
-| `status: draft` en vez de banner visible (OQ-FE-17) | No se publica algo que aparenta cumplir | Si el gate no está enganchado y alguien publica a mano, el visitante no ve advertencia |
+| **Sin gate automático del texto provisional** (D6, OQ-FE-17 (a)) | Cero maquinaria que nadie invoca; el gate vive donde se decide publicar (DoD de la US) | **Si alguien despliega antes del texto final, el sitio publica legales incompletos.** Mitigación: los `[PENDIENTE: …]` se leen en la página + checklist de US-019 |
+| El test de contrato toca `apps/api/.env.example` (una línea) | AC-8 queda verificado hoy, no cuando US-008 esté construida | Cruza la frontera de disciplina; conflicto de una línea si US-008 lo agrega en paralelo |
 
-**Deuda declarada**: mientras el texto sea provisional, el sitio **no puede** ir a producción —
-que es exactamente lo que la US pide (AC-6) y lo que su DoD ya lista como gate. La deuda no es
-técnica: es un insumo de negocio pendiente, con dueño.
+**Deuda declarada**: mientras el texto sea provisional, el sitio **no debería** ir a producción —
+la US lo pide (AC-6) y su DoD lo lista como gate. Tras la decisión OQ-FE-17 (a) esa barrera es
+**humana**: no hay script que la haga cumplir. La deuda no es técnica (es un insumo de negocio
+pendiente, con dueño), pero el riesgo de que alguien la saltee sí es real y queda escrito acá,
+en el README y en el checklist de despliegue de US-019.
 
 ## Recomendación de despliegue
 
-**Sí correr `/plan-deployment`, aunque el change sea chico**, por dos motivos:
+**Sí correr `/plan-deployment`, aunque el change sea chico**, y ahora con un motivo más:
 
-1. **Es un gate de producción, no una feature.** El despliegue de US-008/US-009 (cobrar) no
-   puede ocurrir antes que esto. El orden importa y conviene que quede escrito.
-2. **Dos guards nuevos esperan enganche al pipeline**: `check-legal-content.mjs` (este change) y
-   el ya existente `check-whatsapp-configured.mjs`. Los dos son de US-019 y comparten job.
+1. **Es un gate legal, no una feature.** El despliegue de US-008/US-009 (cobrar) no puede
+   ocurrir antes que esto. El orden importa y conviene que quede escrito.
+2. **El gate del texto provisional es humano** (OQ-FE-17 (a)): el checklist de despliegue es el
+   **único** lugar donde esa verificación puede vivir. Si no entra ahí, no existe.
+3. **Un guard sigue esperando enganche**: `check-whatsapp-configured.mjs` (US-018). Mismo job.
 
-No hay migración, ni variable de entorno nueva, ni cambio de contrato: el riesgo de despliegue
-es cero en lo técnico y alto en lo legal.
+No hay migración, ni variable de entorno nueva en el web, ni cambio de contrato de API: el riesgo
+de despliegue es cero en lo técnico y alto en lo legal.
 
 ## Riesgos y mitigaciones
 
 | Riesgo | Prob. | Impacto | Mitigación |
 |---|---|---|---|
-| Se publica el texto provisional | media | **alto** (incumplimiento con apariencia de cumplir) | `status: 'draft'` + gate de despliegue (T4.1); el enganche al pipeline es de US-019 y queda declarado |
-| La versión publicada difiere de `LEGAL_TERMS_VERSION` del BE | media | alto (AC-8 se vuelve falso) | Chequeo de deriva en el mismo gate (T4.3, `Gated:` a que US-008 declare la variable) |
+| **Se publica el texto provisional** | **media-alta** (ya no hay gate automático) | **alto** (incumplimiento con apariencia de cumplir) | Marcadores `[PENDIENTE: …]` **visibles en la página** + gate humano del DoD + checklist de despliegue de `Deferred: US-019` + README (T6.1). Decisión consciente del PO (OQ-FE-17 (a)), no un olvido |
+| La versión publicada difiere de `LEGAL_TERMS_VERSION` del BE | media | alto (AC-8 se vuelve falso) | `versionContract.test.ts` en la suite (T4.3): corre en cada CI, no depende de que nadie lo invoque |
+| Conflicto con la sesión de US-008 sobre `apps/api/.env.example` | media | bajo | Una línea aditiva; el conflicto es trivial y visible. Alternativa declarada: dejar T4.3 `Gated:` |
 | El checkout de US-008 nace con `href="#"` (el copy del §10.2 lo tiene así) | media | medio | `routes.ts` + `CONSENT_COPY` como seam, documentado en el README y en la matriz de AC como deferral con dueño |
 | Alguien agrega `class="prose"` asumiendo el plugin | baja | bajo | Declarado en AS-BUILT y en D-Jerarquía; el test de componente fija las clases estructurales |
 | Colisión de working tree con otra sesión (`apps/web` compartido) | **alta** | medio | P1 bloqueante: `git status --porcelain -- apps/web` vacío antes de empezar. Ya pasó tres veces en este repo |
