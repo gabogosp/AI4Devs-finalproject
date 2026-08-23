@@ -1,3 +1,4 @@
+import { QA_API_BASE_URL, RECETA_API_QA } from './qa-env';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -18,7 +19,7 @@ import jwt from 'jsonwebtoken';
  * Modo estricto (`QA_AUTH_STRICT=true`, automático en CI): el fallback está
  * prohibido — sin credenciales se falla en lugar de degradar en silencio.
  */
-const API = process.env.QA_API_BASE_URL ?? 'http://localhost:3000';
+const API = QA_API_BASE_URL;
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret';
 const BOOTSTRAP = process.env.ADMIN_BOOTSTRAP_TOKEN;
 
@@ -66,9 +67,17 @@ export async function adminAuthWithSource(): Promise<AdminAuthResult> {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '');
+      // El 429 es de entorno, no de la costura de login: cada escenario hace un
+      // login REAL y el presupuesto de producción es de 5 cada 15 minutos, así que
+      // una suite de más de cinco escenarios se autobloquea. Se dice cómo salir.
+      const pista =
+        res.status === 429
+          ? ` El presupuesto de rate-limit de auth está agotado: la suite hace un login real por escenario. ` +
+            `Levantá la API para QA con: ${RECETA_API_QA}`
+          : '';
       throw new Error(
         `[qa/admin-auth] El login real falló: POST ${API}/v1/admin/auth/login → ${res.status}. ` +
-          `NO se mintea un token de reemplazo (testing-standards §14.2). Respuesta: ${body.slice(0, 200)}`,
+          `NO se mintea un token de reemplazo (testing-standards §14.2).${pista} Respuesta: ${body.slice(0, 200)}`,
       );
     }
 

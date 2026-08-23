@@ -1,8 +1,10 @@
 import { request, type APIRequestContext } from '@playwright/test';
 
-const API = process.env.QA_API_BASE_URL ?? 'http://localhost:3000';
+import { QA_API_BASE_URL, QA_WEB_BASE_URL } from './qa-env';
+
+const API = QA_API_BASE_URL;
 /** Origen que la allowlist de CORS del API debe admitir; el `CartCsrfGuard` lo verifica. */
-const WEB = process.env.QA_WEB_BASE_URL ?? 'http://localhost:3210';
+const WEB = QA_WEB_BASE_URL;
 
 /**
  * Estados de una línea, tal como los declara el contrato. No es un booleano:

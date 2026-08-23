@@ -29,12 +29,22 @@ import { cart_write } from './lib/thresholds.js';
  *
  * Uso:
  *   QA_API_BASE_URL=http://localhost:3001 \
- *   QA_CART_ORIGIN=http://localhost:3100 \
  *   k6 run --vus 2 --duration 20s qa/performance/cart-write.js
+ *
+ * o, con los defaults y el entorno del script de arriba:
+ *
+ *   pnpm --filter @dsm/qa api:up            # en otra terminal
+ *   QA_API_BASE_URL=http://localhost:3009 pnpm --filter @dsm/qa test:load:cart
  */
 const BASE = __ENV.QA_API_BASE_URL || 'http://localhost:3000';
-/** El `CartCsrfGuard` valida `Origin` contra la allowlist, no sólo el double-submit. */
-const ORIGIN = __ENV.QA_CART_ORIGIN || 'http://localhost:3100';
+/**
+ * El `CartCsrfGuard` valida `Origin` contra la allowlist, no sólo el double-submit.
+ *
+ * Se leen las **mismas** variables y los **mismos** defaults que `qa/support/qa-env.ts`
+ * (k6 corre en su propio runtime y no puede importar el módulo TS, así que la
+ * coherencia se mantiene a mano). El default es el canónico de `RUN-MVP.md`: 3200.
+ */
+const ORIGIN = __ENV.QA_WEB_BASE_URL || 'http://localhost:3200';
 /** Mínimo de productos distintos para no medir siempre la misma fila. */
 const MIN_PRODUCTOS = Number(__ENV.QA_CART_MIN_PRODUCTOS || 3);
 

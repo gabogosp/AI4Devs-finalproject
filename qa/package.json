@@ -13,7 +13,9 @@
     "test:a11y": "playwright test -c e2e/playwright.a11y.config.ts",
     "test:functional": "newman run functional/catalogo-admin.postman_collection.json --env-var baseUrl=${QA_API_BASE_URL:-http://localhost:3000} --env-var jwtSecret=${JWT_SECRET:-dev-secret}",
     "test:load": "k6 run performance/baseline.js",
-    "seed:load": "tsx performance/seed-load-data.ts"
+    "test:load:cart": "k6 run --vus 2 --duration 20s performance/cart-write.js",
+    "seed:load": "tsx performance/seed-load-data.ts",
+    "api:up": "bash scripts/api-up.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.1",

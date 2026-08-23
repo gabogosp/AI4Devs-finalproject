@@ -73,6 +73,35 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web 
 | Panel admin (login) | http://localhost:3200/admin/acceso |
 | API | http://localhost:3000/v1/products/compresor-1-4-hp |
 
+## Correr la suite de QA (aceptación, E2E, carga)
+
+La suite necesita una API **apta para QA**, que no es la misma que la de la demo: con los
+valores de producción la mayoría de los escenarios falla **por el entorno y con síntomas que
+parecen defectos del producto**. Hay un script que la levanta con todo puesto:
+
+```bash
+# 1. API para QA (deja la de la demo en 3000 intacta)
+pnpm --filter @dsm/qa api:up                    # queda en http://localhost:3009
+
+# 2. Suites, apuntadas a esa API
+QA_API_BASE_URL=http://localhost:3009 pnpm --filter @dsm/qa test:acceptance
+QA_API_BASE_URL=http://localhost:3009 pnpm --filter @dsm/qa test:load:cart
+```
+
+Qué corrige cada variable del script, con el síntoma que produce su ausencia:
+
+| Variable | Sin ella |
+|---|---|
+| `CORS_ALLOWED_ORIGINS` con el origen del web | La **primera** escritura del carrito pasa y la **segunda** muere en 403: los escenarios acusan asserts de negocio («la línea quitada sigue en el carrito») cuando el carrito está perfecto. |
+| `AUTH_RATE_LIMIT_MAX` elevado | Cada escenario hace un login admin **real**; con 5 cada 15 minutos, la suite se autobloquea con 429 en el sexto. |
+| `CART_*_RATE_LIMIT_MAX` elevado | El carrito de producción admite 30 escrituras/min/IP: la suite y el k6 lo superan de inmediato. En la carga, además, el p95 medido sería el del throttler. |
+| `AUTH_COOKIE_SECURE=false` | En `http` local una cookie `Secure` no vuelve al cliente, así que cada escritura crearía un carrito nuevo. |
+
+Los puertos del cliente QA salen de `qa/support/qa-env.ts` (**una** fuente: API 3000, web
+3200) y la suite **verifica el entorno antes del primer escenario**: si la API no está o no
+admite su `Origin`, falla con un mensaje que dice qué levantar en lugar de dejar que reviente
+más tarde como un problema de dominio.
+
 ## Recorrido de demo (lo que se ve)
 
 1. **Storefront** → home → categoría **Refrigeración** → lista de productos publicados.

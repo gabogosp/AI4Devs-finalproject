@@ -1,4 +1,6 @@
-const API = process.env.QA_API_BASE_URL ?? 'http://localhost:3000';
+import { QA_API_BASE_URL } from './qa-env';
+
+const API = QA_API_BASE_URL;
 
 /**
  * Llamada autenticada a la API admin para los seeds de la suite cross-stack.

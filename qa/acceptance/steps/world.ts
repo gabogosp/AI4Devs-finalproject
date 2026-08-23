@@ -1,6 +1,7 @@
 import {
   After,
   Before,
+  BeforeAll,
   setWorldConstructor,
   World,
   type IWorldOptions,
@@ -13,9 +14,24 @@ import {
   type Page,
 } from '@playwright/test';
 import { adminAuth } from '../../support/admin-auth';
+import {
+  QA_API_BASE_URL,
+  QA_WEB_BASE_URL,
+  verificarEntornoQA,
+} from '../../support/qa-env';
 
-const BASE = process.env.QA_API_BASE_URL ?? 'http://localhost:3000';
-const WEB = process.env.QA_WEB_BASE_URL ?? 'http://localhost:3100';
+const BASE = QA_API_BASE_URL;
+const WEB = QA_WEB_BASE_URL;
+
+/**
+ * Chequeo de entorno **una vez por corrida**, antes del primer escenario: si la
+ * API no está o no admite el `Origin` de la suite, la corrida falla con un mensaje
+ * que dice qué levantar, en vez de producir asserts de dominio que mienten sobre
+ * dónde está el problema (D-4).
+ */
+BeforeAll(async function () {
+  await verificarEntornoQA();
+});
 
 /**
  * World de la aceptación cross-stack (API-level: Playwright APIRequestContext
