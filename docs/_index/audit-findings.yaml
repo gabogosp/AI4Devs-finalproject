@@ -17,7 +17,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-002
@@ -47,7 +47,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-005
@@ -57,7 +57,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-006
@@ -67,7 +67,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-007
@@ -77,7 +77,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-008
@@ -87,7 +87,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-009
@@ -97,7 +97,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DOC-010
@@ -117,7 +117,7 @@
   remediation-target: docs
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DSM-WEB-001
@@ -127,7 +127,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-web/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DSM-WEB-002
@@ -157,7 +157,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-web/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DSM-WEB-005
@@ -206,7 +206,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-web/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DSM-WEB-009
@@ -226,7 +226,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-web/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-DSM-WEB-011
@@ -260,7 +260,7 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-E2E-003
@@ -270,9 +270,12 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: addressed
   confidence: medium
   created: 2026-08-22
+  # Cerrado el 2026-08-23 por la enmienda del §17: el fix sugerido por el reporte era
+  # «documentar que el p95 se cumple GRACIAS a la degradación a full-text, no por la latencia
+  # nativa del proveedor» — que es exactamente lo que la fila enmendada ahora dice.
 - id: AUDIT-E2E-004
   title: "§17 menciona 'cache Redis de queries frecuentes' pero Redis no está aprovisionado"
   severity: Major
@@ -293,9 +296,12 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: addressed
   confidence: medium
   created: 2026-08-22
+  # Cerrado el 2026-08-23: el job de limpieza de pending_payment SÍ tiene AC y plan —
+  # US-010 AC-11 + T5.2 (runner + endpoint admin). El reporte lo marcaba «parcialmente
+  # mitigado» porque la auditoría corrió el mismo día que se escribió ese plan.
 - id: AUDIT-E2E-006
   title: "§17 fila de disponibilidad '99.5%' sin procedimiento de medición"
   severity: Minor
@@ -303,7 +309,7 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-E2E-007
@@ -313,7 +319,7 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-E2E-008
@@ -323,7 +329,7 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-E2E-009
@@ -333,7 +339,7 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-001
@@ -374,7 +380,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-005
@@ -394,7 +400,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-007
@@ -414,7 +420,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-009
@@ -424,7 +430,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-010
@@ -434,7 +440,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-011
@@ -444,7 +450,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-012
@@ -454,7 +460,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-FLOW-013
@@ -464,7 +470,7 @@
   remediation-target: docs
   source-audit: docs/audits/flow/2026-08-22-flow-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-001
@@ -494,7 +500,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-004
@@ -504,7 +510,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-005
@@ -514,7 +520,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-006
@@ -524,7 +530,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-007
@@ -534,7 +540,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-008
@@ -564,7 +570,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-011
@@ -574,7 +580,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-012
@@ -584,7 +590,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-013
@@ -594,7 +600,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-014
@@ -614,7 +620,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-016
@@ -624,7 +630,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-PLAN-017
@@ -634,7 +640,7 @@
   remediation-target: docs
   source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-001
@@ -666,7 +672,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-004
@@ -676,7 +682,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-005
@@ -686,7 +692,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-006
@@ -696,7 +702,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-007
@@ -706,7 +712,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-008
@@ -716,7 +722,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-009
@@ -737,7 +743,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-QA-011
@@ -747,7 +753,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-QA-003-salud-suite
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-dsm-api-001
@@ -757,7 +763,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-api/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-dsm-api-002
@@ -798,7 +804,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-api/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-dsm-api-006
@@ -819,7 +825,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-api/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-dsm-api-008
@@ -861,7 +867,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-api/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-dsm-api-012
@@ -871,7 +877,7 @@
   remediation-target: code
   source-audit: docs/audits/dsm-api/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
   confidence: medium
   created: 2026-08-22
 - id: AUDIT-dsm-api-013
@@ -881,6 +887,6 @@
   remediation-target: code
   source-audit: docs/audits/dsm-api/2026-08-22/audit.md
   related-us: null
-  status: open
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
   confidence: medium
   created: 2026-08-22

@@ -416,6 +416,11 @@
   us-id: US-007
   discipline: qa
   variant: null
+  # 22/22 tasks cerradas el 2026-08-23, desbloqueadas al cerrar el FE. 7 E2E de
+  # navegador + 3 de a11y verdes contra el stack real (API :3009 + web :3220).
+  # Dos fragilidades PREEXISTENTES de la suite de US-002 quedan diferidas en su
+  # tasks.md (TC-204 por datos de otras sesiones, TC-208 por un assert que colisiona
+  # con el teléfono del footer) y una interferencia entre specs del propio carrito.
   status: in progress  # 15/22 cerradas 2026-08-23 (Fases 1-3, 6, 7 + 3 gates); 4-5 bloqueadas por el FE
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
@@ -775,6 +780,10 @@
   us-id: US-007
   discipline: frontend-web
   variant: null
+  # 25/25 tasks cerradas el 2026-08-23. Suite: 86 archivos / 516 tests unitarios +
+  # 12 E2E dev-owned; typecheck, lint y codegen sin drift. Queda UN gate y es humano:
+  # recorrer el carrito en `dev` sin errores de consola (se registra en el PR).
+  # Pendiente PR — este repo integra en feature-entrega2-GOSP (ver cabecera).
   status: in progress
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
@@ -1049,6 +1058,136 @@
   # (fase de contraccion, solo segura una vez demostrado que nadie lo lee).
   estimate-hours: 2.7
   assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+# ── AUDIT-DERIVED CHANGES (2026-08-23) ─────────────────────────────────────
+# Created by /plan-from-audit (batch remediation of 51 open findings).
+# 7 changes temáticos agrupados por disciplina homogénea.
+
+- name: AUDIT-DOC-001-docs-obligatorios-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  audit-derived: true
+  estimate-hours: 12
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-FLOW-004-coherencia-indices-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/flow/2026-08-22-flow-audit.md
+  audit-derived: true
+  estimate-hours: 6
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-PLAN-003-deuda-planes-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  audit-derived: true
+  estimate-hours: 4
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-E2E-002-profundidad-e2e-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  audit-derived: true
+  estimate-hours: 6
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-QA-003-salud-suite-qa
+  us-id: null
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  audit-derived: true
+  estimate-hours: 20
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-dsm-api-001-deuda-codigo-backend
+  us-id: null
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-api/2026-08-22/audit.md
+  audit-derived: true
+  estimate-hours: 14
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-DSM-WEB-001-deuda-frontend-frontend-web
+  us-id: null
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-web/2026-08-22/audit.md
+  audit-derived: true
+  estimate-hours: 14
+  assignee: sin-asignar
   branch: null
   pr-url: null
   created: 2026-08-23

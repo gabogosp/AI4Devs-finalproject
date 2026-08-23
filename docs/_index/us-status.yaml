@@ -78,6 +78,10 @@
   blocked_by: [US-001]
 - id: US-007
   slug: carrito-compra
+  # Las TRES disciplinas con sus tasks al 100% el 2026-08-23 (backend 37/37,
+  # frontend-web 25/25, qa 22/22). NO pasa a Done: el DoD de la US exige regresión
+  # verde en staging, AC manuales verificados por QA y firma del PO — ninguna la
+  # cierra un dev. Falta además el PR (modelo de rama de integración).
   status: In Progress
   priority: High
   prd-capacity: 4
