@@ -90,7 +90,7 @@ language: es
     rojo sobre un gate que funciona. Lo que CI detecta es el drift **commiteado**, y así se
     simula.)*
 
-- [ ] T0.3 Extender el rewrite same-origin al carrito (**ADR-0013 heredado**)
+- [x] T0.3 Extender el rewrite same-origin al carrito (**ADR-0013 heredado**)
   - **Pattern**: agregar una entrada al array de `rewrites()` en `next.config.mjs`, junto a
     la de auth. Declarativo: **no** se agrega un `fetch` ni un route handler — `per
     ADR-0013 — el navegador nunca direcciona al API en la superficie con cookies` y `per
@@ -103,10 +103,14 @@ language: es
     **server-only** (sin prefijo `NEXT_PUBLIC_`) y el arranque sigue fallando ruidoso si
     falta. El rewrite de `/v1/auth/:path*` queda **idéntico**.
   - **Verify**: `pnpm --filter @dsm/web test -- next-config` (nuevo
-    `apps/web/src/lib/http/rewrites.test.ts`: importa la config y asserta que el array
-    contiene **las dos** entradas con el destino derivado de `API_INTERNAL_ORIGIN`, y que
-    ninguna lleva `NEXT_PUBLIC_`) — la prueba real de que la cookie viaja es T5.1, contra
-    la app construida
+    `apps/web/src/lib/http/next-config.rewrites.test.ts`: importa la config y asserta que el
+    array contiene **las dos** entradas con el destino derivado de `API_INTERNAL_ORIGIN`, que
+    ninguna lleva `NEXT_PUBLIC_`, que las dos preservan `:path*` y que son exactamente dos) —
+    la prueba real de que la cookie viaja es T5.1, contra la app construida.
+    *(nombre del archivo ajustado al ejecutar: el plan decía `rewrites.test.ts`, que **no**
+    matchea el patrón `next-config` del propio comando; se usa `next-config.rewrites.test.ts`,
+    que matchea y conserva la intención. Además `vitest.config.ts` sólo incluye `src/**`, así
+    que el test vive bajo `src/` e importa la config con `@/../next.config.mjs`.)*
 
 - [ ] T0.4 Un solo lector de CSRF, dos sujetos
   - **Pattern**: parametrizar por **sujeto**, no duplicar el parser — `per el comentario

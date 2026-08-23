@@ -21,20 +21,22 @@ const securityHeaders = [
 ];
 
 /**
- * Origen del API para el rewrite de la superficie de sesión. Es **server-only**
- * a propósito (sin `NEXT_PUBLIC_`): el navegador nunca habla con el API
- * directamente para auth, así que exponerlo al bundle sería filtrar topología
- * sin ganar nada (next-standards §8).
+ * Origen del API para el rewrite de las superficies con cookies. Es
+ * **server-only** a propósito (sin `NEXT_PUBLIC_`): el navegador nunca habla con
+ * el API directamente en esas superficies, así que exponerlo al bundle sería
+ * filtrar topología sin ganar nada (next-standards §8).
  *
  * Falla ruidoso si falta en producción: un rewrite que apunta a `undefined`
- * devuelve 404 en el login, y ese síntoma no dice nada sobre la causa.
+ * devuelve 404, y ese síntoma no dice nada sobre la causa. Desde US-007 gobierna
+ * **dos** superficies (`/v1/auth/*` y `/v1/cart/*`), así que un deploy sin ella
+ * rompe el login **y** el carrito.
  */
 function apiOrigin() {
   const origin = process.env.API_INTERNAL_ORIGIN;
   if (origin) return origin;
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      'API_INTERNAL_ORIGIN es obligatoria: sin ella el rewrite de /v1/auth/* apunta a undefined y el login devuelve 404.',
+      'API_INTERNAL_ORIGIN es obligatoria: sin ella los rewrites de /v1/auth/* y /v1/cart/* apuntan a undefined, y el login y el carrito devuelven 404.',
     );
   }
   return 'http://localhost:3000';
@@ -63,12 +65,24 @@ const nextConfig = {
    * cookie aterriza donde tiene que aterrizar.
    *
    * Es declarativo: no agrega un solo `fetch` crudo, así que F48 queda intacto.
+   *
+   * **El carrito hereda el mecanismo (US-007).** ADR-0013 lo anticipó en su
+   * última línea —«Inherited by: US-007 (cart, if it moves to a
+   * cookie-authenticated surface)»— y lo es: el carrito del invitado se
+   * identifica con `dsm_cart` (`httpOnly`) y se protege con `dsm_cart_csrf`.
+   * Sin esta segunda entrada el carrito funciona en local y **está roto en
+   * producción**, con el peor perfil de defecto posible: invisible hasta el
+   * deploy.
    */
   async rewrites() {
     return [
       {
         source: '/v1/auth/:path*',
         destination: `${apiOrigin()}/v1/auth/:path*`,
+      },
+      {
+        source: '/v1/cart/:path*',
+        destination: `${apiOrigin()}/v1/cart/:path*`,
       },
     ];
   },
