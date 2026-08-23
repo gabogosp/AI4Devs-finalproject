@@ -130,3 +130,69 @@ describe('el precio y el stock NO pueden entrar al hash (AC-6)', () => {
     );
   });
 });
+
+/**
+ * La separación entre «qué se embeddea» y «qué cuenta como cambio» (T6.2).
+ *
+ * Un bug real vivió acá: el hash se calculaba sobre `buildSourceText`, que para un producto ya
+ * enriquecido devuelve el texto **de la IA**. Resultado: corregir la `description_raw` no
+ * cambiaba el hash, la corrida siguiente lo salteaba como «sin cambios», y el vector seguía
+ * describiendo el texto viejo para siempre. El dueño arreglaba una descripción mal cargada y la
+ * búsqueda nunca se enteraba.
+ */
+describe('buildChangeKey — detección de cambios sobre el INPUT, no sobre el output', () => {
+  const base = {
+    name: 'Amoladora angular',
+    categoryName: 'Herramientas eléctricas',
+    curated: null,
+    enriched: null,
+    raw: 'amoladora 115',
+  };
+
+  it('cambiar la description_raw CAMBIA el hash, incluso si ya hay texto de la IA', () => {
+    const yaEnriquecido = { ...base, enriched: 'Texto largo que escribió la IA.' };
+    const conRawCorregido = { ...yaEnriquecido, raw: 'amoladora angular 115 mm 900 W' };
+
+    expect(hashSourceText(conRawCorregido)).not.toBe(hashSourceText(yaEnriquecido));
+  });
+
+  it('el texto de la IA NO participa del hash: regenerar no invalida el hash', () => {
+    // Si participara, el hash cambiaría en cada corrida y el producto se re-enriquecería para
+    // siempre: el control de costo de AC-6 dejaría de existir.
+    const conUnTexto = { ...base, enriched: 'Versión A del texto generado.' };
+    const conOtroTexto = { ...base, enriched: 'Versión B, completamente distinta.' };
+
+    expect(hashSourceText(conUnTexto)).toBe(hashSourceText(conOtroTexto));
+  });
+
+  it('en un producto curado manda el texto del dueño, y el raw deja de contar', () => {
+    // Coherente con AC-7: el texto que se embeddea es el curado, así que un cambio del raw
+    // produciría el MISMO vector y costaría una llamada paga.
+    const curado = { ...base, curated: 'Texto de Pedro.', raw: 'viejo' };
+    const curadoConOtroRaw = { ...curado, raw: 'otro raw completamente distinto' };
+
+    expect(hashSourceText(curadoConOtroRaw)).toBe(hashSourceText(curado));
+
+    // Pero editar el texto CURADO sí cambia el hash: es lo que el dueño controla.
+    const curadoEditado = { ...curado, curated: 'Texto de Pedro, corregido.' };
+    expect(hashSourceText(curadoEditado)).not.toBe(hashSourceText(curado));
+  });
+
+  it('el texto que se EMBEDDEA sigue prefiriendo el enriquecido sobre el raw', () => {
+    // La separación no cambia la calidad del embedding: para vectorizar sigue ganando el texto
+    // más rico disponible.
+    const yaEnriquecido = { ...base, enriched: 'Amoladora angular de 115 mm, 900 W.' };
+
+    expect(buildSourceText(yaEnriquecido)).toContain('900 W');
+    expect(buildSourceText(yaEnriquecido)).not.toContain('amoladora 115.');
+  });
+
+  it('el nombre y el rubro siempre cuentan como cambio', () => {
+    expect(hashSourceText({ ...base, name: 'Amoladora chica' })).not.toBe(
+      hashSourceText(base),
+    );
+    expect(hashSourceText({ ...base, categoryName: 'Otro rubro' })).not.toBe(
+      hashSourceText(base),
+    );
+  });
+});

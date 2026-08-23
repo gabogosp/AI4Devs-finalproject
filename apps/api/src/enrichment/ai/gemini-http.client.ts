@@ -6,6 +6,8 @@ import {
 } from '../../common/errors/enrichment-errors';
 import { AiEmbedder, AiEnricher, EnrichInput } from '../ports/ai.ports';
 import { configNumber } from '../config-number';
+import { withRetry } from './backoff';
+import { RateLimiter } from './rate-limiter';
 
 /** Dimensión del vector que fija el esquema (`vector(768)`). No es negociable acá. */
 export const EMBEDDING_DIMS = 768;
@@ -76,16 +78,47 @@ interface RespuestaGenerate {
  * 4. **Ningún error incluye la clave ni el prompt.** Los mensajes nombran el status y la
  *    forma del problema, nada más.
  */
+/**
+ * Costuras de tiempo del adapter, inyectables para tests.
+ *
+ * Existen porque el reintento y el limitador de RPM **duermen**: sin poder sustituir el
+ * `sleep`, cada test de un 429 tardaría segundos de reloj real.
+ */
+export interface GeminiTimingSeams {
+  sleep?: (ms: number) => Promise<void>;
+  now?: () => number;
+  /** Reintentos además del intento inicial. */
+  maxRetries?: number;
+}
+
 @Injectable()
 export class GeminiHttpClient implements AiEmbedder, AiEnricher {
   /** Este adapter sólo se construye cuando hay credenciales (lo decide el factory). */
   readonly available = true;
 
+  /**
+   * Limitador de RPM **compartido** por los dos puertos: la cuota del free tier es por
+   * clave, no por método. Tener uno por método permitiría el doble del tope real.
+   */
+  private readonly limiter: RateLimiter;
+  private readonly sleep: (ms: number) => Promise<void>;
+  private readonly maxRetries: number;
+
   constructor(
     private readonly config: ConfigService,
     /** Inyectable para tests: apunta a un stub local en vez del proveedor real. */
     private readonly baseUrl: string = GEMINI_BASE_URL,
-  ) {}
+    timing: GeminiTimingSeams = {},
+  ) {
+    this.sleep =
+      timing.sleep ?? ((ms) => new Promise<void>((r) => setTimeout(r, ms)));
+    this.maxRetries = timing.maxRetries ?? 3;
+    this.limiter = new RateLimiter({
+      maxRpm: configNumber(this.config, 'GEMINI_MAX_RPM', 15),
+      now: timing.now,
+      sleep: this.sleep,
+    });
+  }
 
   get modelVersion(): string {
     return this.config.get<string>('GEMINI_EMBED_MODEL', 'text-embedding-004');
@@ -202,6 +235,32 @@ export class GeminiHttpClient implements AiEmbedder, AiEnricher {
    * cinco veces sólo quema el free tier.
    */
   private async post<T>(url: string, body: unknown, timeoutMs: number): Promise<T> {
+    // Las dos costuras de T1.3, cableadas donde se paga la cuota:
+    //
+    // - `limiter.schedule` espacia las salidas a `60_000 / GEMINI_MAX_RPM` ms. El free tier
+    //   son 15 RPM; sin esto, una corrida con concurrencia 2 dispara tan rápido como la red
+    //   permita, cobra 429 en masa y el breaker abre a los pocos productos. La corrida
+    //   completa de un catálogo real fallaría casi entera.
+    // - `withRetry` reintenta **sólo** los transitorios, respetando el `Retry-After` del
+    //   proveedor por encima del backoff calculado. El backoff durable de la base (T3.3) es la
+    //   red de la siguiente corrida, no un sustituto: reintentar un 429 dentro de la misma
+    //   llamada evita que un pico de un segundo mande el producto a esperar un minuto.
+    return this.limiter.schedule(() =>
+      withRetry(() => this.postDirecto<T>(url, body, timeoutMs), {
+        maxRetries: this.maxRetries,
+        baseMs: 1_000,
+        capMs: 30_000,
+        sleep: this.sleep,
+      }),
+    );
+  }
+
+  /** La llamada HTTP en crudo, sin política de reintento ni de cuota. */
+  private async postDirecto<T>(
+    url: string,
+    body: unknown,
+    timeoutMs: number,
+  ): Promise<T> {
     let res: Response;
     try {
       res = await fetch(url, {

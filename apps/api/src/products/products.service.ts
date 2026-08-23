@@ -88,11 +88,11 @@ export class ProductsService {
   }
 
   /**
-   * Costura de curación (US-005 T4.3, D8).
+   * Costura del enriquecimiento en el PATCH admin (US-005 T4.3 y T6.2, D8 + AC-6).
    *
-   * Cuando el dueño manda `description_enriched`, la actualización arrastra tres columnas más
-   * **en la misma sentencia**, porque las cuatro cosas son una sola decisión:
+   * Dos casos, y los dos son una sola decisión con el campo que llega:
    *
+   * **`description_enriched`** (el dueño curó el texto) arrastra tres columnas más:
    * - `description_curated = true` — desde acá la IA no vuelve a pisar el texto (AC-7). Sin
    *   esta marca, la próxima corrida sobrescribiría lo que el dueño escribió a mano y él lo
    *   descubriría mirando su propia tienda.
@@ -102,22 +102,35 @@ export class ProductsService {
    * - `enrichment_source_hash = null` — el hash es el control de costo (AC-6); si quedara el
    *   anterior, la corrida podría decidir «sin cambios» sobre un texto que cambió.
    *
-   * Que viva acá y no en el módulo de enriquecimiento es deliberado: es una regla del
-   * producto («el texto del dueño manda»), y el PATCH es el único lugar por donde entra.
-   * Cualquier otro campo del PATCH —precio, stock, nombre— **no** toca nada de esto.
+   * **`description_raw`** (cambió la descripción base) sólo marca `enrichment_done = false`:
+   * el producto vuelve a la cola y **la corrida decide** si hay algo que hacer comparando el
+   * hash. Es lo que hace que editar una descripción en el panel actualice lo que la búsqueda
+   * entiende; sin esto, el vector quedaría describiendo un texto que ya no existe. No se toca
+   * el hash ni la curación: en un producto curado el texto fuente no incluye el `raw`, así que
+   * la corrida lo saltea como «sin cambios» — y saltearlo es correcto, porque re-embeddear
+   * daría el mismo vector y costaría una llamada paga.
+   *
+   * Cualquier otro campo del PATCH —precio, stock, nombre, imagen— **no** toca nada de esto.
+   * Si el precio marcara para re-enriquecer, una actualización de lista de precios
+   * re-embeddearía el catálogo completo.
    */
   private conCosturaDeCuracion(input: UpdateProductInput): UpdateProductInput & {
     description_curated?: boolean;
     enrichment_done?: boolean;
     enrichment_source_hash?: null;
   } {
-    if (input.description_enriched === undefined) return input;
-    return {
-      ...input,
-      description_curated: true,
-      enrichment_done: false,
-      enrichment_source_hash: null,
-    };
+    if (input.description_enriched !== undefined) {
+      return {
+        ...input,
+        description_curated: true,
+        enrichment_done: false,
+        enrichment_source_hash: null,
+      };
+    }
+    if (input.description_raw !== undefined) {
+      return { ...input, enrichment_done: false };
+    }
+    return input;
   }
 
   /** AC-4/AC-6/AC-7: transición de estado validada (publicar/archivar/despublicar). */

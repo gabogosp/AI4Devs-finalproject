@@ -28,7 +28,21 @@ const config = new ConfigService({
   ENRICHMENT_MAX_ENRICHED_CHARS: 1_200,
 }) as ConfigService;
 
-const cliente = () => new GeminiHttpClient(config, 'https://stub.test');
+/**
+ * Cliente con las **costuras de tiempo neutralizadas**.
+ *
+ * El adapter reintenta los transitorios y espacia las salidas a `60_000 / GEMINI_MAX_RPM`
+ * (T1.3, cableado en T6.3). Sin inyectar el `sleep`, cada test de un 429 dormiría de verdad —
+ * uno tardó 63 s antes de esto. `maxRetries: 0` es el default de este helper porque la mayoría
+ * de los tests verifican la CLASIFICACIÓN del fallo, no la política de reintento; los que
+ * prueban el reintento piden los suyos explícitamente.
+ */
+const cliente = (maxRetries = 0) =>
+  new GeminiHttpClient(config, 'https://stub.test', {
+    sleep: async () => undefined,
+    now: () => 0,
+    maxRetries,
+  });
 
 const vectorOk = () => Array.from({ length: EMBEDDING_DIMS }, (_, i) => (i + 1) / 1000);
 
@@ -52,6 +66,14 @@ const mockFetch = (r: Response | Promise<Response>) => {
   fetchSpy = jest
     .spyOn(globalThis, 'fetch')
     .mockImplementation(() => Promise.resolve(r));
+};
+
+/** Respuestas en secuencia: la primera llamada recibe la primera, y así. */
+const mockFetchSecuencia = (rs: Response[]) => {
+  let i = 0;
+  fetchSpy = jest
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(() => Promise.resolve(rs[Math.min(i++, rs.length - 1)]));
 };
 
 afterEach(() => {
@@ -238,7 +260,11 @@ describe('GeminiHttpClient.enrich — texto, tope y prompt', () => {
     }) as ConfigService;
     mockFetch(textoDe(original));
 
-    const texto = await new GeminiHttpClient(cortoConfig, 'https://stub.test').enrich({
+    const texto = await new GeminiHttpClient(cortoConfig, 'https://stub.test', {
+      sleep: async () => undefined,
+      now: () => 0,
+      maxRetries: 0,
+    }).enrich({
       name: 'Taco',
       categoryName: 'Fijaciones',
       baseText: null,
@@ -275,5 +301,97 @@ describe('GeminiHttpClient.enrich — texto, tope y prompt', () => {
     expect(ENRICH_PROMPT_V1).toMatch(/inventar especificaciones/i);
     expect(ENRICH_PROMPT_V1).toMatch(/sinónimos/i);
     expect(ENRICH_PROMPT_V1).toMatch(/rioplatense/i);
+  });
+});
+
+/**
+ * El cableado de T1.3 dentro del adapter (cerrado en T6.3).
+ *
+ * Las primitivas —`withRetry` y `RateLimiter`— tenían sus propios tests desde T1.3, pero el
+ * adapter **no las usaba**: se construyeron y quedaron desconectadas. En producción eso
+ * significaba ningún reintento inmediato y, peor, **ningún tope de RPM**: una corrida con
+ * concurrencia 2 dispara tan rápido como la red permita, el free tier de 15 RPM contesta 429 en
+ * masa y el breaker abre a los pocos productos. La primera corrida del catálogo real habría
+ * fallado casi entera. Estos tests son la evidencia de que ahora están conectadas.
+ */
+describe('GeminiHttpClient — reintento y tope de RPM cableados', () => {
+  afterEach(() => fetchSpy?.mockRestore());
+
+  it('un 429 seguido de éxito ⇒ el adapter reintenta y devuelve el vector', async () => {
+    mockFetchSecuencia([
+      respuesta({}, { status: 429, headers: { 'retry-after': '1' } }),
+      respuesta({ embedding: { values: vectorOk() } }),
+    ]);
+
+    const v = await cliente(3).embed('taco fischer');
+
+    expect(v).toHaveLength(EMBEDDING_DIMS);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('un 5xx transitorio se reintenta hasta el tope y después propaga', async () => {
+    mockFetch(respuesta({}, { status: 503 }));
+
+    await expect(cliente(2).embed('x')).rejects.toThrow(AiTransientError);
+
+    // 1 intento inicial + 2 reintentos: ni uno más, o se quema cuota contra un proveedor caído.
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('un 400 permanente NO se reintenta: insistir no lo arregla', async () => {
+    mockFetch(respuesta({}, { status: 400 }));
+
+    await expect(cliente(3).embed('x')).rejects.toThrow(AiPermanentError);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('respeta el intervalo mínimo entre llamadas (60_000 / GEMINI_MAX_RPM)', async () => {
+    // Con 15 RPM el intervalo es 4 s. Se mide sobre el `sleep` inyectado, así que el test no
+    // espera de verdad: lo que se verifica es que el adapter PIDE la espera.
+    mockFetch(respuesta({ embedding: { values: vectorOk() } }));
+    const esperas: number[] = [];
+    let reloj = 0;
+    const clienteConReloj = new GeminiHttpClient(config, 'https://stub.test', {
+      sleep: async (ms) => {
+        esperas.push(ms);
+        reloj += ms;
+      },
+      now: () => reloj,
+      maxRetries: 0,
+    });
+
+    await clienteConReloj.embed('uno');
+    await clienteConReloj.embed('dos');
+    await clienteConReloj.embed('tres');
+
+    // La primera sale sin esperar; las dos siguientes esperan su hueco de 4 s.
+    expect(esperas).toEqual([4_000, 4_000]);
+  });
+
+  it('las dos superficies COMPARTEN la cuota: enrich y embed usan el mismo limitador', async () => {
+    // La cuota del free tier es por clave, no por método. Un limitador por método permitiría
+    // el doble del tope real y el 429 llegaría igual.
+    const esperas: number[] = [];
+    let reloj = 0;
+    mockFetch(
+      respuesta({
+        embedding: { values: vectorOk() },
+        candidates: [{ content: { parts: [{ text: 'Texto enriquecido de prueba.' }] } }],
+      }),
+    );
+    const c = new GeminiHttpClient(config, 'https://stub.test', {
+      sleep: async (ms) => {
+        esperas.push(ms);
+        reloj += ms;
+      },
+      now: () => reloj,
+      maxRetries: 0,
+    });
+
+    await c.embed('uno');
+    await c.enrich({ name: 'Taco', categoryName: 'Fijaciones', baseText: null });
+
+    expect(esperas).toEqual([4_000]);
   });
 });

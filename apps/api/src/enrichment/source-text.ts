@@ -35,7 +35,7 @@ function normalizar(texto: string): string {
 }
 
 /**
- * Compone el texto que se le manda al embedder (y del que se deriva el hash).
+ * Compone el texto que se le manda al embedder.
  *
  * Prioridad del texto: **curado ∥ enriquecido ∥ base**. El curado gana siempre porque es la
  * voz del dueño; el enriquecido previo gana sobre el base porque ya es mejor insumo que la
@@ -56,9 +56,34 @@ export function buildSourceText(input: SourceTextInput): string {
 }
 
 /**
- * Hash del texto fuente. Estable entre corridas y entre máquinas (SHA-256 del texto ya
- * normalizado), así que comparar hashes es comparar «¿cambió lo que importa?».
+ * Clave de **cambio**: lo que el dueño controla, y nada de lo que la IA produjo.
+ *
+ * Es deliberadamente distinta del texto que se embeddea, y la diferencia es un bug que este
+ * archivo ya tuvo: si el hash se calcula sobre `buildSourceText`, en un producto ya enriquecido
+ * el texto elegido es el que escribió la IA, así que **corregir la `description_raw` no cambia
+ * el hash** y la corrida siguiente lo saltea como «sin cambios». El dueño arregla una
+ * descripción mal cargada, la búsqueda sigue encontrando el producto por el texto viejo, y no
+ * hay forma de notarlo desde afuera.
+ *
+ * Derivar la detección de cambios del **output** en vez del **input** es el error de fondo. Acá
+ * entran sólo entradas: nombre, rubro y —según quién manda— el texto curado o el base.
+ */
+export function buildChangeKey(input: SourceTextInput): string {
+  // Curado ⇒ manda el texto del dueño y el `raw` deja de ser relevante: el texto que se
+  // embeddea es el curado, así que un cambio del `raw` produciría el MISMO vector y una
+  // llamada paga al proveedor por nada.
+  const base = input.curated ?? input.raw;
+  return normalizar(
+    [normalizar(input.name), normalizar(input.categoryName), base ? normalizar(base) : '']
+      .filter((p) => p.length > 0)
+      .join('. '),
+  );
+}
+
+/**
+ * Hash de la clave de cambio. Estable entre corridas y entre máquinas (SHA-256 del texto ya
+ * normalizado), así que comparar hashes es comparar «¿cambió lo que el dueño controla?».
  */
 export function hashSourceText(input: SourceTextInput): string {
-  return createHash('sha256').update(buildSourceText(input), 'utf8').digest('hex');
+  return createHash('sha256').update(buildChangeKey(input), 'utf8').digest('hex');
 }

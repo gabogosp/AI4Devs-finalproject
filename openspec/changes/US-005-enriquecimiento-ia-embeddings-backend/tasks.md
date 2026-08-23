@@ -507,7 +507,7 @@ estimate-hours: 13.4
 
 ## Fase 6: Cobertura e2e de los AC — 1,4 h
 
-- [ ] T6.1 e2e del ciclo completo (AC-1, AC-2, AC-8, AC-10) (0,4 h)
+- [x] T6.1 e2e del ciclo completo (AC-1, AC-2, AC-8, AC-10) (0,4 h)
   - **Pattern**: `bootTestApp([...])` de `apps/api/test/e2e-app.ts` con el fake determinista
     inyectado por `overrideProvider` del token del puerto; `truncateCatalog` para
     determinismo — `per testing-standards.md §14 — AAA y dobles de prueba`.
@@ -518,7 +518,7 @@ estimate-hours: 13.4
     **primero** entre los publicados (AC-2).
   - **Verify**: `pnpm --filter @dsm/api test -- --ci --testPathPattern=e2e-enrichment-cycle`
 
-- [ ] T6.2 e2e de idempotencia y de descripción curada (AC-6, AC-7) (0,4 h)
+- [x] T6.2 e2e de idempotencia y de descripción curada (AC-6, AC-7) (0,4 h)
   - **Exit criterion**: segunda corrida sobre un catálogo ya enriquecido y sin cambios ⇒
     **0** llamadas al enricher y **0** al embedder (AC-6); cambiar sólo el `stock` o el
     `price_ars_cents` por el PATCH admin y correr ⇒ sigue **0** llamadas; cambiar
@@ -526,14 +526,14 @@ estimate-hours: 13.4
     1 al embedder, y el texto enriquecido **no cambia** (AC-7).
   - **Verify**: `pnpm --filter @dsm/api test -- --ci --testPathPattern=e2e-enrichment-idempotency`
 
-- [ ] T6.3 e2e de resiliencia (AC-4, AC-5) (0,3 h)
+- [x] T6.3 e2e de resiliencia (AC-4, AC-5) (0,3 h)
   - **Exit criterion**: proveedor que devuelve 429 con `Retry-After` y luego éxito ⇒ el producto
     termina enriquecido y el evento `retried` se emitió (AC-4); proveedor que falla siempre ⇒
     tras `ENRICHMENT_MAX_ATTEMPTS` el producto queda abandonado con `error_code`, sin embedding y
     con su `description_raw` intacta, y el `/status` lo reporta en `abandoned` (AC-5).
   - **Verify**: `pnpm --filter @dsm/api test -- --ci --testPathPattern=e2e-enrichment-resilience`
 
-- [ ] T6.4 e2e de cobertura ≥ 90% con fallo inyectado (AC-3) (0,3 h)
+- [x] T6.4 e2e de cobertura ≥ 90% con fallo inyectado (AC-3) (0,3 h)
   - **Exit criterion**: con 100 productos y un fake que falla de forma determinista en el 5%,
     una corrida (más los reintentos que correspondan) deja `coverage_ratio >= 0.9` según
     `GET /status`, y el número reportado **coincide** con el conteo real de filas en
