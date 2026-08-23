@@ -20,6 +20,13 @@ const { default: ProductPage } = await import(
   '../../../app/(storefront)/productos/[slug]/page'
 );
 
+// US-007 T3.4: la ficha ahora incluye `AddToCartButton`, que consume el
+// CartProvider del layout. Este test renderiza el subárbol aislado, así que el
+// botón se stubea — ninguna aserción de este archivo cambia.
+vi.mock('@/features/cart/AddToCartButton', () => ({
+  AddToCartButton: () => null,
+}));
+
 const API = 'http://localhost:3000';
 
 function storefrontProduct(over: Partial<StorefrontProduct> = {}): StorefrontProduct {

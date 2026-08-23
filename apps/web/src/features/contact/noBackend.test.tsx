@@ -5,6 +5,18 @@ import { ProductPurchase } from '@/features/storefront/ProductPurchase';
 
 vi.mock('@/features/storefront/CategoryNav', () => ({ CategoryNav: () => null }));
 
+/**
+ * El badge del carrito (US-007) **sí** lee el carrito al montar, y vive en el
+ * header. Eso no viola AC-4: lo que el criterio afirma es que **el contacto** se
+ * resuelve sin backend, no que el header entero sea estático. Se lo stubea para
+ * que el espía mida las superficies de contacto y no el carrito, cuyo request
+ * está probado en `CartBadge.test.tsx`.
+ */
+vi.mock('@/features/cart/CartBadge', () => ({ CartBadge: () => null }));
+vi.mock('@/features/cart/AddToCartButton', () => ({
+  AddToCartButton: () => null,
+}));
+
 const { default: StorefrontLayout } = await import(
   '../../../app/(storefront)/layout'
 );
@@ -28,6 +40,8 @@ describe('AC-4 — el contacto no toca la red', () => {
     render(<ProductPurchase inStock={false} productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
     render(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
 
+    // Sigue valiendo lo que AC-4 promete: ninguna de las superficies de CONTACTO
+    // (footer, header y ficha) sale a la red para ofrecer el canal humano.
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

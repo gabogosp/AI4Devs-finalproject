@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   setEventSink,
   type BusinessEvent,
@@ -7,32 +7,59 @@ import {
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProductPurchase } from './ProductPurchase';
+import { CartProvider } from '@/features/cart/CartProvider';
+
+// `AddToCartButton` (US-007) vive dentro del CTA con stock, así que necesita el
+// provider y el servicio mockeado. El resto de los casos no cambia.
+vi.mock('@/features/cart/cartService', () => ({
+  cartService: {
+    get: vi.fn().mockResolvedValue({
+      id: null,
+      items: [],
+      item_count: 0,
+      total_quantity: 0,
+      total_ars_cents: 0,
+      has_blocking_issues: false,
+      updated_at: null,
+    }),
+    setItemQuantity: vi.fn(),
+    removeItem: vi.fn(),
+  },
+}));
+
+function renderConCarrito(ui: React.ReactElement) {
+  return render(<CartProvider>{ui}</CartProvider>);
+}
 
 describe('ProductPurchase — con stock (AC-3)', () => {
-  it('ofrece el CTA de compra como disparador, deshabilitado hasta US-007', () => {
-    render(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
+  // US-007 T3.4 — reescrito: el `disabled` era un cartel de roadmap y este change
+  // lo apaga. Es la única excepción autorizada al «tests existentes sin editar».
+  it('ofrece «Agregar al carrito» HABILITADO (US-007)', () => {
+    renderConCarrito(
+      <ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />,
+    );
 
     const cta = screen.getByRole('button', { name: 'Agregar al carrito' });
     expect(cta).toBeInTheDocument();
-    expect(cta).toBeDisabled();
+    expect(cta).toBeEnabled();
   });
 
   it('indica disponibilidad con texto, no sólo con color', () => {
-    render(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
+    renderConCarrito(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
 
     expect(screen.getByText('En stock')).toBeInTheDocument();
   });
 
-  it('ofrece el canal de WhatsApp como CTA de compra del MVP (sin carrito aún)', () => {
-    render(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
+  it('conserva el canal de WhatsApp junto al carrito', () => {
+    renderConCarrito(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
 
-    const link = screen.getByRole('link', { name: /Comprar por WhatsApp/ });
+    const link = screen.getByRole('link', { name: /Consultar por WhatsApp/ });
     expect(link).toHaveAttribute('href', expect.stringContaining('https://wa.me/'));
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
   });
 
   it('precarga el mensaje de WhatsApp con el nombre del producto (con stock)', () => {
-    render(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
+    renderConCarrito(<ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />);
 
     const href = screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href') ?? '';
     expect(decodeURIComponent(href)).toContain('Heladera exhibidora');
@@ -111,8 +138,8 @@ describe('whatsapp_click — salida al canal humano (OQ-FE-13)', () => {
     });
   });
 
-  it('con stock distingue el contexto: es el camino de compra del MVP', async () => {
-    render(
+  it('con stock distingue el contexto del canal humano', async () => {
+    renderConCarrito(
       <ProductPurchase
         inStock
         productName="Heladera exhibidora"

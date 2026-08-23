@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi} from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ProductDetail } from './ProductDetail';
 import type { StorefrontProduct } from './storefrontService';
+
+// US-007 T3.4: la ficha ahora incluye `AddToCartButton`, que consume el
+// CartProvider del layout. Este test renderiza el subárbol aislado, así que el
+// botón se stubea — ninguna aserción de este archivo cambia.
+vi.mock('@/features/cart/AddToCartButton', () => ({
+  AddToCartButton: () => null,
+}));
 
 function storefrontProduct(over: Partial<StorefrontProduct> = {}): StorefrontProduct {
   return {

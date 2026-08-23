@@ -327,7 +327,7 @@ language: es
     el botón** que se clickeó —no el mini-cart—; no hay llamada al router de Next (espía con
     0 llamadas a `push`); a los 4 s con timers falsos desaparece; `Escape` lo cierra)
 
-- [ ] T3.4 Habilitar «Agregar al carrito» en la ficha (US-003)
+- [x] T3.4 Habilitar «Agregar al carrito» en la ficha (US-003)
   - **Pattern**: `ProductPurchase.tsx` hoy renderiza el botón `disabled` como señal de
     roadmap, con un test que lo asserta. Se reemplaza por `AddToCartButton`; el canal de
     WhatsApp **se conserva** (sigue siendo el camino para productos sin stock, US-018).
