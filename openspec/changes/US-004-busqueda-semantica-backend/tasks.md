@@ -176,7 +176,7 @@ language: es
     `test $(rg -l "AI_EMBEDDER\s*=" apps/api/src | wc -l | tr -d ' ') -eq 1`
     (un solo lugar declara el token)
 
-- [ ] T1.2 Limitador y timeout **propios** del camino interactivo
+- [x] T1.2 Limitador y timeout **propios** del camino interactivo
   - **Pattern**: instancia separada del limitador de US-005 (`rate-limiter.ts`), con su
     propio presupuesto; se **reusa la clase**, no se comparte el **estado** — `per
     backend-node-standards.md §8 — timeouts por dependencia` y la razón está en

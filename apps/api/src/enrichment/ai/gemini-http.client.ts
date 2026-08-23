@@ -84,6 +84,26 @@ interface RespuestaGenerate {
  * Existen porque el reintento y el limitador de RPM **duermen**: sin poder sustituir el
  * `sleep`, cada test de un 429 tardaría segundos de reloj real.
  */
+/**
+ * Perfil de **presupuesto** del cliente (US-004 D2).
+ *
+ * Lo único que difiere entre enriquecer un catálogo y responder una búsqueda es la política
+ * de tasa y el timeout; el transporte, la redacción de la clave y la validación del vector son
+ * idénticos. Por eso el perfil elige de qué variables lee el presupuesto, en vez de duplicar el
+ * adapter:
+ *
+ * - `batch` — `GEMINI_MAX_RPM` y `GEMINI_EMBED_TIMEOUT_MS`. Serializa a `60_000/RPM`, que con
+ *   5 RPM son 12 s entre llamadas: correcto para un lote que puede esperar.
+ * - `interactive` — `GEMINI_SEARCH_MAX_RPM` y `GEMINI_SEARCH_TIMEOUT_MS`. Esa misma
+ *   serialización aplicada a una request la mataría: 12 s contra un presupuesto **total** de
+ *   1,5 s.
+ *
+ * Cada perfil se construye como una **instancia propia**, así que cada uno tiene su propia
+ * cola: un lote en curso no puede hacer esperar a una búsqueda. Se reusa la clase; **no** se
+ * comparte el estado.
+ */
+export type GeminiProfile = 'batch' | 'interactive';
+
 export interface GeminiTimingSeams {
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
@@ -97,8 +117,10 @@ export class GeminiHttpClient implements AiEmbedder, AiEnricher {
   readonly available = true;
 
   /**
-   * Limitador de RPM **compartido** por los dos puertos: la cuota del free tier es por
-   * clave, no por método. Tener uno por método permitiría el doble del tope real.
+   * Limitador de RPM **compartido por los dos puertos de esta instancia**: la cuota del free
+   * tier es por clave, no por método, así que tener uno por método permitiría el doble del
+   * tope real. Lo que **no** se comparte es entre perfiles: `batch` e `interactive` son dos
+   * instancias con dos colas (D2).
    */
   private readonly limiter: RateLimiter;
   private readonly sleep: (ms: number) => Promise<void>;
@@ -109,12 +131,19 @@ export class GeminiHttpClient implements AiEmbedder, AiEnricher {
     /** Inyectable para tests: apunta a un stub local en vez del proveedor real. */
     private readonly baseUrl: string = GEMINI_BASE_URL,
     timing: GeminiTimingSeams = {},
+    /** De qué variables lee su presupuesto. `batch` por defecto: US-005 fue el primero. */
+    private readonly profile: GeminiProfile = 'batch',
   ) {
     this.sleep =
       timing.sleep ?? ((ms) => new Promise<void>((r) => setTimeout(r, ms)));
     this.maxRetries = timing.maxRetries ?? 3;
     this.limiter = new RateLimiter({
-      maxRpm: configNumber(this.config, 'GEMINI_MAX_RPM', 15),
+      maxRpm: Math.max(
+        1,
+        profile === 'interactive'
+          ? configNumber(this.config, 'GEMINI_SEARCH_MAX_RPM', 10)
+          : configNumber(this.config, 'GEMINI_MAX_RPM', 5),
+      ),
       now: timing.now,
       sleep: this.sleep,
     });
@@ -130,7 +159,12 @@ export class GeminiHttpClient implements AiEmbedder, AiEnricher {
 
   async embed(text: string): Promise<number[]> {
     const model = this.modelVersion;
-    const timeout = configNumber(this.config, 'GEMINI_EMBED_TIMEOUT_MS', 10_000);
+    // El perfil interactivo tiene su propio presupuesto, y es MUCHO más chico: 900 ms contra
+    // 10 s. No es una optimización — es el disparador de la degradación a full-text (D1).
+    const timeout =
+      this.profile === 'interactive'
+        ? configNumber(this.config, 'GEMINI_SEARCH_TIMEOUT_MS', 900)
+        : configNumber(this.config, 'GEMINI_EMBED_TIMEOUT_MS', 10_000);
 
     const json = await this.post<RespuestaEmbed>(
       `${this.baseUrl}/v1beta/models/${model}:embedContent`,

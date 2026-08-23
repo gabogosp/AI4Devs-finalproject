@@ -32,6 +32,14 @@ describe('EnrichmentRepository.findNearest (integration, pgvector)', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
+
+    // Se borran las fixtures de corridas ANTERIORES de este mismo spec (namespace `knn-`).
+    // Sin esto el spec compite consigo mismo: cada corrida deja tres vectores cercanos a la
+    // consulta, y con suficientes corridas el top-N se llena de los de ayer y los de hoy
+    // quedan afuera — el síntoma es un `toEqual` vacío que parece un bug del kNN y no lo es.
+    // Sólo toca su propio prefijo: las fixtures de las otras suites no se rozan.
+    await prisma.$executeRawUnsafe(`DELETE FROM products WHERE slug LIKE 'knn-%'`);
+
     const categoryId = await asegurarCategoria(prisma, `knn-${corrida}`, `KNN ${corrida}`);
 
     const crear = async (clave: string, status: string) => {
@@ -61,8 +69,24 @@ describe('EnrichmentRepository.findNearest (integration, pgvector)', () => {
     await prisma.$disconnect();
   });
 
+  /**
+   * `findNearest` sobre **toda** la tabla.
+   *
+   * Con un `LIMIT` fijo el test dependía de cuántos vectores hubiera puesto el resto de la
+   * suite: el `ortogonal` —que por definición puntúa ~0— se caía del top-50 en cuanto la base
+   * compartida juntaba un par de cientos de embeddings, y el síntoma parecía un bug del kNN.
+   * Preguntar por el total hace la prueba independiente del volumen ajeno sin debilitar una
+   * sola assertion.
+   */
+  const todosLosVecinos = async () => {
+    const filas = await prisma.$queryRawUnsafe<Array<{ total: bigint }>>(
+      'SELECT count(*)::bigint AS total FROM product_embeddings',
+    );
+    return repo.findNearest(CONSULTA, Number(filas[0].total));
+  };
+
   it('ordena por similitud descendente', async () => {
-    const vecinos = await repo.findNearest(CONSULTA, 50);
+    const vecinos = await todosLosVecinos();
     const mios = vecinos.filter((v) => v.slug.startsWith(`knn-${corrida}`));
 
     expect(mios.map((v) => v.slug.split('-').pop())).toEqual([
@@ -76,7 +100,7 @@ describe('EnrichmentRepository.findNearest (integration, pgvector)', () => {
   });
 
   it('el score está acotado a [0,1] y el ortogonal cae a ~0', async () => {
-    const vecinos = await repo.findNearest(CONSULTA, 50);
+    const vecinos = await todosLosVecinos();
     const mios = vecinos.filter((v) => v.slug.startsWith(`knn-${corrida}`));
 
     for (const v of mios) {

@@ -31,6 +31,12 @@ const config = new ConfigService({
   GEMINI_EMBED_TIMEOUT_MS: 10_000,
   GEMINI_ENRICH_TIMEOUT_MS: 20_000,
   ENRICHMENT_MAX_ENRICHED_CHARS: 1_200,
+  // EXPLÍCITO y no heredado del default: los tests de espaciado de abajo calculan
+  // `60_000 / RPM`, y con el valor por defecto quedaban a merced de una decisión de otra
+  // lane — US-004 bajó el default de 15 a 5 al repartir la cuota con la búsqueda, y estos
+  // dos tests se pusieron rojos sin que el adapter hubiera cambiado. El presupuesto que el
+  // test mide tiene que ser el que el test declara.
+  GEMINI_MAX_RPM: 15,
 }) as ConfigService;
 
 /**
