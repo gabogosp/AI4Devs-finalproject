@@ -446,7 +446,7 @@ language: es
     - El `requestLog` del stub ahora registra qué cookies recibió cada request: era la única
       forma de distinguir «no llegó» de «llegó sin cookie».
 
-- [ ] T5.2 Persistencia entre visitas (AC-4)
+- [x] T5.2 Persistencia entre visitas (AC-4)
   - **Exit criterion**: con un contexto de navegador **persistido**, se agrega un producto,
     se cierra el contexto y se abre uno nuevo **con el mismo estado de almacenamiento**: el
     carrito sigue teniendo el producto, sin haber creado cuenta. El FE **no escribe ni lee**
@@ -456,7 +456,7 @@ language: es
     (`e2e/cart-persistence.spec.ts`, con `storageState` guardado y recargado; incluye un
     assert de que `document.cookie` **no** contiene `dsm_cart` —sólo `dsm_cart_csrf`)
 
-- [ ] T5.3 El recorrido del carrito no rompe la indexación del storefront
+- [x] T5.3 El recorrido del carrito no rompe la indexación del storefront
   - **Exit criterion**: `/carrito` responde con `X-Robots-Tag`/meta `noindex`. Las páginas
     indexables —home, categoría, ficha— **siguen** devolviendo 200 con su contenido en el
     HTML del servidor después de agregar el badge al layout compartido (el badge es una isla
@@ -487,18 +487,23 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Type-check limpio: `pnpm --filter @dsm/web typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`
-- [ ] Codegen fresco (sin drift): `pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated`
-- [ ] Suite de Vitest completa (forma terminante): `pnpm --filter @dsm/web test`
-- [ ] Suite del carrito en aislamiento: `pnpm --filter @dsm/web test -- cart`
-- [ ] **Sin regresión** en las superficies entregadas que este change modificó:
-      `pnpm --filter @dsm/web test -- 'ProductCard|CategoryNav|CategoryPage|ProductPage|csrf|client'`
-- [ ] E2E dev-owned verde: `pnpm --filter @dsm/web test:e2e -- 'cart-topology|cart-persistence|cart-noindex'`
-- [ ] **Sin regresión** en los E2E de SSR e indexación:
+- [x] Type-check limpio: `pnpm --filter @dsm/web typecheck`
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`
+- [x] Codegen fresco (sin drift): `pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated`
+- [x] Suite de Vitest completa (forma terminante): `pnpm --filter @dsm/web test`
+- [x] Suite del carrito en aislamiento: `pnpm --filter @dsm/web test -- cart`
+- [x] **Sin regresión** en las superficies entregadas que este change modificó:
+      `pnpm --filter @dsm/web test -- ProductCard CategoryNav CategoryPage ProductPage csrf client`
+      *(corregido al ejecutar: el filtro de vitest es **substring, no regex**, así que la forma
+      `'A|B'` del plan no matchea ningún archivo y el gate pasaba en verde sin correr nada —
+      «No test files found». Los patrones van como argumentos separados. Mismo defecto en el
+      gate de E2E de abajo, donde Playwright sí acepta varios patrones.)*
+- [x] E2E dev-owned verde: `pnpm --filter @dsm/web test:e2e -- 'cart-topology|cart-persistence|cart-noindex'`
+- [x] **Sin regresión** en los E2E de SSR e indexación:
       `pnpm --filter @dsm/web test:e2e -- 'storefront-home|pdp-ssr|category-ssr|admin-noindex|auth-topology'`
 - [ ] Sin errores ni warnings de consola al recorrer el carrito en `dev` (verificación
       humana: agregar, cambiar cantidad, quitar, vaciar; queda registrado en el PR)
+      **← ÚNICO PENDIENTE: lo hace una persona, no el ejecutor.**
 
 ---
 
