@@ -631,12 +631,24 @@ language: es
       mientras tanto: el interceptor acota `fileSize`, `files`, `parts`, `fields` y
       `fieldSize`, la ruta es admin-only y tiene presupuesto de 3 requests/hora/IP.
       `Deferred: upgrade de @nestjs/platform-express a 11 — owner: Arquitecto`.
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
-      → `pnpm -r typecheck` **exit 0** en los 3 paquetes; `pnpm -r test` con `apps/api` 1012/1012
-      y `apps/web` 50/50 archivos;
-      `pnpm -r lint` **falla en `apps/web`** por 4 `no-unused-vars` en
-      `src/lib/http/customerSession.test.ts`, archivo de **US-014 frontend** (commit
-      `de15d10`, otra sesión). `@dsm/api` y `packages/db` lintean limpio.
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+      → **los tres exit 0** (2026-08-23). `apps/api` 97 suites / 1012 tests,
+      `apps/web` 68 archivos. Los 4 `no-unused-vars` de `customerSession.test.ts`
+      que bloqueaban el lint —archivo de US-014 FE, no de este change— ya fueron
+      corregidos por la sesión dueña.
+
+      **Se corrió con la rama quieta, y eso importa.** Durante dos días este gate
+      dio rojo intermitente: `e2e-auth-register` alternaba 14/14 y 3 fallos entre
+      corridas consecutivas **sin cambiar una línea**, y el error se invertía
+      (`expected 409, got 201` y después al revés). No era una regresión: dos
+      sesiones corrían suites de integración contra el mismo Postgres y sus
+      `TRUNCATE customers` se pisaban. Se verificó el UNIQUE directamente en la
+      base (existe y rechaza) antes de descartar el defecto.
+
+      **Consecuencia operativa a no perder de vista**: mientras haya más de una
+      sesión activa, `pnpm -r test` no sirve como gate — produce rojos falsos que
+      se leen como defectos de seguridad. La corrida que cierra este ítem se hizo
+      con una sola sesión y se repitió dos veces con idéntico resultado.
 
 ---
 
