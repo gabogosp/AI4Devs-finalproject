@@ -326,7 +326,7 @@
   us-id: US-006
   discipline: frontend-web
   variant: null
-  status: draft
+  status: completed   # 2026-08-23: 13/13 tasks; 100 archivos / 648 tests verdes en @dsm/web
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
@@ -364,7 +364,8 @@
   us-id: US-006
   discipline: backend
   variant: null
-  status: in progress   # normalizado 2026-08-22 (AUDIT-FLOW-008: era `in-progress`)
+  status: completed   # 2026-08-23: 35/35 tasks. Antes `in progress` (normalizado el 2026-08-22 por
+                      # AUDIT-FLOW-008, que lo habia llevado de `in-progress` a `in progress`)
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
