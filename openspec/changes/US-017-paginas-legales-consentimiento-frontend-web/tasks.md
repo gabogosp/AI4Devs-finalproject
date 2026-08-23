@@ -441,7 +441,8 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
     una obligación legal no puede caerse porque la API esté caída, y el §9 prohíbe tracking acá.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/noBackendNoTracking.test.tsx`
 
-- [ ] **T4.3** Test de deriva de la versión contra el backend (AC-8) — `OQ-FE-16 (b) ratificada` (0,2 h)
+- [x] **T4.3** Test de deriva de la versión contra el backend (AC-8) — `OQ-FE-16 (b) ratificada` (0,2 h) *(verde 2026-08-23 — 4 tests; F50 comprobado: versión desviada → 1 rojo, variable ausente → 3 rojos)*
+  - **Desviación del `Pattern:`, con motivo**: el plan leía `apps/api/.env.example`, que **no existe** — este monorepo tiene un único `.env.example` en la raíz. Se lee ese; la intención (verificar el contrato cruzado) queda intacta. Y el test ya compara **además** contra `apps/api/src/config/env.validation.ts`, que es la fuente autoritativa cuando US-008 T0.2 la declare: el contrato se refuerza solo, sin tocar este archivo.
 
   - **Pattern**: con T4.1 descartada, el chequeo **no** vive en un script de deploy: vive en la
     **suite**, que sí corre en cada CI. Es estrictamente más fuerte que la opción original —el
