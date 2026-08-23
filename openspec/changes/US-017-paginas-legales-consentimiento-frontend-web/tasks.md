@@ -73,7 +73,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Pre-requisitos
 
-- [ ] **P1 — BLOQUEANTE: `apps/web` sin cambios sin commitear** (`design.md` §Riesgos)
+- [x] **P1 — BLOQUEANTE: `apps/web` sin cambios sin commitear** *(verde 2026-08-22)* (`design.md` §Riesgos)
 
   Hay **otras sesiones activas en el mismo working tree** (al planificar: US-006 y US-005 en
   `apps/api`, US-014 en `apps/web`). El modo de falla no es el merge conflict —eso Git lo grita—
@@ -90,17 +90,19 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
       && echo "OK — apps/web sin cambios sin commitear"
     ```
 
-- [ ] **P2 — Suite verde y build de producción verde en el `HEAD` de partida**
+- [x] **P2 — Suite verde y build de producción verde en el `HEAD` de partida** *(verde 2026-08-22: 63 archivos / 353 tests; build OK)*
+  - ⚠️ **El build exige una env var que el `Verify:` no pasaba**: `next build` setea `NODE_ENV=production` y `next.config.mjs` (US-014) **aborta sin `API_INTERNAL_ORIGIN`**. Está documentada en `apps/web/.env.example:26` pero no se exporta sola, así que el comando tal como está escrito falla en un entorno limpio. Se corrió como `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web build`.
+  - **Hallazgo colateral (fuera de alcance de esta US)**: `.github/workflows/ci.yml` corre lint, typecheck, migraciones y tests, **pero no `build`**. Por eso nadie detectó esto: el build de producción no se ejercita en CI. Importa para US-019, donde Railway sí corre `next build` — y ahí la falta de la variable no da un error de configuración legible sino un deploy roto.
   - **Exit criterion**: unit/componente y `next build` pasan antes de tocar nada. Sin red previa
     no se modifica superficie entregada (`SiteFooter`, `sitemap`).
   - **Verify**: `pnpm --filter @dsm/web test && pnpm --filter @dsm/web build`
 
-- [ ] **P3 — `design-system.md` en `Approved`** (gate de `fe-design-without-figma` §5: sin Figma,
+- [x] **P3 — `design-system.md` en `Approved`** *(verde 2026-08-22)* (gate de `fe-design-without-figma` §5: sin Figma,
   el design-system **es** la autoridad visual)
   - **Exit criterion**: el doc declara la aprobación de PO y Arquitecto.
   - **Verify**: `grep -q '^- \[x\] PO:' docs/product/design-system.md && grep -q '^- \[x\] Arquitecto:' docs/product/design-system.md && echo OK`
 
-- [ ] **P4 — AS-BUILT: el footer existe con el hueco de US-017 marcado**
+- [x] **P4 — AS-BUILT: el footer existe con el hueco de US-017 marcado** *(verde 2026-08-22: montado en el layout, comentario presente, 7 tests del footer verdes)*
   - **Exit criterion**: `SiteFooter` está montado en el layout de `(storefront)` y su comentario
     `Deferred: US-017` sigue ahí — es el hueco que T3.1 cierra. Si el footer no existiera, este
     plan estaría planificando sobre una suposición.
