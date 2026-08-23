@@ -239,7 +239,7 @@ language: es
     preserva el léxico; `suggestedCategories([])` devuelve las raíz y **no** `[]`;
     `normalizeQuery('  Taco   FISCHER ')` → `'taco fischer'` con longitud útil 13)
 
-- [ ] T2.2 `SearchRepository` — kNN sobre HNSW, `$queryRaw` **parametrizado**
+- [x] T2.2 `SearchRepository` — kNN sobre HNSW, `$queryRaw` **parametrizado**
   - **Pattern**: `$queryRaw` con parámetros ligados —**nunca** interpolación de string— y
     `SET LOCAL hnsw.ef_search` por consulta para fijar la perilla de lectura sin tocar la
     config del servidor — `per backend-node-standards.md §5 — el repositorio envuelve el
@@ -264,7 +264,7 @@ language: es
     `product_embeddings_embedding_hnsw_idx`** —si el planner cayera a seq scan, la task no
     cierra)
 
-- [ ] T2.3 `SearchRepository.fullText` — el camino de AC-4
+- [x] T2.3 `SearchRepository.fullText` — el camino de AC-4
   - **Pattern**: `websearch_to_tsquery('spanish', $q)` y **no** `to_tsquery`: acepta texto
     libre del usuario sin explotar con sintaxis inválida, que es exactamente lo que llega
     por un buscador.
