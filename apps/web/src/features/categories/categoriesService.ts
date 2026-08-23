@@ -1,13 +1,13 @@
 import { parseContract } from '@/lib/http/contract';
 import {
-  getAdminCategories,
-  patchAdminCategoriesId,
-  postAdminCategories,
+  listCategories,
+  updateCategory,
+  createCategory,
 } from '@/api/generated/endpoints';
 import {
-  GetAdminCategoriesResponse,
-  PatchAdminCategoriesIdResponse,
-  PostAdminCategoriesResponse,
+  ListCategoriesResponse,
+  UpdateCategoryResponse,
+  CreateCategoryResponse,
 } from '@/api/generated/zod';
 import type { Category, CreateCategory } from '@/api/generated/model';
 
@@ -33,17 +33,17 @@ function payload(input: CategoryInput): CreateCategory {
  */
 export const categoriesService = {
   async list(signal?: AbortSignal): Promise<Category[]> {
-    const res = await getAdminCategories({ signal });
-    return parseContract(GetAdminCategoriesResponse, res.data);
+    const res = await listCategories({ signal });
+    return parseContract(ListCategoriesResponse, res.data);
   },
 
   async create(input: CategoryInput): Promise<Category> {
-    const res = await postAdminCategories(payload(input));
-    return parseContract(PostAdminCategoriesResponse, res.data);
+    const res = await createCategory(payload(input));
+    return parseContract(CreateCategoryResponse, res.data);
   },
 
   async update(id: string, input: CategoryInput): Promise<Category> {
-    const res = await patchAdminCategoriesId(id, payload(input));
-    return parseContract(PatchAdminCategoriesIdResponse, res.data);
+    const res = await updateCategory(id, payload(input));
+    return parseContract(UpdateCategoryResponse, res.data);
   },
 };

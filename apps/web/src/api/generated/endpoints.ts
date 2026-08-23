@@ -20,11 +20,11 @@ import type {
   EnrichmentRateLimitedResponse,
   EnrichmentRunAccepted,
   EnrichmentStatus,
-  GetAdminProductsParams,
   GetImportParams,
   ImportCreated,
   ImportJob,
   ImportRateLimitedResponse,
+  ListProductsParams,
   LoginRequest,
   Problem,
   ProblemResponse,
@@ -34,6 +34,9 @@ import type {
   RegisterRequest,
   ResetConfirm,
   ResetRequest,
+  SearchProductsParams,
+  SearchRateLimitedResponse,
+  SearchResponse,
   SetCartItemRequest,
   StartEnrichmentRun,
   StorefrontCategory,
@@ -425,41 +428,41 @@ export const confirmPasswordReset = async (resetConfirm: ResetConfirm, options?:
 
 
 
-export type postAdminAuthLoginResponse200 = {
+export type adminLoginResponse200 = {
   data: AdminLoginResponse
   status: 200
 }
 
-export type postAdminAuthLoginResponse401 = {
+export type adminLoginResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type postAdminAuthLoginResponse422 = {
+export type adminLoginResponse422 = {
   data: ProblemResponse
   status: 422
 }
 
-export type postAdminAuthLoginResponse429 = {
+export type adminLoginResponse429 = {
   data: Problem
   status: 429
 }
 
-export type postAdminAuthLoginResponse503 = {
+export type adminLoginResponse503 = {
   data: ProblemResponse
   status: 503
 }
 
-export type postAdminAuthLoginResponseSuccess = (postAdminAuthLoginResponse200) & {
+export type adminLoginResponseSuccess = (adminLoginResponse200) & {
   headers: Headers;
 };
-export type postAdminAuthLoginResponseError = (postAdminAuthLoginResponse401 | postAdminAuthLoginResponse422 | postAdminAuthLoginResponse429 | postAdminAuthLoginResponse503) & {
+export type adminLoginResponseError = (adminLoginResponse401 | adminLoginResponse422 | adminLoginResponse429 | adminLoginResponse503) & {
   headers: Headers;
 };
 
-export type postAdminAuthLoginResponse = (postAdminAuthLoginResponseSuccess | postAdminAuthLoginResponseError)
+export type adminLoginResponse = (adminLoginResponseSuccess | adminLoginResponseError)
 
-export const getPostAdminAuthLoginUrl = () => {
+export const getAdminLoginUrl = () => {
 
 
 
@@ -473,9 +476,9 @@ export const getPostAdminAuthLoginUrl = () => {
  * US-014 agregó el login por `{email, password}` contra una cuenta con `role='admin'`, preservando la ruta, el transporte y la forma de la respuesta `{ token }` — el panel de US-001 no requirió cambios. El camino `{bootstrapToken}` sigue disponible detrás de `ADMIN_AUTH_ENABLED` como salida de emergencia. Con credenciales, la respuesta además emite las cookies de sesión. Las credenciales de una cuenta que existe pero NO es admin devuelven el mismo 401 que una contraseña incorrecta.
  * @summary Login admin — bootstrap token o credenciales (AC-8, US-014 T8.1)
  */
-export const postAdminAuthLogin = async (adminLogin: AdminLogin, options?: Parameters<typeof customFetch>[1]): Promise<postAdminAuthLoginResponse> => {
+export const adminLogin = async (adminLogin: AdminLogin, options?: Parameters<typeof customFetch>[1]): Promise<adminLoginResponse> => {
 
-  return customFetch<postAdminAuthLoginResponse>(getPostAdminAuthLoginUrl(),
+  return customFetch<adminLoginResponse>(getAdminLoginUrl(),
   {
     ...options,
     method: 'POST',
@@ -486,41 +489,41 @@ export const postAdminAuthLogin = async (adminLogin: AdminLogin, options?: Param
 
 
 
-export type postAdminCategoriesResponse201 = {
+export type createCategoryResponse201 = {
   data: Category
   status: 201
 }
 
-export type postAdminCategoriesResponse401 = {
+export type createCategoryResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type postAdminCategoriesResponse403 = {
+export type createCategoryResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type postAdminCategoriesResponse409 = {
+export type createCategoryResponse409 = {
   data: ProblemResponse
   status: 409
 }
 
-export type postAdminCategoriesResponse422 = {
+export type createCategoryResponse422 = {
   data: ProblemResponse
   status: 422
 }
 
-export type postAdminCategoriesResponseSuccess = (postAdminCategoriesResponse201) & {
+export type createCategoryResponseSuccess = (createCategoryResponse201) & {
   headers: Headers;
 };
-export type postAdminCategoriesResponseError = (postAdminCategoriesResponse401 | postAdminCategoriesResponse403 | postAdminCategoriesResponse409 | postAdminCategoriesResponse422) & {
+export type createCategoryResponseError = (createCategoryResponse401 | createCategoryResponse403 | createCategoryResponse409 | createCategoryResponse422) & {
   headers: Headers;
 };
 
-export type postAdminCategoriesResponse = (postAdminCategoriesResponseSuccess | postAdminCategoriesResponseError)
+export type createCategoryResponse = (createCategoryResponseSuccess | createCategoryResponseError)
 
-export const getPostAdminCategoriesUrl = () => {
+export const getCreateCategoryUrl = () => {
 
 
 
@@ -532,9 +535,9 @@ export const getPostAdminCategoriesUrl = () => {
  * Crea una categoría; el slug se deriva del nombre (único).
  * @summary Crear categoría (AC-1)
  */
-export const postAdminCategories = async (createCategory: CreateCategory, options?: Parameters<typeof customFetch>[1]): Promise<postAdminCategoriesResponse> => {
+export const createCategory = async (createCategory: CreateCategory, options?: Parameters<typeof customFetch>[1]): Promise<createCategoryResponse> => {
 
-  return customFetch<postAdminCategoriesResponse>(getPostAdminCategoriesUrl(),
+  return customFetch<createCategoryResponse>(getCreateCategoryUrl(),
   {
     ...options,
     method: 'POST',
@@ -545,31 +548,31 @@ export const postAdminCategories = async (createCategory: CreateCategory, option
 
 
 
-export type getAdminCategoriesResponse200 = {
+export type listCategoriesResponse200 = {
   data: Category[]
   status: 200
 }
 
-export type getAdminCategoriesResponse401 = {
+export type listCategoriesResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type getAdminCategoriesResponse403 = {
+export type listCategoriesResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type getAdminCategoriesResponseSuccess = (getAdminCategoriesResponse200) & {
+export type listCategoriesResponseSuccess = (listCategoriesResponse200) & {
   headers: Headers;
 };
-export type getAdminCategoriesResponseError = (getAdminCategoriesResponse401 | getAdminCategoriesResponse403) & {
+export type listCategoriesResponseError = (listCategoriesResponse401 | listCategoriesResponse403) & {
   headers: Headers;
 };
 
-export type getAdminCategoriesResponse = (getAdminCategoriesResponseSuccess | getAdminCategoriesResponseError)
+export type listCategoriesResponse = (listCategoriesResponseSuccess | listCategoriesResponseError)
 
-export const getGetAdminCategoriesUrl = () => {
+export const getListCategoriesUrl = () => {
 
 
 
@@ -581,9 +584,9 @@ export const getGetAdminCategoriesUrl = () => {
  * Devuelve todas las categorías.
  * @summary Listar categorías (AC-1)
  */
-export const getAdminCategories = async ( options?: Parameters<typeof customFetch>[1]): Promise<getAdminCategoriesResponse> => {
+export const listCategories = async ( options?: Parameters<typeof customFetch>[1]): Promise<listCategoriesResponse> => {
 
-  return customFetch<getAdminCategoriesResponse>(getGetAdminCategoriesUrl(),
+  return customFetch<listCategoriesResponse>(getListCategoriesUrl(),
   {
     ...options,
     method: 'GET'
@@ -594,36 +597,36 @@ export const getAdminCategories = async ( options?: Parameters<typeof customFetc
 
 
 
-export type patchAdminCategoriesIdResponse200 = {
+export type updateCategoryResponse200 = {
   data: Category
   status: 200
 }
 
-export type patchAdminCategoriesIdResponse401 = {
+export type updateCategoryResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type patchAdminCategoriesIdResponse403 = {
+export type updateCategoryResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type patchAdminCategoriesIdResponse404 = {
+export type updateCategoryResponse404 = {
   data: ProblemResponse
   status: 404
 }
 
-export type patchAdminCategoriesIdResponseSuccess = (patchAdminCategoriesIdResponse200) & {
+export type updateCategoryResponseSuccess = (updateCategoryResponse200) & {
   headers: Headers;
 };
-export type patchAdminCategoriesIdResponseError = (patchAdminCategoriesIdResponse401 | patchAdminCategoriesIdResponse403 | patchAdminCategoriesIdResponse404) & {
+export type updateCategoryResponseError = (updateCategoryResponse401 | updateCategoryResponse403 | updateCategoryResponse404) & {
   headers: Headers;
 };
 
-export type patchAdminCategoriesIdResponse = (patchAdminCategoriesIdResponseSuccess | patchAdminCategoriesIdResponseError)
+export type updateCategoryResponse = (updateCategoryResponseSuccess | updateCategoryResponseError)
 
-export const getPatchAdminCategoriesIdUrl = (id: string,) => {
+export const getUpdateCategoryUrl = (id: string,) => {
 
 
 
@@ -635,10 +638,10 @@ export const getPatchAdminCategoriesIdUrl = (id: string,) => {
  * Actualiza el nombre/parent de una categoría.
  * @summary Editar categoría (AC-1)
  */
-export const patchAdminCategoriesId = async (id: string,
-    updateCategory: UpdateCategory, options?: Parameters<typeof customFetch>[1]): Promise<patchAdminCategoriesIdResponse> => {
+export const updateCategory = async (id: string,
+    updateCategory: UpdateCategory, options?: Parameters<typeof customFetch>[1]): Promise<updateCategoryResponse> => {
 
-  return customFetch<patchAdminCategoriesIdResponse>(getPatchAdminCategoriesIdUrl(id),
+  return customFetch<updateCategoryResponse>(getUpdateCategoryUrl(id),
   {
     ...options,
     method: 'PATCH',
@@ -649,41 +652,41 @@ export const patchAdminCategoriesId = async (id: string,
 
 
 
-export type postAdminProductsResponse201 = {
+export type createProductResponse201 = {
   data: Product
   status: 201
 }
 
-export type postAdminProductsResponse401 = {
+export type createProductResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type postAdminProductsResponse403 = {
+export type createProductResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type postAdminProductsResponse409 = {
+export type createProductResponse409 = {
   data: ProblemResponse
   status: 409
 }
 
-export type postAdminProductsResponse422 = {
+export type createProductResponse422 = {
   data: ProblemResponse
   status: 422
 }
 
-export type postAdminProductsResponseSuccess = (postAdminProductsResponse201) & {
+export type createProductResponseSuccess = (createProductResponse201) & {
   headers: Headers;
 };
-export type postAdminProductsResponseError = (postAdminProductsResponse401 | postAdminProductsResponse403 | postAdminProductsResponse409 | postAdminProductsResponse422) & {
+export type createProductResponseError = (createProductResponse401 | createProductResponse403 | createProductResponse409 | createProductResponse422) & {
   headers: Headers;
 };
 
-export type postAdminProductsResponse = (postAdminProductsResponseSuccess | postAdminProductsResponseError)
+export type createProductResponse = (createProductResponseSuccess | createProductResponseError)
 
-export const getPostAdminProductsUrl = () => {
+export const getCreateProductUrl = () => {
 
 
 
@@ -695,9 +698,9 @@ export const getPostAdminProductsUrl = () => {
  * Alta en estado draft; SKU único; validación por campo (422).
  * @summary Crear producto en draft (AC-2, AC-5, AC-9)
  */
-export const postAdminProducts = async (createProduct: CreateProduct, options?: Parameters<typeof customFetch>[1]): Promise<postAdminProductsResponse> => {
+export const createProduct = async (createProduct: CreateProduct, options?: Parameters<typeof customFetch>[1]): Promise<createProductResponse> => {
 
-  return customFetch<postAdminProductsResponse>(getPostAdminProductsUrl(),
+  return customFetch<createProductResponse>(getCreateProductUrl(),
   {
     ...options,
     method: 'POST',
@@ -708,31 +711,31 @@ export const postAdminProducts = async (createProduct: CreateProduct, options?: 
 
 
 
-export type getAdminProductsResponse200 = {
+export type listProductsResponse200 = {
   data: ProductList
   status: 200
 }
 
-export type getAdminProductsResponse401 = {
+export type listProductsResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type getAdminProductsResponse403 = {
+export type listProductsResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type getAdminProductsResponseSuccess = (getAdminProductsResponse200) & {
+export type listProductsResponseSuccess = (listProductsResponse200) & {
   headers: Headers;
 };
-export type getAdminProductsResponseError = (getAdminProductsResponse401 | getAdminProductsResponse403) & {
+export type listProductsResponseError = (listProductsResponse401 | listProductsResponse403) & {
   headers: Headers;
 };
 
-export type getAdminProductsResponse = (getAdminProductsResponseSuccess | getAdminProductsResponseError)
+export type listProductsResponse = (listProductsResponseSuccess | listProductsResponseError)
 
-export const getGetAdminProductsUrl = (params?: GetAdminProductsParams,) => {
+export const getListProductsUrl = (params?: ListProductsParams,) => {
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
@@ -751,9 +754,9 @@ export const getGetAdminProductsUrl = (params?: GetAdminProductsParams,) => {
  * Listado paginado del panel (limit/offset).
  * @summary Listar productos (paginado, NFR)
  */
-export const getAdminProducts = async (params?: GetAdminProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<getAdminProductsResponse> => {
+export const listProducts = async (params?: ListProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<listProductsResponse> => {
 
-  return customFetch<getAdminProductsResponse>(getGetAdminProductsUrl(params),
+  return customFetch<listProductsResponse>(getListProductsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -764,36 +767,36 @@ export const getAdminProducts = async (params?: GetAdminProductsParams, options?
 
 
 
-export type getAdminProductsIdResponse200 = {
+export type getProductResponse200 = {
   data: Product
   status: 200
 }
 
-export type getAdminProductsIdResponse401 = {
+export type getProductResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type getAdminProductsIdResponse403 = {
+export type getProductResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type getAdminProductsIdResponse404 = {
+export type getProductResponse404 = {
   data: ProblemResponse
   status: 404
 }
 
-export type getAdminProductsIdResponseSuccess = (getAdminProductsIdResponse200) & {
+export type getProductResponseSuccess = (getProductResponse200) & {
   headers: Headers;
 };
-export type getAdminProductsIdResponseError = (getAdminProductsIdResponse401 | getAdminProductsIdResponse403 | getAdminProductsIdResponse404) & {
+export type getProductResponseError = (getProductResponse401 | getProductResponse403 | getProductResponse404) & {
   headers: Headers;
 };
 
-export type getAdminProductsIdResponse = (getAdminProductsIdResponseSuccess | getAdminProductsIdResponseError)
+export type getProductResponse = (getProductResponseSuccess | getProductResponseError)
 
-export const getGetAdminProductsIdUrl = (id: string,) => {
+export const getGetProductUrl = (id: string,) => {
 
 
 
@@ -805,9 +808,9 @@ export const getGetAdminProductsIdUrl = (id: string,) => {
  * Devuelve un producto por id.
  * @summary Obtener producto (AC-3)
  */
-export const getAdminProductsId = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<getAdminProductsIdResponse> => {
+export const getProduct = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<getProductResponse> => {
 
-  return customFetch<getAdminProductsIdResponse>(getGetAdminProductsIdUrl(id),
+  return customFetch<getProductResponse>(getGetProductUrl(id),
   {
     ...options,
     method: 'GET'
@@ -818,46 +821,46 @@ export const getAdminProductsId = async (id: string, options?: Parameters<typeof
 
 
 
-export type patchAdminProductsIdResponse200 = {
+export type updateProductResponse200 = {
   data: Product
   status: 200
 }
 
-export type patchAdminProductsIdResponse401 = {
+export type updateProductResponse401 = {
   data: ProblemResponse
   status: 401
 }
 
-export type patchAdminProductsIdResponse403 = {
+export type updateProductResponse403 = {
   data: ProblemResponse
   status: 403
 }
 
-export type patchAdminProductsIdResponse404 = {
+export type updateProductResponse404 = {
   data: ProblemResponse
   status: 404
 }
 
-export type patchAdminProductsIdResponse409 = {
+export type updateProductResponse409 = {
   data: ProblemResponse
   status: 409
 }
 
-export type patchAdminProductsIdResponse422 = {
+export type updateProductResponse422 = {
   data: ProblemResponse
   status: 422
 }
 
-export type patchAdminProductsIdResponseSuccess = (patchAdminProductsIdResponse200) & {
+export type updateProductResponseSuccess = (updateProductResponse200) & {
   headers: Headers;
 };
-export type patchAdminProductsIdResponseError = (patchAdminProductsIdResponse401 | patchAdminProductsIdResponse403 | patchAdminProductsIdResponse404 | patchAdminProductsIdResponse409 | patchAdminProductsIdResponse422) & {
+export type updateProductResponseError = (updateProductResponse401 | updateProductResponse403 | updateProductResponse404 | updateProductResponse409 | updateProductResponse422) & {
   headers: Headers;
 };
 
-export type patchAdminProductsIdResponse = (patchAdminProductsIdResponseSuccess | patchAdminProductsIdResponseError)
+export type updateProductResponse = (updateProductResponseSuccess | updateProductResponseError)
 
-export const getPatchAdminProductsIdUrl = (id: string,) => {
+export const getUpdateProductUrl = (id: string,) => {
 
 
 
@@ -869,10 +872,10 @@ export const getPatchAdminProductsIdUrl = (id: string,) => {
  * Sin `status`: edita campos (AC-3). Con `status`: transición de estado (publicar/archivar/despublicar); publicar incompleto → 422 y permanece draft.
  * @summary Editar o cambiar estado (AC-3, AC-4, AC-6, AC-7)
  */
-export const patchAdminProductsId = async (id: string,
-    updateProduct: UpdateProduct, options?: Parameters<typeof customFetch>[1]): Promise<patchAdminProductsIdResponse> => {
+export const updateProduct = async (id: string,
+    updateProduct: UpdateProduct, options?: Parameters<typeof customFetch>[1]): Promise<updateProductResponse> => {
 
-  return customFetch<patchAdminProductsIdResponse>(getPatchAdminProductsIdUrl(id),
+  return customFetch<updateProductResponse>(getUpdateProductUrl(id),
   {
     ...options,
     method: 'PATCH',
@@ -1571,6 +1574,67 @@ export const startEnrichmentRun = async (startEnrichmentRun?: StartEnrichmentRun
 );}
 
 
+
+export type searchProductsResponse200 = {
+  data: SearchResponse
+  status: 200
+}
+
+export type searchProductsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type searchProductsResponse429 = {
+  data: SearchRateLimitedResponse
+  status: 429
+}
+
+export type searchProductsResponse503 = {
+  data: Problem
+  status: 503
+}
+
+export type searchProductsResponseSuccess = (searchProductsResponse200) & {
+  headers: Headers;
+};
+export type searchProductsResponseError = (searchProductsResponse422 | searchProductsResponse429 | searchProductsResponse503) & {
+  headers: Headers;
+};
+
+export type searchProductsResponse = (searchProductsResponseSuccess | searchProductsResponseError)
+
+export const getSearchProductsUrl = (params: SearchProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/search?${stringifiedParams}` : `/v1/search`
+}
+
+/**
+ * Embebe la consulta del cliente y hace kNN sobre pgvector (índice HNSW), con `SET LOCAL hnsw.ef_search` por consulta. Si el proveedor de IA falla o agota GEMINI_SEARCH_TIMEOUT_MS (900 ms), la respuesta sale por full-text (`websearch_to_tsquery` en español) y marca `degraded: true` con status 200: el timeout ES el disparador de la degradación, no un error a reportar (AC-4). La consulta se normaliza (trim + minúsculas + colapso de espacios) antes de embeberse y de usarse como clave del caché de vectores, así que dos clientes que escriben lo mismo con otra capitalización no pagan dos llamadas. Menos de SEARCH_MIN_LENGTH caracteres ÚTILES es 422 SIN llamar al proveedor (AC-5). Sólo devuelve productos publicados (AC-6); los sin stock aparecen con in_stock:false y NO se ocultan (AC-7); un producto sin embedding no rompe la búsqueda y sigue siendo alcanzable por texto (AC-9). El texto del cliente NUNCA llega a un modelo generativo —la interpretación se arma con las categorías del catálogo—, así que la protección de AC-8 es estructural.
+ * @summary Buscar productos en lenguaje natural (AC-1, AC-2)
+ */
+export const searchProducts = async (params: SearchProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<searchProductsResponse> => {
+
+  return customFetch<searchProductsResponse>(getSearchProductsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
 export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
@@ -1579,21 +1643,21 @@ export const getRefreshSessionResponseMock = (overrideResponse: Partial<Extract<
 
 export const getGetCurrentCustomerResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getPostAdminAuthLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
+export const getAdminLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
-export const getPostAdminCategoriesResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getCreateCategoryResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getGetAdminCategoriesResponseMock = (): Category[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
+export const getListCategoriesResponseMock = (): Category[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
 
-export const getPatchAdminCategoriesIdResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getUpdateCategoryResponseMock = (overrideResponse: Partial<Extract<Category, object>> = {}): Category => ({id: faker.string.uuid(), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent_id: faker.helpers.arrayElement([faker.string.uuid(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getPostAdminProductsResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getCreateProductResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getGetAdminProductsResponseMock = (overrideResponse: Partial<Extract<ProductList, object>> = {}): ProductList => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
+export const getListProductsResponseMock = (overrideResponse: Partial<Extract<ProductList, object>> = {}): ProductList => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
-export const getGetAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getGetProductResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
-export const getPatchAdminProductsIdResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getUpdateProductResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
 
@@ -1618,6 +1682,8 @@ export const getGetImportReportResponseMock = (): string => (faker.word.sample()
 export const getGetEnrichmentStatusResponseMock = (overrideResponse: Partial<Extract<EnrichmentStatus, object>> = {}): EnrichmentStatus => ({runner_state: faker.helpers.arrayElement(['idle','running','cooldown','disabled'] as const), coverage: {total: faker.number.int(), enriched: faker.number.int(), embedded: faker.number.int(), pending: faker.number.int(), abandoned: faker.number.int(), coverage_ratio: faker.number.float({min: 0, max: 1, fractionDigits: 2})}, models: {enrich: faker.string.alpha({length: {min: 10, max: 20}}), embed: faker.string.alpha({length: {min: 10, max: 20}})}, last_error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), last_run_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
 
 export const getStartEnrichmentRunResponseMock = (overrideResponse: Partial<Extract<EnrichmentRunAccepted, object>> = {}): EnrichmentRunAccepted => ({run_id: faker.string.uuid(), accepted: faker.helpers.arrayElement([true] as const), ...overrideResponse})
+
+export const getSearchProductsResponseMock = (overrideResponse: Partial<Extract<SearchResponse, object>> = {}): SearchResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), in_stock: faker.datatype.boolean(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), score: faker.number.float({min: 0, max: 1, fractionDigits: 2})})), confidence: faker.helpers.arrayElement(['high','low','none'] as const), interpreted_as: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), degraded: faker.datatype.boolean(), fallback: faker.helpers.arrayElement([faker.helpers.arrayElement([{suggested_categories: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})}))},null,]), null]), ...overrideResponse})
 
 
 export const getRegisterCustomerMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
@@ -1698,97 +1764,97 @@ export const getConfirmPasswordResetMockHandler = (overrideResponse?: void | ((i
   }, options)
 }
 
-export const getPostAdminAuthLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
+export const getAdminLoginMockHandler = (overrideResponse?: AdminLoginResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<AdminLoginResponse> | AdminLoginResponse), options?: RequestHandlerOptions) => {
   return http.post('*/admin/auth/login', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getPostAdminAuthLoginResponseMock(),
+    : getAdminLoginResponseMock(),
       { status: 200
       })
   }, options)
 }
 
-export const getPostAdminCategoriesMockHandler = (overrideResponse?: Category | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Category> | Category), options?: RequestHandlerOptions) => {
+export const getCreateCategoryMockHandler = (overrideResponse?: Category | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Category> | Category), options?: RequestHandlerOptions) => {
   return http.post('*/admin/categories', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getPostAdminCategoriesResponseMock(),
+    : getCreateCategoryResponseMock(),
       { status: 201
       })
   }, options)
 }
 
-export const getGetAdminCategoriesMockHandler = (overrideResponse?: Category[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Category[]> | Category[]), options?: RequestHandlerOptions) => {
+export const getListCategoriesMockHandler = (overrideResponse?: Category[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Category[]> | Category[]), options?: RequestHandlerOptions) => {
   return http.get('*/admin/categories', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getGetAdminCategoriesResponseMock(),
+    : getListCategoriesResponseMock(),
       { status: 200
       })
   }, options)
 }
 
-export const getPatchAdminCategoriesIdMockHandler = (overrideResponse?: Category | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Category> | Category), options?: RequestHandlerOptions) => {
+export const getUpdateCategoryMockHandler = (overrideResponse?: Category | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Category> | Category), options?: RequestHandlerOptions) => {
   return http.patch('*/admin/categories/:id', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getPatchAdminCategoriesIdResponseMock(),
+    : getUpdateCategoryResponseMock(),
       { status: 200
       })
   }, options)
 }
 
-export const getPostAdminProductsMockHandler = (overrideResponse?: Product | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Product> | Product), options?: RequestHandlerOptions) => {
+export const getCreateProductMockHandler = (overrideResponse?: Product | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<Product> | Product), options?: RequestHandlerOptions) => {
   return http.post('*/admin/products', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getPostAdminProductsResponseMock(),
+    : getCreateProductResponseMock(),
       { status: 201
       })
   }, options)
 }
 
-export const getGetAdminProductsMockHandler = (overrideResponse?: ProductList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ProductList> | ProductList), options?: RequestHandlerOptions) => {
+export const getListProductsMockHandler = (overrideResponse?: ProductList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ProductList> | ProductList), options?: RequestHandlerOptions) => {
   return http.get('*/admin/products', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getGetAdminProductsResponseMock(),
+    : getListProductsResponseMock(),
       { status: 200
       })
   }, options)
 }
 
-export const getGetAdminProductsIdMockHandler = (overrideResponse?: Product | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Product> | Product), options?: RequestHandlerOptions) => {
+export const getGetProductMockHandler = (overrideResponse?: Product | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<Product> | Product), options?: RequestHandlerOptions) => {
   return http.get('*/admin/products/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getGetAdminProductsIdResponseMock(),
+    : getGetProductResponseMock(),
       { status: 200
       })
   }, options)
 }
 
-export const getPatchAdminProductsIdMockHandler = (overrideResponse?: Product | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Product> | Product), options?: RequestHandlerOptions) => {
+export const getUpdateProductMockHandler = (overrideResponse?: Product | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Product> | Product), options?: RequestHandlerOptions) => {
   return http.patch('*/admin/products/:id', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
-    : getPatchAdminProductsIdResponseMock(),
+    : getUpdateProductResponseMock(),
       { status: 200
       })
   }, options)
@@ -1938,6 +2004,18 @@ export const getStartEnrichmentRunMockHandler = (overrideResponse?: EnrichmentRu
       })
   }, options)
 }
+
+export const getSearchProductsMockHandler = (overrideResponse?: SearchResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<SearchResponse> | SearchResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/search', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSearchProductsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getRegisterCustomerMockHandler(),
   getLoginCustomerMockHandler(),
@@ -1946,14 +2024,14 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getGetCurrentCustomerMockHandler(),
   getRequestPasswordResetMockHandler(),
   getConfirmPasswordResetMockHandler(),
-  getPostAdminAuthLoginMockHandler(),
-  getPostAdminCategoriesMockHandler(),
-  getGetAdminCategoriesMockHandler(),
-  getPatchAdminCategoriesIdMockHandler(),
-  getPostAdminProductsMockHandler(),
-  getGetAdminProductsMockHandler(),
-  getGetAdminProductsIdMockHandler(),
-  getPatchAdminProductsIdMockHandler(),
+  getAdminLoginMockHandler(),
+  getCreateCategoryMockHandler(),
+  getListCategoriesMockHandler(),
+  getUpdateCategoryMockHandler(),
+  getCreateProductMockHandler(),
+  getListProductsMockHandler(),
+  getGetProductMockHandler(),
+  getUpdateProductMockHandler(),
   getStorefrontGetProductMockHandler(),
   getStorefrontListCategoriesMockHandler(),
   getStorefrontGetCategoryMockHandler(),
@@ -1965,5 +2043,6 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),
   getGetEnrichmentStatusMockHandler(),
-  getStartEnrichmentRunMockHandler()
+  getStartEnrichmentRunMockHandler(),
+  getSearchProductsMockHandler()
 ]

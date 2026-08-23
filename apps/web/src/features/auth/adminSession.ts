@@ -1,7 +1,7 @@
 import { getAuthToken, setAuthToken } from '@/lib/http/authToken';
 import { parseContract } from '@/lib/http/contract';
-import { postAdminAuthLogin } from '@/api/generated/endpoints';
-import { PostAdminAuthLoginResponse } from '@/api/generated/zod';
+import { adminLogin } from '@/api/generated/endpoints';
+import { AdminLoginResponse } from '@/api/generated/zod';
 
 // Persistencia del token en sessionStorage (seam, ADR-0009). US-014 lo migrará a
 // cookie httpOnly + refresh rotado SIN reescribir este módulo ni el cliente HTTP.
@@ -16,8 +16,8 @@ function persist(token: string | null): void {
 export const adminSession = {
   /** Option A (OQ-FE-1): login admin mínimo contra el seam del backend. */
   async login(bootstrapToken: string): Promise<void> {
-    const res = await postAdminAuthLogin({ bootstrapToken });
-    const { token } = parseContract(PostAdminAuthLoginResponse, res.data);
+    const res = await adminLogin({ bootstrapToken });
+    const { token } = parseContract(AdminLoginResponse, res.data);
     setAuthToken(token);
     persist(token);
   },

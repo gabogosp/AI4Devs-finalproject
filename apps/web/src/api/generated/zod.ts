@@ -127,13 +127,13 @@ export const ConfirmPasswordResetResponse = zod.unknown()
  * US-014 agregó el login por `{email, password}` contra una cuenta con `role='admin'`, preservando la ruta, el transporte y la forma de la respuesta `{ token }` — el panel de US-001 no requirió cambios. El camino `{bootstrapToken}` sigue disponible detrás de `ADMIN_AUTH_ENABLED` como salida de emergencia. Con credenciales, la respuesta además emite las cookies de sesión. Las credenciales de una cuenta que existe pero NO es admin devuelven el mismo 401 que una contraseña incorrecta.
  * @summary Login admin — bootstrap token o credenciales (AC-8, US-014 T8.1)
  */
-export const PostAdminAuthLoginBody = zod.union([zod.unknown(),zod.unknown()]).and(zod.object({
+export const AdminLoginBody = zod.union([zod.unknown(),zod.unknown()]).and(zod.object({
   "bootstrapToken": zod.string().optional(),
   "email": zod.string().email().optional(),
   "password": zod.string().optional()
 })).describe('Dos formas admitidas y ninguna más: `{bootstrapToken}` (camino interino de US-001) o `{email, password}` (US-014). La validación es condicional sobre el mismo objeto para no cambiar la ruta ni la forma de la respuesta.')
 
-export const PostAdminAuthLoginResponse = zod.object({
+export const AdminLoginResponse = zod.object({
   "token": zod.string().describe('JWT con claim role=admin')
 })
 
@@ -145,12 +145,12 @@ export const PostAdminAuthLoginResponse = zod.object({
 
 
 
-export const PostAdminCategoriesBody = zod.object({
+export const CreateCategoryBody = zod.object({
   "name": zod.string().min(1),
   "parent_id": zod.string().uuid().nullish()
 })
 
-export const PostAdminCategoriesResponse = zod.object({
+export const CreateCategoryResponse = zod.object({
   "id": zod.string().uuid(),
   "slug": zod.string(),
   "name": zod.string(),
@@ -163,33 +163,33 @@ export const PostAdminCategoriesResponse = zod.object({
  * Devuelve todas las categorías.
  * @summary Listar categorías (AC-1)
  */
-export const GetAdminCategoriesResponseItem = zod.object({
+export const ListCategoriesResponseItem = zod.object({
   "id": zod.string().uuid(),
   "slug": zod.string(),
   "name": zod.string(),
   "parent_id": zod.string().uuid().nullable(),
   "created_at": zod.string().datetime({"offset":true})
 })
-export const GetAdminCategoriesResponse = zod.array(GetAdminCategoriesResponseItem)
+export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
 
 /**
  * Actualiza el nombre/parent de una categoría.
  * @summary Editar categoría (AC-1)
  */
-export const PatchAdminCategoriesIdParams = zod.object({
+export const UpdateCategoryParams = zod.object({
   "id": zod.string().uuid()
 })
 
 
 
 
-export const PatchAdminCategoriesIdBody = zod.object({
+export const UpdateCategoryBody = zod.object({
   "name": zod.string().min(1),
   "parent_id": zod.string().uuid().nullish()
 })
 
-export const PatchAdminCategoriesIdResponse = zod.object({
+export const UpdateCategoryResponse = zod.object({
   "id": zod.string().uuid(),
   "slug": zod.string(),
   "name": zod.string(),
@@ -205,22 +205,22 @@ export const PatchAdminCategoriesIdResponse = zod.object({
 
 
 
-export const postAdminProductsBodyStockDefault = 0;
-export const postAdminProductsBodyStockMin = 0;
+export const createProductBodyStockDefault = 0;
+export const createProductBodyStockMin = 0;
 
 
 
-export const PostAdminProductsBody = zod.object({
+export const CreateProductBody = zod.object({
   "sku": zod.string().min(1),
   "name": zod.string().min(1),
   "description_raw": zod.string().nullish(),
   "price_ars_cents": zod.number().int().min(1).describe('Centavos ARS (IVA incluido)'),
-  "stock": zod.number().int().min(postAdminProductsBodyStockMin).default(postAdminProductsBodyStockDefault),
+  "stock": zod.number().int().min(createProductBodyStockMin).default(createProductBodyStockDefault),
   "category_id": zod.string().uuid(),
   "image_url": zod.string().nullish()
 })
 
-export const PostAdminProductsResponse = zod.object({
+export const CreateProductResponse = zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
   "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
@@ -240,19 +240,19 @@ export const PostAdminProductsResponse = zod.object({
  * Listado paginado del panel (limit/offset).
  * @summary Listar productos (paginado, NFR)
  */
-export const getAdminProductsQueryLimitDefault = 20;
+export const listProductsQueryLimitDefault = 20;
 
-export const getAdminProductsQueryOffsetDefault = 0;
-export const getAdminProductsQueryOffsetMin = 0;
+export const listProductsQueryOffsetDefault = 0;
+export const listProductsQueryOffsetMin = 0;
 
 
 
-export const GetAdminProductsQueryParams = zod.object({
-  "limit": zod.number().int().min(1).default(getAdminProductsQueryLimitDefault),
-  "offset": zod.number().int().min(getAdminProductsQueryOffsetMin).default(getAdminProductsQueryOffsetDefault)
+export const ListProductsQueryParams = zod.object({
+  "limit": zod.number().int().min(1).default(listProductsQueryLimitDefault),
+  "offset": zod.number().int().min(listProductsQueryOffsetMin).default(listProductsQueryOffsetDefault)
 })
 
-export const GetAdminProductsResponse = zod.object({
+export const ListProductsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
@@ -279,11 +279,11 @@ export const GetAdminProductsResponse = zod.object({
  * Devuelve un producto por id.
  * @summary Obtener producto (AC-3)
  */
-export const GetAdminProductsIdParams = zod.object({
+export const GetProductParams = zod.object({
   "id": zod.string().uuid()
 })
 
-export const GetAdminProductsIdResponse = zod.object({
+export const GetProductResponse = zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
   "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
@@ -303,27 +303,27 @@ export const GetAdminProductsIdResponse = zod.object({
  * Sin `status`: edita campos (AC-3). Con `status`: transición de estado (publicar/archivar/despublicar); publicar incompleto → 422 y permanece draft.
  * @summary Editar o cambiar estado (AC-3, AC-4, AC-6, AC-7)
  */
-export const PatchAdminProductsIdParams = zod.object({
+export const UpdateProductParams = zod.object({
   "id": zod.string().uuid()
 })
 
 
 
-export const patchAdminProductsIdBodyStockMin = 0;
+export const updateProductBodyStockMin = 0;
 
 
 
-export const PatchAdminProductsIdBody = zod.object({
+export const UpdateProductBody = zod.object({
   "name": zod.string().min(1).optional(),
   "description_raw": zod.string().nullish(),
   "price_ars_cents": zod.number().int().min(1).optional(),
-  "stock": zod.number().int().min(patchAdminProductsIdBodyStockMin).optional(),
+  "stock": zod.number().int().min(updateProductBodyStockMin).optional(),
   "category_id": zod.string().uuid().optional(),
   "image_url": zod.string().nullish(),
   "status": zod.enum(['draft', 'published', 'archived']).optional()
 })
 
-export const PatchAdminProductsIdResponse = zod.object({
+export const UpdateProductResponse = zod.object({
   "id": zod.string().uuid(),
   "sku": zod.string(),
   "slug": zod.string().describe('URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'),
@@ -708,4 +708,47 @@ export const StartEnrichmentRunBody = zod.object({
 export const StartEnrichmentRunResponse = zod.object({
   "run_id": zod.string().uuid().describe('Identificador de CORRELACIÓN para los logs. No hay GET \/runs\/{id}: el estado se consulta en \/admin\/enrichment\/status, porque una tabla de corridas sería estado duplicado que puede desincronizarse del catálogo.'),
   "accepted": zod.literal(true)
+})
+
+
+/**
+ * Embebe la consulta del cliente y hace kNN sobre pgvector (índice HNSW), con `SET LOCAL hnsw.ef_search` por consulta. Si el proveedor de IA falla o agota GEMINI_SEARCH_TIMEOUT_MS (900 ms), la respuesta sale por full-text (`websearch_to_tsquery` en español) y marca `degraded: true` con status 200: el timeout ES el disparador de la degradación, no un error a reportar (AC-4). La consulta se normaliza (trim + minúsculas + colapso de espacios) antes de embeberse y de usarse como clave del caché de vectores, así que dos clientes que escriben lo mismo con otra capitalización no pagan dos llamadas. Menos de SEARCH_MIN_LENGTH caracteres ÚTILES es 422 SIN llamar al proveedor (AC-5). Sólo devuelve productos publicados (AC-6); los sin stock aparecen con in_stock:false y NO se ocultan (AC-7); un producto sin embedding no rompe la búsqueda y sigue siendo alcanzable por texto (AC-9). El texto del cliente NUNCA llega a un modelo generativo —la interpretación se arma con las categorías del catálogo—, así que la protección de AC-8 es estructural.
+ * @summary Buscar productos en lenguaje natural (AC-1, AC-2)
+ */
+export const searchProductsQueryQMax = 200;
+
+export const searchProductsQueryLimitDefault = 20;
+export const searchProductsQueryLimitMax = 50;
+
+
+
+export const SearchProductsQueryParams = zod.object({
+  "q": zod.string().min(1).max(searchProductsQueryQMax).describe('Consulta en lenguaje natural. Se mide su longitud ÚTIL (la del texto normalizado), así que llenar de espacios no evade el mínimo.'),
+  "limit": zod.number().int().min(1).max(searchProductsQueryLimitMax).default(searchProductsQueryLimitDefault).describe('Tamaño del top-N. Un pedido mayor al tope se acota en silencio.')
+})
+
+export const searchProductsResponseResultsItemScoreMin = 0;
+export const searchProductsResponseResultsItemScoreMax = 1;
+
+
+
+
+export const SearchProductsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "slug": zod.string().describe('Identificador público del producto: el frontend enlaza a \/productos\/{slug}. El id UUID NO se expone (convención de US-002\/US-003).'),
+  "name": zod.string(),
+  "price_ars_cents": zod.number().int().describe('Centavos ARS con IVA incluido, entero (§5.5).'),
+  "in_stock": zod.boolean().describe('in_stock y no el stock exacto: la cantidad le dice a un competidor cuánto rota cada producto. Un producto agotado APARECE con false y no se oculta (AC-7): que exista y esté agotado es información útil.'),
+  "image_url": zod.string().nullable(),
+  "score": zod.number().min(searchProductsResponseResultsItemScoreMin).max(searchProductsResponseResultsItemScoreMax).describe('En la vía vectorial es 1 - distancia_cosine. En la léxica es ts_rank NORMALIZADO al mejor del conjunto, porque las dos escalas no son comparables (medido: un match léxico exacto puntúa ~0,10 contra un umbral de 0,55 calibrado para cosine). Consecuencia: en el camino degradado el score es un rango RELATIVO, no una similitud absoluta comparable entre consultas.')
+})),
+  "confidence": zod.enum(['high', 'low', 'none']).describe('high = el top supera SEARCH_MIN_SCORE. low = hay candidatos por debajo del umbral (el frontend los presenta CON RESERVA, no los esconde). none = sin señal. La distinción low\/none es lo que permite ser honesto en vez de elegir entre mentir o esconder resultados que quizás sirven.'),
+  "interpreted_as": zod.string().nullable().describe('«Interpretación visible» del design-system §7.12, DERIVADA de las categorías de los productos que matchearon — no generada por un LLM (OQ-BE-3). Dice dónde miró el sistema; no finge entender. Como el texto del cliente nunca llega a un modelo generativo, AC-8 es estructural.'),
+  "degraded": zod.boolean().describe('true cuando la respuesta salió por full-text porque el proveedor de IA falló o agotó su timeout (AC-4). Viaja en el CUERPO y con 200: el frontend tiene que poder avisar «esto es el plan B» sin tratarlo como falla. Con el free tier es un estado común, no excepcional.'),
+  "fallback": zod.object({
+  "suggested_categories": zod.array(zod.object({
+  "slug": zod.string().describe('Con slug y no sólo el nombre: es lo que permite al frontend armar el enlace. Sin él la salida sería un callejón mejor redactado.'),
+  "name": zod.string()
+})).min(1).describe('NUNCA vacío cuando está presente (AC-3): si no hay candidatos, cae a las categorías raíz con más productos publicados. Un «0 resultados» desnudo es un callejón sin salida y el cliente que lo ve se va.')
+}).nullable().describe('Salida ofrecida cuando la respuesta no convence (confidence low o none). null sólo con confidence high.')
 })

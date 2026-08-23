@@ -1,15 +1,15 @@
 import { parseContract } from '@/lib/http/contract';
 import {
-  getAdminProducts,
-  getAdminProductsId,
-  patchAdminProductsId,
-  postAdminProducts,
+  listProducts,
+  getProduct,
+  updateProduct,
+  createProduct,
 } from '@/api/generated/endpoints';
 import {
-  GetAdminProductsIdResponse,
-  GetAdminProductsResponse,
-  PatchAdminProductsIdResponse,
-  PostAdminProductsResponse,
+  GetProductResponse,
+  ListProductsResponse,
+  UpdateProductResponse,
+  CreateProductResponse,
 } from '@/api/generated/zod';
 import type {
   CreateProduct,
@@ -41,23 +41,23 @@ export const productsService = {
     params: { limit: number; offset: number },
     signal?: AbortSignal,
   ): Promise<ProductPage> {
-    const res = await getAdminProducts(params, { signal });
-    return parseContract(GetAdminProductsResponse, res.data);
+    const res = await listProducts(params, { signal });
+    return parseContract(ListProductsResponse, res.data);
   },
 
   async get(id: string, signal?: AbortSignal): Promise<Product> {
-    const res = await getAdminProductsId(id, { signal });
-    return parseContract(GetAdminProductsIdResponse, res.data);
+    const res = await getProduct(id, { signal });
+    return parseContract(GetProductResponse, res.data);
   },
 
   async create(input: CreateProductInput): Promise<Product> {
-    const res = await postAdminProducts(input);
-    return parseContract(PostAdminProductsResponse, res.data);
+    const res = await createProduct(input);
+    return parseContract(CreateProductResponse, res.data);
   },
 
   async update(id: string, input: UpdateProductInput): Promise<Product> {
-    const res = await patchAdminProductsId(id, input);
-    return parseContract(PatchAdminProductsIdResponse, res.data);
+    const res = await updateProduct(id, input);
+    return parseContract(UpdateProductResponse, res.data);
   },
 
   publish(id: string): Promise<Product> {

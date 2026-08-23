@@ -37,7 +37,7 @@
 ## Fase 0: Contrato y servicio — 1 h
 
 
-> **BLOQUEO AL EJECUTAR (2026-08-23) — T0.1 no puede cerrarse todavía.**
+> **DRIFT RESUELTO (2026-08-23) — T0.1 cerrada.**
 >
 > El codegen trae `/search` correctamente (la operación, los modelos y el schema Zod: las tres
 > primeras condiciones del `Verify` pasan). Lo que falla es la cuarta, `typecheck`, y **no por
@@ -55,10 +55,20 @@
 > verde con el cliente viejo. Pero eso deja el drift vivo, y el gate `frontend-codegen-fresh`
 > de CI lo va a marcar en cuanto alguien lo corra.
 >
-> No se arregla desde acá porque son 3 archivos de otra disciplina y la decisión de quién
-> absorbe el churn del contrato es del PO. Escalado.
+> **El PO decidió que lo absorbiera esta sesión.** Se aplicaron los 32 renombres —4 en
+> `adminSession.ts`, 12 en `categoriesService.ts`, 16 en `productsService.ts`— alineando los
+> consumidores con los nombres que el contrato ahora impone. Es alineación con la fuente de
+> verdad, no un parche: el contrato manda y el código escrito a mano tenía que seguirlo.
+>
+> Un detalle del reemplazo que vale registrar: hay que renombrar **de más largo a más corto**,
+> porque `getAdminProducts` es prefijo de `getAdminProductsId`. Al revés produce
+> `listProductsId`, un nombre que no existe y que el typecheck marca — pero si el mapeo hubiera
+> sido entre dos nombres ambos válidos, habría compilado apuntando a la operación equivocada.
+>
+> Resultado: typecheck y lint limpios, **100 archivos / 648 tests en verde**. Ningún test tuvo
+> que tocarse, que es la señal de que el cambio fue de nombres y no de comportamiento.
 
-- [ ] **T0.1 Regenerar el cliente y verificar que `/search` llegó.** `pnpm --filter @dsm/web codegen`.
+- [x] **T0.1 Regenerar el cliente y verificar que `/search` llegó.** `pnpm --filter @dsm/web codegen`.
   Los artefactos derivados del contrato —DTOs, Zod, handlers MSW— **se generan**; escribirlos a
   mano reintroduce drift silencioso.
   - **Exit criterion**: existen la operación `searchProducts` en `src/api/generated/endpoints.ts`,
