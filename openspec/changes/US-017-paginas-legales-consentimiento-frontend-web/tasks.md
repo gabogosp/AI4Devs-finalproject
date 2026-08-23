@@ -1,0 +1,568 @@
+---
+parent-us: US-017
+discipline: frontend-web
+variant: null
+language: es
+created: 2026-08-22
+---
+
+# US-017 Frontend Web — Tasks
+
+> Cada task es closure-grade: atómica, con `Pattern:` (snippet mínimo + cita del estándar),
+> `Exit criterion:` observable y `Verify:` con el comando exacto — **terminante** (F49: `vitest
+> run` vía el script `test`, nunca watch; **macOS no tiene `timeout`**: si hace falta acotar,
+> `perl -e 'alarm N; exec @ARGV' -- <cmd>`) y que **falla si el criterio no se cumple** (F50: se
+> ejercita el comportamiento, no se greppea su presencia). Comandos desde la **raíz del repo**.
+>
+> **Estimación dual**: **~4,2 h AI-asistido / ~7 h tradicional** (13 tasks + 4 pre-requisitos;
+> las horas por task son AI-asistido, ~0,32 h/task — la misma densidad que el plan de US-018,
+> 11 tasks en 3,2 h). La US §7 presupuesta `FE-US-017` en **4-6 h tradicional**: **se excede en
+> ~1-3 h**, con causa. Lo que la US presupuestó —«páginas SSR de privacidad y términos +
+> enlaces en el footer»— son ~2 h de las 4,2: el footer ya existe (US-018 dejó el hueco
+> marcado) y no hay consumo de API ni estados asíncronos que modelar. Lo que **no** presupuestó
+> y sí cuesta es todo lo que convierte los AC de «verdad declarada» en «propiedad verificada»:
+> el **gate que impide publicar el texto provisional** (AC-6 no se cumple con una nota en un
+> doc), el **chequeo de deriva de la versión contra el backend** (AC-8 es una igualdad entre dos
+> sistemas, no un campo), el **guard de no-dependencia y no-tracking** (AC-7 + US §9) y la
+> **fuente única de rutas** que el checkout de US-008 va a consumir.
+>
+> Si OQ-FE-16 y OQ-FE-17 se ratifican como «(a) sólo documentarlo», caen T4.1 y T4.3 y el total
+> baja a **~3,7 h / ~6 h** — dentro del techo, a cambio de que AC-6 y AC-8 queden sin guard.
+
+## Matriz de trazabilidad (AC → tasks)
+
+| AC | Título | Task IDs | Estado |
+|---|---|---|---|
+| AC-1 | Página de privacidad pública e indexable | T0.1, T1.1, T1.2, **T2.1**, T2.2, T5.1 | **construido acá** |
+| AC-2 | Página de términos pública e indexable | T0.1, T1.1, T1.2, **T2.1**, T2.2, T5.1 | **construido acá** |
+| AC-3 | Enlaces desde el footer | T0.2, **T3.1**, T5.1 | **construido acá** (el footer existe: US-018) |
+| AC-4 | Enlace + consentimiento desde el checkout | **T0.2** (seam: `LEGAL_ROUTES` + `CONSENT_COPY`), T6.1 | **seam acá**; el checkbox y la captura son de `Deferred: US-008` |
+| AC-5 | Contenido acorde a la Ley 25.326 | **T0.1** (estructura + test de los 4 bloques) | **mecanismo acá**; texto final `Deferred: PO/cliente` |
+| AC-6 | No se opera sin las páginas | **T4.1** (gate de deploy), **T4.2** (guard sin backend), T5.1 | **construido acá**; enganche al pipeline `Deferred: US-019` |
+| AC-7 | Páginas públicas sin login | T2.1, **T5.1** (e2e sin cookies), T4.2 | **construido acá** |
+| AC-8 | Trazabilidad de la versión aceptada | **T0.1** (versión publicada), **T4.3** (deriva vs backend) | **mitad FE acá**; el registro por orden es de `Deferred: US-008` |
+
+**Cobertura no-AC del `design.md` (F51 — toda declaración tiene task o `Deferred:`)**:
+D1 contenido como módulo tipado, sin `dangerouslySetInnerHTML` → T0.1, T1.1 ·
+D2 dos rutas explícitas bajo `/legales/` → T2.1 (disparador de refactor documentado, sin task) ·
+D3 fuente única de rutas con tres consumidores → T0.2, T3.1, T6.1 ·
+D4 Server Components puros, sin fetch y **sin telemetría** → T2.1, **T4.2** ·
+D5 versión en el código y no en env → T0.1, T4.3 ·
+jerarquía de headings + ancho de lectura sin plugin `prose` → T1.1, T3.2 ·
+metadata con canonical absoluta, sin JSON-LD → T1.2 ·
+sitemap que sobrevive la degradación del árbol → T2.2 ·
+recomendación de despliegue → T6.1 + `/plan-deployment`.
+
+**Diferidos declarados**: texto legal definitivo → `Deferred: PO/asesoría legal — gate de
+producción (DoD de la US)` · checkbox de consentimiento y su captura → `Deferred: US-008 (FE+BE)`
+· enganche del gate al job de deploy → `Deferred: US-019 (infra es dueña del pipeline)` ·
+igualdad de la versión en el entorno de producción (Railway) → `Deferred: US-019` · horarios del
+local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer documento legal (cambios y
+devoluciones) → `Deferred: sin AC que lo pida` · banner de cookies → `Deferred: fuera de v1
+(US §4)` · `BE-US-017` → `Deferred: OQ-FE-18 (Arquitecto) — probablemente absorbida por US-008`.
+
+---
+
+## Pre-requisitos
+
+- [ ] **P1 — BLOQUEANTE: `apps/web` sin cambios sin commitear** (`design.md` §Riesgos)
+
+  Hay **otras sesiones activas en el mismo working tree** (al planificar: US-006 y US-005 en
+  `apps/api`, US-014 en `apps/web`). El modo de falla no es el merge conflict —eso Git lo grita—
+  sino el silencioso: un `git add -A` de una sesión barre archivos sin commitear de la otra. **Ya
+  pasó tres veces en este repo.** Esta US toca `SiteFooter.tsx`, `sitemap.ts` y el `README.md` de
+  `apps/web`, los tres compartidos con trabajo en vuelo.
+
+  - **Exit criterion**: `git status --porcelain -- apps/web` no devuelve ninguna línea. Si
+    devuelve algo, `/develop-frontend-web` **para acá** y reporta — no negocia, no scopea
+    parcial, no "coordina sobre la marcha".
+  - **Verify**:
+    ```bash
+    test -z "$(git status --porcelain -- apps/web)" \
+      && echo "OK — apps/web sin cambios sin commitear"
+    ```
+
+- [ ] **P2 — Suite verde y build de producción verde en el `HEAD` de partida**
+  - **Exit criterion**: unit/componente y `next build` pasan antes de tocar nada. Sin red previa
+    no se modifica superficie entregada (`SiteFooter`, `sitemap`).
+  - **Verify**: `pnpm --filter @dsm/web test && pnpm --filter @dsm/web build`
+
+- [ ] **P3 — `design-system.md` en `Approved`** (gate de `fe-design-without-figma` §5: sin Figma,
+  el design-system **es** la autoridad visual)
+  - **Exit criterion**: el doc declara la aprobación de PO y Arquitecto.
+  - **Verify**: `grep -q '^- \[x\] PO:' docs/product/design-system.md && grep -q '^- \[x\] Arquitecto:' docs/product/design-system.md && echo OK`
+
+- [ ] **P4 — AS-BUILT: el footer existe con el hueco de US-017 marcado**
+  - **Exit criterion**: `SiteFooter` está montado en el layout de `(storefront)` y su comentario
+    `Deferred: US-017` sigue ahí — es el hueco que T3.1 cierra. Si el footer no existiera, este
+    plan estaría planificando sobre una suposición.
+  - **Verify**:
+    ```bash
+    grep -q '<SiteFooter />' 'apps/web/app/(storefront)/layout.tsx' \
+      && grep -q 'Deferred: US-017' apps/web/src/features/contact/SiteFooter.tsx \
+      && pnpm --filter @dsm/web test -- --run src/features/contact/SiteFooter.test.tsx
+    ```
+
+---
+
+## Fase 0: Contenido y fuente única — 0,9 h
+
+- [ ] **T0.1** `content.ts`: los dos documentos como dato tipado, con versión y `status` (0,5 h)
+
+  - **Pattern**: los cuatro bloques de la Ley 25.326 van como **claves obligatorias del tipo**,
+    no como elementos de un array — así el test exige *cada uno* y no "al menos cuatro
+    secciones". Texto plano en `paragraphs`: **nunca** HTML (`frontend-standards.md` §12 —
+    `dangerouslySetInnerHTML` es anti-patrón):
+    ```ts
+    // apps/web/src/features/legal/content.ts
+    export interface LegalSection { heading: string; paragraphs: string[] }
+
+    export interface LegalDocumentContent {
+      slug: 'privacidad' | 'terminos';
+      title: string;
+      /** Fecha ISO. MISMA versión que registra `orders.consent_terms_version` (US-008). */
+      version: string;
+      effective_date: string;
+      /** `draft` bloquea el despliegue (AC-6, T4.1). Sólo el dueño lo pasa a `final`. */
+      status: 'draft' | 'final';
+      required: {
+        controller: LegalSection;  // responsable del tratamiento
+        purpose: LegalSection;     // finalidad del uso de los datos
+        rights: LegalSection;      // derechos del titular
+        contact: LegalSection;     // canal de contacto
+      };
+      extra: LegalSection[];
+    }
+
+    export const LEGAL_TERMS_VERSION = '2026-06-15'; // ← igual al default del backend (US-008)
+
+    export const LEGAL_DOCUMENTS: Record<'privacidad' | 'terminos', LegalDocumentContent> = { … };
+    ```
+    El texto provisional lleva los datos que **hoy son ciertos** (nombre de fantasía, dirección
+    del local, email de contacto de `docs/project-config.yml`) y marca lo que falta con
+    `[PENDIENTE: …]` — el marcador que T4.1 usa para bloquear el despliegue.
+
+    La validación de forma se exporta como **schema Zod** (`zod` ya es dependencia del app y es
+    la convención de `src/lib/env.ts`), para que la usen los tres consumidores: el test de AC-5,
+    el gate de T4.1 y quien edite el contenido:
+    ```ts
+    export const legalDocumentSchema = z.object({
+      slug: z.enum(['privacidad', 'terminos']),
+      title: z.string().min(1),
+      version: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      status: z.enum(['draft', 'final']),
+      required: z.object({
+        controller: sectionSchema, purpose: sectionSchema,
+        rights: sectionSchema, contact: sectionSchema,
+      }),
+      extra: z.array(sectionSchema),
+    });
+    ```
+  - **Exit criterion**: existen los dos documentos con los **cuatro** bloques obligatorios no
+    vacíos; `version` y `effective_date` son fechas ISO (`YYYY-MM-DD`) y **coinciden entre sí**;
+    `status` es `'draft'` en los dos (el texto final es del dueño); `LEGAL_TERMS_VERSION` es
+    igual a la `version` del documento de términos. Ningún `paragraphs` contiene `<` (si apareciera
+    HTML, el renderizado lo escaparía y el texto legal saldría roto en pantalla). El schema Zod
+    **rechaza** un documento al que le falte cualquiera de los cuatro bloques o que los tenga
+    vacíos.
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/content.test.ts`
+    (casos: los dos documentos **parsean** con `legalDocumentSchema`; una copia con
+    `required.rights` borrado **falla** el parse —así AC-5 se ejercita, no se declara—; otra con
+    `paragraphs: ['']` también falla; `version === effective_date`;
+    `LEGAL_DOCUMENTS.terminos.version === LEGAL_TERMS_VERSION`; ningún párrafo contiene `<`)
+
+- [ ] **T0.2** `routes.ts`: fuente única de rutas + `CONSENT_COPY` (seam de US-008) (0,4 h)
+
+  - **Pattern**: `as const` para que las rutas sean tipos literales y un `href` mal escrito no
+    compile. `CONSENT_COPY` materializa el copy del `design-system.md` §10.2 **con sus destinos
+    reales** — hoy ese copy tiene dos `(#)`:
+    ```ts
+    // apps/web/src/features/legal/routes.ts
+    export const LEGAL_ROUTES = {
+      privacidad: '/legales/privacidad',
+      terminos: '/legales/terminos',
+    } as const;
+
+    /** Copy del consentimiento (design-system §10.2). Lo consume el checkout (US-008). */
+    export const CONSENT_COPY = {
+      lead: 'Al comprar aceptás nuestra',
+      links: [
+        { href: LEGAL_ROUTES.privacidad, label: 'política de privacidad' },
+        { href: LEGAL_ROUTES.terminos, label: 'términos' },
+      ],
+      trailing: 'Usamos tus datos solo para gestionar tu pedido (Ley 25.326).',
+    } as const;
+    ```
+    — per `frontend-standards.md` §2.1 (package-by-feature) y el precedente de US-018 AC-5
+    (fuente única del enlace **antes** de sumar consumidores, no después).
+  - **Exit criterion**: las dos rutas viven en **un** archivo; `CONSENT_COPY` no contiene ningún
+    `href` igual a `'#'` ni vacío; y **ningún otro archivo de `apps/web` escribe la ruta legal
+    como literal** — el día que el checkout de US-008 la copie en lugar de importarla, el guard
+    falla.
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/routes.test.ts`
+    (casos: las rutas empiezan con `/legales/`; ningún link de `CONSENT_COPY` es `'#'`; y el
+    guard de fuente única recorre `apps/web/src` + `apps/web/app` con `node:fs` buscando el
+    literal `'/legales/` y falla si aparece en un archivo que **no** sea `routes.ts` ni un
+    `*.test.*` — mismo patrón que el guard de `wa.me` de US-018 T1.1)
+
+---
+
+## Fase 1: Presentación — 0,7 h
+
+- [ ] **T1.1** `LegalDocument.tsx`: Server Component presentacional (0,4 h)
+
+  - **Pattern**: Server Component **sin** `'use client'` (`frontend-next-standards.md` §2: cero
+    JS de cliente en una página de texto). Ancho de lectura con `max-w-prose`, que es utilidad
+    de **Tailwind core** — `class="prose"` NO existe en este proyecto (`tailwind.config.ts`
+    declara `plugins: []`). Colores y espaciados por token del design-system, nunca hardcodeados:
+    ```tsx
+    // apps/web/src/features/legal/LegalDocument.tsx
+    export function LegalDocument({ doc }: { doc: LegalDocumentContent }) {
+      const sections = [doc.required.controller, doc.required.purpose,
+                        doc.required.rights, doc.required.contact, ...doc.extra];
+      return (
+        <article className="mx-auto max-w-prose px-4 py-8">
+          <h1 className="text-2xl font-bold text-foreground">{doc.title}</h1>
+          {/* Mitad visible de AC-8: la versión que la orden registra, legible por
+              humanos y por máquinas. */}
+          <p className="mt-2 text-sm text-muted">
+            Versión {doc.version} · vigente desde{' '}
+            <time dateTime={doc.effective_date}>{doc.effective_date}</time>
+          </p>
+          {sections.map((s) => (
+            <section key={s.heading} className="mt-6">
+              <h2 className="text-lg font-semibold text-foreground">{s.heading}</h2>
+              {s.paragraphs.map((p) => (
+                <p key={p} className="mt-2 text-sm leading-relaxed text-foreground">{p}</p>
+              ))}
+            </section>
+          ))}
+        </article>
+      );
+    }
+    ```
+    — per `design-system.md` §11 (headings en orden jerárquico, `h1` único) y §2 (tokens).
+  - **Exit criterion**: renderiza **un** `<h1>` con el título, la versión con `<time datetime>`,
+    y **un `<h2>` por sección** en el orden «obligatorias primero, extras después». No contiene
+    `dangerouslySetInnerHTML`. No declara `'use client'`. Un documento con 0 secciones extra
+    renderiza igual (4 `<h2>`).
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/LegalDocument.test.tsx`
+    (casos: `getAllByRole('heading', { level: 1 })` tiene largo 1; hay tantos `level: 2` como
+    secciones y el **primero** es el del responsable del tratamiento; el `<time>` lleva el
+    `dateTime` del documento; un párrafo con `<b>hola</b>` en el contenido aparece **como texto
+    literal** en pantalla —prueba de que no se interpreta HTML—; el archivo fuente no contiene
+    `'use client'`)
+
+- [ ] **T1.2** `legalMetadata.ts`: metadata por documento (0,3 h)
+
+  - **Pattern**: espeja `src/features/storefront/metadata.ts` (US-003): `SITE_NAME`, description
+    acotada, **canonical absoluta** desde `NEXT_PUBLIC_SITE_URL` — los buscadores la exigen
+    absoluta. Metadata API, nunca `<head>` manual (`frontend-next-standards.md` §6):
+    ```ts
+    // apps/web/src/features/legal/legalMetadata.ts
+    export function legalMetadata(doc: LegalDocumentContent): Metadata {
+      const url = `${publicEnv.NEXT_PUBLIC_SITE_URL}${LEGAL_ROUTES[doc.slug]}`;
+      return {
+        title: `${doc.title} — DSM Refrigeración y Ferretería`,
+        description: `${doc.title} de DSM Refrigeración y Ferretería. Versión ${doc.version}.`,
+        alternates: { canonical: url },
+        openGraph: { type: 'website', title: doc.title, url },
+      };
+    }
+    ```
+  - **Exit criterion**: `alternates.canonical` es **absoluta** y termina en la ruta del
+    documento tomada de `LEGAL_ROUTES` (no un string suelto); el `title` incluye el nombre del
+    sitio; la `description` no supera 160 caracteres; **no** se emite `robots: { index: false }`
+    — estas páginas son indexables a propósito (US §9).
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/legalMetadata.test.ts`
+    (casos: la canonical arranca con `http` y termina en `/legales/privacidad`
+    y `/legales/terminos` respectivamente; largo de `description` ≤ 160; el objeto **no** tiene
+    la clave `robots`; con `NEXT_PUBLIC_SITE_URL` de test la URL no queda con `//` duplicado)
+
+---
+
+## Fase 2: Rutas e indexabilidad — 0,6 h
+
+- [ ] **T2.1** Las dos páginas bajo `app/(storefront)/legales/` (0,3 h)
+
+  - **Pattern**: página trivial que sólo compone — la lógica ya está en `content.ts`,
+    `LegalDocument` y `legalMetadata`. Route group `(storefront)` para heredar header + footer
+    sin tocar el layout (`frontend-next-standards.md` §1):
+    ```tsx
+    // apps/web/app/(storefront)/legales/privacidad/page.tsx
+    import { LEGAL_DOCUMENTS } from '@/features/legal/content';
+    import { LegalDocument } from '@/features/legal/LegalDocument';
+    import { legalMetadata } from '@/features/legal/legalMetadata';
+
+    const doc = LEGAL_DOCUMENTS.privacidad;
+    export const metadata = legalMetadata(doc);
+    export default function PrivacidadPage() { return <LegalDocument doc={doc} />; }
+    ```
+    Nada de `[doc]` dinámico: dos documentos conocidos no justifican un parámetro validable ni
+    una rama `notFound()` (`design.md` D2, `base-standards.md` §1). Nada de `loading.tsx`: la
+    boundary de Suspense compromete el status 200 antes de tiempo (deuda F59 documentada por
+    US-003) y acá **no hay nada asíncrono que esperar**.
+  - **Exit criterion**: las dos rutas existen como `page.tsx` estáticos, exportan `metadata` de
+    `legalMetadata` y renderizan `LegalDocument` con su documento. Ninguna declara `'use client'`,
+    ninguna hace `fetch`, y no se agrega ningún `loading.tsx` ni `error.tsx` bajo `legales/`.
+  - **Verify**:
+    ```bash
+    pnpm --filter @dsm/web test -- --run src/features/legal/pages.test.tsx \
+      && test ! -e 'apps/web/app/(storefront)/legales/privacidad/loading.tsx' \
+      && test ! -e 'apps/web/app/(storefront)/legales/terminos/loading.tsx' \
+      && pnpm --filter @dsm/web typecheck
+    ```
+    (`pages.test.tsx` importa los dos módulos de página y los renderiza con RTL: el `<h1>` es el
+    título del documento correcto y `metadata.alternates.canonical` apunta a la ruta correcta —
+    si alguien cruza los documentos entre las dos páginas, falla)
+
+- [ ] **T2.2** Las dos URLs legales en el sitemap, **antes** de la degradación (0,3 h)
+
+  - **Pattern**: hoy `buildSitemap()` devuelve `[home]` cuando el árbol de categorías falla. Las
+    páginas legales **no dependen del árbol**, así que entran antes de ese `return` — si
+    entraran después, un 5xx de la API las borraría del sitemap:
+    ```ts
+    // apps/web/src/features/storefront/sitemap.ts
+    const home = { url: base };
+    const legales = Object.values(LEGAL_ROUTES).map((path) => ({ url: `${base}${path}` }));
+
+    const rubros = await categoriesStorefrontService.getTree().catch(() => []);
+    if (rubros.length === 0) return [home, ...legales];
+    …
+    return [home, ...legales, ...categorias, ...productos];
+    ```
+    — per `frontend-next-standards.md` §6 (sitemap por Metadata API) y el patrón de degradación
+    que el propio archivo ya documenta.
+  - **Exit criterion**: `buildSitemap()` incluye las dos URLs legales **absolutas** en el camino
+    feliz **y** en el camino degradado (árbol que rechaza). No se duplican con ninguna otra URL.
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/storefront/sitemap.test.ts`
+    (casos nuevos: con el servicio mockeado OK, el sitemap contiene las dos URLs legales; con el
+    servicio **rechazando**, el sitemap tiene exactamente `[home, privacidad, terminos]`; sin
+    duplicados — `new Set(urls).size === urls.length`. Los casos existentes de US-002 siguen
+    verdes sin editarse)
+
+---
+
+## Fase 3: Enlaces y accesibilidad — 0,5 h
+
+- [ ] **T3.1** `SiteFooter`: los dos enlaces legales reales (AC-3) (0,3 h)
+
+  - **Pattern**: se reemplaza el comentario `Deferred: US-017` por los enlaces, tomados de
+    `LEGAL_ROUTES` (nunca literales) y con `next/link` como el resto del sitio. Área táctil y
+    focus ring como el resto del footer (`design-system.md` §7.10, §11):
+    ```tsx
+    // apps/web/src/features/contact/SiteFooter.tsx
+    import Link from 'next/link';
+    import { LEGAL_ROUTES } from '@/features/legal/routes';
+    …
+    <nav aria-label="Legales" className="mt-2">
+      <ul className="flex flex-wrap gap-4">
+        <li>
+          <Link href={LEGAL_ROUTES.privacidad}
+                className="flex min-h-[44px] items-center underline focus:outline-none focus-visible:shadow-focus">
+            Política de privacidad
+          </Link>
+        </li>
+        <li>{/* Términos y condiciones — idem */}</li>
+      </ul>
+    </nav>
+    ```
+  - **Exit criterion**: el footer ofrece los dos enlaces con nombres accesibles distintos
+    («Política de privacidad», «Términos y condiciones») y `href` **tomado de `LEGAL_ROUTES`**;
+    el comentario `Deferred: US-017` ya no está; el canal de WhatsApp y los datos del local
+    **siguen intactos** (US-018 no se rompe). El panel del dueño no cambia: el footer sólo vive
+    en `(storefront)` (ADR-0010).
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/contact/SiteFooter.test.tsx`
+    (casos nuevos: `getByRole('link', { name: /política de privacidad/i })` con `href`
+    `/legales/privacidad` y su par de términos; los casos existentes de US-018 —WhatsApp,
+    nombre y dirección del local— siguen verdes **sin editarse**; y un caso que asserta que
+    **ningún** `href` del footer es `'#'`)
+
+- [ ] **T3.2** axe sobre las dos páginas y sobre el footer con enlaces (0,2 h)
+
+  - **Pattern**: `jest-axe` como en `src/features/storefront/a11y.test.tsx` y
+    `contactA11y.test.tsx`. Además del `expect(...).toHaveNoViolations()`, se asserta la
+    **jerarquía** de headings, que axe en jsdom no siempre marca:
+    ```tsx
+    const { container } = render(<LegalDocument doc={LEGAL_DOCUMENTS.terminos} />);
+    expect(await axe(container)).toHaveNoViolations();
+    ```
+    — per `qa-frontend-standards.md` §23.6 (axe) y §19 (a11y), `design-system.md` §11.
+  - **Exit criterion**: cero violaciones de axe en las dos páginas y en el footer con los
+    enlaces; un solo `<h1>` por página; los `<h2>` no saltan niveles; los enlaces del footer
+    tienen nombre accesible y área ≥ 44 px declarada por clase.
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/legalA11y.test.tsx src/features/contact/contactA11y.test.tsx`
+
+---
+
+## Fase 4: Guards y gate de producción — 0,8 h
+
+- [ ] **T4.1** `check-legal-content.mjs`: el texto provisional no llega a producción (AC-6) (0,3 h)
+
+  - **Pattern**: gate **fuera** del build, hermano exacto de `check-whatsapp-configured.mjs`
+    (OQ-FE-12 resuelta como «script en el job de deploy»). Un guard en el módulo o en `env.ts`
+    rompería el build local y la suite E2E, que corren a propósito con el texto provisional:
+    ```js
+    // apps/web/scripts/check-legal-content.mjs
+    const MARCADORES = ['[PENDIENTE', 'TODO', 'Lorem ipsum'];
+    const problemas = [];
+    for (const doc of Object.values(LEGAL_DOCUMENTS)) {
+      if (doc.status !== 'final') problemas.push(`${doc.slug}: status="${doc.status}"`);
+      const texto = JSON.stringify(doc);
+      for (const m of MARCADORES)
+        if (texto.includes(m)) problemas.push(`${doc.slug}: contiene "${m}"`);
+    }
+    if (problemas.length > 0) {
+      console.error(
+        'Contenido legal provisional — NO se puede publicar (US-017 AC-6, Ley 25.326):\n' +
+        problemas.map((p) => `  - ${p}`).join('\n') +
+        '\nEl texto final lo provee el dueño / asesoría legal (US §10).',
+      );
+      process.exit(1);
+    }
+    ```
+    Lee el contenido con `tsx`/`node --experimental-strip-types` o, si el runner no lo soporta,
+    con un `JSON.parse` de un export serializado — la decisión concreta la toma el ejecutor y la
+    documenta; lo que **no** es negociable es que el gate lea la **misma** fuente que la página
+    (un gate que lee una copia no protege nada).
+  - **Exit criterion**: el script sale **1** mientras algún documento esté en `draft` o conserve
+    un marcador de relleno, e imprime **qué** documento y **por qué**; sale **0** cuando los dos
+    están en `final` y sin marcadores. El enganche al job de deploy queda `Deferred: US-019`.
+  - **Verify**:
+    ```bash
+    ( node apps/web/scripts/check-legal-content.mjs; test $? -eq 1 ) \
+      && ( LEGAL_CONTENT_FIXTURE=final node apps/web/scripts/check-legal-content.mjs ) \
+      && echo "OK — el gate bloquea el provisional y deja pasar el final"
+    ```
+    (se ejecuta el script en los dos escenarios y se asserta el **exit code**, no su contenido:
+    F50. El fixture `final` es el mecanismo que el ejecutor documente para simular el texto
+    aprobado sin editar el contenido real)
+
+- [ ] **T4.2** Guard: sin backend, sin cliente, sin tracking (AC-6, AC-7, US §9) (0,3 h)
+
+  - **Pattern**: mismo patrón que `src/features/contact/noBackend.test.tsx` (US-018 T3.1): se
+    lee el **grafo de imports** del feature y se falla si aparece red o telemetría. Es lo que
+    convierte una propiedad verdadera-hoy en un invariante:
+    ```ts
+    const fuentes = leerArchivos('apps/web/src/features/legal', 'apps/web/app/(storefront)/legales');
+    expect(fuentes).not.toMatch(/from '@\/lib\/http/);        // sin cliente HTTP
+    expect(fuentes).not.toMatch(/\bfetch\(/);                  // sin fetch directo
+    expect(fuentes).not.toMatch(/from '@\/lib\/observability/); // sin telemetría (US §9)
+    expect(fuentes).not.toMatch(/'use client'/);               // Server Components puros
+    ```
+    — per `frontend-standards.md` §12 y `frontend-next-standards.md` §2/§7.
+  - **Exit criterion**: el test **falla** si mañana alguien importa el cliente HTTP, llama
+    `fetch`, agrega un evento de telemetría o convierte una de las dos páginas en Client
+    Component. Es un guard de regresión, no una verificación de una vez: una página que cumple
+    una obligación legal no puede caerse porque la API esté caída, y el §9 prohíbe tracking acá.
+  - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/legal/noBackendNoTracking.test.tsx`
+
+- [ ] **T4.3** Chequeo de deriva de la versión contra el backend (AC-8) — `Gated: OQ-FE-16 (recomendación: opción b)` (0,2 h)
+
+  - **Pattern**: se extiende `check-legal-content.mjs` (un solo gate, no dos scripts) con la
+    comparación contra el default declarado del backend. El backend llena
+    `orders.consent_terms_version` desde `LEGAL_TERMS_VERSION`; si los dos valores difieren, la
+    orden afirma que se aceptó una versión que el sitio nunca publicó:
+    ```js
+    const envBackend = readFileSync('apps/api/.env.example', 'utf8');
+    const declarada = envBackend.match(/^LEGAL_TERMS_VERSION=(.+)$/m)?.[1]?.trim();
+    if (declarada === undefined)
+      fallar('apps/api/.env.example no declara LEGAL_TERMS_VERSION (lo agrega US-008 T0.x).');
+    if (declarada !== LEGAL_DOCUMENTS.terminos.version)
+      fallar(`Deriva de versión: FE publica ${LEGAL_DOCUMENTS.terminos.version} y el backend declara ${declarada}.`);
+    ```
+    — per `documentation-standards.md` §11 (un contrato entre dos sistemas se verifica, no se
+    documenta y se espera).
+  - **Exit criterion**: el gate falla con mensaje explícito cuando la versión del FE y la
+    declarada por el backend difieren, y **también** cuando el backend todavía no la declara
+    (hoy es el caso: `apps/api/.env.example` no la tiene — verificado al planificar). Lo que este
+    chequeo **no** cubre —que el valor configurado en Railway coincida— queda
+    `Deferred: US-019`, declarado.
+  - **Verify**:
+    ```bash
+    ( node apps/web/scripts/check-legal-content.mjs 2>&1 | grep -q 'LEGAL_TERMS_VERSION' ) \
+      && echo "OK — el gate reporta el estado del contrato de versión con el backend"
+    ```
+    *(se ejercita el camino de falla real del repo de hoy: el backend aún no declara la variable.
+    Cuando US-008 la agregue con el mismo valor, este comando deja de encontrar el mensaje y la
+    task se re-verifica con el caso de deriva —cambiar una versión en un fixture y ver el exit 1—;
+    el ejecutor lo anota al cerrar)*
+
+---
+
+## Fase 5: E2E sobre el HTML servido — 0,4 h
+
+- [ ] **T5.1** `e2e/legal-pages.spec.ts`: 200, sin login, enlazadas y en el sitemap (0,4 h)
+
+  - **Pattern**: se verifica el **HTML servido**, no el DOM hidratado — es lo que ve un crawler
+    y un visitante sin JS, y es la mitad de AC-1/AC-2 que un test de componente no puede probar.
+    Sin cookies en el contexto: AC-7 es "sin iniciar sesión", así que el spec no debe arrastrar
+    estado de otros specs (`playwright-stability`):
+    ```ts
+    for (const path of ['/legales/privacidad', '/legales/terminos']) {
+      test(`${path} responde 200 SSR sin login (AC-1/AC-2/AC-7)`, async ({ page }) => {
+        const res = await page.goto(path);
+        expect(res!.status()).toBe(200);
+        const html = await res!.text();
+        expect(html).toContain('Versión');            // versión visible (AC-8)
+        expect(html).toMatch(/<h1[^>]*>/);
+      });
+    }
+    ```
+  - **Exit criterion**: las dos rutas devuelven **200** con su `<h1>` y su versión en el HTML
+    servido, **sin** cookies de sesión en el contexto (AC-7); el footer de una página pública
+    cualquiera (`/`) trae los dos `href` legales (AC-3); `/sitemap.xml` los incluye; y el panel
+    (`/admin/acceso`) **no** los enlaza en su chrome —el footer es superficie pública
+    (ADR-0010)—. Ningún `href="#"` en el HTML de las páginas legales.
+  - **Verify**: `pnpm --filter @dsm/web test:e2e e2e/legal-pages.spec.ts`
+
+---
+
+## Fase 6: Documentación — 0,3 h
+
+- [ ] **T6.1** README del app: rutas legales, versionado y gate (0,3 h)
+
+  - **Pattern**: se extiende el `## Mapa de rutas` con las dos rutas nuevas y se agrega una
+    sección hermana de `### Canal de contacto (WhatsApp — US-018)`, con el mismo tono operativo
+    — per `documentation-standards.md` §11.1.
+  - **Exit criterion**: el README documenta (a) las dos rutas y que son públicas e indexables,
+    (b) que el contenido vive en `src/features/legal/content.ts` y **cambiarlo es un deploy**,
+    (c) que `status: 'draft'` **bloquea el despliegue** y quién lo pasa a `final` (el dueño),
+    (d) que la `version` tiene que coincidir con `LEGAL_TERMS_VERSION` del backend y por qué
+    (la orden registra esa versión — US-008), y (e) que el checkbox del checkout debe consumir
+    `LEGAL_ROUTES` / `CONSENT_COPY` y no escribir la ruta a mano.
+  - **Verify**:
+    ```bash
+    grep -q '/legales/privacidad' apps/web/README.md \
+      && grep -q '/legales/terminos' apps/web/README.md \
+      && grep -q 'LEGAL_TERMS_VERSION' apps/web/README.md \
+      && grep -q 'CONSENT_COPY' apps/web/README.md \
+      && grep -qi "status: 'draft'" apps/web/README.md \
+      && echo OK
+    ```
+
+---
+
+## Verification (suite-level)
+
+- [ ] Unit + componente + a11y pasan: `pnpm --filter @dsm/web test`
+- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
+- [ ] Build de producción verde: `pnpm --filter @dsm/web build`
+- [ ] E2E completa verde (no sólo el spec nuevo — el footer cambió y lo tocan otros specs):
+      `pnpm --filter @dsm/web test:e2e`
+- [ ] **Sin regresión de US-018**: `pnpm --filter @dsm/web test -- --run src/features/contact` y
+      `pnpm --filter @dsm/web test:e2e e2e/site-contact.spec.ts` (el footer es el archivo que
+      este change modifica: si el canal de WhatsApp o los datos del local se rompen, es acá)
+- [ ] **Sin regresión de US-002**: `pnpm --filter @dsm/web test -- --run src/features/storefront/sitemap.test.ts`
+      (el sitemap es el otro archivo entregado que se modifica)
+- [ ] **El gate de producción bloquea hoy** (y esto es lo correcto, no un fallo):
+      `node apps/web/scripts/check-legal-content.mjs; test $? -eq 1`
+- [ ] **Ninguna página legal depende de la API ni lleva tracking**:
+      `pnpm --filter @dsm/web test -- --run src/features/legal/noBackendNoTracking.test.tsx`
+- [ ] CI del monorepo: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+      *(al planificar, `pnpm -r lint` y `pnpm -r test` están rojos por trabajo de otras
+      disciplinas en vuelo —US-014 frontend en `customerSession.test.ts`, US-006 backend en
+      `e2e-imports-upload`— y `apps/api/src/common/e2e-security-edge.spec.ts` falla desde antes
+      de US-007. Si al ejecutar siguen rojos por esas causas, se reporta y **no** se toca código
+      ajeno; lo que este change controla es `@dsm/web`)*
