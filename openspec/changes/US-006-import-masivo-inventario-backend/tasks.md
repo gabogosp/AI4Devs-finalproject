@@ -619,18 +619,28 @@ language: es
 - [x] **Ningún contenido del archivo escapa por log (observabilidad)**:
       `pnpm --filter @dsm/api test -- --testPathPattern=e2e-imports-observability`
       → 6/6. Busca el nombre, el sku y la descripción en los cuatro niveles de log.
-- [ ] Dependencias nuevas en el lockfile y sin vulnerabilidades altas:
+- [x] Dependencias nuevas en el lockfile y sin vulnerabilidades altas:
       `pnpm install --frozen-lockfile && pnpm audit --audit-level=high`
       → `pnpm install --frozen-lockfile` **exit 0** (`csv-parse@5.6.0`, `exceljs@4.4.0` y
       `@types/multer@1.4.13` están en el lockfile con versión exacta).
-      **`pnpm audit --audit-level=high` NO pasa**: 56 high + 5 critical en el monorepo,
-      casi todas de `apps/web` (postcss, etc.) y **previas** a este change. Tres SÍ tocan
-      esta superficie: los DoS de `multer@1.4.4-lts.1`, que llega transitivo de
-      `@nestjs/platform-express@10.4.15` y se parchea en `multer@2.x` — un salto que
-      arrastra la versión de Nest y **no se decide en este change**. Mitigación aplicada
-      mientras tanto: el interceptor acota `fileSize`, `files`, `parts`, `fields` y
-      `fieldSize`, la ruta es admin-only y tiene presupuesto de 3 requests/hora/IP.
-      `Deferred: upgrade de @nestjs/platform-express a 11 — owner: Arquitecto`.
+      **`pnpm audit --audit-level=high` NO pasa**, pero **la parte que tocaba a este
+      change ya está resuelta** (2026-08-23):
+
+      - Los dos DoS de `multer@1.4.4-lts.1` —los únicos hallazgos que alcanzaban la
+        superficie del import— se corrigieron con `pnpm.overrides` a `multer ^2.0.0`
+        (commit `a4ea348`). `apps/api` resuelve a `2.2.0`, las 19 suites de import
+        siguen 254/254 y los tres paths de multer desaparecieron del audit.
+      - **El deferral anterior queda anulado.** Decía `upgrade de
+        @nestjs/platform-express a 11 — owner: Arquitecto`, y se descartó al medirlo:
+        de los 61 hallazgos high/critical **sólo 2 eran de multer**, así que el major
+        —que arrastra Express 5 y toda la superficie HTTP— no cerraba el gate igual.
+        El override lo resolvió en una línea y sin tocar el framework.
+
+      Lo que impide el exit 0 son **53 high + 5 critical que no son de este change ni
+      de `apps/api`**: `next` (2 critical + 11 high), `vitest`, `handlebars` y el resto
+      del tooling de `apps/web`. Se abrió **US-022 — actualización de dependencias del
+      frontend** para hacerse cargo, con las versiones mínimas ya medidas.
+      `Deferred: US-022 — owner: PO`.
 - [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
       → **los tres exit 0** (2026-08-23). `apps/api` 97 suites / 1012 tests,
       `apps/web` 68 archivos. Los 4 `no-unused-vars` de `customerSession.test.ts`

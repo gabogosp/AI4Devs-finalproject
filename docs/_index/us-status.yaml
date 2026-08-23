@@ -252,3 +252,13 @@
   # es el camino principal del PRD §2.1 cap. 4. Anonimiza, NO borra: el E2E §8 fija que las
   # órdenes no se borran (historial 12 meses + métricas de US-016).
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
+- id: US-022
+  slug: actualizacion-dependencias-frontend
+  status: Backlog
+  priority: High
+  prd-capacity: null            # no nace del PRD: hallazgo del gate de seguridad de US-006
+  disciplines: [FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-08-23
+  blocked_by: []
