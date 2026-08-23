@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { MetricsService } from './metrics.service';
 
 export type CatalogEventName =
   | 'product.created'
@@ -26,6 +27,18 @@ export class CatalogEventsService {
   private readonly logger = new Logger(CatalogEventsService.name);
   private readonly counters = new Map<CatalogEventName, number>();
 
+  /**
+   * AUDIT-dsm-api-006 — el `Map` de arriba sigue existiendo porque `count()` es
+   * síncrono y lo usan los tests; lo que se agrega es que el mismo incremento
+   * aterrice en el registro de Prometheus, que es lo único legible desde afuera.
+   * Antes de esto, este contador era invisible en producción.
+   *
+   * `@Optional()` a propósito: varios specs construyen el servicio a mano
+   * (`new CatalogEventsService()`). Hacerlo obligatorio los rompería a todos sin
+   * ganar nada — en la app real Nest lo inyecta porque `MetricsModule` es `@Global`.
+   */
+  constructor(@Optional() private readonly metrics?: MetricsService) {}
+
   emit(
     name: CatalogEventName,
     entityId: string,
@@ -47,6 +60,9 @@ export class CatalogEventsService {
     fields?: EventFields,
   ): void {
     this.counters.set(name, (this.counters.get(name) ?? 0) + 1);
+    // El mismo incremento, ahora también en el registro expuesto por
+    // `GET /v1/admin/metrics` (AUDIT-dsm-api-006).
+    this.metrics?.increment('catalog', name);
     this.logger.log({
       event: name,
       entity_id: entityId,

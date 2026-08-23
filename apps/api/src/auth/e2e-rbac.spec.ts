@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { customerToken, bootTestApp } from '../../test/e2e-app';
 import { CategoriesModule } from '../categories/categories.module';
+import { MetricsModule } from '../observability/metrics.module';
 import { ProductsModule } from '../products/products.module';
 
 type Method = 'get' | 'post' | 'patch';
@@ -14,7 +15,7 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await bootTestApp([CategoriesModule, ProductsModule]);
+    app = await bootTestApp([CategoriesModule, MetricsModule, ProductsModule]);
   });
   afterAll(async () => {
     await app?.close();
@@ -29,6 +30,12 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
     ['get', '/v1/admin/products'],
     ['get', `/v1/admin/products/${uuid}`],
     ['patch', `/v1/admin/products/${uuid}`],
+    // AUDIT-dsm-api-006 — la exposición de métricas entra al MISMO barrido en vez de
+    // llevar su propio spec: así el invariante «ninguna ruta /v1/admin/* responde sin
+    // auth» se mantiene por construcción cuando alguien agregue la próxima. Importa
+    // especialmente acá: un /metrics abierto publicaría volumen de ventas, logins
+    // fallidos y stock bloqueado — inteligencia de negocio gratis.
+    ['get', '/v1/admin/metrics'],
   ];
 
   function call(method: Method, path: string): request.Test {
