@@ -360,6 +360,52 @@
   archived-at: null
   archive-path: null
 
+- name: US-006-import-masivo-inventario-qa
+  us-id: US-006
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-006-import-masivo-inventario.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 7 h AI-asistido (la US §7 presupuesta QA-US-006 en 6-8 h). 14 tasks.
+  # LA TERCERA DISCIPLINA de US-006: backend (35/35) y frontend-web (13/13) estan
+  # cerrados; sin este change la US no puede cruzar su Definition of Done, que pide
+  # AC verificados por QA y regresion verde.
+  # Suite L3 cross-stack: 16 escenarios de aceptacion API-level (5 happy + 6 corner +
+  # 5 negative-space), 4 E2E de navegador, 1 de a11y, 1 de throughput y 2 charters
+  # => 24 test cases (TC-601..TC-624). Los 24 son EJECUTABLES HOY: no hay nada
+  # bloqueado por otra disciplina, a diferencia de lo que paso en US-007.
+  # LAS TRES COSAS QUE NINGUNA SUITE ACTUAL PUEDE VER, y que justifican el change:
+  #  1. el multipart REAL de un navegador (en jsdom el cuerpo de un FormData no se
+  #     puede leer: limite declarado en el plan del FE). Es la costura donde el
+  #     content-type forzado por el mutator ya rompio este flujo una vez.
+  #  2. la descarga del CSV como descarga de verdad (el Bearer vive en memoria, asi
+  #     que el reporte se materializa desde un Blob; jsdom solo puede espiar eso).
+  #  3. que el storefront SIRVA el precio nuevo tras un ajuste masivo (handoff OQ-10):
+  #     el test del FE prueba que se LLAMA a revalidateCatalogSafely; que el HTML
+  #     servido cambie cruza browser, web, API y cache, y es plata (TC-619).
+  # DECISIONES DEL PO 2026-08-23, cerradas ANTES de escribir el plan:
+  # OQ-QA-1 Tier 2 pragmatico con AC-8 (autorizacion) y AC-11 (limites/anti-DoS) como
+  # Tier 1 -- el riesgo alto esta concentrado ahi, no repartido en las 11 AC ·
+  # OQ-QA-2 AC-3 se cubre solo en su costura observable (los SKUs quedan pendientes de
+  # enriquecimiento), porque US-005 no tiene GEMINI_API_KEY cargada: cobertura parcial
+  # DECLARADA, no escondida · OQ-QA-3 sin k6 -- la concurrencia de usuarios no es el
+  # riesgo (un unico dueno) y el rate-limit de 3/hora/IP haria que el test mida el
+  # rate-limit; en su lugar, presupuesto de throughput sobre 5.000 filas y p95 de un
+  # GET publico MIENTRAS el import corre, porque el runner vive dentro del proceso del
+  # API (ADR-0012) · OQ-QA-4 a11y si, regresion visual no (no hay baseline del panel:
+  # abrirla es deuda sin dueno) · OQ-QA-5 generadores deterministas, NADA binario en
+  # git -- ni el Excel: exceljs@4.4.0 ya esta en el workspace y la suite del API
+  # fabrica su xlsx con la misma libreria que lo lee.
+  # RIESGO OPERATIVO ADMINISTRADO: 20 de los 24 casos hacen un POST y el cap productivo
+  # es 3/hora/IP, asi que la suite se autoenvenenaria a la cuarta corrida. Se eleva por
+  # entorno (pre-requisito P2) y el limite se prueba en TC-613, que lo baja por su
+  # propia variable. Allowlistear la IP se descarto: crea un camino que produccion no
+  # tiene y dejaria el limite sin probar en ningun lado.
+  estimate-hours: 7
+
 - name: US-006-import-masivo-inventario-backend
   us-id: US-006
   discipline: backend
