@@ -13,6 +13,19 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
     LoggerModule.forRoot({
       pinoHttp: {
         /**
+         * Nivel por entorno, con `info` como default — o sea, sin cambio de
+         * comportamiento en producción.
+         *
+         * Existe porque había información que el proceso **produce y nadie podía
+         * leer**: el mailer de log escribe el token de recuperación en `debug`
+         * (único canal, ya que la tabla guarda sólo el hash), y sin un nivel
+         * configurable ese `debug` no se emitía nunca. Consecuencia concreta: el
+         * flujo de recuperación de US-014 no era verificable de punta a punta ni a
+         * mano ni por la suite QA. Se elige esto antes que un endpoint de sólo-test
+         * porque no agrega una ruta que haya que acordarse de apagar en producción.
+         */
+        level: process.env.LOG_LEVEL ?? 'info',
+        /**
          * AUDIT-dsm-api-009 — `service`, `version` y `env` en TODA línea, no sólo en
          * las de request. Van en `base` y no en `customProps` justamente por eso:
          * `customProps` se evalúa por request y deja sin identificar los logs de
