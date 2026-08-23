@@ -133,6 +133,10 @@ language: es
 
 ## Fase 2: Componentes — 1,6 h
 
+> **Orden de ejecución (2026-08-23)**: T2.4 y T2.5 se cerraron **antes** de T2.3 porque el resultado
+> las **compone**; el plan las listaba al revés. No cambia ningún criterio: cada una cerró con su
+> propio `Verify`.
+
 - [x] T2.1 `ImportUpload`: selección, límites a la vista y pre-validación honesta
   - **Pattern**: `<input type="file">` con `<label>` asociado —nunca un div con `onClick`— y
     `Button` del design system; el estado del envío es `AsyncState`, no un booleano `loading` — `per
@@ -161,7 +165,7 @@ language: es
        sirve, dejarlo activo invita a un viaje perdido. Un rechazo del **servidor** no lo
        deshabilita, porque ahí el reintento es legítimo y la clave lo hace seguro.
 
-- [ ] T2.2 `ImportProgress`: indeterminado hasta que el total existe
+- [x] T2.2 `ImportProgress`: indeterminado hasta que el total existe
   - **Pattern**: `role="progressbar"` con `aria-valuemin/max/now` **sólo** cuando hay total, y una
     región viva `role="status" aria-live="polite"` con el conteo; omitir `aria-valuenow` cuando es
     indeterminado en vez de escribir 0 — `per qa-frontend-standards.md §19`.
@@ -196,7 +200,7 @@ language: es
     'interrupted'` el texto contiene «volvé a subir»; con `report_truncated: true` aparece el aviso;
     `document.activeElement` es el encabezado del resumen)
 
-- [ ] T2.4 `ImportErrorsTable`: las filas rechazadas, paginadas y como texto
+- [x] T2.4 `ImportErrorsTable`: las filas rechazadas, paginadas y como texto
   - **Pattern**: `<table>` con `<th scope="col">` (es tabla de datos, no layout); el contenido de
     las celdas se renderiza como **texto** en JSX —jamás `dangerouslySetInnerHTML`— porque `sku` y
     `error_message` provienen del archivo de un tercero — `per security-standards.md §6 (encoding
@@ -212,7 +216,7 @@ language: es
     es `null`; `getAllByRole('columnheader')` devuelve las 5 columnas; sin errores ⇒ el texto
     afirmativo)
 
-- [ ] T2.5 `reportDownload.ts`: el CSV por `Blob`, no por link
+- [x] T2.5 `reportDownload.ts`: el CSV por `Blob`, no por link
   - **Pattern**: `fetch` por el servicio (que pasa por el mutator y **lleva el Bearer en memoria**)
     → `Blob` → object URL → `revokeObjectURL`; el nombre se toma del `Content-Disposition` del
     servidor — `per frontend-standards.md §8 (único punto de red) y security-standards.md §6.4
