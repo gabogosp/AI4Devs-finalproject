@@ -279,7 +279,7 @@ language: es
     `'taco & | fischer'` y `'"'` devuelven resultados o vacío pero **no** lanzan;
     `'; DROP TABLE products; --'` se trata como texto y `products` sigue existiendo)
 
-- [ ] T2.4 `SearchService` — orquestación, umbral y degradación
+- [x] T2.4 `SearchService` — orquestación, umbral y degradación
   - **Pattern**: el timeout del embedder **es** el disparador de la degradación, no un
     error a propagar — `per design.md D1/D8` y `per backend-node-standards.md §8`.
   - **Exit criterion**: el camino feliz es caché → embed → `knn` → `classify` → DTO. Si el
