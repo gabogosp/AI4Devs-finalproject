@@ -422,7 +422,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 > página— y eso es incumplimiento con apariencia de cumplimiento. Mitigación acordada: el
 > checklist de despliegue de `Deferred: US-019` lo lista, y T6.1 lo documenta en el README.
 
-- [ ] **T4.2** Guard: sin backend, sin cliente, sin tracking (AC-6, AC-7, US §9) (0,3 h)
+- [x] **T4.2** Guard: sin backend, sin cliente, sin tracking (AC-6, AC-7, US §9) (0,3 h) *(verde 2026-08-23 — 15 tests; fuerza del guard comprobada con dos sabotajes: import de telemetría y `'use client'`, los dos lo ponen rojo)*
 
   - **Pattern**: mismo patrón que `src/features/contact/noBackend.test.tsx` (US-018 T3.1): se
     lee el **grafo de imports** del feature y se falla si aparece red o telemetría. Es lo que
