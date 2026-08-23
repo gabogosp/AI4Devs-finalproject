@@ -587,17 +587,17 @@ language: es
 
 ## Verification (suite-level)
 
-> Corrida completa el 2026-08-22 sobre el working tree compartido con US-007 y US-018.
-> Resultado global de `@dsm/api`: **995 de 997 tests en verde**. Los 2 rojos están en
-> `src/common/e2e-security-edge.spec.ts` (preflight CORS) y **son previos a este change**:
-> se verificaron fallando igual en un `git worktree` del commit `16fabe0`, anterior a la
-> primera línea de US-006. Quedan como hallazgo abierto, fuera del alcance de este change.
+> Corrida completa el 2026-08-22 sobre el working tree compartido con US-005, US-007, US-014 y
+> US-018. Resultado final: **`@dsm/api` 1012/1012 tests en 97 suites, y `test:e2e` 362/362 en 45**
+> — la suite entera en verde. Llegar ahí requirió dos fixes fuera del alcance original, decididos
+> por el PO el mismo día: el spec del borde CORS estaba rojo desde el commit que lo creó por
+> hardcodear un origen que el `.env` redefine (H-1, `ed1b771`), y los tres guards F40 de `products`
+> exigían "no sobra ninguna columna" sobre una tabla compartida (H-3, `3bfa55f`).
 
 - [x] Unit + integration + e2e colocados pasan: `pnpm --filter @dsm/api test`
-      → 96/97 suites, 995/997 tests. Único rojo: los 2 casos preexistentes de
-      `e2e-security-edge` descritos arriba.
+      → **97/97 suites, 1012/1012 tests**.
 - [x] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
-      → 44/45 suites, 358/360 tests (mismos 2 casos preexistentes).
+      → **45/45 suites, 362/362 tests**.
 - [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
       → exit 0.
 - [x] Esquema materializado == `design.md` §Persistencia (F40):
@@ -608,8 +608,8 @@ language: es
       → exit 0 (los 3 draft sin hallazgos; el publicado con 8 warnings preexistentes de
       `operationId` en rutas de US-001, cero errores).
 - [x] **No regresión del catálogo existente (US-001/002/003)**:
-      `pnpm --filter @dsm/api test -- --testPathPattern='e2e-products|e2e-categories|e2e-storefront|e2e-rbac'`
-      → 16/16 suites, 81/81 tests. (`e2e-security-edge` se corrió aparte: ver la nota.)
+      `pnpm --filter @dsm/api test -- --testPathPattern='e2e-products|e2e-categories|e2e-storefront|e2e-rbac|e2e-security-edge'`
+      → verde, incluido `e2e-security-edge` (7/7) tras el fix de H-1.
 - [x] **El refactor de slug es invariante**:
       `pnpm --filter @dsm/api test -- --testPathPattern='common/slug|products.service' && git diff --exit-code 2db5997 -- apps/api/src/products/products.service.spec.ts apps/api/src/products/e2e-products-create.spec.ts`
       → 17/17 tests y `git diff` sin salida: los specs preexistentes no se tocaron.
@@ -632,8 +632,8 @@ language: es
       `fieldSize`, la ruta es admin-only y tiene presupuesto de 3 requests/hora/IP.
       `Deferred: upgrade de @nestjs/platform-express a 11 — owner: Arquitecto`.
 - [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
-      → `pnpm -r typecheck` **exit 0** en los 3 paquetes; `pnpm -r test` deja los 2 casos
-      preexistentes de `e2e-security-edge` (`apps/web`: 50/50 archivos en verde);
+      → `pnpm -r typecheck` **exit 0** en los 3 paquetes; `pnpm -r test` con `apps/api` 1012/1012
+      y `apps/web` 50/50 archivos;
       `pnpm -r lint` **falla en `apps/web`** por 4 `no-unused-vars` en
       `src/lib/http/customerSession.test.ts`, archivo de **US-014 frontend** (commit
       `de15d10`, otra sesión). `@dsm/api` y `packages/db` lintean limpio.
@@ -695,7 +695,7 @@ cambiaron código están implementadas y verificadas; el resto quedó registrado
 | # | Pregunta | Decisión | Dónde quedó |
 |---|---|---|---|
 | OQ-1 | ¿Rama y PR? | (a) Seguir en `feature-entrega2-GOSP`; la Entrega 2 se revisa como un PR de rama larga | sin acción de código; no se hizo push |
-| OQ-2 | Los 2 tests rojos de preflight CORS | (a) Abrir hallazgo y dejarlos rojos | `docs/audits/follow-ups/AUD-US006-cors-preflight-404.md` |
+| OQ-2 | Los 2 tests rojos de preflight CORS | (a) Abrir hallazgo y dejarlos rojos → **revisado el 2026-08-22 con el diagnóstico real (D-1, opción a): no era CORS, era el spec acoplado al `.env`; arreglado** | H-1 más abajo · commit `ed1b771` |
 | OQ-3 | `pnpm -r lint` rojo por `apps/web` | (a) Lo arregla la sesión de US-014 frontend (dueña del archivo) | anotado en §Verification |
 | OQ-4 | Los 3 avisos `high` de `multer@1.x` | (c) Subir a NestJS 11 | `docs/audits/follow-ups/AUD-PLATFORM-nestjs-11-multer.md` (agendar fuera del sprint concurrente) |
 | OQ-5 | El tope de 5.000 filas sin margen | (a) Dejarlo en 5.000 | ya documentado con su advertencia en `apps/api/README.md` |
@@ -742,34 +742,67 @@ tablas que este change **posee**.
 | Job programado de purga de retención (hoy sólo corre al arrancar la API) | — | `Deferred: US-019 (Redis + BullMQ repeatable jobs) — owner: Arquitecto` (OQ-6) |
 | Upgrade a NestJS 11 para salir de `multer@1.x` | — | `Deferred: AUD-PLATFORM-nestjs-11-multer — owner: Arquitecto` (OQ-4) |
 
-### Hallazgo H-1 (OQ-2) — el preflight CORS del panel devuelve 404, **fuera de alcance**
+### Hallazgo H-1 (OQ-2) — el preflight CORS del panel devolvía 404 · **RESUELTO, y no era CORS**
 
 `docs/audits/` está gitignoreado, así que el registro versionado del hallazgo es éste.
 
-**Qué pasa.** `apps/api/src/common/e2e-security-edge.spec.ts` tiene 2 de 7 casos rojos: un
-`OPTIONS /v1/admin/categories` con `Origin: http://localhost:3200` y
-`Access-Control-Request-Method: GET` termina en el router de Nest (**404**) en vez de ser
-cortocircuitado por el middleware de `cors`, así que no lleva `Access-Control-Allow-Origin` ni
-`Access-Control-Max-Age` (el segundo test recibe `NaN`).
+**Diagnóstico inicial (equivocado).** Se reportó como "CORS realmente roto en el navegador": un
+`OPTIONS /v1/admin/categories` con `Origin` permitido devolvía **404** y sin
+`Access-Control-Allow-Origin` ni `Access-Control-Max-Age`, en 2 de los 7 casos de
+`apps/api/src/common/e2e-security-edge.spec.ts`.
 
-**Severidad.** Alta en el navegador, nula por `curl`: el panel corre en otro origen que la API, y
-un preflight sin cabeceras de CORS **rompe todas las llamadas del panel** desde el browser aunque
-el servidor las sirva bien. Los otros 5 casos del spec (origen fuera de allowlist, no-match por
-sufijo, baseline de headers, `no-store` en `/v1/admin`, 429 del login) **pasan**, así que el resto
-de `configureApp` está activo.
+**Lo que resultó ser.** Un test acoplado a un valor de entorno, no un defecto del borde:
 
-**No es regresión de US-006.** Se corrió la misma suite en un `git worktree` del commit `16fabe0`
-—anterior a la primera línea de este change— y los mismos 2 casos fallan igual.
+1. El `.env` de la raíz —no versionado, con el puerto real del storefront— define
+   `CORS_ALLOWED_ORIGINS=http://localhost:3100`, y `ConfigModule.forRoot()` lo carga
+   **sobreescribiendo** el `http://localhost:3200` que pone `test/jest.setup.js`.
+2. El spec hardcodeaba `3200`, así que pedía permiso para un origen **que la allowlist no tenía**.
+3. Con un origen no permitido, el paquete `cors` **no cortocircuita** el `OPTIONS`: la request cae
+   al router de Nest, que no tiene handler `OPTIONS` para esa ruta → 404 sin cabeceras. Los dos
+   síntomas salen de la misma causa.
 
-**Primera hipótesis a verificar.** `configureApp` lee la allowlist de `process.env
-.CORS_ALLOWED_ORIGINS` y no del `ConfigService` validado; si en ese momento no coincide con el
-`http://localhost:3200` que setea `test/jest.setup.js`, `allowed` queda vacío. Un log de `allowed`
-dentro de `configureApp` cierra la pregunta. Segunda: interacción de la versión de Express/`cors`
-bajo Node 23 cuando la ruta no tiene handler `OPTIONS`.
+**Medido con el origen efectivo** (`http://localhost:3100`): preflight **204** con
+`access-control-allow-origin` exacto, `allow-credentials: true`, `max-age: 86400`,
+`allow-methods`, `allow-headers` y `expose-headers`. **La política de CORS funciona**; el test
+mentía.
 
-**Coordinación.** `apps/api/src/bootstrap.ts` lo viene editando la sesión de **US-007** (T4.4).
-Avisar antes de tomarlo. Estimación S (1-3 h, casi todo diagnóstico; el fix probable es de una
-línea).
+**Nadie lo rompió: nació rojo.** Verificado corriendo la misma suite en `git worktree` de
+`276ce40` (el commit de US-001 que **creó** el spec), `0708fc7`, `cb32a90` y `2fb0f22`: los mismos
+2 casos fallan en los cuatro.
+
+**Fix aplicado** (`ed1b771`, decisión del PO D-1 del 2026-08-22): el origen se **deriva** de
+`CORS_ALLOWED_ORIGINS`, como ya hacían `e2e-auth-session` y `e2e-auth-observability`, y el caso
+del bypass por sufijo lo deriva también. `e2e-security-edge` queda **7/7** y el spec vuelve a
+verificar la política —refleja el origen exacto, nunca `*`— en vez de un puerto que depende de la
+máquina.
+
+**Lección transferible.** Un spec del borde no debe hardcodear valores que `.env` puede
+redefinir: `ConfigModule` los sobreescribe y el fallo aparece como un bug de producto que no
+existe.
+
+### Hallazgo H-3 — los guards F40 de `products` se rompían con cada change ajeno · **RESUELTO**
+
+`cart-schema.spec.ts` (US-007) y `auth-schema.spec.ts` (US-014) afirmaban el conjunto **exacto**
+de columnas de `products` y quedaron rojos cuando US-005 le agregó las seis del enriquecimiento
+IA. El literal ya se había editado una vez por `enrichment_done` de US-006: era la tercera vez que
+un change ajeno obligaba a tocar tres specs distintos.
+
+**Fix aplicado** (`3bfa55f`, decisión del PO D-2): los tres guards —incluido el de este change—
+verifican que ninguna columna preexistente **se perdió**, y mantienen el "no sobra ninguna" de F40
+para las tablas que cada change **posee**. Ahí la afirmación tiene dueño; sobre una tabla
+compartida no lo tenía.
+
+### Nota de coordinación (D-3, D-4)
+
+- **La migración de US-005 estaba aplicada en la base local sin commitear**
+  (`20260823002111_add_enrichment_and_embeddings` + `schema.prisma` modificado): la base tenía 8
+  migraciones y el repo 7, así que el repositorio no reproducía la base contra la que corría toda
+  la verificación. Decisión del PO (D-3, opción a): lo commitea la sesión dueña de US-005. Es la
+  causa de que los tres guards F40 se rompieran por columnas que **no estaban en el repo**.
+- **Tests de integración compartiendo un solo Postgres entre sesiones**: produjo falsos rojos que
+  desaparecen al correr aislado (medido: 5 suites de auth/storefront rojas en una corrida, verdes
+  aisladas, y dos corridas consecutivas después con el mismo set estable). Decisión del PO (D-4,
+  opción a): convivir y re-correr aislado antes de creerle a un rojo.
 
 ### Hallazgo H-2 (OQ-4) — `multer@1.4.4-lts.1` con 3 avisos `high`
 
