@@ -35,8 +35,8 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-150 | T3.1 | AC-1, AC-2 | a11y | por ejecutar |
 | TC-151 | T3.1 | AC-4 | a11y | por ejecutar |
 | TC-160 | T4.1 | AC-2 (PRD §4) | carga | por ejecutar |
-| TC-170 | T5.1 | AC-10 | exploratorio | **manual** |
-| TC-171 | T5.1 | AC-4 | exploratorio | **manual** |
+| TC-170 | T5.1 | AC-10 | exploratorio | **manual**, charter escrito |
+| TC-171 | T5.1 | AC-4 | exploratorio | **manual**, charter escrito |
 
 ---
 
@@ -230,7 +230,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Fase 5: Exploratorio y cierre — 0,7 h
 
-- [ ] T5.1 Charters TC-170 y TC-171 (manual)
+- [x] T5.1 Charters TC-170 y TC-171 (manual)
   - **Exit criterion**: `qa/exploratory/us-014-cuentas.md` documenta los dos charters con
     su tiempo asignado, el riesgo que exploran y dónde se registran los hallazgos: fuerza
     bruta y **ventana de lockout** (¿el bloqueo se comunica sin revelar si el email
@@ -239,7 +239,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     scaffoldea.
   - **Verify**: `test -f qa/exploratory/us-014-cuentas.md && grep -q "TC-170" qa/exploratory/us-014-cuentas.md && grep -q "TC-171" qa/exploratory/us-014-cuentas.md`
 
-- [ ] T5.2 Trazabilidad AC → escenario, sin huecos
+- [x] T5.2 Trazabilidad AC → escenario, sin huecos
   - **Exit criterion**: los 11 AC de US-014 aparecen en la matriz de `qa-plan.md` §2 con al
     menos una capa QA-owned **o** una nota explícita de por qué la dev-owned alcanza; y
     cada `TC-` de la matriz existe como test o como charter.
