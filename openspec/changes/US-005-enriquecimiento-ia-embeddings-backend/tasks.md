@@ -305,7 +305,7 @@ estimate-hours: 13.4
 
 ## Fase 3: Caso de uso del enriquecimiento — 2,4 h
 
-- [ ] T3.1 Texto fuente + hash (control de costo de AC-6) (0,4 h)
+- [x] T3.1 Texto fuente + hash (control de costo de AC-6) (0,4 h)
   - **Pattern**: función **pura** en `source-text.ts` (sin Nest, sin Prisma) + `createHash` de
     `node:crypto`; normalizar antes de hashear (trim + colapso de espacios) para que un cambio
     cosmético no gatille una llamada paga. Orden fijado en `design.md` D3.
@@ -320,7 +320,7 @@ estimate-hours: 13.4
     `categoryName` o el texto ⇒ hash distinto; `"  a  b "` vs `"a b"` ⇒ mismo hash; **assert de
     tipo/firma: la función no recibe `price_ars_cents` ni `stock`**)
 
-- [ ] T3.2 `EnrichmentService.processProduct` — matriz de decisión + transacción por producto (0,8 h)
+- [x] T3.2 `EnrichmentService.processProduct` — matriz de decisión + transacción por producto (0,8 h)
   - **Pattern**: la matriz de 5 filas de `design.md` §Matriz de decisión. Escritura en una
     transacción corta por producto (`prisma.$transaction`) que actualiza `products` y hace upsert
     del embedding — `per backend-node-standards.md §5 — transacciones cortas, una unidad de
