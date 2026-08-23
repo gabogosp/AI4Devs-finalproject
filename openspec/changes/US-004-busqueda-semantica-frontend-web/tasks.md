@@ -147,7 +147,7 @@
     `git diff --exit-code HEAD -- apps/web/src/features/storefront/ProductImage.test.tsx` **antes**
     de agregarle el caso nuevo (el test preexistente no se modifica para acomodar el cambio; el
     caso de `alt` sin categoría se **agrega**)
-- [ ] **T2.3 `SearchResults.tsx` — la composición y los cuatro estados.** Eco de la consulta,
+- [x] **T2.3 `SearchResults.tsx` — la composición y los cuatro estados.** Eco de la consulta,
   `interpreted_as` visible, grilla ordenada como vino, y la derivación pura de `design.md` §D5.
   - **Exit criterion**: `confidence: high` → interpretación + grilla, **sin** advertencias;
     `confidence: low` con resultados → aviso honesto («no estamos seguros») + grilla + salida a
@@ -159,7 +159,7 @@
     `container.querySelector('img')` es `null` (AC-8); la cantidad de resultados se anuncia en
     una región `aria-live="polite"`.
   - **Verify**: `pnpm --filter @dsm/web test -- SearchResults`
-- [ ] **T2.4 `SearchFallback.tsx` — la red de seguridad de AC-3.**
+- [x] **T2.4 `SearchFallback.tsx` — la red de seguridad de AC-3.**
   - **Exit criterion**: renderiza cada `suggested_categories[]` como enlace a
     `/categorias/{slug}` con su `name` como texto; con la lista vacía o `fallback: null` no
     renderiza un contenedor vacío (devuelve `null`); es alcanzable por teclado.
@@ -172,6 +172,17 @@
     `loading.tsx` un nivel arriba compromete el status 200 y rompe el 404 de la ficha (F59).
   - **Verify**: `pnpm --filter @dsm/web test -- SearchSkeleton` y
     `test "$(find 'apps/web/app/(storefront)' -name loading.tsx | wc -l | tr -d ' ')" = "1"`
+
+> **Nota de secuencia (2026-08-23).** T2.3 no podía cerrarse sola: su exit criterion exige la
+> «salida a rubros» en los estados de baja confianza y de vacío, y esa salida **es** T2.4, que
+> el plan pone después. Se implementaron juntas y se verificó **cada una con su propia línea**
+> (T2.3: 19 tests; T2.4: 6), que es lo que la marca `[x]` afirma. Queda anotado porque el orden
+> del plan sugiere una independencia que no existe: quien lo lea de arriba abajo y ejecute T2.3
+> aislada se encuentra con el mismo bloqueo.
+>
+> También se extrajo `searchState.ts` (la derivación pura de §D5) fuera del componente. La
+> regla de qué se le dice al cliente es la parte que más importa acertar, y así se prueba sin
+> montar nada ni buscar texto en un DOM.
 
 ## Fase 3: Rutas y cableado — 0,75 h
 
