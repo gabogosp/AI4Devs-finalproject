@@ -31,7 +31,7 @@ Journeys críticas identificadas:
 | **Acceptance (BDD)** | ✅ Sí | Cucumber-js + supertest (`qa/acceptance/`) | AC-1..AC-10, escenarios happy/corner/negative |
 | **Batería de relevancia IA** | ✅ Sí — CRÍTICA (QA-001) | Script propio (`qa/relevance/`) | AC-2: KPI ≥70% top-5, ~30 consultas NL |
 | **Contract** | ✅ Sí (QA-002) | Spectral + supertest vs OpenAPI | `GET /v1/search` responde conforme al spec |
-| **Performance (k6)** | ✅ Sí | k6 (`qa/performance/search.js`) | p95 < 1,5 s (PRD §4, E2E §17) |
+| **Performance (k6)** | ✅ Sí | k6 (`qa/performance/search.js`, `search-under-enrichment.js`) | p95 < 1,5 s (PRD §4, E2E §17), y que una corrida de enriquecimiento in-process no lo degrade (derivado de US-005) |
 | **E2E cross-stack (Playwright)** | ✅ Sí | Playwright (`qa/e2e/`) | Búsqueda desde la UI → resultados visibles |
 | **Exploratory** | ✅ Sí | Manual — charters en `qa/exploratory/` | Prompt-injection, Unicode, latencia percibida |
 
@@ -194,6 +194,42 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 - [ ] **QA-004-PERF-1**: Script k6 para `GET /v1/search` con target p95 < 1,5 s
   - Exit criterion: `qa/performance/search.js` corre contra la API con embeddings sembrados, ejecutando 10+ VUs durante 30 s con consultas variadas. Threshold: `http_req_duration{endpoint:search} p(95) < 1500`. El script existe con su threshold en `qa/performance/lib/thresholds.js`.
   - Verify: `k6 run --vus 5 --duration 15s qa/performance/search.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"` (el threshold pasa)
+
+- [ ] **QA-004-PERF-3**: La búsqueda mantiene su p95 **mientras corre una corrida de enriquecimiento**
+  - **Procedencia**: derivado del cierre de US-005 (2026-08-23), acordado con el PO. El
+    `proposal.md` de US-005 derivó a `/plan-qa` sus dos piezas QA-owned; la batería de
+    relevancia ya vive acá (QA-004-REL-*), y **éste es el hueco que quedaba**. Vive en este plan
+    y no en un change de QA propio de US-005 porque el riesgo que mide es de **la búsqueda**:
+    sólo existe cuando las dos superficies conviven.
+  - ⚠ **Nota de formato, para quien vaya a ejecutar este plan**: los stubs de este archivo usan
+    el formato liviano (`Exit criterion` + `Verify`), sin los campos
+    `execution_mode` / `test_layer` / `target_tooling` / `gherkin_scenario` que **sí** traen los
+    qa-plans de US-002 y US-007 (20 y 23 stubs). El pre-flight §3 de `/develop-qa` exige esos
+    cuatro campos y **rechaza el plan entero** sin ellos («qa-plan not scaffold-grade»). No es
+    un problema de este stub: es del formato del archivo. Para ejecutarlo hay dos caminos:
+    `/plan-qa US-004` que lo regenere scaffold-grade en un change `-qa`, o escribir el script k6
+    a mano contra este Exit criterion.
+  - **Por qué importa**: el enriquecimiento corre **in-process** dentro de `apps/api`
+    (ADR-0014, no hay worker). Los tests dev-owned de US-005 prueban que `GET /health` responde
+    en < 1 s con 200 productos en vuelo, pero **nadie midió `/v1/search` bajo esa condición**, y
+    es la que le pega a un cliente real: un barrido de fondo compitiendo por el event loop y por
+    la cuota del proveedor. Con el free tier repartido (10 búsqueda / 5 enriquecimiento) el
+    riesgo es doble — CPU y RPM.
+  - Exit criterion: `qa/performance/search-under-enrichment.js` dispara una corrida
+    (`POST /v1/admin/enrichment/runs`, que responde 202 y sigue en background) y, **mientras
+    corre**, sostiene VUs contra `GET /v1/search` y un polling del panel a
+    `GET /v1/admin/enrichment/status`. Se cumplen los tres thresholds: el p95 de búsqueda
+    **no se degrada más allá de su presupuesto** (`p(95)<1500`, el mismo de QA-004-PERF-1 — un
+    barrido de fondo no puede tener presupuesto propio), `status` responde `p(95)<300` (el panel
+    lo consulta en loop) y `http_req_failed: rate<0.01`. El escenario **verifica que la corrida
+    estaba efectivamente activa** durante la medición leyendo `runner_state: "running"` del
+    `/status`; si terminó antes, el test no midió nada y debe fallar, no pasar por defecto.
+  - Verify: `k6 run --vus 5 --duration 30s qa/performance/search-under-enrichment.js 2>&1 | grep -q "✓"`
+  - **Dependencias** (las tres son reales, no formales):
+    `Blocked-by: US-004 BE` (`/v1/search` no existe todavía) ·
+    `Blocked-by: GEMINI_API_KEY en el entorno de QA` — sin clave el runner queda `disabled` y la
+    condición «mientras corre» **no se puede crear**; con `ENRICHMENT_ENABLED=false` tampoco ·
+    requiere un catálogo con pendientes (`enrichment_done = false`) para que haya algo que barrer.
 
 - [ ] **QA-004-PERF-2**: Threshold de búsqueda agregado a `thresholds.js`
   - Exit criterion: `qa/performance/lib/thresholds.js` exporta `search` con `'http_req_duration{endpoint:search}': ['p(95)<1500']` (atado a E2E §17).

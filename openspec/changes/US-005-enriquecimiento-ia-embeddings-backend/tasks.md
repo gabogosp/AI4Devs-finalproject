@@ -782,6 +782,24 @@ paralelo con otra sesión puede dar rojo sin que haya un defecto — pasó duran
 pasaban 12/12). La forma honesta de leer el gate sigue siendo: árbol quieto, y re-correr aislada
 cualquier suite roja antes de creerle.
 
+### Dónde vive el QA de este change `[Resolved: 2026-08-23 — decisión del PO]`
+
+Este change **no abre un `-qa` propio**, y es una decisión y no un olvido. Su `proposal.md`
+derivó dos piezas QA-owned, y las dos tienen casa:
+
+| Pieza derivada a `/plan-qa` | Dónde quedó |
+|---|---|
+| Batería de relevancia ≥ 70 % | **Ya estaba** en el qa-plan de US-004 (`QA-004-REL-1/2/3`), con `Blocked-by: US-005 (embeddings poblados)`. Es la prueba real de que el enriquecimiento sirvió: medirla dos veces no agrega información |
+| k6 / E2E cross-service del enriquecimiento | **`QA-004-PERF-3`**, agregado al mismo qa-plan: que una corrida in-process **no degrade el p95 de `/v1/search`** ni el `/status` que el panel consulta en loop |
+
+El criterio del reparto: el riesgo que queda por medir sólo existe **cuando las dos superficies
+conviven** (el ejecutor de US-005 compitiendo por el event loop y por la cuota con las consultas
+de US-004), así que su lugar natural es el plan de la superficie interactiva. Abrir un change de
+QA entero para un test, con su plan y su rama, habría sido ceremonia sin cobertura nueva.
+
+Lo que **no** cubre ningún plan automatizado, porque no es automatizable: la primera corrida
+sobre el catálogo real y el `coverage_ratio` resultante. Eso es operación (runbook §3.6).
+
 ### Lo que quedó SIN EJERCITAR
 
 **Ninguna llamada real al proveedor de IA.** Por decisión del PO no se cargó `GEMINI_API_KEY`
