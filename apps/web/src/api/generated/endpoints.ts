@@ -17,6 +17,9 @@ import type {
   CreateProduct,
   Customer,
   CustomerEnvelope,
+  EnrichmentRateLimitedResponse,
+  EnrichmentRunAccepted,
+  EnrichmentStatus,
   GetAdminProductsParams,
   GetImportParams,
   ImportCreated,
@@ -32,6 +35,7 @@ import type {
   ResetConfirm,
   ResetRequest,
   SetCartItemRequest,
+  StartEnrichmentRun,
   StorefrontCategory,
   StorefrontListCategoryProductsParams,
   StorefrontProduct,
@@ -1449,6 +1453,124 @@ export const getImportReport = async (id: string, options?: Parameters<typeof cu
 );}
 
 
+
+export type getEnrichmentStatusResponse200 = {
+  data: EnrichmentStatus
+  status: 200
+}
+
+export type getEnrichmentStatusResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getEnrichmentStatusResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getEnrichmentStatusResponseSuccess = (getEnrichmentStatusResponse200) & {
+  headers: Headers;
+};
+export type getEnrichmentStatusResponseError = (getEnrichmentStatusResponse401 | getEnrichmentStatusResponse403) & {
+  headers: Headers;
+};
+
+export type getEnrichmentStatusResponse = (getEnrichmentStatusResponseSuccess | getEnrichmentStatusResponseError)
+
+export const getGetEnrichmentStatusUrl = () => {
+
+
+
+
+  return `/v1/admin/enrichment/status`
+}
+
+/**
+ * Responde la pregunta que decide si la tienda puede vender por búsqueda: cuántos productos del catálogo son buscables. Sin esto, un catálogo con 3 de 800 productos vectorizados se ve idéntico a uno completo hasta que un cliente busca y no encuentra nada. `runner_state` distingue cuatro situaciones que se resuelven distinto: `idle` (listo), `running` (un POST daría 409), `cooldown` (breaker abierto tras fallos consecutivos del proveedor — es el diagnóstico de "Gemini caído" del runbook) y `disabled` (sin GEMINI_API_KEY o con ENRICHMENT_ENABLED=false: el catálogo sigue navegable pero NO se generan vectores). NO consume el presupuesto del POST: el panel lo consulta en loop mientras una corrida avanza. No devuelve la clave del proveedor ni su URL; `last_error_code` es un type del catálogo dsm:enrichment/* (AC-9).
+ * @summary Cobertura de embeddings y estado del ejecutor (AC-3)
+ */
+export const getEnrichmentStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<getEnrichmentStatusResponse> => {
+
+  return customFetch<getEnrichmentStatusResponse>(getGetEnrichmentStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type startEnrichmentRunResponse202 = {
+  data: EnrichmentRunAccepted
+  status: 202
+}
+
+export type startEnrichmentRunResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type startEnrichmentRunResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type startEnrichmentRunResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type startEnrichmentRunResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type startEnrichmentRunResponse429 = {
+  data: EnrichmentRateLimitedResponse
+  status: 429
+}
+
+export type startEnrichmentRunResponse503 = {
+  data: Problem
+  status: 503
+}
+
+export type startEnrichmentRunResponseSuccess = (startEnrichmentRunResponse202) & {
+  headers: Headers;
+};
+export type startEnrichmentRunResponseError = (startEnrichmentRunResponse401 | startEnrichmentRunResponse403 | startEnrichmentRunResponse409 | startEnrichmentRunResponse422 | startEnrichmentRunResponse429 | startEnrichmentRunResponse503) & {
+  headers: Headers;
+};
+
+export type startEnrichmentRunResponse = (startEnrichmentRunResponseSuccess | startEnrichmentRunResponseError)
+
+export const getStartEnrichmentRunUrl = () => {
+
+
+
+
+  return `/v1/admin/enrichment/runs`
+}
+
+/**
+ * Arranca una corrida sobre todo lo pendiente, o sobre un subconjunto con `product_ids`. Responde 202 de inmediato: una corrida sobre miles de productos no cabe en el tiempo de un request (api-standards §10) y el progreso se consulta en GET /admin/enrichment/status. `force: true` devuelve a la cola los productos ABANDONADOS (los que agotaron ENRICHMENT_MAX_ATTEMPTS) y es explícito a propósito: si fuera automático, el tope de intentos no serviría para nada. Un campo desconocido en el cuerpo es 422 y no un valor ignorado, porque {"forced": true} es un typo plausible de force y aceptarlo en silencio haría una corrida que el dueño cree que rehabilita abandonados y no lo hace. El trabajo pendiente es durable en products.enrichment_done: no hay tabla de corridas y el `run_id` es sólo correlación para los logs.
+ * @summary Disparar una corrida de enriquecimiento (AC-1, AC-5)
+ */
+export const startEnrichmentRun = async (startEnrichmentRun?: StartEnrichmentRun, options?: Parameters<typeof customFetch>[1]): Promise<startEnrichmentRunResponse> => {
+
+  return customFetch<startEnrichmentRunResponse>(getStartEnrichmentRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(startEnrichmentRun)
+  }
+);}
+
+
 export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
 export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
@@ -1492,6 +1614,10 @@ export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<Im
 export const getGetImportResponseMock = (overrideResponse: Partial<Extract<ImportJob, object>> = {}): ImportJob => ({id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), filename: faker.string.alpha({length: {min: 10, max: 20}}), source_format: faker.helpers.arrayElement(['csv','xlsx'] as const), total_rows: faker.helpers.arrayElement([faker.number.int(), null]), processed_rows: faker.number.int(), created_count: faker.number.int(), updated_count: faker.number.int(), failed_count: faker.number.int(), categories_created_count: faker.number.int(), error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_message: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), report_truncated: faker.datatype.boolean(), started_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), finished_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', errors: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row_number: faker.number.int(), sku: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), field: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_code: faker.string.alpha({length: {min: 10, max: 20}}), error_message: faker.string.alpha({length: {min: 10, max: 20}})})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
 export const getGetImportReportResponseMock = (): string => (faker.word.sample())
+
+export const getGetEnrichmentStatusResponseMock = (overrideResponse: Partial<Extract<EnrichmentStatus, object>> = {}): EnrichmentStatus => ({runner_state: faker.helpers.arrayElement(['idle','running','cooldown','disabled'] as const), coverage: {total: faker.number.int(), enriched: faker.number.int(), embedded: faker.number.int(), pending: faker.number.int(), abandoned: faker.number.int(), coverage_ratio: faker.number.float({min: 0, max: 1, fractionDigits: 2})}, models: {enrich: faker.string.alpha({length: {min: 10, max: 20}}), embed: faker.string.alpha({length: {min: 10, max: 20}})}, last_error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), last_run_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), ...overrideResponse})
+
+export const getStartEnrichmentRunResponseMock = (overrideResponse: Partial<Extract<EnrichmentRunAccepted, object>> = {}): EnrichmentRunAccepted => ({run_id: faker.string.uuid(), accepted: faker.helpers.arrayElement([true] as const), ...overrideResponse})
 
 
 export const getRegisterCustomerMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
@@ -1788,6 +1914,30 @@ export const getGetImportReportMockHandler = (overrideResponse?: string | ((info
       })
   }, options)
 }
+
+export const getGetEnrichmentStatusMockHandler = (overrideResponse?: EnrichmentStatus | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<EnrichmentStatus> | EnrichmentStatus), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/enrichment/status', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetEnrichmentStatusResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getStartEnrichmentRunMockHandler = (overrideResponse?: EnrichmentRunAccepted | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<EnrichmentRunAccepted> | EnrichmentRunAccepted), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/enrichment/runs', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStartEnrichmentRunResponseMock(),
+      { status: 202
+      })
+  }, options)
+}
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getRegisterCustomerMockHandler(),
   getLoginCustomerMockHandler(),
@@ -1813,5 +1963,7 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getRemoveCartItemMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
-  getGetImportReportMockHandler()
+  getGetImportReportMockHandler(),
+  getGetEnrichmentStatusMockHandler(),
+  getStartEnrichmentRunMockHandler()
 ]

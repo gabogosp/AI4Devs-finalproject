@@ -661,3 +661,51 @@ export const GetImportReportParams = zod.object({
 })
 
 export const GetImportReportResponse = zod.unknown()
+
+
+/**
+ * Responde la pregunta que decide si la tienda puede vender por búsqueda: cuántos productos del catálogo son buscables. Sin esto, un catálogo con 3 de 800 productos vectorizados se ve idéntico a uno completo hasta que un cliente busca y no encuentra nada. `runner_state` distingue cuatro situaciones que se resuelven distinto: `idle` (listo), `running` (un POST daría 409), `cooldown` (breaker abierto tras fallos consecutivos del proveedor — es el diagnóstico de "Gemini caído" del runbook) y `disabled` (sin GEMINI_API_KEY o con ENRICHMENT_ENABLED=false: el catálogo sigue navegable pero NO se generan vectores). NO consume el presupuesto del POST: el panel lo consulta en loop mientras una corrida avanza. No devuelve la clave del proveedor ni su URL; `last_error_code` es un type del catálogo dsm:enrichment/* (AC-9).
+ * @summary Cobertura de embeddings y estado del ejecutor (AC-3)
+ */
+export const getEnrichmentStatusResponseCoverageCoverageRatioMin = 0;
+export const getEnrichmentStatusResponseCoverageCoverageRatioMax = 1;
+
+
+
+export const GetEnrichmentStatusResponse = zod.object({
+  "runner_state": zod.enum(['idle', 'running', 'cooldown', 'disabled']),
+  "coverage": zod.object({
+  "total": zod.number().int().describe('Productos del catálogo, en cualquier estado.'),
+  "enriched": zod.number().int().describe('Con description_enriched escrita (por la IA o curada por el dueño).'),
+  "embedded": zod.number().int().describe('Con fila en product_embeddings. ESTE es el que decide si la búsqueda semántica funciona.'),
+  "pending": zod.number().int().describe('Elegibles para la próxima corrida.'),
+  "abandoned": zod.number().int().describe('Agotaron ENRICHMENT_MAX_ATTEMPTS. Siguen visibles en la tienda con su description_raw (AC-5): el catálogo pierde calidad de búsqueda, no productos.'),
+  "coverage_ratio": zod.number().min(getEnrichmentStatusResponseCoverageCoverageRatioMin).max(getEnrichmentStatusResponseCoverageCoverageRatioMax).describe('embedded \/ total, o 0 con catálogo vacío. El KPI de AC-3 (>= 0,9) se mide acá, sobre el catálogo real y después de una corrida: no es una propiedad del código.')
+}).describe('pending + abandoned + hechos = total. Se separan porque se resuelven distinto: `pending` se resuelve esperando la próxima corrida y `abandoned` NO se resuelve solo — necesita un POST \/runs con force: true.'),
+  "models": zod.object({
+  "enrich": zod.string(),
+  "embed": zod.string()
+}).describe('Los NOMBRES de los modelos, nunca la clave. El panel los necesita para interpretar la cobertura tras un cambio de modelo: los vectores viejos siguen existiendo con su model_version y hay que regenerarlos (AC-8).'),
+  "last_error_code": zod.string().nullable().describe('Último type del catálogo dsm:enrichment\/\*, NO el mensaje del proveedor: un mensaje crudo puede traer la URL con la clave o el texto del producto (AC-9).'),
+  "last_run_at": zod.string().datetime({"offset":true}).nullable().describe('Fin de la última corrida DE ESTE PROCESO. null si no corrió ninguna desde el arranque: el estado del ejecutor es en memoria (ADR-0014) y lo durable es products.enrichment_done, así que un reinicio no pierde trabajo.')
+})
+
+
+/**
+ * Arranca una corrida sobre todo lo pendiente, o sobre un subconjunto con `product_ids`. Responde 202 de inmediato: una corrida sobre miles de productos no cabe en el tiempo de un request (api-standards §10) y el progreso se consulta en GET /admin/enrichment/status. `force: true` devuelve a la cola los productos ABANDONADOS (los que agotaron ENRICHMENT_MAX_ATTEMPTS) y es explícito a propósito: si fuera automático, el tope de intentos no serviría para nada. Un campo desconocido en el cuerpo es 422 y no un valor ignorado, porque {"forced": true} es un typo plausible de force y aceptarlo en silencio haría una corrida que el dueño cree que rehabilita abandonados y no lo hace. El trabajo pendiente es durable en products.enrichment_done: no hay tabla de corridas y el `run_id` es sólo correlación para los logs.
+ * @summary Disparar una corrida de enriquecimiento (AC-1, AC-5)
+ */
+export const startEnrichmentRunBodyForceDefault = false;
+export const startEnrichmentRunBodyProductIdsMax = 500;
+
+
+
+export const StartEnrichmentRunBody = zod.object({
+  "force": zod.boolean().default(startEnrichmentRunBodyForceDefault).describe('Rehabilita los productos abandonados antes de barrer (attempts a 0, espera y error_code limpios).'),
+  "product_ids": zod.array(zod.string().uuid()).max(startEnrichmentRunBodyProductIdsMax).optional().describe('Acota la corrida. Un array VACÍO significa \"ninguno\", no \"todos\": interpretarlo como el catálogo entero sería la peor lectura de un pedido acotado. El tope de 500 existe porque cada id es una llamada paga.')
+}).describe('Todos los campos son opcionales; el cuerpo vacío es el pedido normal.')
+
+export const StartEnrichmentRunResponse = zod.object({
+  "run_id": zod.string().uuid().describe('Identificador de CORRELACIÓN para los logs. No hay GET \/runs\/{id}: el estado se consulta en \/admin\/enrichment\/status, porque una tabla de corridas sería estado duplicado que puede desincronizarse del catálogo.'),
+  "accepted": zod.literal(true)
+})
