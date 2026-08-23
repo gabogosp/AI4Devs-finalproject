@@ -22,19 +22,41 @@
 
 ## Pre-requisitos
 
-- [ ] **P1 — El contrato canónico tiene `/search`.** Es lo que consume `orval`.
+- [x] **P1 — El contrato canónico tiene `/search`.** Es lo que consume `orval`.
   - **Verify**: `grep -q "operationId: searchProducts" apps/api/docs/api/openapi.yaml && grep -q "SearchResponse:" apps/api/docs/api/openapi.yaml && echo OK`
-- [ ] **P2 — Ninguna otra sesión a mitad de un cambio de contrato.** El backend de US-004 está
+- [x] **P2 — Ninguna otra sesión a mitad de un cambio de contrato.** El backend de US-004 está
   **21/36 en vuelo**: correr `codegen` sobre un `openapi.yaml` a medio editar genera un cliente
   que no compila y ensucia el árbol compartido.
   - **Verify**: `git status --porcelain -- apps/api/docs/api/openapi.yaml` vacío
-- [ ] **P3 — Baseline verde antes de tocar nada.** Para que un rojo posterior sea atribuible.
+- [x] **P3 — Baseline verde antes de tocar nada.** Para que un rojo posterior sea atribuible.
   - **Verify**: `pnpm --filter @dsm/web test` y `pnpm --filter @dsm/web typecheck`
-- [ ] **P4 — Las piezas que se reusan existen.** `ProductImage`, `AddToCartButton`,
+- [x] **P4 — Las piezas que se reusan existen.** `ProductImage`, `AddToCartButton`,
   `formatArs`, `CATALOG_TAG`, `parseContract`, `track`.
   - **Verify**: `for f in src/features/storefront/ProductImage.tsx src/features/cart/AddToCartButton.tsx src/lib/format/currency.ts src/lib/http/contract.ts src/lib/observability/events.ts; do test -f apps/web/$f || echo "FALTA $f"; done` y `grep -q "CATALOG_TAG" apps/web/src/features/storefront/categoriesStorefrontService.ts`
 
 ## Fase 0: Contrato y servicio — 1 h
+
+
+> **BLOQUEO AL EJECUTAR (2026-08-23) — T0.1 no puede cerrarse todavía.**
+>
+> El codegen trae `/search` correctamente (la operación, los modelos y el schema Zod: las tres
+> primeras condiciones del `Verify` pasan). Lo que falla es la cuarta, `typecheck`, y **no por
+> esta US**: el commit `9a62d38` (US-004 backend, contrato publicado) agregó `operationId` a
+> operaciones del panel que antes no lo tenían, así que orval dejó de nombrarlas por path.
+> `postAdminAuthLogin` pasó a `adminLogin`, `PostAdminAuthLoginResponse` a `AdminLoginResponse`,
+> y así. El cliente commiteado en el repo quedó **anterior** a ese cambio, de modo que la
+> inconsistencia ya existía: regenerar no la introdujo, la reveló.
+>
+> Efecto medido: **17 errores de tipos en 3 archivos** —`features/auth/adminSession.ts`,
+> `features/categories/categoriesService.ts`, `features/products/productsService.ts`—, todos de
+> la disciplina del panel (US-001), ninguno de búsqueda.
+>
+> **La regeneración se revirtió** para no dejar el árbol compartido roto: `typecheck` volvió a
+> verde con el cliente viejo. Pero eso deja el drift vivo, y el gate `frontend-codegen-fresh`
+> de CI lo va a marcar en cuanto alguien lo corra.
+>
+> No se arregla desde acá porque son 3 archivos de otra disciplina y la decisión de quién
+> absorbe el churn del contrato es del PO. Escalado.
 
 - [ ] **T0.1 Regenerar el cliente y verificar que `/search` llegó.** `pnpm --filter @dsm/web codegen`.
   Los artefactos derivados del contrato —DTOs, Zod, handlers MSW— **se generan**; escribirlos a
