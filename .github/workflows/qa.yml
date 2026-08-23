@@ -48,6 +48,9 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @dsm/db exec prisma generate
+
       - name: Migraciones
         run: pnpm --filter @dsm/db migrate:deploy
 

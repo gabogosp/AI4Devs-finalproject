@@ -45,7 +45,10 @@ ADMIN_BOOTSTRAP_TOKEN=demo-admin-token
 CORS_ALLOWED_ORIGINS=http://localhost:3200
 ENV
 
-# 4. Esquema + datos de demo (3 productos publicados + 1 draft)
+# 4. Generar el cliente Prisma (tipos Customer/Cart/… que consume la API)
+pnpm --filter @dsm/db exec prisma generate
+
+# 5. Esquema + datos de demo (3 productos publicados + 1 draft)
 pnpm --filter @dsm/db exec prisma migrate deploy
 pnpm --filter @dsm/db seed
 
