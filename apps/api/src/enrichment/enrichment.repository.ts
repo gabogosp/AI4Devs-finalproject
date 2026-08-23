@@ -1,3 +1,4 @@
+import { Prisma } from '@dsm/db';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -79,9 +80,26 @@ export class EnrichmentRepository {
    * El orden prioriza los **nunca intentados** (`NULLS FIRST`) y después los más viejos:
    * un producto recién importado se enriquece antes que uno que ya falló tres veces.
    */
-  async claimBatch(batchSize: number): Promise<ClaimedProduct[]> {
+  /**
+   * Arrienda hasta `batchSize` productos elegibles, marcando el lease en la misma sentencia.
+   *
+   * `soloEstosIds` acota el barrido a un subconjunto: lo usa el `POST /runs` cuando el dueño
+   * pide re-enriquecer productos puntuales, para no gastar cuota en todo el catálogo.
+   */
+  async claimBatch(
+    batchSize: number,
+    soloEstosIds?: string[],
+  ): Promise<ClaimedProduct[]> {
     const leaseMs = configNumber(this.config, 'ENRICHMENT_LEASE_MS', 120_000);
     const maxAttempts = configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
+
+    // Un array vacío significa «ningún producto», no «todos»: devolver el catálogo entero
+    // ante una lista vacía sería la peor interpretación posible de un pedido acotado.
+    if (soloEstosIds?.length === 0) return [];
+
+    const filtroIds = soloEstosIds
+      ? Prisma.sql`AND id = ANY(${soloEstosIds}::uuid[])`
+      : Prisma.empty;
 
     // `make_interval` recibe el lease en segundos como parámetro bindeado: concatenar
     // un intervalo en el string sería la puerta de entrada de una inyección.
@@ -93,12 +111,40 @@ export class EnrichmentRepository {
           WHERE enrichment_done = false
             AND (enrichment_next_attempt_at IS NULL OR enrichment_next_attempt_at <= now())
             AND enrichment_attempts < ${maxAttempts}::int
+            ${filtroIds}
           ORDER BY enrichment_next_attempt_at NULLS FIRST, created_at
           LIMIT ${batchSize}::int
             FOR UPDATE SKIP LOCKED
        )
       RETURNING id, name, description_raw, description_enriched, description_curated,
                 enrichment_source_hash, enrichment_attempts, category_id`;
+  }
+
+  /**
+   * Devuelve a la cola los productos **abandonados** (`attempts >= max`) — el `force: true`
+   * del `POST /runs`.
+   *
+   * Es una acción explícita del dueño y no un reintento automático: si el proveedor estuvo
+   * caído una hora, los abandonados de esa hora no se recuperan solos, porque un reintento
+   * automático infinito es exactamente lo que el tope de intentos existe para evitar.
+   * Devuelve cuántos rehabilitó.
+   */
+  async rehabilitateAbandoned(soloEstosIds?: string[]): Promise<number> {
+    const maxAttempts = configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
+    if (soloEstosIds?.length === 0) return 0;
+
+    const filtroIds = soloEstosIds
+      ? Prisma.sql`AND id = ANY(${soloEstosIds}::uuid[])`
+      : Prisma.empty;
+
+    return this.prisma.$executeRaw`
+      UPDATE products
+         SET enrichment_attempts = 0,
+             enrichment_next_attempt_at = NULL,
+             enrichment_error_code = NULL
+       WHERE enrichment_done = false
+         AND enrichment_attempts >= ${maxAttempts}::int
+         ${filtroIds}`;
   }
 
   /** Cuántos productos quedan pendientes de enriquecer (insumo del `/status`). */

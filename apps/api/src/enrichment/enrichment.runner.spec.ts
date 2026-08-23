@@ -9,6 +9,8 @@ import { EnrichmentService } from './enrichment.service';
 import { EnrichmentRunner } from './enrichment.runner';
 import { FakeAiProvider } from '../../test/fake-ai.provider';
 import { AiTransientError } from '../common/errors/enrichment-errors';
+import { DisabledAiProvider } from './ai/disabled-ai.provider';
+import { AiEmbedder, AiEnricher } from './ports/ai.ports';
 import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
@@ -73,7 +75,11 @@ describe('EnrichmentRunner (integration)', () => {
     const config = new ConfigService({}) as ConfigService;
     const repo = new EnrichmentRepository(prisma, config);
     const service = new EnrichmentService(prisma, repo, config, proveedor, proveedor);
-    return { runner: new EnrichmentRunner(repo, service, config), proveedor, repo };
+    return {
+      runner: new EnrichmentRunner(repo, service, config, proveedor, proveedor),
+      proveedor,
+      repo,
+    };
   }
 
   /** Siembra `cantidad` productos pendientes y devuelve sus ids. */
@@ -157,6 +163,44 @@ describe('EnrichmentRunner (integration)', () => {
     expect(
       await prisma.product.count({ where: { id: { in: ids }, enrichment_done: true } }),
     ).toBe(0);
+  });
+
+  it('SIN PROVEEDOR (adapter deshabilitado) ⇒ disabled, y NO acumula fallos en el catálogo', async () => {
+    // El hueco que este test cierra: el runner miraba sólo el flag, así que sin
+    // `GEMINI_API_KEY` arrancaba, reclamaba productos y fallaba en cada uno contra el
+    // `DisabledAiProvider`. Cada fallo deja rastro DURABLE —intentos, error_code, backoff— en
+    // productos que no tienen nada de malo, y a los 5 quedan abandonados. Un entorno sin clave
+    // habría marcado el catálogo entero como problemático.
+    const ids = await sembrarPendientes(3);
+    await aislarCola();
+    const sinProveedor = new DisabledAiProvider();
+    const config = new ConfigService({}) as ConfigService;
+    ponerEnv({ ENRICHMENT_ENABLED: 'true' });
+    const repo = new EnrichmentRepository(prisma, config);
+    const service = new EnrichmentService(
+      prisma,
+      repo,
+      config,
+      sinProveedor as unknown as AiEnricher,
+      sinProveedor as unknown as AiEmbedder,
+    );
+    const runner = new EnrichmentRunner(
+      repo,
+      service,
+      config,
+      sinProveedor as unknown as AiEnricher,
+      sinProveedor as unknown as AiEmbedder,
+    );
+
+    const resultado = await runner.start();
+
+    expect(resultado.status).toBe('disabled');
+    const filas = await prisma.product.findMany({ where: { id: { in: ids } } });
+    for (const f of filas) {
+      expect(f.enrichment_attempts).toBe(0);
+      expect(f.enrichment_error_code).toBeNull();
+      expect(f.enrichment_next_attempt_at).toBeNull();
+    }
   });
 
   it('tras 5 fallos consecutivos entra en cooldown y DEJA de llamar al proveedor (AC-4)', async () => {

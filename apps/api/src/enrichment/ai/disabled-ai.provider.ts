@@ -17,6 +17,12 @@ import { AiEmbedder, AiEnricher } from '../ports/ai.ports';
  */
 @Injectable()
 export class DisabledAiProvider implements AiEmbedder, AiEnricher {
+  /**
+   * Lo que hace que el runner ni arranque: sin proveedor no hay corrida, y por lo tanto no
+   * hay intentos fallidos acumulados en productos que están perfectamente bien.
+   */
+  readonly available = false;
+
   /** No hay modelo: nada se persiste con este proveedor. */
   readonly modelVersion = 'disabled';
 

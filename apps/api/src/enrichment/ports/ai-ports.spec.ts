@@ -29,6 +29,7 @@ describe('puertos de IA (AI_ENRICHER / AI_EMBEDDER)', () => {
     // Es exactamente lo que van a hacer los tests de las fases siguientes: si el
     // puerto exigiera algo del proveedor, este doble no compilaría.
     const embedder: AiEmbedder = {
+      available: true,
       modelVersion: 'fake-embed-1',
       embed: async (text) => Array.from({ length: 768 }, (_, i) => (i + text.length) / 1000),
     };
@@ -41,6 +42,7 @@ describe('puertos de IA (AI_ENRICHER / AI_EMBEDDER)', () => {
 
   it('un doble satisface `AiEnricher` recibiendo sólo dato de catálogo', async () => {
     const enricher: AiEnricher = {
+      available: true,
       enrich: async (input: EnrichInput) =>
         `${input.name} (${input.categoryName}) — ${input.baseText ?? 'sin descripción'}`,
     };

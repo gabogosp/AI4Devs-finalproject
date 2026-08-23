@@ -78,6 +78,9 @@ interface RespuestaGenerate {
  */
 @Injectable()
 export class GeminiHttpClient implements AiEmbedder, AiEnricher {
+  /** Este adapter sólo se construye cuando hay credenciales (lo decide el factory). */
+  readonly available = true;
+
   constructor(
     private readonly config: ConfigService,
     /** Inyectable para tests: apunta a un stub local en vez del proveedor real. */

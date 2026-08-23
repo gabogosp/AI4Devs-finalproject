@@ -401,7 +401,7 @@ estimate-hours: 13.4
 
 ## Fase 4: Borde HTTP admin — 1,6 h
 
-- [ ] T4.1 `GET /v1/admin/enrichment/status` — cobertura observable (AC-3) (0,4 h)
+- [x] T4.1 `GET /v1/admin/enrichment/status` — cobertura observable (AC-3) (0,4 h)
   - **Pattern**: controller con `@UseGuards(AdminGuard)` + DTO de respuesta con `static from()`
     (patrón de `ProductResponseDto`), `snake_case` en el payload —
     `per api-standards.md §5 — formato de respuesta`. `Cache-Control: no-store` ya lo pone el
@@ -418,7 +418,7 @@ estimate-hours: 13.4
     `cache-control` contiene `no-store`; assert de que el body serializado **no** contiene el
     valor de `GEMINI_API_KEY`)
 
-- [ ] T4.2 `POST /v1/admin/enrichment/runs` — 202 / 409 + throttler `enrichment` (0,5 h)
+- [x] T4.2 `POST /v1/admin/enrichment/runs` — 202 / 409 + throttler `enrichment` (0,5 h)
   - **Pattern**: 202 + un solo run concurrente ⇒ 409 (misma semántica que el import de US-006),
     `per api-standards.md §10 — operación asíncrona: 202 y estado consultable`. Throttler
     nombrado `enrichment` extendiendo `ThrottlerGuard` como

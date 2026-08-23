@@ -29,8 +29,21 @@ export interface EnrichInput {
   baseText: string | null;
 }
 
+/**
+ * ¿Hay un proveedor con el que efectivamente se puede trabajar?
+ *
+ * Lo declara el **adapter**, no el caso de uso: si el runner re-derivara la condición
+ * leyendo configuración, tendría una copia de la regla del factory que puede desincronizarse
+ * — y una corrida contra un adapter deshabilitado dejaría rastro durable de fallo (intentos,
+ * `error_code`, backoff) en un catálogo que no tiene nada de malo.
+ */
+export interface AiAvailability {
+  /** `false` en el adapter que sólo sabe rechazar (sin credenciales o apagado por config). */
+  readonly available: boolean;
+}
+
 /** Enriquecedor de descripciones (LLM). */
-export interface AiEnricher {
+export interface AiEnricher extends AiAvailability {
   /**
    * Devuelve el texto enriquecido, ya recortado al tope de caracteres configurado.
    * Lanza `AiTransientError` (reintentable) o `AiPermanentError` (no reintentable).
@@ -39,7 +52,7 @@ export interface AiEnricher {
 }
 
 /** Generador de embeddings. */
-export interface AiEmbedder {
+export interface AiEmbedder extends AiAvailability {
   /**
    * Devuelve el vector del texto. La dimensión la valida el adapter contra la del
    * esquema (768): un vector de otra dimensión es un error permanente, no algo que

@@ -1,11 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentService, ProcessOutcome } from './enrichment.service';
 import { AiTransientError } from '../common/errors/enrichment-errors';
+import { AI_EMBEDDER, AI_ENRICHER, AiEmbedder, AiEnricher } from './ports/ai.ports';
 import { configNumber } from './config-number';
 
 export type RunnerState = 'idle' | 'running' | 'cooldown' | 'disabled';
+
+/** Qué acota una corrida pedida a mano por el dueño (`POST /runs`). */
+export interface StartOptions {
+  /** Sólo estos productos. Vacío o ausente = todo lo elegible. */
+  productIds?: string[];
+  /** Devolver a la cola los abandonados antes de barrer (acción explícita, no automática). */
+  force?: boolean;
+}
 
 export interface StartResult {
   /** Estado con el que responde el pedido de arranque. */
@@ -13,6 +22,8 @@ export interface StartResult {
   /** Productos procesados en esta corrida (0 si no arrancó). */
   processed: number;
   outcomes?: Record<ProcessOutcome, number>;
+  /** Cuántos abandonados volvieron a la cola por `force` (0 si no se pidió). */
+  rehabilitated?: number;
 }
 
 /**
@@ -42,11 +53,16 @@ export class EnrichmentRunner {
   private fallosConsecutivos = 0;
   /** Instante hasta el que el breaker está abierto. */
   private cooldownHasta = 0;
+  /** Últimos datos observables por el `/status` (AC-3). */
+  private ultimaCorrida: Date | null = null;
+  private ultimoErrorCode: string | null = null;
 
   constructor(
     private readonly repo: EnrichmentRepository,
     private readonly service: EnrichmentService,
     private readonly config: ConfigService,
+    @Inject(AI_ENRICHER) private readonly enricher: AiEnricher,
+    @Inject(AI_EMBEDDER) private readonly embedder: AiEmbedder,
   ) {}
 
   /** Estado observable del runner (lo publica el `/status`). */
@@ -57,8 +73,32 @@ export class EnrichmentRunner {
     return 'idle';
   }
 
+  /** Cuándo terminó la última corrida. `null` si nunca corrió en este proceso. */
+  get lastRunAt(): Date | null {
+    return this.ultimaCorrida;
+  }
+
+  /**
+   * Último código de error del proveedor. Es un `type` del catálogo de errores
+   * (`dsm:enrichment/*`), **nunca** el mensaje crudo del proveedor: un mensaje crudo puede
+   * traer la URL con la clave o el texto del producto, y esto se publica en el `/status`.
+   */
+  get lastErrorCode(): string | null {
+    return this.ultimoErrorCode;
+  }
+
+  /**
+   * ¿Hay proveedor con el que trabajar?
+   *
+   * Se le pregunta al **puerto**, no a la configuración: si el runner re-derivara la regla
+   * del factory (`sin clave ⇒ adapter deshabilitado`), tendría una copia que puede
+   * desincronizarse. Y el costo de equivocarse no es un log: sería arrancar corridas contra
+   * un adapter que sólo sabe rechazar, y cada rechazo deja rastro durable —intentos,
+   * `error_code`, backoff— en productos que no tienen nada de malo.
+   */
   private get habilitado(): boolean {
-    return this.config.get<string>('ENRICHMENT_ENABLED', 'true') === 'true';
+    const flag = this.config.get<string>('ENRICHMENT_ENABLED', 'true') === 'true';
+    return flag && this.embedder.available && this.enricher.available;
   }
 
   /**
@@ -87,7 +127,7 @@ export class EnrichmentRunner {
    * Devuelve por qué no arrancó cuando corresponde, en vez de fingir que corrió: el
    * endpoint admin necesita poder responder 409 con una razón (T4.2).
    */
-  async start(): Promise<StartResult> {
+  async start(opciones: StartOptions = {}): Promise<StartResult> {
     if (!this.habilitado) return { status: 'disabled', processed: 0 };
     if (this.corriendo) return { status: 'already-running', processed: 0 };
     if (Date.now() < this.cooldownHasta) return { status: 'cooldown', processed: 0 };
@@ -100,15 +140,22 @@ export class EnrichmentRunner {
       skipped_unchanged: 0,
     };
     let procesados = 0;
+    let rehabilitados = 0;
 
     try {
       const batchSize = configNumber(this.config, 'ENRICHMENT_BATCH_SIZE', 25);
       const concurrencia = configNumber(this.config, 'ENRICHMENT_CONCURRENCY', 2);
 
+      // El `force` va ANTES del barrido: rehabilitar después no serviría de nada en esta
+      // corrida. Es una acción explícita del dueño, no un reintento automático.
+      if (opciones.force) {
+        rehabilitados = await this.repo.rehabilitateAbandoned(opciones.productIds);
+      }
+
       for (;;) {
         if (this.breakerAbierto()) break;
 
-        const lote = await this.repo.claimBatch(batchSize);
+        const lote = await this.repo.claimBatch(batchSize, opciones.productIds);
         if (lote.length === 0) break;
 
         const nombres = await this.repo.categoryNames(
@@ -140,9 +187,15 @@ export class EnrichmentRunner {
       }
     } finally {
       this.corriendo = false;
+      this.ultimaCorrida = new Date();
     }
 
-    return { status: this.state, processed: procesados, outcomes };
+    return {
+      status: this.state,
+      processed: procesados,
+      outcomes,
+      rehabilitated: rehabilitados,
+    };
   }
 
   /**
@@ -166,7 +219,7 @@ export class EnrichmentRunner {
             ? String((error as { type: unknown }).type)
             : 'dsm:enrichment/unknown';
       await this.service.registerFailure(productId, code);
-
+      this.ultimoErrorCode = code;
       this.fallosConsecutivos += 1;
       const umbral = configNumber(this.config, 'ENRICHMENT_FAILURE_THRESHOLD', 5);
       if (this.fallosConsecutivos >= umbral) {

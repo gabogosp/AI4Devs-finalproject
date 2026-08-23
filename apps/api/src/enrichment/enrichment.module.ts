@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { aiProviders } from './ai/ai.providers';
+import { EnrichmentController } from './enrichment.controller';
+import { EnrichmentThrottlerGuard } from './enrichment-throttler.guard';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentRunner } from './enrichment.runner';
 import { EnrichmentService } from './enrichment.service';
@@ -17,7 +20,10 @@ import { ENRICHMENT_QUEUE, NudgeEnrichmentQueue } from './ports/enrichment-queue
  * tras escribir el catálogo — depende del **token**, no de esta clase.
  */
 @Module({
+  imports: [AuthModule],
+  controllers: [EnrichmentController],
   providers: [
+    EnrichmentThrottlerGuard,
     EnrichmentRepository,
     EnrichmentService,
     EnrichmentRunner,

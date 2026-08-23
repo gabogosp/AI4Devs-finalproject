@@ -62,6 +62,16 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('CART_RATE_LIMIT_TTL_MS', 60_000),
           limit: config.get<number>('CART_RATE_LIMIT_MAX', 120),
         },
+        // §7.3 — cuarto throttler nombrado: el enriquecimiento IA (US-005). Es la única
+        // superficie donde un request de más cuesta PLATA (llamadas al proveedor), así que
+        // tiene su propio cubo en vez de compartir el de `auth`: si compartieran, unas
+        // cuantas corridas dejarían al dueño sin poder entrar al panel. `Number()` explícito
+        // porque `get()` lee process.env primero y ahí todo valor es string.
+        {
+          name: 'enrichment',
+          ttl: Number(config.get('ENRICHMENT_RATE_LIMIT_TTL_MS') ?? 60_000),
+          limit: Number(config.get('ENRICHMENT_RATE_LIMIT_MAX') ?? 6),
+        },
       ],
     }),
   ],

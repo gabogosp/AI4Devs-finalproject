@@ -276,7 +276,7 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
       const fake = new FakeAiProvider();
       const service = new EnrichmentService(prisma, repo, configNest, fake, fake);
       return {
-        runner: new EnrichmentRunner(repo, service, configNest),
+        runner: new EnrichmentRunner(repo, service, configNest, fake, fake),
         fake,
         restaurar: () => {
           for (const [k, v] of Object.entries(previo)) {

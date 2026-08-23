@@ -14,6 +14,9 @@ import { EMBEDDING_DIMS } from '../src/enrichment/ai/gemini-http.client';
  * kNN pueden aseverar un ORDEN de resultados en vez de conformarse con «devolvió algo».
  */
 export class FakeAiProvider implements AiEmbedder, AiEnricher {
+  /** El doble está disponible: es lo que permite ejercer el runner sin red ni clave. */
+  readonly available = true;
+
   readonly modelVersion = 'fake-embed-1';
   /** Textos que se le pidieron, para aseverar que no se llamó al proveedor de más. */
   readonly embedCalls: string[] = [];
