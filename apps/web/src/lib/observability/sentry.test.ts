@@ -63,12 +63,14 @@ describe('initObservability', () => {
     const { track } = await import('./events');
 
     initObservability();
-    track('cart.item_added', { slug: 'taco-fischer' });
+    // `cart_item_added`, no `cart.item_added`: todos los eventos de este módulo van
+    // en snake_case (el punto es la convención del BACKEND). US-007 T4.3.
+    track('cart_item_added', { slug: 'taco-fischer' });
 
     expect(addBreadcrumb).toHaveBeenCalledWith(
       expect.objectContaining({
         category: 'business',
-        message: 'cart.item_added',
+        message: 'cart_item_added',
       }),
     );
     // Un breadcrumb NO consume cuota de eventos: si esto fuera captureMessage,

@@ -234,6 +234,60 @@ const nuevoUuid = () => randomUUID();
  * request al catálogo, y `dsm_csrf` **legible por JS** a propósito — es la
  * mitad del double-submit.
  */
+/** Carritos en memoria del stub, por token de cookie (US-007). */
+const carts = new Map();
+let contadorToken = 0;
+const nuevoToken0 = (prefijo) => `${prefijo}-${++contadorToken}-${Date.now()}`;
+
+/**
+ * Arma el sobre del carrito con la MISMA semántica que el backend: el total suma
+ * sólo las líneas comprables (una línea no comprable en el total es un número que
+ * el checkout desmiente) y `has_blocking_issues` es la señal que apaga el CTA.
+ */
+function vistaCarrito(carrito) {
+  if (!carrito || carrito.items.size === 0) {
+    return {
+      cart: {
+        id: null,
+        items: [],
+        item_count: 0,
+        total_quantity: 0,
+        total_ars_cents: 0,
+        has_blocking_issues: false,
+        updated_at: null,
+      },
+    };
+  }
+  const items = [...carrito.items].map(([slug, quantity]) => {
+    const p = products.get(slug) ?? browseProducts.get(slug);
+    const availability = p?.in_stock ? 'available' : 'unavailable';
+    return {
+      slug,
+      name: p?.name ?? slug,
+      image_url: p?.image_url ?? null,
+      quantity,
+      unit_price_ars_cents: p?.price_ars_cents ?? 0,
+      currency: 'ARS',
+      subtotal_ars_cents: (p?.price_ars_cents ?? 0) * quantity,
+      availability,
+      max_quantity: 99,
+      price_changed: false,
+    };
+  });
+  const comprables = items.filter((i) => i.availability === 'available');
+  return {
+    cart: {
+      id: 'cart-e2e',
+      items,
+      item_count: items.length,
+      total_quantity: items.reduce((a, i) => a + i.quantity, 0),
+      total_ars_cents: comprables.reduce((a, i) => a + i.subtotal_ars_cents, 0),
+      has_blocking_issues: comprables.length !== items.length,
+      updated_at: new Date().toISOString(),
+    },
+  };
+}
+
 function emitirSesion(res, customer) {
   const access = nuevoToken('access');
   const csrf = nuevoToken('csrf');
@@ -400,7 +454,9 @@ const server = createServer(async (req, res) => {
   // catálogo (US-002 AC-7). Las llamadas de auth salen del navegador y son de
   // otra superficie: incluirlas ensucia esas aserciones con ruido de otro spec.
   if (req.method === 'GET' && path.startsWith('/v1/') && !path.startsWith('/v1/auth/')) {
-    requestLog.push({ url: req.url, path, query: url.search });
+    // `cookie` en el log: los specs de topología (US-014/US-007) necesitan poder
+    // afirmar QUÉ cookies llegaron, no sólo qué ruta se pidió.
+    requestLog.push({ url: req.url, path, query: url.search, cookie: req.headers.cookie ?? null });
   }
 
   // --- Superficie de auth de cliente (US-014) ---
@@ -525,6 +581,88 @@ const server = createServer(async (req, res) => {
   }
 
   // --- Superficie pública de categorías (US-002) ---
+
+  // --- Carrito del invitado (US-007) ---
+  //
+  // Se modela con las MISMAS propiedades que el backend real, porque son las que
+  // los specs de topología y persistencia verifican: `dsm_cart` httpOnly (el
+  // acceso), `dsm_cart_csrf` legible (la mitad del double-submit) y el carrito
+  // completo en la respuesta de las tres operaciones.
+  if (path === '/v1/cart' || path.startsWith('/v1/cart/items/')) {
+    const cookies = leerCookies(req);
+    const token = cookies.dsm_cart;
+    const existente = token ? carts.get(token) : undefined;
+
+    if (req.method === 'GET' && path === '/v1/cart') {
+      // No crea carrito ni emite cookie: sin cookie devuelve el vacío (AC-7).
+      res.setHeader('Cache-Control', 'no-store');
+      return json(res, 200, vistaCarrito(existente));
+    }
+
+    const itemMatch = path.match(/^\/v1\/cart\/items\/([^/]+)$/);
+    if (!itemMatch) return problem(res, 404, 'dsm:catalog/not-found', 'Not Found', {
+      detail: 'Ruta de carrito inexistente',
+    });
+    const slug = decodeURIComponent(itemMatch[1]);
+
+    if (req.method === 'PUT' || req.method === 'DELETE') {
+      // Escritura autenticada por cookie ⇒ double-submit + Origin declarado.
+      const enviado = req.headers['x-csrf-token'];
+      if (!req.headers.origin || (existente && enviado !== existente.csrf)) {
+        return problem(res, 403, 'dsm:cart/csrf-failed', 'Forbidden', {
+          detail: 'Falta el token CSRF o el origen',
+        });
+      }
+
+      const producto = products.get(slug) ?? browseProducts.get(slug);
+      if (req.method === 'PUT' && !producto) {
+        // Mismo 404 para inexistente y no publicado (AC-10).
+        return problem(res, 404, 'dsm:catalog/not-found', 'Not Found', {
+          detail: 'Producto no encontrado',
+        });
+      }
+
+      let carrito = existente;
+      if (!carrito) {
+        if (req.method === 'DELETE') {
+          res.setHeader('Cache-Control', 'no-store');
+          return json(res, 200, vistaCarrito(undefined));
+        }
+        const nuevoToken = nuevoToken0('cart');
+        const csrf = nuevoToken0('cartcsrf');
+        carrito = { items: new Map(), csrf };
+        carts.set(nuevoToken, carrito);
+        res.setHeader('Set-Cookie', [
+          `dsm_cart=${nuevoToken}; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800`,
+          `dsm_cart_csrf=${csrf}; SameSite=Lax; Path=/; Max-Age=604800`,
+        ]);
+      }
+
+      if (req.method === 'DELETE') {
+        carrito.items.delete(slug);
+      } else {
+        const body = await readBody(req);
+        const cantidad = Number(body.quantity);
+        if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 99) {
+          return problem(res, 422, 'dsm:cart/validation', 'Unprocessable Entity', {
+            detail: 'Cantidad inválida',
+            errors: [{ field: 'quantity', message: 'entre 1 y 99' }],
+          });
+        }
+        if (!producto.in_stock) {
+          return problem(res, 409, 'dsm:cart/insufficient-stock', 'Conflict', {
+            detail: 'Sin stock disponible',
+            available_quantity: 0,
+          });
+        }
+        carrito.items.set(slug, cantidad);
+      }
+
+      res.setHeader('Cache-Control', 'no-store');
+      return json(res, 200, vistaCarrito(carrito));
+    }
+  }
+
   if (req.method === 'GET' && path === '/v1/categories') {
     return json(res, 200, { data: CATEGORY_TREE });
   }

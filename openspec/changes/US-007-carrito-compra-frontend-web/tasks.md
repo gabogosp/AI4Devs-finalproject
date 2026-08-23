@@ -417,7 +417,7 @@ language: es
 
 ## Fase 5: E2E dev-owned — 1,0 h
 
-- [ ] T5.1 **La topología funciona contra la app construida** (ADR-0013)
+- [ ] T5.1 **La topología funciona contra la app construida** (ADR-0013) — ⚠ **BLOQUEADA: defecto encontrado**
   - **Pattern**: espejo exacto de `e2e/auth-topology.spec.ts`, que es el precedente que
     ADR-0013 dejó: se asserta sobre `response.status()` y `context.cookies()`, **nunca sobre
     el DOM** — `per ADR-0013 §Verification`. Es la única prueba que puede detectar el
@@ -429,6 +429,28 @@ language: es
     devuelve el carrito vacío (el 200 anterior no fue un falso positivo).
   - **Verify**: `pnpm --filter @dsm/web test:e2e -- cart-topology`
     (`e2e/cart-topology.spec.ts`)
+  - **ESTADO: 3 de 4 pasan; el cuarto encontró un defecto de PRODUCCIÓN, no del test.**
+    Este spec existe justamente para eso y lo hizo en su primera corrida.
+    - **Pasan**: las cookies aterrizan en el dominio del sitio con `dsm_cart` `httpOnly` y
+      `dsm_cart_csrf` legible; un contexto nuevo ve el carrito vacío; el token no es
+      alcanzable desde JS.
+    - **Falla**: «la cookie VUELVE». El `PUT /v1/cart/items/{slug}` llega al API **con**
+      `dsm_cart`, pero el `GET /v1/cart` llega con **`cookie: null`**, así que el carrito
+      **no se puede leer**. Medido con el `requestLog` del stub, que ahora registra qué
+      cookies recibió cada request.
+    - **Reproducido con cuatro configuraciones** de rewrite: `:path*` en `afterFiles`,
+      entrada estática adicional para el path desnudo, `beforeFiles`, y el recurso como
+      segmento dinámico (`/v1/:recurso(cart)/:path*`). En todas, la ruta **con**
+      sub-segmento reenvía la cookie y la **de colección** no.
+    - **El API está bien**: por `curl` con el header `Cookie`, `GET /v1/cart` devuelve el
+      ítem. El problema es el reenvío del header en el rewrite cuando el parámetro dinámico
+      queda vacío.
+    - **Decisión pendiente (no la toma el ejecutor)**: (a) Route Handler que proxee
+      `/v1/cart` reenviando `cookie` explícitamente — **desvía de ADR-0013**, que rechazó los
+      route handlers, así que necesita enmienda; (b) alias de ruta con sub-segmento en el
+      contrato del backend (US-007 backend ya está cerrado); (c) investigar si es específico
+      de esta versión de Next.
+    `Deferred: decisión de arquitectura — owner: Arquitecto`.
 
 - [ ] T5.2 Persistencia entre visitas (AC-4)
   - **Exit criterion**: con un contexto de navegador **persistido**, se agrega un producto,
