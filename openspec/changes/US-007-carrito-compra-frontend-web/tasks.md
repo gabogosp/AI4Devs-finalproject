@@ -112,7 +112,7 @@ language: es
     que matchea y conserva la intención. Además `vitest.config.ts` sólo incluye `src/**`, así
     que el test vive bajo `src/` e importa la config con `@/../next.config.mjs`.)*
 
-- [ ] T0.4 Un solo lector de CSRF, dos sujetos
+- [x] T0.4 Un solo lector de CSRF, dos sujetos
   - **Pattern**: parametrizar por **sujeto**, no duplicar el parser — `per el comentario
     normativo de `csrf.ts`: «que haya un solo lector importa»` y `per security-standards.md
     §7.5 — double-submit`.
