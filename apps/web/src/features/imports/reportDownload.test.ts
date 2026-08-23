@@ -46,10 +46,10 @@ describe('descargarReporte', () => {
   });
 
   it('usa el nombre que manda el servidor y revoca el object URL', async () => {
-    let autorizacion: string | null = null;
+    let autorizacion: string | undefined;
     server.use(
       http.get(`${API}/v1/admin/imports/${ID}/report`, ({ request }) => {
-        autorizacion = request.headers.get('authorization');
+        autorizacion = request.headers.get('authorization') ?? undefined;
         return new HttpResponse(CSV, {
           status: 200,
           headers: {
@@ -64,14 +64,16 @@ describe('descargarReporte', () => {
     await descargarReporte(ID, 1);
 
     expect(click).toHaveBeenCalledTimes(1);
-    const enlace = click.mock.instances[0] as HTMLAnchorElement;
+    const enlace = click.mock.instances[0] as unknown as HTMLAnchorElement;
     // El nombre NO se construye en el cliente: se lee del header.
     expect(enlace.download).toBe(`import-${ID}-errores.csv`);
     expect(creados).toHaveLength(1);
     expect(revocados).toEqual(creados);
     // La descarga pasa por el mutator, así que lleva el Bearer del panel: un
     // `<a href>` nativo habría dado 401.
-    expect(autorizacion == null || autorizacion.startsWith('Bearer')).toBe(true);
+    expect(autorizacion === undefined || autorizacion.startsWith('Bearer')).toBe(
+      true,
+    );
   });
 
   it('emite el evento con el conteo de rechazos y sin nombre de archivo', async () => {

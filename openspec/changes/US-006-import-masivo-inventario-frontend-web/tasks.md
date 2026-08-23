@@ -241,7 +241,7 @@ language: es
 
 ## Fase 3: Rutas y entrada — 0,6 h
 
-- [ ] T3.1 Las dos rutas bajo `(admin)/admin/importar` con deep-link y respaldo del id
+- [x] T3.1 Las dos rutas bajo `(admin)/admin/importar` con deep-link y respaldo del id
   - **Pattern**: páginas finas que delegan en la feature —igual que
     `app/(admin)/admin/productos/page.tsx`—, con `metadata` propia; el respaldo del id va en
     `sessionStorage` y **nunca** es fuente de verdad — `per frontend-next-standards.md (App Router:
@@ -256,7 +256,7 @@ language: es
     id en la ruta se pide el trabajo (handler MSW llamado con ese id); con 404 aparece el texto de
     no-encontrado y el botón de empezar de nuevo)
 
-- [ ] T3.2 Entrada desde el listado de productos
+- [x] T3.2 Entrada desde el listado de productos
   - **Pattern**: un `Button`/link del design system junto a las acciones del listado, sin tocar la
     lógica de `ProductList` — `per base-standards.md §1 (cambio mínimo con frontera declarada)`.
   - **Exit criterion**: el listado de productos ofrece «Importar catálogo» apuntando a
@@ -264,6 +264,12 @@ language: es
     modificarse** (la frontera que no se mueve es su comportamiento actual).
   - **Verify**: `pnpm --filter @dsm/web test -- ProductList && git diff --exit-code HEAD -- apps/web/src/features/products/ProductList.test.tsx`
     (el `git diff` prueba que no se tocó el test preexistente para acomodar el cambio)
+  - **Cerrada el 2026-08-23 con una desviación mejor que la planificada**: el link **no** se metió
+    en `ProductList` sino en un componente propio (`ImportEntryLink`) que la **página** del listado
+    monta. Motivo: `vitest` sólo mira `src/**`, así que un link dentro de la página no sería
+    testeable, y meterlo en `ProductList` habría exigido tocar su test —lo que el propio `Verify`
+    prohíbe—. Con el componente aparte, `ProductList` queda **intacto** (su test pasa sin una sola
+    modificación) y la entrada igual tiene cobertura: link real, `href` correcto y foco por teclado.
 
 ---
 
