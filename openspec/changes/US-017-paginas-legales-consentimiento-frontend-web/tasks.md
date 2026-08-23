@@ -360,7 +360,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Fase 3: Enlaces y accesibilidad — 0,5 h
 
-- [ ] **T3.1** `SiteFooter`: los dos enlaces legales reales (AC-3) (0,3 h)
+- [x] **T3.1** `SiteFooter`: los dos enlaces legales reales (AC-3) (0,3 h) *(verde 2026-08-23 — 10 tests: 7 de US-018 sin editar + 3 nuevos)*
 
   - **Pattern**: se reemplaza el comentario `Deferred: US-017` por los enlaces, tomados de
     `LEGAL_ROUTES` (nunca literales) y con `next/link` como el resto del sitio. Área táctil y

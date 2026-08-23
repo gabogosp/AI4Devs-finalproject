@@ -81,5 +81,45 @@ describe('Canal de contacto en el header (AC-1)', () => {
     expect(enlaces).toHaveLength(2);
     expect(new Set(enlaces.map((e) => e.textContent)).size).toBe(2);
   });
-});
+  // ── US-017 T3.1 (AC-3) — los enlaces legales ────────────────────────────────
+  it('el footer ofrece los dos enlaces legales con sus destinos reales', () => {
+    render(StorefrontLayout({ children: <p>contenido</p> }));
 
+    const footer = screen.getByRole('contentinfo');
+    expect(
+      within(footer).getByRole('link', { name: /política de privacidad/i }),
+    ).toHaveAttribute('href', '/legales/privacidad');
+    expect(
+      within(footer).getByRole('link', { name: /términos y condiciones/i }),
+    ).toHaveAttribute('href', '/legales/terminos');
+  });
+
+  it('ningún enlace del footer apunta a `#`', () => {
+    render(StorefrontLayout({ children: <p>contenido</p> }));
+
+    // El comentario que este cambio reemplazó lo decía: un enlace legal
+    // apuntando a `#` en producción es PEOR que no tenerlo (Ley 25.326). Este
+    // assert es el que impide que vuelva, acá o en cualquier enlace futuro.
+    const hrefs = within(screen.getByRole('contentinfo'))
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href'));
+    expect(hrefs.length).toBeGreaterThan(0);
+    expect(hrefs.every((h) => h && h !== '#')).toBe(true);
+  });
+
+  it('los legales viven en su propia región, separados del resto del footer', () => {
+    render(StorefrontLayout({ children: <p>contenido</p> }));
+
+    // Sin el `nav` con nombre propio, un lector de pantalla lista estos dos
+    // enlaces mezclados con el de WhatsApp y no hay forma de saltarlos.
+    const legales = within(screen.getByRole('contentinfo')).getByRole(
+      'navigation',
+      { name: 'Legales' },
+    );
+    expect(within(legales).getAllByRole('link')).toHaveLength(2);
+    // El canal de WhatsApp queda FUERA de esa región (US-018 no se rompe).
+    expect(
+      within(legales).queryByRole('link', { name: /hablá con nosotros/i }),
+    ).toBeNull();
+  });
+});
