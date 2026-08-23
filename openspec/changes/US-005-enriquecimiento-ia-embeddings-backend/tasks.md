@@ -182,7 +182,7 @@ estimate-hours: 13.4
     `headers['x-goog-api-key']` está presente**; assert de que `String(error)` de cada caso no
     contiene el valor de la clave)
 
-- [ ] T1.3 Reintentos con backoff + jitter + `Retry-After` + limitador de RPM (0,8 h)
+- [x] T1.3 Reintentos con backoff + jitter + `Retry-After` + limitador de RPM (0,8 h)
   - **Pattern**: función pura de backoff + decorador del cliente, sin librería:
     ```ts
     const delay = Math.min(cap, base * 2 ** attempt) * (0.5 + Math.random() / 2); // jitter
