@@ -117,7 +117,19 @@ export async function customFetch<T>(
   }
 
   const headers = new Headers(init.headers);
-  if (!headers.has('content-type')) {
+  // `content-type` por defecto sólo cuando el cuerpo NO es `FormData`.
+  //
+  // Con un multipart, el `content-type` lo tiene que poner el runtime **con su
+  // boundary** (`multipart/form-data; boundary=...`); forzar `application/json`
+  // deja un cuerpo multipart anunciado como JSON y el servidor no puede parsearlo
+  // — el `POST` del import se colgaba en `request.formData()`. Detectado al
+  // cablear US-006 FE (T0.1), que es el primer envío de archivo del panel.
+  // `instanceof` no alcanza: el `FormData` que construye el cliente generado y el
+  // global de este realm pueden ser objetos distintos (jsdom, tests), y ahí el
+  // chequeo daría falso y volveríamos a anunciar el multipart como JSON.
+  const esFormData =
+    Object.prototype.toString.call(init.body) === '[object FormData]';
+  if (!headers.has('content-type') && !esFormData) {
     headers.set('content-type', 'application/json');
   }
   // Sólo en el browser: el token es de la sesión del panel y el traceparent es
@@ -184,8 +196,23 @@ export async function customFetch<T>(
     );
   }
 
-  const text = [204, 205, 304].includes(res.status) ? '' : await res.text();
-  const data = text ? JSON.parse(text) : undefined;
+  // El cuerpo se parsea como JSON **sólo si el servidor dice que es JSON**.
+  //
+  // Antes se hacía `JSON.parse` de toda respuesta exitosa, y eso rompía
+  // cualquier endpoint que no devuelva JSON: el reporte del import
+  // (`GET /v1/admin/imports/{id}/report`) responde `text/csv`, así que el parse
+  // lanzaba un `SyntaxError` **fuera** del try/catch de red — un fallo opaco, sin
+  // envelope y sin traducir, en un camino que el contrato declara desde siempre.
+  // Detectado al cablear US-006 FE (T0.1).
+  //
+  // El texto crudo se devuelve tal cual: quien pide un CSV lo quiere como texto,
+  // y castearlo a `T` es exactamente lo que el tipo generado ya declara
+  // (`getImportReportResponse200.data: string`).
+  const sinCuerpo = [204, 205, 304].includes(res.status);
+  const text = sinCuerpo ? '' : await res.text();
+  const contentType = res.headers.get('content-type') ?? '';
+  const esJson = contentType.includes('json');
+  const data = !text ? undefined : esJson ? JSON.parse(text) : text;
   return { data, status: res.status, headers: res.headers } as T;
 }
 

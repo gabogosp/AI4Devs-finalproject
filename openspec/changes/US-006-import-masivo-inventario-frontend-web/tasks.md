@@ -21,17 +21,17 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **P1 — El contrato del import está publicado y generado**: las tres operaciones existen en el
+- [x] **P1 — El contrato del import está publicado y generado**: las tres operaciones existen en el
   cliente generado. Si faltaran, el codegen se re-corre (`pnpm --filter @dsm/web codegen`) **antes**
   de empezar: escribir tipos a mano acá deja el FE verde contra un contrato viejo (§3.1).
   - **Verify**: `grep -q "export const createImport" apps/web/src/api/generated/endpoints.ts && grep -q "export const getImport" apps/web/src/api/generated/endpoints.ts && grep -q "export const getImportReport" apps/web/src/api/generated/endpoints.ts`
-- [ ] **P2 — Suite y typecheck del web verdes en el `HEAD` de partida**: sin esta foto no se puede
+- [x] **P2 — Suite y typecheck del web verdes en el `HEAD` de partida** *(verde 2026-08-23: 86 archivos / 516 tests; typecheck limpio)*: sin esta foto no se puede
   atribuir una regresión propia.
   - **Verify**: `pnpm --filter @dsm/web test && pnpm --filter @dsm/web typecheck`
-- [ ] **P3 — La costura de invalidación existe**: `revalidateCatalogSafely()` está disponible; esta
+- [x] **P3 — La costura de invalidación existe**: `revalidateCatalogSafely()` está disponible; esta
   US la **usa**, no la construye.
   - **Verify**: `grep -q "export function revalidateCatalogSafely" apps/web/src/features/storefront/revalidateSafely.ts`
-- [ ] **P4 — El backend responde el contrato que el plan asume** (opcional pero recomendado antes de
+- [x] **P4 — El backend responde el contrato que el plan asume** (opcional pero recomendado antes de
   T2.x): API arriba y el 404 del `GET` con el `type` del catálogo.
   - **Verify**: `curl -sS -o /dev/null -w '%{http_code}' http://localhost:3000/health | grep -q 200`
 
@@ -39,7 +39,7 @@ language: es
 
 ## Fase 0: Servicio sobre el contrato — 0,8 h
 
-- [ ] T0.1 `importsService.ts`: las tres operaciones, validadas en el borde
+- [x] T0.1 `importsService.ts`: las tres operaciones, validadas en el borde
   - **Pattern**: espejo exacto de `src/features/products/productsService.ts` — red por las
     **operaciones generadas**, respuesta validada con el schema Zod generado y tipos
     **re-exportados** del modelo generado; nada de interfaces a mano — `per frontend-standards.md
@@ -57,6 +57,22 @@ language: es
     `Idempotency-Key`; una respuesta que no valide contra el schema Zod **lanza** en vez de
     propagar un objeto a medias.
   - **Verify**: `pnpm --filter @dsm/web test -- importsService && ! grep -rn "interface ImportJob\|type ImportJob = {" apps/web/src/features/imports/`
+  - **Cerrada el 2026-08-23 con dos defectos del mutator corregidos** (`src/lib/http/client.ts`,
+    código compartido de US-001). Los encontró esta task por ser la primera que sube un archivo y
+    la primera que pide algo que no es JSON:
+    1. **`JSON.parse` de toda respuesta exitosa**: el reporte responde `text/csv`, así que el parse
+       lanzaba un `SyntaxError` **fuera** del manejo de errores de red — un fallo opaco, sin
+       envelope. Ahora se parsea sólo si el `content-type` dice JSON y el texto se devuelve tal cual.
+    2. **`content-type: application/json` forzado con cuerpo `FormData`**: un multipart anunciado
+       como JSON es un cuerpo que el servidor no puede parsear. Ahora se omite el default cuando el
+       cuerpo es `FormData`, detectado con `Object.prototype.toString` y no con `instanceof`, porque
+       el `FormData` del cliente generado y el global del realm pueden ser objetos distintos.
+    Los dos van con test propio en `importsService.test.ts`, y las 6 suites del cliente y CSRF
+    siguen verdes (44 tests) — la frontera que no se movió es el comportamiento de las llamadas JSON.
+  - **Límite del entorno declarado**: el cuerpo del multipart **no se puede leer** en el test
+    (jsdom cuelga 5 s al leer un `File` de un `FormData`, medido con `formData()` y con `text()`),
+    así que el test asserta el **encabezado** —que es donde estaba el defecto— y que el campo se
+    llame `file` lo garantizan el cliente generado y el e2e de QA contra la API real.
     (unit con MSW: `create` devuelve `{id,status}` y manda el header de idempotencia; `get` con un
     payload al que le falta `report_truncated` **lanza**; `get` con un `error_code` desconocido en
     `errors[]` **no** lanza —el contrato lo declara `string`—; `downloadReport` devuelve el texto y
