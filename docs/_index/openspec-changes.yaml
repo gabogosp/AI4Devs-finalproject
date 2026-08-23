@@ -931,6 +931,55 @@
   archive-path: null
 
 # qa-plan.md agregado 2026-08-23 por /plan-qa (batería relevancia QA-001 + contract QA-002 + k6 + BDD + E2E)
+- name: US-004-busqueda-semantica-frontend-web
+  us-id: US-004
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-004-busqueda-semantica.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  # 6 h AI-asistido / 12-18 h tradicional (14 tasks + 4 pre-requisitos). La US §7 presupuesta
+  # FE-US-004 en 8-12 h y el readme §6 ticket 2 en 12-18 h: el AI-asistido entra comodo.
+  # EL DIFERENCIADOR NO TIENE PANTALLA: el backend esta construido (23/23, contrato publicado en
+  # apps/api/docs/api/openapi.yaml) y el layout del storefront todavia lleva el comentario
+  # "El buscador del top-nav sigue siendo Deferred: US-004". Sin este change la capacidad #2 del
+  # PRD no existe para el cliente.
+  # NO ES "poner un input": el design-system §7.12 lo llama componente estrella porque son CINCO
+  # estados observables --con senal, con reserva, sin senal, degradado y consulta corta-- y cada
+  # uno tiene que transmitir honestidad sobre lo que la IA entendio.
+  # DISCREPANCIA DE CONTRATO ANOTADA: el search.yaml del change de backend esta 1.0.0-draft y
+  # DIFIERE del canonico en dos puntos (el canonico ACOTA EN SILENCIO un limit fuera de rango en
+  # vez de responder 422, y image_url es requerido-nullable en SearchResult). Este plan usa el
+  # canonico, que es lo que el server implementa y lo que consume orval.
+  # DECISIONES DEL PO 2026-08-23, cerradas ANTES de escribir el plan:
+  # OQ-FE-1 SIN dropdown de sugerencias en vivo -- el backend no tiene endpoint de autocompletado
+  # y un dropdown por tecleo contradice el rate-limit que existe PRECISAMENTE porque cada busqueda
+  # no cacheada cuesta una llamada al proveedor. Desviacion declarada del design-system §7.12 ·
+  # OQ-FE-2 /buscar renderizada en SERVIDOR (funciona sin JS, compartible por URL) pero con
+  # robots noindex,follow: indexarla generaria paginas delgadas que canibalizan fichas y
+  # categorias, que son los activos indexables · OQ-FE-3 sin vista full-screen en mobile: el
+  # submit ya navega a una pagina propia y el overlay agrega una maquina de foco que hay que
+  # testear. Desviacion declarada · OQ-FE-4 "Agregar al carrito" SI en los resultados, reusando
+  # AddToCartButton (AC-7 ya prohibe el control sin stock) · OQ-FE-5 cuatro eventos SIN el texto
+  # de la consulta nunca: es entrada libre y un volcado de queries termina siendo un log con
+  # nombres y telefonos que alguien pego en el input. Medir QUE se busca lo hace el backend, que
+  # ya tiene el texto y su propia retencion.
+  # DOS DECISIONES TECNICAS QUE NO SON OBVIAS: (a) el UNICO loading.tsx de todo (storefront) va
+  # en buscar/ -- el resto no tiene por F59 (la boundary de Suspense compromete el status 200 y
+  # vuelve imposible un 404 real), pero /buscar nunca llama a notFound() y §10.1 pide skeleton,
+  # asi que aca el beneficio es gratis y la objecion no aplica · (b) el servicio reusa el
+  # CATALOG_TAG que ya existe en vez de inventar uno propio: asi una invalidacion del catalogo
+  # --la que dispara el panel tras un alta o un import masivo-- tambien refresca la busqueda.
+  # SearchResultCard es propio y NO reusa ProductCard: ProductCard exige StorefrontProductListItem
+  # con `currency`, un campo que SearchResult no trae, y fabricarlo seria inventar datos del
+  # contrato (§3.1). Se reusan las piezas (ProductImage, formatArs, AddToCartButton).
+  # Cobertura: AC-1, AC-3, AC-4, AC-5, AC-7, AC-8 y AC-10. AC-2 es el arnes de relevancia
+  # (backend/QA) y AC-6/AC-9 son invariantes del servidor: el frontend renderiza lo que el
+  # contrato le da y no puede afirmarlas por su cuenta. Declarado, no omitido.
+
 - name: US-004-busqueda-semantica-backend
   us-id: US-004
   discipline: backend
