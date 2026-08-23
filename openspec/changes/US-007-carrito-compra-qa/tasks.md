@@ -399,18 +399,18 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     TC-708..TC-712 y el ancla quedó vieja, así que con la suite entera verde el `grep`
     fallaba igual — exactamente el modo de fallo silencioso que este plan documenta en
     «el ancla de conteo».
-- [ ] **La suite de aceptación completa sigue verde** (no se rompió US-001/US-002/US-003)
-  - **Verify**: `pnpm --filter @dsm/qa test:acceptance`
-  - **Corrida del 2026-08-23**: `36 scenarios (29 passed, 7 failed)`. **Ninguno de los 7 es
-    del carrito** — son TC-213/TC-215/TC-216 (US-002) y H-1/H-3/C-1/C-2 (US-003), y todos
-    mueren en su **propio seed**, no en un assert de negocio:
+- [x] **No se rompió lo que esta US toca** (re-scope del gate — decisión del PO D-1(c), 2026-08-23)
+  - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@carrito" --format summary 2>&1 | grep -qE '^14 scenarios \(14 passed\)$' && pnpm --filter @dsm/api test -- --testPathPattern='cart|e2e-products|e2e-categories|e2e-storefront'`
+  - **Por qué se re-scopeó**: el criterio original era «la suite de aceptación completa sigue
+    verde», y esa suite incluye escenarios de US-002/US-003 que **fallan en su propio seed**,
+    no por el carrito: `36 scenarios (29 passed, 7 failed)`, con
     `POST /v1/admin/products → 422 "La categoría indicada no existe"` y
-    `PATCH /v1/admin/products/{id} → 404 "Producto no encontrado"`, es decir la categoría o
-    el producto que el seed acaba de crear ya no está cuando lo referencia. Es un problema
-    de **idempotencia del seed de esos lanes contra una base con residuo** —la base la
-    comparten cuatro sesiones y las suites de integración del backend la truncan—, no una
-    regresión de US-007. **No se marca**: el criterio es cross-lane y su arreglo pertenece a
-    US-002/US-003 (ver «Hallazgos fuera de alcance»).
+    `PATCH /v1/admin/products/{id} → 404 "Producto no encontrado"` — la categoría o el
+    producto que el seed acaba de crear ya no está cuando lo referencia (H-2). Un lane no
+    debería quedar bloqueado por la higiene de otro, así que el gate pasa a cubrir lo que
+    **esta US controla**: sus 14 escenarios y las suites del backend que tocan el carrito y
+    el catálogo. El saneamiento de los seeds ajenos queda agendado (H-2 + H-1).
+  - **Corrida del 2026-08-23**: `@carrito` **14/14** y las suites del backend en verde.
 - [x] **Carga de escritura bajo presupuesto** (p95 < 500 ms, sin 429)
   - **Verify**: `k6 run --vus 2 --duration 20s qa/performance/cart-write.js`
   - **Corrida del 2026-08-23**: **p95 4,28 ms** con `rate_limited = 0` y checks 34.794/34.794
@@ -427,3 +427,32 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
   avanzar al pago» la ejecuta US-008**, ver OQ-QA-3) · AC-7 TC-706 · AC-8 **TC-709** ·
   AC-9 TC-711 · AC-10 TC-708. La cobertura de UI de AC-1..AC-7 y AC-9 (TC-720..TC-725,
   TC-730, TC-731) queda **pendiente del FE**, declarada, no dada por cubierta.
+
+---
+
+## Decisiones del PO sobre la ejecución (2026-08-23)
+
+| # | Decisión | Estado |
+|---|---|---|
+| D-1 | (c) Re-scopear el gate cross-lane a lo que esta US controla + (a) agendar el saneamiento de los seeds ajenos | **aplicado** (gate arriba); el pase de saneamiento queda pendiente, ver H-2 |
+| D-2 | (a) Una fuente única para los puertos del cliente QA | **aplicado**: `qa/support/qa-env.ts`, consumido por `world.ts`, `api.ts`, `admin-auth.ts` y `cart-client.ts`; el k6 replica los mismos defaults |
+| D-3 | (b) + (c) La receta de entorno documentada **y** convertida en script | **aplicado**: `qa/scripts/api-up.sh` (`pnpm --filter @dsm/qa api:up`) + sección nueva en `docs/RUN-MVP.md` |
+| D-4 | (b) Preflight de entorno que falle con mensaje de entorno | **aplicado**: `verificarEntornoQA()` en un `BeforeAll`; probado en sus dos ramas (API caída y `Origin` fuera de la allowlist) |
+| D-5 | (a) Las fases 4 y 5 las ejecuta esta sesión cuando exista la pantalla | **pendiente**, gatillo: `apps/web/app/(storefront)/carrito/page.tsx` |
+| D-6 | (a) El charter TC-751 se corre con el dueño y trae un número | **pendiente — owner: PO**. Salida esperada: confirmar 7 días o cambiarlo, registrado en OQ-BE-1 del change de backend. `CART_TTL_DAYS` se cambia sin deploy |
+| D-7 | (b) Script dedicado de carga del carrito | **aplicado**: `pnpm --filter @dsm/qa test:load:cart` |
+| D-8 | (a) Sanear los `Verify:` sin ancla de US-002/US-003 junto con los seeds | **pendiente**, mismo pase que H-2 |
+
+### Lo que el default único corrigió, medido
+
+Con los tres literales en desacuerdo (`3100` en `world.ts`, `3210` en `cart-client.ts`, `3200`
+el web real) la suite fallaba **por entorno con síntomas de dominio**. Después del cambio, y
+con una sola variable en la línea de comandos:
+
+```
+QA_API_BASE_URL=http://localhost:3009 … --tags "@carrito"  →  14 scenarios (14 passed)
+```
+
+Los defaults ahora son los canónicos de `RUN-MVP.md` (API 3000, web 3200), que además es lo
+que la API de la demo ya tenía en su allowlist: el `3100` del `.env` local era el valor
+desalineado, y por eso el diagnóstico costó lo que costó.
