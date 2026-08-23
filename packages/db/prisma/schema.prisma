@@ -43,10 +43,55 @@ model Product {
   /// enriquecido nunca.
   enrichment_done Boolean @default(false)
 
+  /// US-005 — texto que escribe la IA (`gemini-1.5-flash`) y que alimenta el
+  /// embedding. Es la columna del DER (E2E §8); las cinco de abajo son
+  /// desviación declarada en el design.md del change.
+  description_enriched String?
+
+  /// El dueño escribió este texto: la IA NO lo pisa (AC-7). Se prende al
+  /// recibir `description_enriched` por el PATCH admin.
+  description_curated Boolean @default(false)
+
+  /// SHA-256 del texto fuente usado en el último enriquecimiento (AC-6). Es el
+  /// control de costo: si no cambió, no se llama al proveedor. Un cambio de
+  /// precio o de stock no entra en el hash, así que no gatilla gasto.
+  enrichment_source_hash String?
+
+  /// Índice del backoff durable y disparador del abandono (AC-4/AC-5).
+  enrichment_attempts Int @default(0)
+
+  /// Doble función (ADR-0014): backoff que sobrevive a un reinicio **y** lease
+  /// del claim — el runner la empuja al futuro para arrendar la fila, así dos
+  /// corridas no pisan el mismo producto y una corrida que muere libera sola.
+  enrichment_next_attempt_at DateTime?
+
+  /// Último fallo, para que "el fallo queda registrado" (AC-5) sea verdad.
+  enrichment_error_code String?
+
   cart_items CartItem[]
+  embedding  ProductEmbedding?
 
   @@index([category_id, status])
   @@map("products")
+}
+
+/// Embedding del producto (US-005, DER del E2E §8). Relación 1:1.
+///
+/// `embedding` es `Unsupported` a propósito: pgvector no es un tipo nativo de
+/// Prisma. Eso lo deja FUERA de los tipos generados —no hay forma de leerlo por
+/// accidente con el client tipado— y toda lectura/escritura del vector va por
+/// `$queryRaw`/`$executeRaw` (E2E §16). El índice HNSW se crea a mano en la
+/// migración, que Prisma tampoco expresa.
+model ProductEmbedding {
+  product_id    String                     @id @db.Uuid
+  product       Product                    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  embedding     Unsupported("vector(768)")
+  /// AC-8: qué modelo generó este vector. Cambiar de modelo no invalida en
+  /// silencio los existentes — quedan trazados y re-embeddeables.
+  model_version String
+  generated_at  DateTime                   @default(now())
+
+  @@map("product_embeddings")
 }
 
 /// Trabajo de import masivo (US-006, ADR-0012). El estado vive acá y no en el

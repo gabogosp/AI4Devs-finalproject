@@ -61,7 +61,7 @@ estimate-hours: 13.4
     `triggered-by` que cita US-005 + Redis sin aprovisionar.
   - **Verify**: `test -f docs/architecture/decisions/0014-in-process-enrichment-executor.md && grep -q "Status.*Accepted" docs/architecture/decisions/0014-in-process-enrichment-executor.md && grep -qi "amends" docs/architecture/decisions/0014-in-process-enrichment-executor.md && grep -q "ADR 0012\|ADR-0012" docs/architecture/decisions/0014-in-process-enrichment-executor.md && grep -q "REDIS_URL" docs/architecture/decisions/0014-in-process-enrichment-executor.md && grep -q "ADR-0014" docs/_index/decisions.yaml && python3 -c "import yaml,sys; d=yaml.safe_load(open('docs/_index/decisions.yaml')); e=[x for x in d if x['id']=='ADR-0014'][0]; sys.exit(0 if e['status']=='Accepted' and 'enrichment' in e['affects'] else 1)"`
 
-- [ ] T0.2 Migración aditiva: 6 columnas en `products` + `product_embeddings` + HNSW + índice parcial (1,2 h)
+- [x] T0.2 Migración aditiva: 6 columnas en `products` + `product_embeddings` + HNSW + índice parcial (1,2 h)
   - **Pattern**: modelo Prisma con el vector como tipo no soportado y el índice a mano —
     `per E2E §16 — ORM Prisma para esquema/migraciones; kNN por $queryRaw`:
     ```prisma
