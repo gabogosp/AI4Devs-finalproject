@@ -68,7 +68,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     (`CartCsrfGuard` verifica `Origin` contra la allowlist) y **ningún navegador** puede
     usar la superficie, aunque `curl` sin `Origin` funcione perfecto.
   - **Verify**: `curl -sS --max-time 10 -o /dev/null -D - -X OPTIONS "${QA_API_BASE_URL:-http://localhost:3000}/v1/cart/items/x" -H "Origin: ${QA_WEB_BASE_URL:-http://localhost:3210}" -H 'Access-Control-Request-Method: PUT' | tee /dev/stderr | grep -qi "^access-control-allow-methods:.*PUT.*DELETE"`
-- [ ] **FE de US-007 desarrollado** — *el change `US-007-carrito-compra-frontend-web` se
+- [x] **FE de US-007 desarrollado** — *el change `US-007-carrito-compra-frontend-web` se
   planificó el 2026-08-22 en una sesión paralela y está **sin desarrollar** (0 tasks
   cerradas).* **Bloquea la ejecución de las fases 4 y 5**, no la planificación.
   - **Exit criterion**: la ruta del carrito existe en `apps/web` y la suite del monorepo
@@ -198,7 +198,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 > observables contra los que el FE se va a construir — y el plan de FE se escribió **hoy,
 > en paralelo**, así que llegan a tiempo. Se desbloquean con `/develop-frontend-web US-007`.
 
-- [ ] T4.1 Recorrido de compra y persistencia real (AC-1, AC-2, AC-3, AC-4, AC-7)
+- [x] T4.1 Recorrido de compra y persistencia real (AC-1, AC-2, AC-3, AC-4, AC-7)
   - **Pattern**: selectores por rol/etiqueta accesible, nunca cadenas CSS ni índices;
     esperar asertando el estado siguiente, nunca `waitForTimeout` — `per
     playwright-stability §Selectors + §Auto-waiting`.
@@ -209,7 +209,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     (AC-7 pide la invitación a seguir comprando, no sólo la ausencia de ítems).
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-720|TC-721|TC-722" --reporter=line 2>&1 | grep -qE '^ *3 passed'`
 
-- [ ] T4.2 Los tres avisos del carrito (AC-5, AC-6, AC-9)
+- [x] T4.2 Los tres avisos del carrito (AC-5, AC-6, AC-9)
   - **Pattern**: ídem T4.1; para cualquier cambio hecho por el panel, `expect.poll`
     re-navegando —nunca una espera fija— porque el storefront cachea el catálogo 3600 s
     (el carrito no, pero la ficha sí) — `per playwright-stability §Anti-patterns`.
@@ -220,7 +220,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 5: Accesibilidad — **BLOQUEADA: el FE está planificado, sin construir**
 
-- [ ] T5.1 axe-core sobre las tres variantes del carrito
+- [x] T5.1 axe-core sobre las tres variantes del carrito
   - **Pattern**: `AxeBuilder` con `withTags(['wcag2a','wcag2aa'])` sobre cada variante,
     como en `categoria-a11y.spec.ts` — `per qa-frontend-standards.md §19`.
   - **Exit criterion**: TC-730 verde con **0 violaciones nivel AA** en las tres variantes
@@ -228,7 +228,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     bloqueada** (la tercera es la de mayor superficie: suma avisos y estados).
   - **Verify**: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-730" --reporter=line 2>&1 | grep -qE '^ *[1-9][0-9]* passed'`
 
-- [ ] T5.2 Stepper y quitar por teclado, con anuncio del total
+- [x] T5.2 Stepper y quitar por teclado, con anuncio del total
   - **Pattern**: contar los focusables que preceden al objetivo y tabular esa cantidad
     exacta —nunca un presupuesto fijo de `Tab`—, y asertar foco **visible** en cada parada;
     el anuncio se verifica sobre la región viva, no sobre el texto suelto — `per
@@ -415,7 +415,30 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
   - **Verify**: `k6 run --vus 2 --duration 20s qa/performance/cart-write.js`
   - **Corrida del 2026-08-23**: **p95 4,28 ms** con `rate_limited = 0` y checks 34.794/34.794
     (detalle en T6.1). Lectura sin umbral: **p95 1,61 ms**.
-- [ ] **E2E de navegador y a11y** — **Bloqueados**: el FE de US-007 está planificado y sin
+- [x] **E2E de navegador y a11y** — **DESBLOQUEADOS y verdes** el 2026-08-23 con
+      `/develop-frontend-web US-007` cerrado (25/25). Los cuatro `Verify` por task pasan:
+      TC-720/721/722 (3), TC-723/724/725 (3), TC-730a/b/c (3), TC-731 (1).
+      **Entorno**: API QA en `:3009` (`pnpm --filter @dsm/qa api:up`) + web construido y servido
+      en `:3220` con `NEXT_PUBLIC_SITE_URL` apuntando a ese puerto —las `NEXT_PUBLIC_*` se
+      inlinean en **build**, así que servir en otro puerto del que se construyó rompe las
+      canonical y hace fallar los specs SEO de US-002/US-003 por un motivo que no es del
+      producto—.
+      **DOS HALLAZGOS ABIERTOS de la corrida completa** (los `Verify` por task pasan; la suite
+      entera, no):
+      1. **`TC-205b` de US-002 quedó obsoleto.** Asserta
+         `getByRole('button', { name: /Agregar/i })).toHaveCount(0)` con el comentario «ninguna
+         card ofrece la compra desde el listado: el carrito es US-007». Eso era verdad hasta que
+         el PO resolvió **OQ-FE-2 como «sí»** y la card ganó su «Agregar» (US-007 FE T3.5). El
+         spec encodea una regla **superada**, no un defecto: hay que actualizarlo en la suite de
+         US-002, y no lo hace esta US.
+         `Deferred: QA de US-002 — owner: PO/QA`.
+      2. **Interferencia entre specs en la corrida completa.** TC-724 y TC-725 pasan aislados y
+         fallan con la suite entera: mutan el catálogo por la API real (despublicar, cambiar
+         precio) y el storefront cachea la ficha 3600 s, así que el orden de ejecución cambia lo
+         que ve cada spec. No se debilita ningún assert: necesita aislamiento de fixtures por
+         spec (o `expect.poll` re-navegando, que el propio plan ya prescribe en el Pattern de
+         T4.2). `Deferred: aislamiento de fixtures — owner: QA`.
+      *(texto original del bloqueo, conservado: el FE estaba planificado y sin*
   desarrollar (fases 4 y 5).
   - **Verificado el 2026-08-23**: `apps/web/app/(storefront)/carrito/page.tsx` **no existe**.
     El FE avanzó en la capa de datos —`apps/web/src/features/cart/cartService.ts` y
