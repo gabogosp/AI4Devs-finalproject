@@ -68,27 +68,16 @@ test.describe('Topología de cookies del carrito (T5.1)', () => {
     // Éste es el test que prueba la topología: emitir la cookie no sirve de nada
     // si el navegador no la reenvía en la siguiente request.
     const cuerpo = await page.evaluate(async () => {
-      const res = await fetch('/v1/cart');
-      return {
-        status: res.status,
-        json: await res.json(),
-        visibles: document.cookie,
-      };
+      // `no-store` porque es lo que hace la app: `customFetch` lo fija para las
+      // superficies con cookies. Sin él, este segundo GET a la MISMA URL se sirve
+      // de la caché del navegador y el test mediría la caché en vez de la
+      // topología — que es exactamente el defecto que este spec destapó.
+      const res = await fetch('/v1/cart', { cache: 'no-store' });
+      return { status: res.status, json: await res.json() };
     });
 
-    expect(cuerpo.status, JSON.stringify({ escritura: escritura.body, visibles: cuerpo.visibles })).toBe(200);
-    // Diagnóstico: si el GET no aparece en el log del stub, se perdió en el
-    // rewrite; si aparece, el problema es la cookie.
-    const STUB = `http://localhost:${process.env.API_STUB_PORT ?? 4010}`;
-    const log: { path: string; cookie: string | null }[] = await (
-      await page.request.get(`${STUB}/__requests`)
-    ).json();
-    const paths = log.filter((l) => l.path.includes('cart')).map((l) => `${l.path} :: ${l.cookie}`);
-
-    expect(
-      cuerpo.json.cart.items,
-      JSON.stringify({ pathsEnElStub: paths, visibles: cuerpo.visibles }),
-    ).toHaveLength(1);
+    expect(cuerpo.status, escritura.body).toBe(200);
+    expect(cuerpo.json.cart.items).toHaveLength(1);
     expect(cuerpo.json.cart.items[0].slug).toBe(SLUG);
     expect(cuerpo.json.cart.total_quantity).toBe(2);
   });
@@ -101,7 +90,11 @@ test.describe('Topología de cookies del carrito (T5.1)', () => {
     await pagina.goto('/');
 
     const cuerpo = await pagina.evaluate(async () => {
-      const res = await fetch('/v1/cart');
+      // `no-store` porque es lo que hace la app: `customFetch` lo fija para las
+      // superficies con cookies. Sin él, este segundo GET a la MISMA URL se sirve
+      // de la caché del navegador y el test mediría la caché en vez de la
+      // topología — que es exactamente el defecto que este spec destapó.
+      const res = await fetch('/v1/cart', { cache: 'no-store' });
       return { status: res.status, json: await res.json() };
     });
 

@@ -52,6 +52,28 @@ describe("customFetch con session: 'cart' (browser)", () => {
     expect(spy.mock.calls[0][1].credentials).toBe('include');
   });
 
+  it("fija cache: 'no-store' — sin eso la segunda lectura sale de la caché del navegador", async () => {
+    const spy = stubFetch();
+
+    await customFetch('/v1/cart', { session: 'cart' });
+
+    // Encontrado por `e2e/cart-topology.spec.ts`: con la caché del navegador, el
+    // `GET /v1/cart` posterior a agregar algo no sale y el carrito se ve vacío para
+    // siempre. El `Cache-Control: no-store` del backend no sobrevive el rewrite, así
+    // que la corrección tiene que estar acá.
+    expect(spy.mock.calls[0][1].cache).toBe('no-store');
+  });
+
+  it('una llamada pública NO fuerza no-store (la caché del storefront es deseada)', async () => {
+    const spy = stubFetch();
+
+    await customFetch('/v1/products/REF-001');
+
+    // El catálogo se cachea a propósito (US-002/US-003): forzar no-store acá
+    // tiraría abajo la estrategia de caché de las páginas indexables.
+    expect(spy.mock.calls[0][1].cache).toBeUndefined();
+  });
+
   it('en una escritura firma con dsm_cart_csrf, NO con el token de la sesión', async () => {
     document.cookie = 'dsm_csrf=tok-sesion; Path=/';
     const spy = stubFetch();

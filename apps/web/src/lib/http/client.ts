@@ -147,7 +147,17 @@ export async function customFetch<T>(
       signal: controller.signal,
       // Sin `include` el navegador no manda las cookies ni guarda las que
       // vuelven, aunque el rewrite esté bien: la topología no alcanza sola.
-      ...(conCookies ? { credentials: 'include' as const } : {}),
+      //
+      // `cache: 'no-store'` NO es una optimización, es corrección: sin esto el
+      // navegador sirve la segunda lectura de `GET /v1/cart` desde su caché y el
+      // request no sale, así que el carrito se ve VACÍO para siempre después de
+      // agregar algo. Lo encontró `e2e/cart-topology.spec.ts` contra la app
+      // construida. No alcanza con que el backend mande `Cache-Control: no-store`
+      // —lo manda— porque el header no sobrevive el rewrite same-origin; y de todas
+      // formas una lectura personalizada no puede depender de eso para ser correcta.
+      ...(conCookies
+        ? { credentials: 'include' as const, cache: 'no-store' as const }
+        : {}),
     });
   } catch {
     throw new AppErrorException(networkError());

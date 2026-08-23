@@ -66,17 +66,6 @@ const nextConfig = {
    *
    * Es declarativo: no agrega un solo `fetch` crudo, así que F48 queda intacto.
    *
-   * ⚠ **DEFECTO ABIERTO (US-007 T5.1)**: la escritura funciona
-   * (`PUT /v1/cart/items/{slug}` llega al API **con** `dsm_cart`), pero el
-   * `GET /v1/cart` —path de colección, sin sub-segmento— llega con `cookie: null`,
-   * así que **el carrito no se puede leer**. Medido contra la app construida en
-   * `cart-topology.spec.ts` y reproducido con cuatro configuraciones de rewrite
-   * (`:path*` en `afterFiles`, entrada estática adicional, `beforeFiles`, y recurso
-   * como segmento dinámico). El API responde bien por `curl` con la cookie, así que
-   * el problema está en el reenvío del header cuando el parámetro dinámico queda
-   * vacío. Necesita decisión: Route Handler proxy (desvía de ADR-0013) o alias de
-   * ruta en el contrato.
-   *
    * **El carrito hereda el mecanismo (US-007).** ADR-0013 lo anticipó en su
    * última línea —«Inherited by: US-007 (cart, if it moves to a
    * cookie-authenticated surface)»— y lo es: el carrito del invitado se
