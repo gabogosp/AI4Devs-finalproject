@@ -1,7 +1,8 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentService, ProcessOutcome } from './enrichment.service';
+import { EnrichmentEventsService } from './enrichment-events.service';
 import { AiTransientError } from '../common/errors/enrichment-errors';
 import { AI_EMBEDDER, AI_ENRICHER, AiEmbedder, AiEnricher } from './ports/ai.ports';
 import { configNumber } from './config-number';
@@ -63,6 +64,8 @@ export class EnrichmentRunner {
     private readonly config: ConfigService,
     @Inject(AI_ENRICHER) private readonly enricher: AiEnricher,
     @Inject(AI_EMBEDDER) private readonly embedder: AiEmbedder,
+    /** Eventos de la corrida (T5.1). Opcional: la observabilidad no condiciona instanciar. */
+    @Optional() private readonly events?: EnrichmentEventsService,
   ) {}
 
   /** Estado observable del runner (lo publica el `/status`). */
@@ -128,11 +131,26 @@ export class EnrichmentRunner {
    * endpoint admin necesita poder responder 409 con una razón (T4.2).
    */
   async start(opciones: StartOptions = {}): Promise<StartResult> {
-    if (!this.habilitado) return { status: 'disabled', processed: 0 };
+    if (!this.habilitado) {
+      // El evento que hace diagnosticable el caso «la búsqueda no encuentra nada y nadie sabe
+      // por qué»: sin proveedor, el enriquecimiento no corre y hay que poder verlo en el log,
+      // no deducirlo de la ausencia de otros eventos.
+      this.events?.emit('enrichment.provider_unavailable', null, {
+        reason: this.config.get<string>('ENRICHMENT_ENABLED', 'true') === 'true'
+          ? 'no_provider_configured'
+          : 'disabled_by_config',
+      });
+      return { status: 'disabled', processed: 0 };
+    }
     if (this.corriendo) return { status: 'already-running', processed: 0 };
     if (Date.now() < this.cooldownHasta) return { status: 'cooldown', processed: 0 };
 
     this.corriendo = true;
+    const comenzoEn = Date.now();
+    this.events?.emit('enrichment.run_started', null, {
+      scoped_to_ids: opciones.productIds?.length ?? 0,
+      force: opciones.force ?? false,
+    });
     const outcomes: Record<ProcessOutcome, number> = {
       enriched_and_embedded: 0,
       embedded_from_curated: 0,
@@ -188,6 +206,17 @@ export class EnrichmentRunner {
     } finally {
       this.corriendo = false;
       this.ultimaCorrida = new Date();
+      // Siempre, incluso si la corrida murió por una excepción: un `run_started` sin su
+      // `run_finished` haría imposible saber si el runner quedó colgado.
+      this.events?.emit('enrichment.run_finished', null, {
+        processed: procesados,
+        duration_ms: Date.now() - comenzoEn,
+        end_state: this.state,
+        enriched: outcomes.enriched_and_embedded,
+        embedded_from_curated: outcomes.embedded_from_curated,
+        embedded_only: outcomes.embedded_only,
+        skipped_unchanged: outcomes.skipped_unchanged,
+      });
     }
 
     return {
@@ -228,6 +257,14 @@ export class EnrichmentRunner {
         this.logger.warn(
           `${this.fallosConsecutivos} fallos consecutivos del proveedor: cooldown por ${cooldownMs} ms. Seguir llamando sólo quemaría cuota.`,
         );
+        // Es el evento con el que el runbook diagnostica «Gemini caído / rate-limited»
+        // (E2E §18.5), junto con el estado `cooldown` del `/status`.
+        this.events?.emit('enrichment.provider_unavailable', null, {
+          reason: 'failure_threshold_reached',
+          consecutive_failures: this.fallosConsecutivos,
+          cooldown_ms: cooldownMs,
+          error_code: code,
+        });
       }
       return null;
     }

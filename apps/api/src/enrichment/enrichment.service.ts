@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -10,6 +10,7 @@ import {
 import { ClaimedProduct, EnrichmentRepository } from './enrichment.repository';
 import { buildSourceText, hashSourceText, SourceTextInput } from './source-text';
 import { configNumber } from './config-number';
+import { EnrichmentEventsService } from './enrichment-events.service';
 
 /** Qué hizo el pipeline con un producto. Es lo que el runner agrega para el `/status`. */
 export type ProcessOutcome =
@@ -42,6 +43,12 @@ export class EnrichmentService {
     private readonly config: ConfigService,
     @Inject(AI_ENRICHER) private readonly enricher: AiEnricher,
     @Inject(AI_EMBEDDER) private readonly embedder: AiEmbedder,
+    /**
+     * Eventos de negocio (T5.1). `@Optional` a propósito: la observabilidad no puede ser un
+     * requisito para instanciar el caso de uso — si lo fuera, cada test tendría que armar un
+     * doble de logging para probar una regla de catálogo.
+     */
+    @Optional() private readonly events?: EnrichmentEventsService,
   ) {}
 
   /**
@@ -71,18 +78,36 @@ export class EnrichmentService {
     if (sinCambios) {
       if (await this.repo.hasEmbedding(producto.id)) {
         await this.marcarHecho(producto.id, null, hashActual);
+        // El evento que prueba que el control de costo funciona: cada uno de estos es una
+        // llamada paga que NO se hizo.
+        this.events?.emit('enrichment.skipped_unchanged', producto.id);
         return 'skipped_unchanged';
       }
-      const vector = await this.embedder.embed(buildSourceText(insumos));
+      const textoFuente = buildSourceText(insumos);
+      const vector = await this.embedder.embed(textoFuente);
       await this.persistir(producto.id, null, hashActual, vector);
+      this.events?.emit('enrichment.embedding_generated', producto.id, {
+        source_chars: textoFuente.length,
+        model: this.embedder.modelVersion,
+        reason: 'missing_vector',
+      });
       return 'embedded_only';
     }
 
     // Fila 2: texto curado por el dueño. La IA **no** lo reescribe (AC-7), pero el
     // embedding sí se regenera, porque el texto que hay que poder buscar es el nuevo.
     if (producto.description_curated) {
-      const vector = await this.embedder.embed(buildSourceText(insumos));
+      const textoCurado = buildSourceText(insumos);
+      const vector = await this.embedder.embed(textoCurado);
       await this.persistir(producto.id, null, hashActual, vector);
+      // Dos eventos porque son dos hechos distintos: no se llamó al LLM (ahorro) y sí se
+      // generó vector (gasto). Contarlos juntos escondería uno de los dos.
+      this.events?.emit('enrichment.skipped_curated', producto.id);
+      this.events?.emit('enrichment.embedding_generated', producto.id, {
+        source_chars: textoCurado.length,
+        model: this.embedder.modelVersion,
+        reason: 'curated',
+      });
       return 'embedded_from_curated';
     }
 
@@ -94,13 +119,26 @@ export class EnrichmentService {
       baseText: producto.description_raw,
     });
     const conTextoNuevo: SourceTextInput = { ...insumos, enriched: enriquecido };
-    const vector = await this.embedder.embed(buildSourceText(conTextoNuevo));
+    const textoFinal = buildSourceText(conTextoNuevo);
+    const vector = await this.embedder.embed(textoFinal);
     await this.persistir(
       producto.id,
       enriquecido,
       hashSourceText(conTextoNuevo),
       vector,
     );
+    // LONGITUDES, no textos: alcanza para estimar el gasto (la API no siempre devuelve
+    // tokens) y evita que los logs sean una copia parcial del catálogo del cliente.
+    this.events?.emit('enrichment.product_enriched', producto.id, {
+      prompt_chars: (producto.description_raw ?? '').length + producto.name.length,
+      response_chars: enriquecido.length,
+      model: this.config.get<string>('GEMINI_ENRICH_MODEL', 'gemini-1.5-flash'),
+    });
+    this.events?.emit('enrichment.embedding_generated', producto.id, {
+      source_chars: textoFinal.length,
+      model: this.embedder.modelVersion,
+      reason: 'enriched',
+    });
     return 'enriched_and_embedded';
   }
 
@@ -199,6 +237,22 @@ export class EnrichmentService {
              enrichment_next_attempt_at = now() + make_interval(secs => ${esperaMs / 1000}::double precision),
              updated_at = now()
        WHERE id = ${productId}::uuid`;
+
+    // `abandoned` y `retried` son eventos distintos porque disparan acciones distintas: uno
+    // se mira en el runbook («¿cuántos productos quedaron fuera de la búsqueda?»), el otro es
+    // ruido esperable de una API externa.
+    if (this.isAbandoned(intentos)) {
+      this.events?.emit('enrichment.abandoned', productId, {
+        attempts: intentos,
+        error_code: errorCode,
+      });
+    } else {
+      this.events?.emit('enrichment.retried', productId, {
+        attempt: intentos,
+        error_code: errorCode,
+        next_attempt_in_s: Math.round(esperaMs / 1000),
+      });
+    }
   }
 
   /** Backoff durable del `design.md` §Resiliencia: 1 m · 5 m · 25 m · 2 h · 10 h. */

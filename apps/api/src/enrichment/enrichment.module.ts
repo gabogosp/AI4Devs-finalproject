@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { aiProviders } from './ai/ai.providers';
 import { EnrichmentController } from './enrichment.controller';
 import { EnrichmentThrottlerGuard } from './enrichment-throttler.guard';
+import { EnrichmentEventsService } from './enrichment-events.service';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentRunner } from './enrichment.runner';
 import { EnrichmentService } from './enrichment.service';
@@ -24,6 +25,7 @@ import { ENRICHMENT_QUEUE, NudgeEnrichmentQueue } from './ports/enrichment-queue
   controllers: [EnrichmentController],
   providers: [
     EnrichmentThrottlerGuard,
+    EnrichmentEventsService,
     EnrichmentRepository,
     EnrichmentService,
     EnrichmentRunner,
@@ -31,6 +33,7 @@ import { ENRICHMENT_QUEUE, NudgeEnrichmentQueue } from './ports/enrichment-queue
     { provide: ENRICHMENT_QUEUE, useClass: NudgeEnrichmentQueue },
   ],
   exports: [
+    EnrichmentEventsService,
     EnrichmentRepository,
     EnrichmentService,
     EnrichmentRunner,

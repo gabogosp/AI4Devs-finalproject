@@ -473,7 +473,7 @@ estimate-hours: 13.4
 
 ## Fase 5: Observabilidad — 0,6 h
 
-- [ ] T5.1 `EnrichmentEventsService` — 9 eventos sin secretos ni contenido completo (0,4 h)
+- [x] T5.1 `EnrichmentEventsService` — 9 eventos sin secretos ni contenido completo (0,4 h)
   - **Pattern**: espejo exacto de `apps/api/src/observability/catalog-events.service.ts`
     (log pino estructurado + `Map` de contadores como stand-in de métrica) —
     `per observability-standards.md §9 — cardinalidad acotada, sin secretos ni PII`.
@@ -489,7 +489,7 @@ estimate-hours: 13.4
     `prompt_chars`/`response_chars` y **no** contiene el texto; integration: una corrida de 3
     productos ⇒ `run_started` 1, `product_enriched` 3, `run_finished` 1)
 
-- [ ] T5.2 Prueba de no-fuga de la clave del proveedor (AC-9) (0,2 h)
+- [x] T5.2 Prueba de no-fuga de la clave del proveedor (AC-9) (0,2 h)
   - **Pattern**: capturar el logger (spy sobre el transporte pino / `Logger`) durante una corrida
     con fallo del proveedor y asertar sobre **todo** lo emitido — la variante negativa que
     `security-standards.md §5` pide poder demostrar.
