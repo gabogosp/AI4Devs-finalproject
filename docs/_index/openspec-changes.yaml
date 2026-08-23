@@ -358,6 +358,45 @@
   archived-at: null
   archive-path: null
 
+- name: US-007-carrito-compra-qa
+  us-id: US-007
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 4 h AI-asistido / ~8-10 h tradicional. La US §7 presupuesta QA-US-007 en 4-6 h.
+  # Suite L3 cross-stack del carrito: 12 escenarios de aceptacion API-level
+  # (4 happy + 3 corner + 2 negative-space + 3 cross-feature), 6 E2E de navegador,
+  # 2 de a11y, 1 de carga y 2 charters => 23 test cases.
+  # ASIMETRIA QUE ORDENA EL PLAN: el backend esta 36/37 con contrato publicado; el FE
+  # (US-007-carrito-compra-frontend-web) se planifico el mismo 2026-08-22 en una sesion
+  # paralela y esta SIN DESARROLLAR (0 tasks cerradas). 14 test cases son ejecutables
+  # hoy a nivel API; 9 quedan BLOQUEADOS por la UI y declarados como tales.
+  # Sin duplicacion con el plan de FE: ese change cubre a11y a nivel COMPONENTE
+  # (axe(container) + aria-live, dev-owned); TC-730/TC-731 corren sobre la pagina
+  # servida en un browser real (alcanzabilidad por Tab en toda la pagina).
+  # Los 10 AC tienen >=1 escenario ejecutable hoy; la unica cobertura parcial
+  # declarada es la segunda mitad de AC-6 ("no permite avanzar al pago"), que
+  # ejecuta el checkout de US-008.
+  # STUB RECHAZADO A PROPOSITO: no se emite k6 sobre GET /v1/cart — el PRD §4 acota
+  # sus 300 ms a "catalogo/ficha" y el design.md del backend marca el valor del
+  # carrito como [propuesto — confirma Arquitecto]. El de escritura si se emite:
+  # p95 < 500 ms sale del PRD §4 ("escritura (carrito/orden)") + US §9.
+  # 4 preguntas abiertas para el PO/Arquitecto (OQ-QA-1..4), NINGUNA bloquea la
+  # planificacion; OQ-QA-2 (30 escrituras/min/IP hacen imposible medir el NFR desde
+  # un generador) bloquea la CORRIDA de carga hasta que se decida.
+  estimate-hours: 4
+  assignee: 9a385021
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-014-registro-login-frontend-web
   us-id: US-014
   discipline: frontend-web
@@ -605,6 +644,78 @@
   # y dos guards (check-legal-content.mjs + el ya existente check-whatsapp-configured.mjs)
   # esperan enganche al job de deploy de US-019.
   estimate-hours: 4.2
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-007-carrito-compra-frontend-web
+  us-id: US-007
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,4 h AI-asistido / ~20 h tradicional (24 tasks). US §7 presupuesta FE-US-007 en
+  # 8-12 h: el tradicional excede el techo ~8 h por trabajo que la US da por resuelto al
+  # describirlo como «vista de carrito con stepper y persistencia» —
+  # (a) TOPOLOGÍA DE COOKIES: ADR-0013 existe porque up.railway.app está en la Public
+  #     Suffix List y hoy el rewrite same-origin cubre SÓLO /v1/auth/*. El propio ADR
+  #     cierra diciendo «Inherited by: US-007 (cart, if it moves to a cookie-authenticated
+  #     surface)» — y lo es (dsm_cart httpOnly + dsm_cart_csrf legible). Sin extender el
+  #     rewrite el carrito funciona en local y ESTÁ ROTO EN PRODUCCIÓN, con el peor perfil
+  #     de defecto: invisible hasta el deploy. De ahí el E2E contra la app construida
+  #     (T5.1), espejo de auth-topology.spec.ts.
+  # (b) SEGUNDO SUJETO DE CSRF: csrf.ts es «el único lector de document.cookie de la app»
+  #     con la cookie hardcodeada a dsm_csrf (US-014). El invitado tiene carrito sin tener
+  #     sesión, así que los dos sujetos coexisten. Se parametriza el sujeto, NO se duplica
+  #     el parser, y el default preserva el comportamiento de US-014 (sus specs corren sin
+  #     editarse o el refactor está mal).
+  # (c) EL CARRITO NO PUEDE RENDERIZARSE EN SERVIDOR: client.ts LANZA si una llamada con
+  #     sesión sale del servidor, y ese guard es load-bearing (evita que un dato
+  #     personalizado entre a la Data Cache de Next y se le sirva a otra persona — US-014
+  #     design.md D3). Consecuencia: /carrito es Client Component + noindex, y el badge del
+  #     top-nav es una ISLA CLIENTE dentro de un layout que sigue siendo Server Component
+  #     (CategoryNav lo necesita para el SEO de US-002).
+  # (d) TRES SUPERFICIES YA ENTREGADAS que hay que modificar sin romperlas: el layout del
+  #     storefront (US-002/US-018), ProductPurchase (US-003, que hoy renderiza el botón
+  #     disabled como señal de roadmap) y ProductCard (US-002).
+  # La vista en sí —lista, stepper, totales, vacío— son ~5 h.
+  #
+  # ÚNICA EXCEPCIÓN al «tests existentes sin editar»: ProductPurchase.test.tsx se reescribe
+  # (T3.4). Asserta que el botón está disabled — es un test de un cartel de roadmap que este
+  # change apaga. Está nombrada en el plan, no es un descuido.
+  #
+  # ALCANCE: el CTA «Ir al pago» queda DESHABILITADO con el motivo a la vista hasta que
+  # US-008 FE construya /checkout (Deferred: US-008 — owner: FE). El resto del carrito es
+  # plenamente funcional. El buscador del top-nav sigue Deferred: US-004.
+  #
+  # CONTRATO: cero DTOs/Zod/MSW escritos a mano — frontend-standards §3.1/§3.2 es Mandatory
+  # y orval ya está configurado con el mutator customFetch. Los tres endpoints del carrito
+  # YA están publicados en apps/api/docs/api/openapi.yaml (el backend cerró 24/24), así que
+  # T0.1 es regenerar, no esperar. El gate frontend-codegen-fresh custodia el drift y T0.2
+  # comprueba que el gate MUERDE (introduce drift a propósito y verifica que falla).
+  #
+  # Sin ADR nuevo: ADR-0013 gobierna la topología, ADR-0008 el que la UI no prometa stock.
+  #
+  # 5 preguntas abiertas, NINGUNA bloquea el arranque (todas con default implementado).
+  # La única que cambia el ALCANCE es OQ-FE-2 (¿«Agregar» en la card del listado?): AC-1
+  # dice «desde la ficha o el listado», pero es lo único que modifica una superficie
+  # entregada más allá del wiring. Si el PO dice «sólo la ficha», cae T3.5.
+  # Las otras cuatro: stepper pesimista con debounce 400 ms (OQ-FE-1), la UI no auto-ajusta
+  # cantidades de líneas bloqueadas (OQ-FE-3), el badge cuenta unidades (OQ-FE-4), y
+  # /carrito no funciona sin JS (OQ-FE-5 — soportarlo exigiría relajar el guard de D3).
+  #
+  # DEPLOYMENT: no requiere /plan-deployment propio (sin secretos, sin migraciones, sin
+  # flag), pero API_INTERNAL_ORIGIN pasa a gobernar DOS superficies same-origin en vez de
+  # una: un deploy sin ella rompe login Y carrito. Ya falla ruidoso al arrancar; conviene
+  # que quede dicho en el plan de despliegue de US-008/US-009.
+  estimate-hours: 10.4
   assignee: null
   branch: null
   pr-url: null
