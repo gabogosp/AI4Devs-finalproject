@@ -4,7 +4,7 @@ id: US-005
 slug: enriquecimiento-ia-embeddings
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: L
 story_points_traditional: 13
@@ -12,7 +12,7 @@ story_points_ai_assisted: 6
 estimation_basis: "Worker consumer con reintentos/backoff/idempotencia (Cohn 2005 §10, 8) + integración Gemini (enriquecimiento + embeddings) + persistencia pgvector/HNSW (Cohn 2005 §9-10), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-08-22
 ready-at: 2026-06-15
 authored-by: Gabriel Suarez
 disciplines: [BE, QA, INFRA]

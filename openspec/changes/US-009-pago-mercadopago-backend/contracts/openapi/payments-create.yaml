@@ -1,0 +1,236 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /payments
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-009 (inicio de pago con MercadoPago hosted). Al archivar el
+    change, este endpoint y sus dos hermanos forman la capacidad nueva
+    `openspec/specs/pagos/`.
+
+    **La orden no se identifica por su UUID.** El `order_token` opaco viaja en el
+    **cuerpo**, nunca en el path ni en la query: en una URL quedaría en logs de acceso
+    y —lo decisivo— en el header `Referer` que el navegador manda **a MercadoPago** al
+    redirigir al checkout hosted.
+
+    **DSM no recibe ni almacena datos de tarjeta** (AC-6, ADR-0006): el request no
+    tiene un solo campo capaz de alojarlos y el pago ocurre íntegramente en el
+    checkout hosted de MercadoPago. Fuera de alcance PCI-DSS.
+
+    **El cliente no puede proponer el estado del pago** (AC-8): el `ValidationPipe`
+    global corre con `forbidNonWhitelisted`, así que un cuerpo con `payment_status`
+    devuelve 422.
+servers:
+  - url: /v1
+tags:
+  - name: payments
+    description: Inicio de pago y lectura de estado (US-009).
+paths:
+  /payments:
+    post:
+      operationId: createPaymentIntent
+      tags: [payments]
+      summary: Crear el intento de pago real y obtener el checkout hosted (AC-1)
+      description: |
+        Crea la preferencia de pago en MercadoPago para una orden en
+        `pending_payment` y devuelve su `init_point`. **La redirección la ejecuta el
+        frontend** con esa URL.
+
+        **Idempotencia natural** (`api-standards.md` §10.5): un índice único parcial
+        deja a lo sumo un intento `pending` por orden. Una segunda llamada **no** crea
+        una segunda preferencia — devuelve el mismo `init_point`. Por eso el endpoint
+        no pide `Idempotency-Key`: la deviación de §10.1 está declarada en
+        `design.md` §Trade-offs.
+
+        **Esta llamada no confirma nada**: la orden sigue en `pending_payment` y el
+        stock no se toca (ADR-0008). La confirmación llega por el webhook verificado
+        de US-010.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_token, method]
+              additionalProperties: false
+              properties:
+                order_token:
+                  type: string
+                  pattern: '^[0-9a-f]{64}$'
+                  description: |
+                    Token opaco de la orden, devuelto por `POST /v1/checkout` (US-008).
+                    Se compara contra `orders.access_token_hash` en tiempo constante.
+                  example: 3f9a1c7d5e2b48a0c6d1f8e4b3a29750d4c8e6f1a2b3c4d5e6f708192a3b4c5d
+                method:
+                  type: string
+                  enum: [mercadopago]
+                  description: |
+                    Sólo `mercadopago`. El medio simulado **no** es un valor de este
+                    enum: tiene su propia ruta (`POST /payments/simulate`), que ni
+                    existe cuando el flag está apagado.
+      responses:
+        '201':
+          description: |
+            Intento creado (o reusado). El comprador debe ser redirigido a `init_point`.
+          headers:
+            Set-Cookie:
+              description: |
+                `dsm_order` (`HttpOnly`, `SameSite=Lax`, `Path=/`,
+                `Max-Age = ORDER_COOKIE_TTL_HOURS × 3600`; `Secure` sale de
+                `AUTH_COOKIE_SECURE`) — `security-standards.md` §7.4.
+
+                `SameSite=Lax` y no `Strict` a propósito: el retorno desde MercadoPago
+                es una navegación `GET` de nivel superior cross-site, y con `Strict` la
+                cookie no viajaría y la página de resultado quedaría ciega.
+              schema: { type: string }
+            Cache-Control:
+              description: Siempre `no-store` en toda la superficie `/v1/payments` (§7.1).
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentIntent' }
+              examples:
+                nuevo:
+                  summary: Primer intento
+                  value:
+                    payment_status: pending
+                    order_status: pending_payment
+                    payment_method: mercadopago
+                    init_point: https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=1234567890-abcd
+                reusado:
+                  summary: Segundo clic en «Pagar» — misma preferencia
+                  value:
+                    payment_status: pending
+                    order_status: pending_payment
+                    payment_method: mercadopago
+                    init_point: https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=1234567890-abcd
+        '404':
+          description: |
+            `order_token` inexistente, de otra orden, malformado o de una orden
+            borrada — **la misma respuesta para los cuatro** (AC-9). Distinguirlos
+            convertiría el endpoint en un oráculo de órdenes.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:payments/order-not-found'
+                title: Orden no encontrada
+                status: 404
+                detail: No se encontró una orden para el token indicado.
+        '409':
+          description: |
+            La orden no es pagable (no está en `pending_payment`: ya pagada, cancelada)
+            o se alcanzó el tope de intentos de la orden.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                noPagable:
+                  value:
+                    type: 'dsm:payments/order-not-payable'
+                    title: La orden no admite pago
+                    status: 409
+                    detail: La orden no está pendiente de pago.
+                topeIntentos:
+                  value:
+                    type: 'dsm:payments/attempt-limit-reached'
+                    title: Demasiados intentos de pago
+                    status: 409
+                    detail: Se alcanzó el máximo de intentos de pago para esta orden.
+        '422': { $ref: '#/components/responses/ValidationProblem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '502':
+          description: |
+            MercadoPago no respondió, respondió `5xx` o el circuit breaker está
+            abierto (`provider-unavailable`); o rechazó la preferencia con `4xx`
+            (`provider-rejected`).
+
+            **El cuerpo de error de MercadoPago no se reenvía** (`api-standards.md`
+            §8.6): puede traer identificadores de cuenta. Se loguea con el `trace_id`.
+
+            La fila `payments(pending)` **queda** como evidencia del intento: el
+            comprador reintenta y reusa esa misma fila.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:payments/provider-unavailable'
+                title: El medio de pago no está disponible
+                status: 502
+                detail: No pudimos contactar a MercadoPago. Volvé a intentar en unos minutos.
+components:
+  schemas:
+    PaymentIntent:
+      type: object
+      required: [payment_status, order_status, payment_method, init_point]
+      additionalProperties: false
+      properties:
+        payment_status:
+          type: string
+          enum: [pending]
+          description: El intento real nace `pending`; sólo el webhook de US-010 lo resuelve.
+        order_status:
+          type: string
+          enum: [pending_payment]
+          description: |
+            La orden **no** cambia de estado acá (ADR-0008). Se devuelve para que el
+            frontend no tenga que asumirlo.
+        payment_method:
+          type: string
+          enum: [mercadopago]
+        init_point:
+          type: string
+          format: uri
+          description: URL del checkout hosted de MercadoPago. El frontend redirige acá.
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+  responses:
+    ValidationProblem:
+      description: |
+        Cuerpo inválido: `order_token` ausente o malformado, `method` fuera del enum,
+        o **cualquier campo desconocido** (`forbidNonWhitelisted`) — incluido un
+        intento de proponer `payment_status` (AC-8).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: 'dsm:payments/validation'
+            title: Datos inválidos
+            status: 422
+            errors:
+              - field: method
+                message: 'debe ser uno de: mercadopago'
+    RateLimited:
+      description: |
+        Throttler `payments` excedido (`security-standards.md` §7.3):
+        `PAYMENTS_RATE_LIMIT_MAX` intentos por `PAYMENTS_RATE_LIMIT_TTL_MS` por IP.
+        Cubo independiente de `auth`, `storefront` y `cart`.
+      headers:
+        Retry-After:
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }

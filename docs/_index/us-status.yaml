@@ -53,7 +53,7 @@
   blocked_by: [US-005]
 - id: US-005
   slug: enriquecimiento-ia-embeddings
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 3
   disciplines: [BE, QA, INFRA]
@@ -61,6 +61,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-22        # first plan invocation (backend-node-developer)
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
@@ -88,7 +89,7 @@
   blocked_by: [US-003]
 - id: US-008
   slug: checkout-guest
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]
@@ -96,10 +97,11 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 4
   disciplines: [BE, QA, INFRA]
@@ -107,7 +109,8 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
-  blocked_by: [US-008]
+  in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
+  blocked_by: [US-008]              # US-008 sigue sin planificar: el change de US-009 arranca con pre-requisito en rojo
 - id: US-010
   slug: orden-webhook-stock
   status: Ready

@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /payments/simulate
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-009 — **medio de pago simulado "DSM"** (AC-3, AC-7).
+
+    ## Esta ruta no existe en producción
+
+    No es un endpoint que rechace en producción: es un endpoint que **no está
+    registrado**. Dos capas independientes, ninguna en el handler:
+
+    1. **El arranque falla.** `PAYMENTS_SIMULATED_ENABLED=true` con
+       `NODE_ENV=production` hace lanzar la validación Zod del entorno
+       (`backend-node-standards.md` §7 — fail-fast). El servicio **no levanta**.
+    2. **La ruta no se monta.** Con el flag apagado, `PaymentsModule` no incluye el
+       controller en su array `controllers`; el router de Nest no conoce la ruta y
+       devuelve el 404 genérico, **indistinguible** del de cualquier URL inventada.
+
+    Un `if (flag)` dentro del handler habría dejado la ruta existiendo y a un solo bug
+    de configuración de aprobar pagos gratis. El E2E §14 clasifica este medio como
+    **Tampering** y ADR-0006 lo llama explícitamente «risk surface»; el control es la
+    **ausencia** de la superficie, no su rechazo.
+
+    ## Por qué existe
+
+    ADR-0006 y el E2E §19 lo declaran *load-bearing*: sin él, el test E2E automatizado
+    del loop completo (buscar → comprar → preparar → entregar) dependería del sandbox
+    de MercadoPago, que es no determinista y externo. También habilita las demos al
+    dueño sin cobrar de verdad.
+servers:
+  - url: /v1
+tags:
+  - name: payments
+    description: Inicio de pago y lectura de estado (US-009).
+paths:
+  /payments/simulate:
+    post:
+      operationId: simulatePaymentApproval
+      tags: [payments]
+      summary: Aprobar un pago sin transacción real — SÓLO test/demo (AC-3)
+      description: |
+        Crea (o reusa) el intento con `provider = simulated_dsm`, lo marca `approved` e
+        invoca **el mismo `PaymentConfirmationPort`** que invocará el webhook de
+        MercadoPago en US-010. Eso es lo que hace verdadera la promesa de AC-3 («se
+        dispara el mismo flujo de confirmación que un pago real»): no hay un segundo
+        camino de confirmación que pueda divergir.
+
+        **No habla con MercadoPago** y **no cobra nada**.
+
+        **Estado intermedio hasta US-010**: hoy el puerto de confirmación tiene un
+        adaptador no-op, así que la orden queda en `pending_payment` y el stock no se
+        decrementa. Es deliberado (ADR-0008 pone esa transacción en US-010) y está
+        anotado en el runbook del servicio.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [order_token]
+              additionalProperties: false
+              properties:
+                order_token:
+                  type: string
+                  pattern: '^[0-9a-f]{64}$'
+                  description: Igual que en `POST /payments` — en el cuerpo, nunca en la URL.
+      responses:
+        '201':
+          description: Pago simulado aprobado.
+          headers:
+            Set-Cookie:
+              description: |
+                `dsm_order` con los mismos atributos que en `POST /payments`, para que
+                la página de resultado pueda leer el estado por `GET /payments/latest`
+                y el E2E ejercite exactamente el mismo camino de retorno que un pago
+                real.
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [payment_status, order_status, payment_method]
+                additionalProperties: false
+                properties:
+                  payment_status:
+                    type: string
+                    enum: [approved]
+                  order_status:
+                    type: string
+                    enum: [pending_payment]
+                    description: |
+                      Sigue pendiente: confirmar la orden y decrementar stock es de
+                      US-010 (ADR-0008). Que el pago esté `approved` y la orden
+                      `pending_payment` es el estado intermedio esperado hasta entonces.
+                  payment_method:
+                    type: string
+                    enum: [simulated_dsm]
+              example:
+                payment_status: approved
+                order_status: pending_payment
+                payment_method: simulated_dsm
+        '404':
+          description: |
+            Dos causas **indistinguibles a propósito**:
+
+            - **El flag está apagado** → la ruta no está registrada; el cuerpo es el
+              404 genérico del router, byte a byte igual al de `POST /v1/payments/xyz`
+              (AC-7).
+            - El `order_token` no resuelve a una orden propia (AC-9).
+
+            Que sean iguales es la propiedad buscada: desde afuera no se puede
+            averiguar si el ambiente tiene el medio simulado habilitado.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: |
+            La orden no está en `pending_payment`, o se alcanzó el tope de intentos.
+            El simulado **no** tiene atajos: falla igual que el real.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422':
+          description: Cuerpo inválido o con campos desconocidos (`forbidNonWhitelisted`).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          description: Throttler `payments` excedido — el simulado comparte el cubo.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+            RateLimit-Limit:
+              schema: { type: integer }
+            RateLimit-Remaining:
+              schema: { type: integer }
+            RateLimit-Reset:
+              schema: { type: integer }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
