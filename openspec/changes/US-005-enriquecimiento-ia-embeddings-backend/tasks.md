@@ -153,7 +153,7 @@ estimate-hours: 13.4
     `dsm:enrichment/`, y el `HttpProblemFilter` existente las serializa a `application/problem+json`
     con su `status` — sin tocar el filtro)
 
-- [ ] T1.2 `GeminiHttpClient` — REST con la clave en header, timeout por llamada y validación de la respuesta (0,9 h)
+- [x] T1.2 `GeminiHttpClient` — REST con la clave en header, timeout por llamada y validación de la respuesta (0,9 h)
   - **Pattern**: `fetch` global de Node 22 + `AbortSignal.timeout(ms)`, clave en **header**:
     ```ts
     const res = await fetch(`${base}/v1beta/models/${model}:embedContent`, {
