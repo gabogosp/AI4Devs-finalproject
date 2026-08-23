@@ -416,7 +416,7 @@ language: es
 > Cinco de los diez AC de esta US son negative space. No alcanza que sean verdaderos hoy:
 > tienen que quedar **protegidos** contra la próxima edición.
 
-- [ ] T5.1 AC-6 — un producto no publicado no aparece por **ninguna** vía
+- [x] T5.1 AC-6 — un producto no publicado no aparece por **ninguna** vía
   - **Exit criterion**: sembrados un `draft` y un `archived`, **ambos con embedding y con
     `search_document` poblado**, ninguna consulta los devuelve — ni por el camino
     semántico, ni por el full-text, ni con `SEARCH_LEXICAL_WEIGHT=1`, ni buscando su
@@ -426,7 +426,7 @@ language: es
     (integration: los 4 escenarios de búsqueda contra un `draft` embebido y un `archived`
     embebido devuelven **0** coincidencias de esos slugs)
 
-- [ ] T5.2 AC-8 — la consulta no puede ejecutar nada, estructuralmente
+- [x] T5.2 AC-8 — la consulta no puede ejecutar nada, estructuralmente
   - **Exit criterion**: dos garantías independientes. (1) **No existe ninguna llamada a un
     modelo generativo** en el camino de búsqueda: el módulo `search/` no importa el puerto
     de enriquecimiento ni ningún cliente de generación de texto. (2) Consultas con
@@ -440,7 +440,7 @@ language: es
     `rg -q "AI_ENRICHER|generateContent|gemini-1.5-flash" apps/api/src/search && exit 1 || true`
     (si alguien enchufa un modelo generativo acá, la task no cierra)
 
-- [ ] T5.3 AC-9 — productos sin embedding no rompen la búsqueda
+- [x] T5.3 AC-9 — productos sin embedding no rompen la búsqueda
   - **Exit criterion**: con la mitad del catálogo sembrado **sin** fila en
     `product_embeddings`, la búsqueda semántica devuelve **200** con los que sí tienen
     (no un error, no una lista vacía), esos productos **sí** aparecen por el camino
@@ -453,7 +453,7 @@ language: es
     `fallback.suggested_categories` con al menos 1 elemento, y el endpoint de categorías
     de US-002 sigue devolviendo esos productos)
 
-- [ ] T5.4 AC-4 + AC-5 — la degradación es el default, y la consulta corta no cuesta
+- [x] T5.4 AC-4 + AC-5 — la degradación es el default, y la consulta corta no cuesta
   - **Exit criterion**: con el proveedor de IA **inalcanzable** (adaptador que lanza) y con
     el proveedor **colgado** (que nunca resuelve), `GET /v1/search` devuelve **200** con
     `degraded: true` y resultados del full-text en **menos de 1,5 s** —el presupuesto del
