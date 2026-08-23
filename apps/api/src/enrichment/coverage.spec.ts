@@ -5,6 +5,7 @@ import {
   EnrichmentRepository,
   EMBEDDING_DIMS_CHECK,
 } from './enrichment.repository';
+import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
  * T2.4 — cobertura del catálogo, insumo del `/status` (AC-3).
@@ -27,11 +28,7 @@ describe('EnrichmentRepository.coverage (integration)', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
-    categoryId = (
-      await prisma.category.create({
-        data: { name: `Cov ${corrida}`, slug: `cov-${corrida}` },
-      })
-    ).id;
+    categoryId = await asegurarCategoria(prisma, `cov-${corrida}`, `Cov ${corrida}`);
   });
   afterAll(async () => {
     await prisma.$disconnect();
@@ -43,6 +40,9 @@ describe('EnrichmentRepository.coverage (integration)', () => {
     attempts?: number;
     embedded?: boolean;
   }): Promise<string> {
+    // El TRUNCATE de otra suite puede haberse llevado la categoría entre tests:
+    // el upsert la recrea y cuesta una query por siembra.
+    categoryId = await asegurarCategoria(prisma, `cov-${corrida}`, `Cov ${corrida}`);
     n += 1;
     const clave = `COV-${corrida}-${n}`;
     const p = await prisma.product.create({

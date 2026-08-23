@@ -341,7 +341,7 @@ estimate-hours: 13.4
     `enrichment_done=true`; embedder que lanza a mitad ⇒ `description_enriched` sigue en su valor
     previo y no hay fila en `product_embeddings`)
 
-- [ ] T3.3 Fallo persistente: intentos, backoff durable y abandono (AC-5) (0,4 h)
+- [x] T3.3 Fallo persistente: intentos, backoff durable y abandono (AC-5) (0,4 h)
   - **Pattern**: en el `catch` del producto, `UPDATE products SET enrichment_attempts = enrichment_attempts + 1,
     enrichment_next_attempt_at = now() + $backoff, enrichment_error_code = $code` — el estado del
     reintento vive en la base, no en memoria (`design.md` §Ejecución; es la crítica que ADR-0012
@@ -358,7 +358,7 @@ estimate-hours: 13.4
     `claimBatch` devuelve 0; y `GET /v1/categories/{slug}/products` **sí** lo devuelve —el
     endpoint público de US-002— probando que degradó sin desaparecer)
 
-- [ ] T3.4 `EnrichmentRunner` — lotes, concurrencia, cooldown y no bloquear el event loop (0,6 h)
+- [x] T3.4 `EnrichmentRunner` — lotes, concurrencia, cooldown y no bloquear el event loop (0,6 h)
   - **Pattern**: bucle `while` de lotes con `await` entre lotes y `Promise.all` de a
     `ENRICHMENT_CONCURRENCY` dentro del lote; disparo con `setImmediate`; contador de fallos
     consecutivos del proveedor que activa `cooldown` — `per backend-node-standards.md §8 — nunca

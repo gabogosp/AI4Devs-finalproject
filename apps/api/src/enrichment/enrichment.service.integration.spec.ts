@@ -4,6 +4,7 @@ import { EnrichmentRepository, ClaimedProduct } from './enrichment.repository';
 import { EnrichmentService } from './enrichment.service';
 import { FakeAiProvider } from '../../test/fake-ai.provider';
 import { AiPermanentError } from '../common/errors/enrichment-errors';
+import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
  * T3.2 (integración) — los dos invariantes que un test con mocks no puede demostrar, porque
@@ -24,11 +25,7 @@ describe('EnrichmentService (integration)', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
-    categoryId = (
-      await prisma.category.create({
-        data: { name: `Svc ${corrida}`, slug: `svc-${corrida}` },
-      })
-    ).id;
+    categoryId = await asegurarCategoria(prisma, `svc-${corrida}`, `Svc ${corrida}`);
   });
   afterAll(async () => {
     await prisma.$disconnect();
@@ -40,6 +37,9 @@ describe('EnrichmentService (integration)', () => {
     enriched?: string | null;
     curated?: boolean;
   } = {}): Promise<ClaimedProduct> {
+    // El TRUNCATE de otra suite puede haberse llevado la categoría entre tests:
+    // el upsert la recrea y cuesta una query por siembra.
+    categoryId = await asegurarCategoria(prisma, `svc-${corrida}`, `Svc ${corrida}`);
     n += 1;
     const clave = `SVC-${corrida}-${n}`;
     const p = await prisma.product.create({

@@ -5,6 +5,7 @@ import {
   AiTransientError,
 } from '../../common/errors/enrichment-errors';
 import { AiEmbedder, AiEnricher, EnrichInput } from '../ports/ai.ports';
+import { configNumber } from '../config-number';
 
 /** Dimensión del vector que fija el esquema (`vector(768)`). No es negociable acá. */
 export const EMBEDDING_DIMS = 768;
@@ -93,7 +94,7 @@ export class GeminiHttpClient implements AiEmbedder, AiEnricher {
 
   async embed(text: string): Promise<number[]> {
     const model = this.modelVersion;
-    const timeout = this.config.get<number>('GEMINI_EMBED_TIMEOUT_MS', 10_000);
+    const timeout = configNumber(this.config, 'GEMINI_EMBED_TIMEOUT_MS', 10_000);
 
     const json = await this.post<RespuestaEmbed>(
       `${this.baseUrl}/v1beta/models/${model}:embedContent`,
@@ -109,8 +110,9 @@ export class GeminiHttpClient implements AiEmbedder, AiEnricher {
       'GEMINI_ENRICH_MODEL',
       'gemini-1.5-flash',
     );
-    const timeout = this.config.get<number>('GEMINI_ENRICH_TIMEOUT_MS', 20_000);
-    const maxChars = this.config.get<number>(
+    const timeout = configNumber(this.config, 'GEMINI_ENRICH_TIMEOUT_MS', 20_000);
+    const maxChars = configNumber(
+      this.config,
       'ENRICHMENT_MAX_ENRICHED_CHARS',
       1_200,
     );

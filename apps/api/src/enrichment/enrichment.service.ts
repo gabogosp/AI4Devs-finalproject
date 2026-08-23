@@ -9,6 +9,7 @@ import {
 } from './ports/ai.ports';
 import { ClaimedProduct, EnrichmentRepository } from './enrichment.repository';
 import { buildSourceText, hashSourceText, SourceTextInput } from './source-text';
+import { configNumber } from './config-number';
 
 /** Qué hizo el pipeline con un producto. Es lo que el runner agrega para el `/status`. */
 export type ProcessOutcome =
@@ -211,6 +212,6 @@ export class EnrichmentService {
 
   /** `true` si el producto ya agotó sus intentos (quedó abandonado, AC-5). */
   isAbandoned(attempts: number): boolean {
-    return attempts >= this.config.get<number>('ENRICHMENT_MAX_ATTEMPTS', 5);
+    return attempts >= configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
   }
 }

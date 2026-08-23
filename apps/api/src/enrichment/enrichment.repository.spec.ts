@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrichmentRepository } from './enrichment.repository';
+import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
  * T2.1 — el claim por lease, contra el Postgres real. Es la task donde un test con mocks
@@ -32,11 +33,7 @@ describe('EnrichmentRepository.claimBatch (integration)', () => {
     // compartido con las suites de otras sesiones, y un `TRUNCATE products` acá les
     // borra las fixtures a mitad de su corrida. Ser buen ciudadano de la base es parte
     // del contrato: fixtures con prefijo único y assertions por subconjunto.
-    categoryId = (
-      await prisma.category.create({
-        data: { name: `Fijaciones ${corrida}`, slug: `fij-${corrida}` },
-      })
-    ).id;
+    categoryId = await asegurarCategoria(prisma, `fij-${corrida}`, `Fijaciones ${corrida}`);
   });
   afterAll(async () => {
     await prisma.$disconnect();
@@ -48,6 +45,9 @@ describe('EnrichmentRepository.claimBatch (integration)', () => {
     n: number,
     estado: { done?: boolean; attempts?: number; nextAttemptAt?: Date | null } = {},
   ): Promise<string[]> {
+    // El TRUNCATE de otra suite puede haberse llevado la categoría entre tests:
+    // el upsert la recrea y cuesta una query por siembra.
+    categoryId = await asegurarCategoria(prisma, `fij-${corrida}`, `Fijaciones ${corrida}`);
     const ids: string[] = [];
     for (let i = 0; i < n; i += 1) {
       const clave = `${prefijo}-${corrida}-${i}`;

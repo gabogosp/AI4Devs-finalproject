@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { configNumber } from './config-number';
 
 /**
  * Producto arrendado por una corrida de enriquecimiento. Es la proyección exacta que
@@ -79,8 +80,8 @@ export class EnrichmentRepository {
    * un producto recién importado se enriquece antes que uno que ya falló tres veces.
    */
   async claimBatch(batchSize: number): Promise<ClaimedProduct[]> {
-    const leaseMs = this.config.get<number>('ENRICHMENT_LEASE_MS', 120_000);
-    const maxAttempts = this.config.get<number>('ENRICHMENT_MAX_ATTEMPTS', 5);
+    const leaseMs = configNumber(this.config, 'ENRICHMENT_LEASE_MS', 120_000);
+    const maxAttempts = configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
 
     // `make_interval` recibe el lease en segundos como parámetro bindeado: concatenar
     // un intervalo en el string sería la puerta de entrada de una inyección.
@@ -102,7 +103,7 @@ export class EnrichmentRepository {
 
   /** Cuántos productos quedan pendientes de enriquecer (insumo del `/status`). */
   async countPending(): Promise<number> {
-    const maxAttempts = this.config.get<number>('ENRICHMENT_MAX_ATTEMPTS', 5);
+    const maxAttempts = configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
     const filas = await this.prisma.$queryRaw<Array<{ total: bigint }>>`
       SELECT count(*)::bigint AS total FROM products
        WHERE enrichment_done = false AND enrichment_attempts < ${maxAttempts}::int`;
@@ -111,7 +112,7 @@ export class EnrichmentRepository {
 
   /** Cuántos productos quedaron abandonados tras agotar los intentos (AC-5). */
   async countAbandoned(): Promise<number> {
-    const maxAttempts = this.config.get<number>('ENRICHMENT_MAX_ATTEMPTS', 5);
+    const maxAttempts = configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
     const filas = await this.prisma.$queryRaw<Array<{ total: bigint }>>`
       SELECT count(*)::bigint AS total FROM products
        WHERE enrichment_done = false AND enrichment_attempts >= ${maxAttempts}::int`;
@@ -154,6 +155,21 @@ export class EnrichmentRepository {
   }
 
   /**
+   * Nombres de rubro por id, en **una** query para todo el lote.
+   *
+   * El texto fuente necesita el nombre de la categoría (D3) y el `RETURNING` del claim sólo
+   * trae `category_id`. Resolverlos de a uno serían N round-trips por lote.
+   */
+  async categoryNames(ids: string[]): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
+    const filas = await this.prisma.category.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true },
+    });
+    return new Map(filas.map((f) => [f.id, f.name]));
+  }
+
+  /**
    * kNN por distancia coseno — US-005 T2.3.
    *
    * Este helper **no expone ningún endpoint**: `/search` es de US-004. Se entrega acá
@@ -189,7 +205,7 @@ export class EnrichmentRepository {
    * el medio.
    */
   async coverage(): Promise<CoverageSnapshot> {
-    const maxAttempts = this.config.get<number>('ENRICHMENT_MAX_ATTEMPTS', 5);
+    const maxAttempts = configNumber(this.config, 'ENRICHMENT_MAX_ATTEMPTS', 5);
     const filas = await this.prisma.$queryRaw<
       Array<{
         total: bigint;

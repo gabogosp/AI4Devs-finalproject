@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrichmentRepository, EMBEDDING_DIMS_CHECK } from './enrichment.repository';
+import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
  * T2.3 — el kNN. Este helper **no expone endpoint** (`/search` es de US-004): se prueba acá
@@ -31,11 +32,7 @@ describe('EnrichmentRepository.findNearest (integration, pgvector)', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
-    const categoryId = (
-      await prisma.category.create({
-        data: { name: `KNN ${corrida}`, slug: `knn-${corrida}` },
-      })
-    ).id;
+    const categoryId = await asegurarCategoria(prisma, `knn-${corrida}`, `KNN ${corrida}`);
 
     const crear = async (clave: string, status: string) => {
       const p = await prisma.product.create({

@@ -7,6 +7,7 @@ import { StorefrontModule } from '../storefront/storefront.module';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentService } from './enrichment.service';
 import { FakeAiProvider } from '../../test/fake-ai.provider';
+import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
  * T3.3 — fallo persistente y abandono (AC-4, AC-5).
@@ -39,11 +40,7 @@ describe('Enriquecimiento — fallo persistente y abandono (e2e-enrichment-failu
       new FakeAiProvider(),
     );
 
-    categoryId = (
-      await prisma.category.create({
-        data: { name: `Fallos ${corrida}`, slug: rubroSlug },
-      })
-    ).id;
+    categoryId = await asegurarCategoria(prisma, rubroSlug, `Fallos ${corrida}`);
   });
   afterAll(async () => {
     await app?.close();
@@ -51,6 +48,9 @@ describe('Enriquecimiento — fallo persistente y abandono (e2e-enrichment-failu
 
   let n = 0;
   async function productoPublicado(): Promise<{ id: string; slug: string }> {
+    // El TRUNCATE de otra suite puede haberse llevado la categoría entre tests:
+    // el upsert la recrea y cuesta una query por siembra.
+    categoryId = await asegurarCategoria(prisma, rubroSlug, `Fallos ${corrida}`);
     n += 1;
     const clave = `FALLO-${corrida}-${n}`;
     const p = await prisma.product.create({

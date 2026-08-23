@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnrichmentRepository } from './enrichment.repository';
 import { FakeAiProvider } from '../../test/fake-ai.provider';
+import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**
  * T2.2 — escritura del vector. Contra el Postgres real con pgvector: lo que se prueba es
@@ -23,11 +24,7 @@ describe('EnrichmentRepository — embeddings (integration)', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
-    categoryId = (
-      await prisma.category.create({
-        data: { name: `Emb ${corrida}`, slug: `emb-${corrida}` },
-      })
-    ).id;
+    categoryId = await asegurarCategoria(prisma, `emb-${corrida}`, `Emb ${corrida}`);
   });
   afterAll(async () => {
     await prisma.$disconnect();
@@ -35,6 +32,9 @@ describe('EnrichmentRepository — embeddings (integration)', () => {
 
   let n = 0;
   async function producto(): Promise<string> {
+    // El TRUNCATE de otra suite puede haberse llevado la categoría entre tests:
+    // el upsert la recrea y cuesta una query por siembra.
+    categoryId = await asegurarCategoria(prisma, `emb-${corrida}`, `Emb ${corrida}`);
     n += 1;
     const clave = `EMB-${corrida}-${n}`;
     const p = await prisma.product.create({
