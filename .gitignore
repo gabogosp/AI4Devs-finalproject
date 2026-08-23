@@ -37,13 +37,23 @@ Thumbs.db
 
 # === Backups (de /design-frontend --regenerate, etc.) ===
 *.bak.*
+# Backups de planes openspec regenerados (--regenerate): son copias, no deliverable.
+/openspec/changes/_backups/
 
 # === Build / runtime (se extiende cuando arranque el código) ===
 node_modules/
 dist/
 build/
+.next/
 .env
 .env.local
 
 # Caché de build incremental de TypeScript (no es fuente)
 *.tsbuildinfo
+
+# Cobertura y artefactos de test (output de tooling, no fuente)
+coverage/
+test-results/
+playwright-report/
+*.log
+
