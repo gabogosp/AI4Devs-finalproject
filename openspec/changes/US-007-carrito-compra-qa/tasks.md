@@ -242,7 +242,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 6: Carga
 
-- [ ] T6.1 Escenario k6 de **escritura** del carrito (NFR PRD §4)
+- [x] T6.1 Escenario k6 de **escritura** del carrito (NFR PRD §4)
   - **Pattern**: presupuesto en `qa/performance/lib/thresholds.js` (fuente única, como
     `list_products` y `storefront_product`), consumido por el script; tag
     `endpoint:cart_write`; `check` de status **y** de cuerpo — `per k6-load-scaffolding
@@ -265,8 +265,22 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     (0,5 rps), un k6 sin esa guarda reportaría un p95 del throttler y no del carrito
     (OQ-QA-2).
   - **Verify**: `grep -q "http_req_duration{endpoint:cart_write}" qa/performance/lib/thresholds.js && grep -q "p(95)<500" qa/performance/lib/thresholds.js && k6 run --vus 2 --duration 20s qa/performance/cart-write.js`
+  - **Corrida del 2026-08-23** (el `k6 run` necesita el entorno de carga que OQ-QA-2 ya
+    anticipa: una instancia con `CART_WRITE_RATE_LIMIT_MAX` elevado, apuntada con
+    `QA_API_BASE_URL`; contra una API con el presupuesto de producción el script **aborta a
+    propósito**):
+    - `QA_API_BASE_URL=http://localhost:3009 k6 run --vus 2 --duration 20s` →
+      **p95 escritura 4,28 ms** (presupuesto 500 ms), `rate_limited` **0**,
+      `http_req_failed` **0 %**, checks **34.794/34.794**, 15.470 requests.
+    - Lectura sin umbral (OQ-QA-1): **p95 1,61 ms** — el dato queda impreso vía la `Trend`
+      `cart_read_duration`, porque un tag sin threshold no aparece en el resumen de k6 y un
+      número que no se imprime no le sirve al Arquitecto para ratificarlo.
+    - Guarda verificada en una instancia con el presupuesto **por defecto** (30/min): la
+      corrida produjo **37.868** respuestas 429 y `rate_limited count<1` **falló**, así que la
+      medición se invalida en vez de publicar el p95 del throttler. Es exactamente el
+      comportamiento que la task pedía.
 
-- [ ] T6.2 Registrar el **rechazo** del stub de carga de lectura (OQ-QA-1)
+- [x] T6.2 Registrar el **rechazo** del stub de carga de lectura (OQ-QA-1)
   - **Pattern**: cuando no hay número ratificado, no se emite el stub — se documenta el
     rechazo con su fundamento y se mide sin umbral — `per k6-load-scaffolding
     §Anti-patterns — thresholds no trazables a un budget`.
@@ -281,7 +295,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 7: Exploratorio
 
-- [ ] T7.1 Charters del carrito (TC-750, TC-751)
+- [x] T7.1 Charters del carrito (TC-750, TC-751)
   - **Pattern**: apéndice a `qa/exploratory/charters.md`, con misión, áreas, riesgos,
     heurísticas y **justificación de por qué es manual** — mismo formato que los charters
     que US-001 y US-002 ya dejaron en ese archivo.
