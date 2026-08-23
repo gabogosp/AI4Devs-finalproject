@@ -250,7 +250,7 @@ language: es
     y **no** mutan solas) **y**
     `! grep -rEq "toLocaleString" apps/web/src/features/cart` (sin resultados)
 
-- [ ] T2.4 `CartSummary` — total, CTA al pago y el bloqueo de AC-6
+- [x] T2.4 `CartSummary` — total, CTA al pago y el bloqueo de AC-6
   - **Exit criterion**: muestra el `total_ars_cents` con el helper, con el subtexto «IVA
     incluido» (§7.4). El CTA «Ir al pago» (botón `accent`, §7.11) está **deshabilitado**
     cuando `has_blocking_issues` es `true`, **con el motivo visible** (AC-6), y **también**
@@ -262,7 +262,7 @@ language: es
     motivo de US-008, con texto **distinto** al anterior; el total coincide con el helper;
     el contenedor tiene `aria-live="polite"`)
 
-- [ ] T2.5 `CartEmptyState` (AC-7)
+- [x] T2.5 `CartEmptyState` (AC-7)
   - **Pattern**: `per design-system §10.1 — estado vacío con invitación a seguir comprando`
     y tono §10.2 (informal argentino, «vos»).
   - **Exit criterion**: con `id: null` e `items: []` muestra un encabezado real
