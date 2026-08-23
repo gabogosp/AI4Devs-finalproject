@@ -83,6 +83,17 @@ jobs:
         if: hashFiles('qa/e2e/*.config.ts') != ''
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+          # OBLIGATORIA desde el guard de US-014 FE: `next build` corre con
+          # NODE_ENV=production y `next.config.mjs` LANZA si falta, así que sin
+          # esta línea el paso no compila. Se rompía en silencio para quien
+          # buildea local, porque ahí la aporta `apps/web/.env.local` — que está
+          # en `.gitignore` y por lo tanto no existe en CI. Es el caso exacto de
+          # una verificación que pasa por la configuración de la máquina y no
+          # por el artefacto.
+          #
+          # Server-only (sin `NEXT_PUBLIC_`) a propósito: gobierna los rewrites
+          # de `/v1/auth/*` y `/v1/cart/*`, que el navegador nunca llama directo.
+          API_INTERNAL_ORIGIN: http://localhost:3000
           # `next start` toma el puerto de PORT. Se evita `-- -p 3100`: pnpm
           # reenvía el `--` literal y el flag no llega (mismo tropiezo que T1.1).
           PORT: '3100'

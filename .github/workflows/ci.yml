@@ -58,3 +58,27 @@ jobs:
 
       - name: Test
         run: pnpm -r test
+
+      # Hay una clase entera de errores que NO existe hasta que algo se
+      # construye: `next build` valida los exports de cada módulo de página, la
+      # generación estática y la resolución de tipos por ruta. Nada de eso lo ve
+      # `typecheck` ni `vitest`.
+      #
+      # Caso concreto que motivó el paso (US-004 FE, 2026-08-23): una constante
+      # de copy exportada desde `page.tsx` para poder testearla. Las 787 pruebas
+      # del front pasaban y el build fallaba con «is not a valid Page export
+      # field». CI no buildeaba el front en ningún lado, así que eso habría
+      # llegado a main.
+      #
+      # Va DESPUÉS de los tests a propósito: un test roto se diagnostica más
+      # rápido que un build roto, y así el feedback más barato llega primero.
+      - name: Build del frontend
+        env:
+          # Mismas variables que el build de producción exige. `next build` corre
+          # con NODE_ENV=production, y `next.config.mjs` lanza si falta
+          # API_INTERNAL_ORIGIN. En local la aporta `apps/web/.env.local`, que
+          # está gitignorada: por eso un build verde en la máquina de alguien no
+          # es evidencia de que CI vaya a pasar.
+          API_INTERNAL_ORIGIN: http://localhost:3000
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:3000
+        run: pnpm --filter @dsm/web build
