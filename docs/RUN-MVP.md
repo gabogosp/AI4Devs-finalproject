@@ -111,8 +111,9 @@ más tarde como un problema de dominio.
 ## Recorrido de demo (lo que se ve)
 
 1. **Storefront** → home → categoría **Refrigeración** → lista de productos publicados.
-2. **Búsqueda** → caja del top-nav → *"heladera"* / *"cable"* → resultados rankeados (semántico con
-   `GEMINI_API_KEY`, full-text sin ella).
+2. **Búsqueda** → caja del top-nav → *"compresor"* / *"refrigerante"* / *"cable"* → resultados
+   rankeados (semántico con `GEMINI_API_KEY`, full-text sin ella). *(Con el seed de demo, buscar
+   términos que existen: compresor, gas/refrigerante, taladro, cable — no "heladera".)*
 3. **Ficha con stock** → `/productos/compresor-1-4-hp` → nombre, precio ARS, categoría, descripción
    (enriquecida por IA si hubo enrichment), **agregar al carrito** + **WhatsApp**. "Ver código
    fuente" → metadatos + JSON-LD `schema.org/Product`.
