@@ -224,7 +224,7 @@ C4Container
 > | `cart` | **construido** (backend); el frontend en curso — US-007 |
 > | `import` masivo | **construido** — US-006 |
 > | `enrichment` (IA + embeddings) | **construido** (backend) — US-005. La primera corrida contra el proveedor real está pendiente: hasta que se cargue `GEMINI_API_KEY` y se dispare, el catálogo no tiene vectores y la búsqueda semántica no tendría qué consultar. El campo de curación en el panel es trabajo FE diferido |
-> | `search` (kNN + fallback) | **planificado** — US-004 |
+> | `search` (kNN + fallback) | **construido** (backend) — US-004. `GET /v1/search` con degradación a full-text. La relevancia ≥70% (AC-2) **no está verificada**: sin vectores en el catálogo el arnés mide el camino léxico, no el semántico. El frontend (`SearchExperience`) es trabajo FE pendiente |
 > | `checkout`, `payments`, `orders`, `stock` | **planificados** — US-008, US-009, US-010 |
 > | `metrics` | **planificado** — US-016 |
 > | `notifications` | **planificado** — US-011 |

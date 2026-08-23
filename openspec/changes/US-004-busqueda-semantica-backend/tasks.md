@@ -77,21 +77,21 @@ language: es
 > y el seed deja **4 productos**: con eso, 30 consultas no pueden medir nada. Es trabajo de
 > `/plan-qa US-004` + la primera corrida del runbook §3.6.
 
-- [ ] **US-005: el puerto `AI_EMBEDDER` existe.** Este change lo **reusa** y no duplica el
+- [x] **US-005: el puerto `AI_EMBEDDER` existe.** ✔ verificado: `src/ai/ports/ai.ports.ts` (un único lugar declara el token). Este change lo **reusa** y no duplica el
   cliente de Gemini. Hoy US-005 va 1/28 tasks.
   **Verify**: `test -f apps/api/src/ai/ports/ai-embedder.port.ts || test -f apps/api/src/enrichment/ports/ai-embedder.port.ts`
 
-- [ ] **US-005: `product_embeddings` + índice HNSW en la base.** La migración ya está
+- [x] **US-005: `product_embeddings` + índice HNSW en la base.** ✔ verificado con `docker compose exec -T postgres psql -U dsm -d dsm` (el rol es `dsm`, no `postgres`); la migración está commiteada en `4e89d17`. La migración ya está
   aplicada (`20260823002111_add_enrichment_and_embeddings`), pero está **sin commitear**:
   confirmar que sigue ahí antes de empezar.
   **Verify**: `docker exec ai4devs-finalproject-postgres-1 psql -U postgres -d dsm -tAc "select indexname from pg_indexes where tablename='product_embeddings'" | grep -q hnsw`
 
-- [ ] **`apps/api` limpio y `typecheck` en exit 0.** Al momento de planificar el árbol
+- [x] **`apps/api` limpio y `typecheck` en exit 0.** ✔ baseline verde al arrancar: 1246 tests / 123 suites, `typecheck` 0. Al momento de planificar el árbol
   estaba **rojo** por trabajo en vuelo de US-005 y US-006. Sin baseline verde no se puede
   distinguir un fallo propio de uno ajeno.
   **Verify**: `git status --porcelain apps/api` vacío **y** `pnpm --filter @dsm/api typecheck`
 
-- [ ] **US-005 no en vuelo sobre `ports/`.** T1.1 **mueve**
+- [x] **US-005 no en vuelo sobre `ports/`.** ✔ US-005 cerrado (28/28) y el puerto ya movido a `src/ai/ports/` (commit `684f23a`): T1.1 quedó sin trabajo. T1.1 **mueve**
   `ai-embedder.port.ts` a `src/ai/ports/`. Con US-005 escribiendo ahí se pisan.
   **Verify**: `git status --porcelain apps/api/src/enrichment` vacío
 
@@ -557,21 +557,21 @@ print('README cubre los 6 temas; runbook cubre síntoma+techo+regla de alerta')"
 
 ## Verification (suite-level)
 
-- [ ] Type-check limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Esquema aplicado desde cero en base limpia: `pnpm --filter @dsm/db migrate:deploy`
-- [ ] Suite completa de la API verde: `pnpm --filter @dsm/api test -- --ci`
-- [ ] Suite de búsqueda en aislamiento: `pnpm --filter @dsm/api test -- --ci --testPathPattern=search`
-- [ ] **Sin regresión** en lo que este change tocó (el puerto movido y el esquema de `products`):
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern='enrichment|imports|e2e-products|e2e-storefront|cart-schema|auth-schema'`
-- [ ] Contrato publicado lintea limpio:
-      `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
-- [ ] Arnés de relevancia ejecutable y con el gate funcionando:
-      `pnpm --filter @dsm/api relevance -- --dry-run`
-- [ ] **Presupuesto de latencia medido** (no asumido): p95 de `GET /v1/search` con
-      embedder falso de 200 ms está bajo **1,5 s**, y bajo **1,5 s** también con el
-      embedder colgado (camino degradado).
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern=ac4-ac5-degradation`
+- [x] Type-check limpio: `pnpm --filter @dsm/api typecheck` — exit 0
+- [x] Lint limpio: `pnpm --filter @dsm/api lint` — exit 0
+- [x] Esquema aplicado desde cero en base limpia: `pnpm --filter @dsm/db migrate:deploy` — 9 migraciones, sin pendientes
+- [x] Suite completa de la API verde: `pnpm --filter @dsm/api test -- --ci` — **1407 tests / 141 suites**
+- [x] Suite de búsqueda en aislamiento — **153 tests / 18 suites**
+- [x] **Sin regresión** en lo que este change tocó (el puerto movido y el esquema de `products`) —
+      **548 tests / 59 suites**
+- [x] Contrato publicado lintea limpio (Spectral con `--fail-severity=warn`) — exit 0, **0 warnings**
+      (se agregaron los 8 `operationId` que faltaban en los endpoints admin de US-001, que hacían
+      fallar el gate)
+- [x] Arnés de relevancia ejecutable y con el gate funcionando — exit 0 en `--dry-run`, y el gate
+      **muerde**: `SEARCH_RELEVANCE_TARGET=0` → exit 0, `=1` → exit 1
+- [x] **Presupuesto de latencia medido** (no asumido): con el embedder **colgado**, `GET /v1/search`
+      responde 200 degradado en **1147 ms** — bajo el 1,5 s del PRD §4, con un piso de 800 ms que
+      prueba que el timeout se respetó en vez de saltearse
 
 ---
 
@@ -590,3 +590,86 @@ print('README cubre los 6 temas; runbook cubre síntoma+techo+regla de alerta')"
 | AC-9 productos sin embedding no rompen nada | T2.2, T2.3, T5.3 |
 | AC-10 control de abuso | T1.3 (caché), T3.1 (topes), T3.3 (throttler) |
 | Declaraciones no-AC del design (F51) | T0.2 (config), T1.1 (mover el puerto), T1.2 (presupuesto propio — D2), T1.3 (caché en proceso), T3.4 (errores), T4.1/T4.2 (observabilidad), T7.1/T7.2 (contrato, README, runbook) |
+
+---
+
+## Reconciliación AS-BUILT (2026-08-23)
+
+Las **24 tasks** cerraron con su `Verify` y los **9 gates** de la Verification suite-level también.
+Evidencia: `1407 tests / 141 suites` verdes, `typecheck`, `lint` y `build` en 0, Spectral en 0
+warnings.
+
+### Lo que la ejecución destapó y el plan no anticipaba
+
+Tres hallazgos. Los tres eran silenciosos —ningún test existente los detectaba— y dos cambiaron
+código de producción.
+
+1. **`ts_rank` y la similitud cosine no son comparables.** Lo encontró el **arnés de relevancia**
+   al reportar `confidence: low` en coincidencias **exactas de SKU**. Medido: un match léxico
+   exacto puntúa **~0,10** contra un umbral de 0,55 calibrado para cosine. Dos consecuencias, las
+   dos invisibles: el camino degradado **nunca** podía reportar confianza alta —toda respuesta del
+   plan B se veía dudosa aunque fuera perfecta— y `blend` sumaba 0,10 contra 0,85, así que
+   `SEARCH_LEXICAL_WEIGHT` existía en la configuración y su efecto habría sido imperceptible: la
+   perilla que el plan reserva para «si la batería no llega al 70 %, subir el peso léxico» **no
+   habría funcionado**. `fullText` ahora normaliza el `ts_rank` al mejor del conjunto.
+   Contrapartida declarada: el score léxico es un rango **relativo**, no una similitud absoluta
+   comparable entre consultas.
+
+2. **El fallback no era accionable.** Lo encontró la **integración del contrato**: el draft
+   declaraba `suggested_categories` como objetos `{slug, name}` y la implementación devolvía sólo
+   nombres. El draft tenía razón — sin el slug el frontend no puede armar el enlace, y el
+   «callejón sin salida» que AC-3 quiere evitar vuelve con mejor redacción, porque el cliente
+   tendría que adivinar la URL (justo lo que US-003 evitó exponiendo slugs). Ahora
+   `ScoredProduct` lleva `category_slug`, las dos queries lo traen, y una categoría con nombre
+   pero **sin** slug no se ofrece.
+
+3. **El `EXPLAIN` de la query completa no prueba lo que parece.** Con las pocas decenas de filas
+   de una base de test, el planner elige un sort en memoria **por costo**, no por incapacidad.
+   Medir eso sería medir una decisión de costo a escala de test. Se reemplazó por dos asserts que
+   sí protegen una regresión real: el `EXPLAIN` del ordenamiento vectorial **aislado** (índice +
+   opclass) y un guard sobre la **fuente** de que la query ordena por la distancia cruda — el
+   error clásico `ORDER BY 1 - (embedding <=> v) DESC` devuelve las mismas filas en el mismo
+   orden, así que ningún test de resultados lo notaría, y a escala real la búsqueda pasa de
+   milisegundos a segundos.
+
+### Desviaciones respecto del plan
+
+| Qué | Plan | AS-BUILT | Por qué |
+|---|---|---|---|
+| Verbo de la superficie | el `readme` de la Entrega 1 mostraba `POST /search` | **`GET /v1/search`** | Una búsqueda es una **lectura**: con `GET` la consulta es enlazable, compartible y cacheable por el cliente y por el edge. `POST` cerraba las tres cosas para ganar la comodidad de un cuerpo JSON. |
+| T1.1 (mover el puerto) | esta task lo movía | **ya estaba hecho** | Se movió al cerrar US-005 por decisión del PO. La task quedó reducida a verificar la ruta; su `Verify` pasa completo. |
+| Nombre del archivo del puerto | `ai-embedder.port.ts` | `ai.ports.ts` con **los dos** puertos + `AiAvailability` | Desviación heredada y ya declarada en el AS-BUILT de US-005. |
+| `schema.prisma` | `Unsupported("tsvector")` **con `@ignore`** | sin `@ignore` | Prisma **rechaza** la combinación («already treated as ignored by the client due to their type»). El efecto se cumple con `Unsupported` solo, y hay test de que el client no expone la columna. |
+| T0.2 | `GEMINI_SEARCH_MAX_RPM` provisorio en 15 | **10**, y `GEMINI_MAX_RPM` bajó de 15 a **5** | La suma se valida al arrancar (≤ 15 del free tier) y 10 + 15 = 25 **no arranca**. El default codifica el estado **estable**; la primera corrida es un override temporal de **dos** variables (`15` + búsqueda en `0`), documentado en el runbook §3.6. Por eso el mínimo de las dos es 0 y no 1: con mínimo 1 esa configuración no existiría. |
+| T2.1 | longitud útil 13 para `'  Taco   FISCHER '` | **12** | Aritmética: `'taco fischer'` son 12 caracteres. El test asserta el número real. |
+| T5.3 (cero embeddings) | vaciar `product_embeddings` | doble del repositorio cuyo `knn` devuelve `[]` y cuyo `fullText` es el **real** | La tabla es compartida con las suites de otras sesiones: un `DELETE` les borraría las fixtures a mitad de su corrida. Queda escrito en el spec para que nadie lo lea como cobertura que no es. |
+| Guard de AC-8 (`rg` sin excluir specs) | `rg -q "AI_ENRICHER\|generateContent\|…" apps/api/src/search && exit 1` | mismo guard **excluyendo `*.spec.ts`** | Matcheaba **el propio spec**, que nombra esas cadenas en sus assertions. Misma clase de falso positivo que el guard de AC-10 en US-005. |
+| Alcance de T7.1 | sólo agregar `/search` | + los **8 `operationId`** faltantes de US-001 | El `Verify` usa `--fail-severity=warn` y esos warnings ajenos hacían fallar el gate. No es scope creep gratuito: la propia task dice que el spec publicado alimenta el codegen del FE (orval), y sin `operationId` los nombres se derivan del path — inestables. |
+| Dependencias | — | `tsx` en `devDependencies` de `apps/api` | Necesario para correr el arnés. Misma versión **exacta** que `@dsm/db` (4.19.2); el lockfile suma 3 líneas porque el paquete ya estaba en el monorepo. |
+
+### Lo que NO queda verificado (y es la parte importante de leer)
+
+**AC-2 (≥ 70 % de relevancia en el top-5) no está verificado, y el plan ya lo declaraba.** Lo que
+este change entrega es el **arnés ejecutable**, no el número. El estado medido hoy:
+
+| Señal | Valor medido |
+|---|---|
+| `embedding_coverage` | **0 / 4** productos publicados (0 %) |
+| Casos que corrieron degradados | **8 de 8** (sin `GEMINI_API_KEY`, el embedder de consultas queda `unavailable`) |
+| Acierto en top-5 | **33,3 %** — los dos casos **léxicos**: «taladro percutor» y el SKU `FER-001` |
+| Casos semánticos (coloquial + gremio) | **4 de 4 fallan** |
+| Casos de fallback (ambiguo + negative-match) | **2 de 2 pasan** |
+
+O sea: hoy funciona el **plan B**. Los cuatro casos que justifican el diferenciador —«algo para
+colgar un cuadro en una pared dura», «gas para cargar un equipo de aire»— fallan porque **no hay
+un solo vector en el catálogo**. Eso no es un defecto de este change: es su dependencia declarada.
+
+**La secuencia para cerrar AC-2**, en orden: cargar `GEMINI_API_KEY` → correr el enriquecimiento de
+US-005 (runbook §3.6) → sembrar un catálogo con sustancia (el seed son 4 productos; una batería de
+30 consultas no puede medir nada con eso) → volver a correr `pnpm --filter @dsm/api relevance` →
+recalibrar `SEARCH_MIN_SCORE` con la tabla de §D5, que hoy es **plana** porque no hay resultados en
+la zona gris. La batería completa de ~30 casos y el gate son de `/plan-qa US-004`.
+
+**Tampoco se ejercitó el proveedor real**: ninguna llamada HTTP a Gemini en todo el change. La
+calidad de los embeddings de consulta y la forma real de sus respuestas quedan sin evidencia,
+igual que en US-005.

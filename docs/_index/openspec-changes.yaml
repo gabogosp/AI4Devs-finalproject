@@ -935,7 +935,9 @@
   us-id: US-004
   discipline: backend
   variant: null
-  status: draft
+  # `completed` es el valor del enum del schema. (Otras entradas usan `in progress` con espacio,
+  # que NO está en el enum: deriva preexistente, no se toca desde acá.)
+  status: completed
   parent-us: docs/user-stories/US-004-busqueda-semantica.md
   linear-task-id: null
   audit-baseline: null
@@ -999,15 +1001,37 @@
   # reescribe products (instantáneo con ~5.000 filas, pero conviene decirlo). Si se queda en
   # free tier, el despliegue debería documentar el techo de 15 RPM como limitación conocida.
   estimate-hours: 10.4
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  branch: null
-  pr-url: null
+  assignee: develop-backend  # ejecutado por /develop-backend en la sesión del 2026-08-23  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
-  completed-at: null
+  completed-at: 2026-08-23  # 24/24 tasks + 9 gates; AS-BUILT en tasks.md
   archived-at: null
   archive-path: null
 
 # qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 webhook + E2E loop completo)
+  # AS-BUILT (2026-08-23): 24/24 tasks y los 9 gates suite-level en verde. Suite completa de
+  # apps/api en 1407 tests / 141 suites; typecheck, lint y build en 0; Spectral en 0 warnings.
+  # Tres hallazgos que la ejecución destapó, los tres silenciosos:
+  #   1. `ts_rank` y la similitud cosine NO son comparables (medido: match léxico exacto ~0,10
+  #      contra un umbral de 0,55 calibrado para cosine). El camino degradado nunca podía
+  #      reportar confianza alta y `SEARCH_LEXICAL_WEIGHT` no habría hecho nada perceptible.
+  #      Lo encontró el arnés de relevancia; `fullText` ahora normaliza al mejor del conjunto.
+  #   2. El fallback no era accionable: devolvía nombres de categoría sin `slug`, así que el
+  #      frontend no podía armar el enlace y el «callejón sin salida» de AC-3 volvía con mejor
+  #      redacción. Lo encontró la integración del contrato publicado.
+  #   3. El `EXPLAIN` de la query kNN completa no prueba el uso del índice a escala de test: con
+  #      pocas filas el planner elige un sort por COSTO. Se reemplazó por el EXPLAIN del
+  #      ordenamiento aislado + un guard sobre la fuente de que ordena por la distancia cruda.
+  # DESVIACIONES: `GET /v1/search` en vez del `POST` ilustrativo de la Entrega 1 (una búsqueda es
+  # una lectura: enlazable y cacheable); `GEMINI_MAX_RPM` bajó de 15 a 5 porque la suma con
+  # `GEMINI_SEARCH_MAX_RPM` se valida contra los 15 del free tier.
+  # SIN VERIFICAR — AC-2 (≥70% de relevancia): se entrega el ARNÉS, no el número. Medido hoy:
+  # cobertura de embeddings 0/4 publicados, los 8 casos corriendo DEGRADADOS y 33,3% de acierto,
+  # que son los dos casos léxicos. Los 4 casos semánticos fallan porque no hay un solo vector en
+  # el catálogo. Secuencia para cerrarlo: clave → enriquecimiento (runbook §3.6) → catálogo con
+  # sustancia → recalibrar §D5 → batería de ~30 de /plan-qa US-004.
+
 - name: US-010-orden-webhook-stock-backend
   us-id: US-010
   discipline: backend
