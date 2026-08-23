@@ -15,6 +15,14 @@ language: es
 > `pnpm --filter @dsm/web test:e2e -- <spec>` corre Playwright (one-shot por naturaleza).
 > Los E2E necesitan el API y el web levantados según `playwright.config.ts`.
 >
+> **Corrección al ejecutar (2026-08-23)**: ocho `Verify` de este plan usaban `rg`
+> (ripgrep), que **no está instalado** en el entorno de desarrollo y que CI no usa en ningún
+> workflow. Se sustituyeron por su equivalente exacto con `grep -r` en vez de instalar una
+> herramienta en la máquina del dev; la fuerza del chequeo no cambia. Se corrigieron además
+> dos defectos de los `Verify`: el `git diff` de T0.1 llevaba dos pathspecs (una antes del
+> `--`, que git ignora) y el pre-requisito de `API_INTERNAL_ORIGIN` miraba el `.env` de la
+> raíz cuando Next carga el env desde `apps/web/`.
+>
 > **Estimación dual**: **10,4 h AI-asistido** / **~20 h tradicional** (24 tasks, suma de las
 > fases: 1,6 + 1,4 + 2,6 + 2,0 + 1,2 + 1,0 + 0,6). La US §7 presupuesta `FE-US-007` en
 > 8-12 h: el tradicional excede el techo ~8 h por trabajo que la US da por resuelto al
@@ -31,19 +39,21 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **`apps/web` limpio en el working tree.** Este change modifica
+- [x] **`apps/web` limpio en el working tree.** Este change modifica
   `app/(storefront)/layout.tsx`, `ProductPurchase.tsx` y `ProductCard.tsx`, los tres
   compartidos con changes de US-002/US-003/US-018. Con otra sesión escribiendo ahí se
   pisan (precedente: la colisión de US-007 backend).
   **Verify**: `git status --porcelain apps/web` vacío
-- [ ] **Backend del carrito publicado en el contrato.** Los tres endpoints tienen que estar
+- [x] **Backend del carrito publicado en el contrato.** Los tres endpoints tienen que estar
   en `apps/api/docs/api/openapi.yaml` o el codegen no puede generar nada.
   **Verify**: `python3 -c "import yaml,sys; d=yaml.safe_load(open('apps/api/docs/api/openapi.yaml')); ops=[(p,m) for p in ('/cart','/cart/items/{slug}') for m in d['paths'].get(p,{})]; assert sorted(ops)==[('/cart','get'),('/cart/items/{slug}','delete'),('/cart/items/{slug}','put')], ops; print('contrato del carrito OK', ops)"`
-- [ ] **Suite del web verde antes de empezar** (baseline conocido, para no atribuirse fallos ajenos).
+- [x] **Suite del web verde antes de empezar** (baseline conocido, para no atribuirse fallos ajenos).
   **Verify**: `pnpm --filter @dsm/web typecheck && pnpm --filter @dsm/web test`
-- [ ] **`API_INTERNAL_ORIGIN` presente en el `.env` local** — sin ella el rewrite apunta a
+- [x] **`API_INTERNAL_ORIGIN` presente en el `.env` local** — sin ella el rewrite apunta a
   `undefined` y el carrito devuelve 404 (el mismo síntoma que describe ADR-0013 para login).
-  **Verify**: `grep -q "^API_INTERNAL_ORIGIN=" .env`
+  **Verify**: `grep -q "^API_INTERNAL_ORIGIN=" apps/web/.env.local || grep -q "^API_INTERNAL_ORIGIN=" apps/web/.env`
+  *(corregido al ejecutar: Next carga el env desde `apps/web/`, no desde la raíz del repo —
+  el `Verify` original miraba `.env` de la raíz y daba falso negativo.)*
 
 > **Estado intermedio declarado (F51).** Al cerrar este change, el CTA «Ir al pago» queda
 > **deshabilitado con el motivo a la vista**: `/checkout` no existe hasta que US-008 FE lo
@@ -53,7 +63,7 @@ language: es
 
 ## Fase 0: Contrato, topología y borde HTTP — 1,6 h
 
-- [ ] T0.1 Regenerar los artefactos derivados del contrato (DTOs + Zod + mocks MSW)
+- [x] T0.1 Regenerar los artefactos derivados del contrato (DTOs + Zod + mocks MSW)
   - **Pattern**: `pnpm --filter @dsm/web codegen` (orval ya configurado con el mutator
     `customFetch` y el generador MSW). **No se escribe a mano ni un DTO, ni un schema Zod,
     ni un handler de mock** — `per frontend-standards.md §3.1/§3.2 — los artefactos
@@ -63,7 +73,7 @@ language: es
     `endpoints.ts` expone las tres operaciones y `zod.ts` sus schemas. Volver a correr el
     codegen **no produce diff** (idempotente). Ningún archivo bajo `src/api/generated/` se
     edita a mano.
-  - **Verify**: `pnpm --filter @dsm/web codegen && git diff --exit-code src/api/generated -- apps/web/src/api/generated && rg -q "cart" apps/web/src/api/generated/endpoints.ts && ls apps/web/src/api/generated/model | rg -qi "cart"`
+  - **Verify**: `pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated && grep -q "cart" apps/web/src/api/generated/endpoints.ts && ls apps/web/src/api/generated/model | grep -qi "cart"`
     (el `--exit-code` prueba la **idempotencia**: si el codegen no estaba corrido, la
     primera ejecución deja diff y esta línea falla hasta que se commitee)
 
@@ -71,7 +81,7 @@ language: es
   - **Exit criterion**: el workflow `frontend-codegen-fresh` corre `codegen` y **falla** si
     produce diff, incluidos los modelos del carrito. No hace falta modificarlo si ya es
     genérico; si estuviera acotado a rutas específicas, se generaliza.
-  - **Verify**: `rg -q "codegen" .github/workflows/frontend-codegen-fresh.yml && rg -q "diff|--exit-code|git status" .github/workflows/frontend-codegen-fresh.yml`
+  - **Verify**: `grep -q "codegen" .github/workflows/frontend-codegen-fresh.yml && grep -Eq "diff|--exit-code|git status" .github/workflows/frontend-codegen-fresh.yml`
     y, como prueba de que el gate **muerde**: `sed -i.bak '1s/^/\/\/ drift\n/' apps/web/src/api/generated/endpoints.ts && ! (pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated) ; mv apps/web/src/api/generated/endpoints.ts.bak apps/web/src/api/generated/endpoints.ts`
     (introduce drift a propósito, comprueba que el chequeo falla, y restaura)
 
@@ -111,7 +121,7 @@ language: es
     editar + casos nuevos: `readCsrfToken('cart')` devuelve el valor de `dsm_cart_csrf`
     con ambas cookies presentes; devuelve `null` si sólo está `dsm_csrf`; el default sigue
     siendo `'session'`) **y**
-    `test $(rg -c "document\.cookie" apps/web/src --glob '!**/*.test.*' | wc -l | tr -d ' ') -eq 1`
+    `test $(grep -rl "document\.cookie" apps/web/src --include='*.ts' --include='*.tsx' | grep -v '\.test\.' | wc -l | tr -d ' ') -eq 1`
 
 ---
 
@@ -148,7 +158,7 @@ language: es
   - **Verify**: `pnpm --filter @dsm/web test -- cartService` (con los handlers **MSW
     generados** en T0.1: happy path de las 3 operaciones; 409 → `conflict` con
     `available_quantity` accesible; 404 → `notFound`; 429 → `rateLimited` con el
-    `retryAfterSeconds` del header) **y** `rg -q "fetch\(" apps/web/src/features/cart || true` sin resultados
+    `retryAfterSeconds` del header) **y** `! grep -rq "fetch(" apps/web/src/features/cart` (sin resultados)
 
 ---
 
@@ -210,7 +220,7 @@ language: es
     muestra ambos precios; el importe coincide **carácter por carácter** con
     `formatArs(subtotal_ars_cents)` del helper; «ajustar a N» y «quitar» disparan callbacks
     y **no** mutan solas) **y**
-    `rg -q "toLocaleString|\\$ \\$\\{" apps/web/src/features/cart || true` sin resultados
+    `! grep -rEq "toLocaleString" apps/web/src/features/cart` (sin resultados)
 
 - [ ] T2.4 `CartSummary` — total, CTA al pago y el bloqueo de AC-6
   - **Exit criterion**: muestra el `total_ars_cents` con el helper, con el subtexto «IVA
@@ -269,7 +279,7 @@ language: es
     `Deferred: US-004` (el buscador sigue pendiente).
   - **Verify**: `pnpm --filter @dsm/web test -- CartBadge` (con carrito de 3 unidades en 2
     líneas muestra **3**; en `loading` **no** hay dígito en el DOM; al agregar un ítem el
-    número sube sin remontar) **y** `test -z "$(rg -l "'use client'" "apps/web/app/(storefront)/layout.tsx")"`
+    número sube sin remontar) **y** `! grep -q "'use client'" "apps/web/app/(storefront)/layout.tsx"`
     **y** `pnpm --filter @dsm/web test -- CategoryNav` (los specs de US-002 pasan sin editarse)
 
 - [ ] T3.3 `AddToCartButton` + `MiniCart` (AC-1, sin redirigir)
@@ -396,13 +406,13 @@ language: es
     ADR-0013 se extendió, los dos sujetos de CSRF, que los totales **vienen del servidor** y
     no se calculan acá, y **qué NO hace** (no reserva stock, no cobra, no confirma — con los
     punteros a US-008/US-009/US-010).
-  - **Verify**: `test -f apps/web/src/features/cart/README.md && rg -q "ADR-0013" apps/web/src/features/cart/README.md && rg -q "US-008" apps/web/src/features/cart/README.md && test $(wc -l < apps/web/src/features/cart/README.md) -le 40`
+  - **Verify**: `test -f apps/web/src/features/cart/README.md && grep -q "ADR-0013" apps/web/src/features/cart/README.md && grep -q "US-008" apps/web/src/features/cart/README.md && test $(wc -l < apps/web/src/features/cart/README.md) -le 40`
 
 - [ ] T6.2 Actualizar el README de la app con la variable que ahora comparte
   - **Exit criterion**: `apps/web/README.md` dice que `API_INTERNAL_ORIGIN` gobierna **dos**
     superficies same-origin (`/v1/auth/*` y `/v1/cart/*`), y que sin ella el carrito
     devuelve 404 con el mismo síntoma que el login.
-  - **Verify**: `rg -q "API_INTERNAL_ORIGIN" apps/web/README.md && rg -q "/v1/cart" apps/web/README.md`
+  - **Verify**: `grep -q "API_INTERNAL_ORIGIN" apps/web/README.md && grep -q "/v1/cart" apps/web/README.md`
 
 ---
 
