@@ -23,12 +23,12 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 | TC | Task | AC | Capa | Estado |
 |---|---|---|---|---|
-| TC-140 | T1.1 | AC-1 | e2e | por ejecutar |
-| TC-141 | T1.1 | AC-2 | e2e | por ejecutar |
-| TC-142 | T1.1 | AC-3 | e2e | por ejecutar |
-| TC-143 | T1.2 | AC-4 | e2e | por ejecutar |
+| TC-140 | T1.1 | AC-1 | e2e | **verde** |
+| TC-141 | T1.1 | AC-2 | e2e | **verde** |
+| TC-142 | T1.1 | AC-3 | e2e | **verde** |
+| TC-143 | T1.2 | AC-4 | e2e | escrito, bloqueado |
 | TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | por ejecutar |
-| TC-145 | T1.2 | AC-7 | e2e | por ejecutar |
+| TC-145 | T1.2 | AC-7 | e2e | escrito, bloqueado |
 | TC-146 | T2.4 | AC-10 | seguridad | por ejecutar |
 | TC-147 | T2.3 | AC-8 | seguridad | por ejecutar |
 | TC-148 | T2.2 | AC-9 | seguridad | por ejecutar |
@@ -57,7 +57,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Fase 0: Soporte de cuenta de cliente en el harness — 1,2 h
 
-- [ ] T0.1 `support/customer-auth.ts` — sembrar y autenticar una cuenta por la API real
+- [x] T0.1 `support/customer-auth.ts` — sembrar y autenticar una cuenta por la API real
   - **Pattern**: espejo de `support/admin-auth.ts` + `support/cart-client.ts`: cada cuenta
     vive en su propio `APIRequestContext` con su almacén de cookies, y **ninguna función
     recibe ni devuelve el token de sesión a mano** — pasarlo probaría que el servidor
@@ -68,7 +68,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     sesión; cada cuenta es independiente (el lockout de una no afecta a otra).
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-140" --reporter=line 2>&1 | grep -qE '^ *1 passed'` (el helper queda ejercido por el primer escenario que lo usa; sin él, TC-140 no puede existir)
 
-- [ ] T0.2 Prefijo único por corrida en los emails sembrados
+- [x] T0.2 Prefijo único por corrida en los emails sembrados
   - **Exit criterion**: dos corridas consecutivas de la misma suite **no** colisionan por
     email ya registrado; el prefijo se deriva del timestamp como ya hace `builders` con
     SKU y slug.
@@ -78,7 +78,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Fase 1: Recorrido de cuenta contra la API real — 1,8 h
 
-- [ ] T1.1 TC-140 + TC-141 + TC-142 — registro, login y logout (AC-1, AC-2, AC-3)
+- [x] T1.1 TC-140 + TC-141 + TC-142 — registro, login y logout (AC-1, AC-2, AC-3)
   - **Pattern**: selectores por rol y nombre accesible, nunca CSS ni índices; esperar
     asertando el estado siguiente, nunca `waitForTimeout` — `per playwright-stability
     §Selectors + §Auto-waiting`.

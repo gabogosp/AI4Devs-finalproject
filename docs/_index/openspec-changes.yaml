@@ -1227,7 +1227,12 @@
   us-id: US-014
   discipline: qa
   variant: null
-  status: draft
+  # 3/12 tasks el 2026-08-23 (T0.1, T0.2, T1.1): 5 escenarios verdes contra la API real.
+  # El PRIMER escenario cazó un defecto de PRODUCCIÓN: el registro devolvía 500 en el
+  # artefacto construido porque breached-passwords.txt no se copiaba a dist/ (fix e327332).
+  # T1.2 en adelante BLOQUEADO por entorno: api-up.sh promete elevar AUTH_RATE_LIMIT_MAX y
+  # no surte efecto, así que el registro da 429 y toda la suite empieza registrando.
+  status: in progress
   parent-us: docs/user-stories/US-014-registro-login.md
   linear-task-id: null
   audit-baseline: null
