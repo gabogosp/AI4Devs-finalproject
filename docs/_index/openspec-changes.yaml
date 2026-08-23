@@ -568,7 +568,7 @@
   estimate-hours: 13.4
   assignee: develop-backend  # ejecutado por /develop-backend en la sesión del 2026-08-23
   branch: feature-entrega2-GOSP
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
   completed-at: 2026-08-23  # 28/28 tasks cerradas con su Verify; AS-BUILT en tasks.md
   archived-at: null

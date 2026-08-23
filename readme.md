@@ -223,7 +223,7 @@ C4Container
 > | `auth` (JWT + bcrypt, cookies, refresh rotado) | **construido** — US-014 |
 > | `cart` | **construido** (backend); el frontend en curso — US-007 |
 > | `import` masivo | **construido** — US-006 |
-> | `enrichment` (IA + embeddings) | **en curso** — US-005 |
+> | `enrichment` (IA + embeddings) | **construido** (backend) — US-005. La primera corrida contra el proveedor real está pendiente: hasta que se cargue `GEMINI_API_KEY` y se dispare, el catálogo no tiene vectores y la búsqueda semántica no tendría qué consultar. El campo de curación en el panel es trabajo FE diferido |
 > | `search` (kNN + fallback) | **planificado** — US-004 |
 > | `checkout`, `payments`, `orders`, `stock` | **planificados** — US-008, US-009, US-010 |
 > | `metrics` | **planificado** — US-016 |
