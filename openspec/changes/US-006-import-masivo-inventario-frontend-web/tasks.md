@@ -100,6 +100,9 @@ language: es
     da `noEncontrado`)
 
 - [ ] T1.2 Envío del archivo con `Idempotency-Key` estable por archivo
+  - **Nota de secuencia (2026-08-23)**: su `Verify` corre sobre `ImportUpload`, que se construye en
+    **T2.1**, así que las dos se cierran juntas. Es un error de orden de este plan, no del criterio:
+    los dos `Exit criterion` se verifican igual, con los tests del mismo componente.
   - **Pattern**: la clave se genera **al elegir el archivo** (`crypto.randomUUID()`) y se guarda en
     el estado, no en el submit: reintentar con la misma clave es lo que hace que el 200 de réplica
     sirva — `per api-standards.md §10 (Idempotency-Key en POST retryables)`.
@@ -111,7 +114,7 @@ language: es
     (integración con MSW: el handler captura los headers de los dos envíos y son iguales; con un
     archivo distinto difieren; con un 200 de réplica el componente no dispara un segundo `POST`)
 
-- [ ] T1.3 `importErrorCopy.ts`: los dos catálogos, con fallback que no rompe
+- [x] T1.3 `importErrorCopy.ts`: los dos catálogos, con fallback que no rompe
   - **Pattern**: mapa `Record<string, string>` con **acceso por índice y fallback explícito**, nunca
     un `switch` exhaustivo que dependa de un union type — así un código nuevo del backend degrada a
     «menos lindo» y no a pantalla vacía — `per frontend-standards.md §11.3 (mapeo explícito de
