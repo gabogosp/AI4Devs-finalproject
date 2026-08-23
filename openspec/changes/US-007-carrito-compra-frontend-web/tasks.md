@@ -276,9 +276,13 @@ language: es
 
 ## Fase 3: Integración en el storefront — 2,0 h
 
-- [ ] T3.1 `app/(storefront)/carrito/page.tsx` — vista de cliente, no indexable
-  - **Pattern**: Client Component + `export const metadata = { robots: { index: false } }`
-    (Metadata API) — `per frontend-next-standards.md — datos personalizados no se
+- [x] T3.1 `app/(storefront)/carrito/page.tsx` — vista de cliente, no indexable
+  - **Pattern**: `page.tsx` **Server Component** que exporta `metadata` y renderiza el
+    `CartPage` cliente (Metadata API). *(corregido al ejecutar: el plan decía «Client Component
+    + `export const metadata`», y en el App Router eso es **incompatible** — `metadata` sólo se
+    exporta desde un Server Component. La frontera queda en la hoja, igual que en el layout del
+    storefront, y el efecto buscado —ninguna llamada al carrito desde el servidor + `noindex`—
+    se cumple igual.)* — `per frontend-next-standards.md — datos personalizados no se
     prerenderizan ni se cachean` y `per el guard de client.ts (US-014 D3)`. Composición
     explícita de los 4 estados, sin un `if (data)` que los cubra a todos (`per
     frontend-standards.md §11.9`).
