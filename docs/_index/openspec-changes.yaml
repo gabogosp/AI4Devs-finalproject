@@ -1223,3 +1223,40 @@
   completed-at: null
   archived-at: null
   archive-path: null
+- name: US-014-registro-login-qa
+  us-id: US-014
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-014-registro-login.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 6,5 h AI-asistido / ~12 h tradicional (12 tasks + 14 casos, 12 automatizados y 2
+  # charters manuales). US §7 presupuesta QA-US-014 en 8 h: el tradicional excede ~4 h
+  # porque la US contaba "tests de los formularios y del flujo" y el grueso del trabajo
+  # es infraestructura de QA que no existe para la cuenta del CLIENTE (el harness sólo
+  # tiene helpers de admin) más tres AC que son PROPIEDADES DE SEGURIDAD y no features:
+  # anti-enumeración medida sobre status+cuerpo+latencia, rotación del refresh probada
+  # consumiéndolo dos veces, y la no-filtración de la contraseña verificada también
+  # sobre el stdout del proceso de la API.
+  #
+  # MODO A: los changes de BE y FE ya existen, así que este es el hermano de QA para los
+  # escenarios cross-discipline (el precedente es US-007-carrito-compra-qa).
+  #
+  # LO QUE NO DUPLICA: US-014 tiene la suite dev-owned más densa del repo (8 e2e-nest de
+  # auth + 3 E2E de navegador del FE). Ninguno se repite: la capa nueva se define por
+  # correr contra la API REAL y no contra api-stub.mjs, donde bcrypt es una comparación
+  # de strings, el rate-limit se dispara con un header y la rotación vive en un Map.
+  #
+  # 4 preguntas abiertas, ninguna bloquea: la que conviene decidir antes de sumar otra
+  # suite en paralelo es OQ-QA-1 (base de datos propia para QA) — es la causa conocida de
+  # la contaminación que ya rompe TC-204 de US-002.
+  estimate-hours: 6.5
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
