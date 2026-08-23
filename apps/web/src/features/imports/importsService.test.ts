@@ -96,8 +96,8 @@ describe('importsService', () => {
   });
 
   it('get LANZA si la respuesta no cumple el contrato (falta report_truncated)', async () => {
-    const incompleto = job();
-    delete (incompleto as Record<string, unknown>).report_truncated;
+    const incompleto = job() as unknown as Record<string, unknown>;
+    delete incompleto.report_truncated;
     server.use(
       http.get(`${API}/v1/admin/imports/${ID}`, () =>
         HttpResponse.json(incompleto),

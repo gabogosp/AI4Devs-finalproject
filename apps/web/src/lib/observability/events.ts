@@ -39,7 +39,17 @@ export type BusinessEvent =
   | 'cart_quantity_changed'
   | 'cart_item_removed'
   | 'cart_viewed'
-  | 'cart_blocked_checkout';
+  | 'cart_blocked_checkout'
+  // Import masivo (US-006). Eventos del TRABAJO, no de la fila: un import de 5.000
+  // filas emite cuatro eventos como máximo, no 5.000. **Nunca** llevan el nombre
+  // del archivo, un `sku` ni un motivo de rechazo: son datos del catálogo del
+  // cliente, y los logs tienen menos controles de acceso que la base
+  // (observability-standards §9). Son de backoffice, así que van con
+  // `operator_id: 'admin'` — no entran en PUBLIC_EVENTS.
+  | 'import_upload_submitted'
+  | 'import_upload_rejected'
+  | 'import_job_finished'
+  | 'import_report_downloaded';
 
 export interface EventProps {
   operator_id?: string;

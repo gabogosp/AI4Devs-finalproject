@@ -99,7 +99,7 @@ language: es
     `AbortController` recibió `abort`; a los 15 min `agotado` es `true` y los datos siguen; un 404
     da `noEncontrado`)
 
-- [ ] T1.2 Envío del archivo con `Idempotency-Key` estable por archivo
+- [x] T1.2 Envío del archivo con `Idempotency-Key` estable por archivo
   - **Nota de secuencia (2026-08-23)**: su `Verify` corre sobre `ImportUpload`, que se construye en
     **T2.1**, así que las dos se cierran juntas. Es un error de orden de este plan, no del criterio:
     los dos `Exit criterion` se verifican igual, con los tests del mismo componente.
@@ -133,7 +133,7 @@ language: es
 
 ## Fase 2: Componentes — 1,6 h
 
-- [ ] T2.1 `ImportUpload`: selección, límites a la vista y pre-validación honesta
+- [x] T2.1 `ImportUpload`: selección, límites a la vista y pre-validación honesta
   - **Pattern**: `<input type="file">` con `<label>` asociado —nunca un div con `onClick`— y
     `Button` del design system; el estado del envío es `AsyncState`, no un booleano `loading` — `per
     qa-frontend-standards.md §19 (roles y etiquetas accesibles) y frontend-standards.md §11.9`.
@@ -148,6 +148,18 @@ language: es
     (componente: el texto de los tres límites está presente; adjuntar un `.txt` no dispara fetch —
     el handler de MSW no se llamó— y muestra el motivo; adjuntar 5 MiB tampoco; con un archivo
     válido el botón se deshabilita durante el envío; `getByLabelText` encuentra el input)
+  - **Cerrada junto con T1.2 el 2026-08-23** (12 tests). Tres ajustes que salieron de los tests:
+    1. **`userEvent.upload` honra el `accept` del input**, igual que un navegador, así que un `.txt`
+       elegido por ahí nunca llega al componente. El caso se ejerce con `fireEvent.change`, y la
+       defensa local sigue teniendo sentido para el archivo que **sí** llega (drag & drop, un
+       `.xlsx` renombrado, un navegador que ignore `accept`).
+    2. **La idempotencia se prueba en el escenario real: el reintento.** Dos clicks seguidos con un
+       202 no se pueden ejercer —tras el éxito el componente espera la navegación de la página—, y
+       el caso que importa es el otro: primer envío que falla sin saber si el servidor lo procesó,
+       reintento con la **misma** clave. Elegir otro archivo genera clave nueva.
+    3. **Un rechazo local deshabilita el botón** (lo pidió el test): si ya sabemos que el archivo no
+       sirve, dejarlo activo invita a un viaje perdido. Un rechazo del **servidor** no lo
+       deshabilita, porque ahí el reintento es legítimo y la clave lo hace seguro.
 
 - [ ] T2.2 `ImportProgress`: indeterminado hasta que el total existe
   - **Pattern**: `role="progressbar"` con `aria-valuemin/max/now` **sólo** cuando hay total, y una
