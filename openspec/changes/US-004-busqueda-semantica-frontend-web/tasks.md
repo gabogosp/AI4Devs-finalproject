@@ -164,7 +164,7 @@
     `/categorias/{slug}` con su `name` como texto; con la lista vacía o `fallback: null` no
     renderiza un contenedor vacío (devuelve `null`); es alcanzable por teclado.
   - **Verify**: `pnpm --filter @dsm/web test -- SearchFallback`
-- [ ] **T2.5 `SearchSkeleton.tsx` + `app/(storefront)/buscar/loading.tsx`.** Skeleton, no
+- [x] **T2.5 `SearchSkeleton.tsx` + `app/(storefront)/buscar/loading.tsx`.** Skeleton, no
   spinner (§10.1).
   - **Exit criterion**: el skeleton no anuncia contenido falso a un lector de pantalla
     (`aria-hidden` en las cajas + un `role="status"` con «Buscando…»); el `loading.tsx` vive
