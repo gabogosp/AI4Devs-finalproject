@@ -5,7 +5,7 @@ import { HealthModule } from '../health/health.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriesRepository } from '../categories/categories.repository';
 import { ProductsRepository } from '../products/products.repository';
-import { LoggingEnrichmentQueue } from './enrichment-queue';
+import { EnrichmentQueue } from '../enrichment/ports/enrichment-queue.port';
 import { ImportJobsRepository } from './import-jobs.repository';
 import { ImportRunner } from './import-runner';
 import { CatalogEventsService } from '../observability/catalog-events.service';
@@ -29,11 +29,19 @@ describe('ImportRunner (integration)', () => {
     importConfigStub(),
   );
 
+  /**
+   * Cola inerte: este archivo prueba el ejecutor del import, no el encolado. Depender del
+   * adapter real (que empuja el runner de enriquecimiento) traería su grafo entero acá.
+   */
+  class ColaInerte implements EnrichmentQueue {
+    async enqueue(): Promise<void> {}
+  }
+
   const runner = (over: Record<string, number> = {}): ImportRunner =>
     new ImportRunner(
       jobs,
       service,
-      new LoggingEnrichmentQueue(),
+      new ColaInerte(),
       new CatalogEventsService(),
       importConfigStub(over),
     );

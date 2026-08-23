@@ -7,7 +7,7 @@ import { CatalogEventsModule } from '../observability/catalog-events.module';
 import { configureApp } from '../bootstrap';
 import { PrismaService } from '../prisma/prisma.service';
 import { adminToken, nuevaIpDeTest } from '../../test/e2e-app';
-import { ENRICHMENT_QUEUE, EnrichmentQueue } from './enrichment-queue';
+import { ENRICHMENT_QUEUE, EnrichmentQueue } from '../enrichment/ports/enrichment-queue.port';
 import { ImportsModule } from './imports.module';
 
 /**

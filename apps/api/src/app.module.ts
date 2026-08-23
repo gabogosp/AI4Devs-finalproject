@@ -10,6 +10,7 @@ import { StorefrontModule } from './storefront/storefront.module';
 import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { ImportsModule } from './imports/imports.module';
+import { EnrichmentModule } from './enrichment/enrichment.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -18,6 +19,8 @@ import { ImportsModule } from './imports/imports.module';
  * `CartModule` (US-007) es la primera superficie pública de **escritura**.
  * `ImportsModule` (US-006) trae la carga masiva del catálogo, con su ejecutor
  * in-process (ADR-0012) y el barrido de trabajos huérfanos al arrancar.
+ * `EnrichmentModule` (US-005) enriquece y vectoriza el catálogo con su propio ejecutor
+ * in-process (ADR-0014); sin `GEMINI_API_KEY` queda `disabled` y la app arranca igual.
  */
 @Module({
   imports: [
@@ -32,6 +35,7 @@ import { ImportsModule } from './imports/imports.module';
     StorefrontModule,
     CartModule,
     ImportsModule,
+    EnrichmentModule,
   ],
   controllers: [],
   providers: [],

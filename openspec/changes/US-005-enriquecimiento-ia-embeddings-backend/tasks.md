@@ -380,7 +380,7 @@ estimate-hours: 13.4
     cooldown, con fake timers; `ENRICHMENT_ENABLED=false` ⇒ estado `disabled` y 0 productos
     tocados; y durante una corrida de 200 productos, un `GET /v1/health` responde < 1 s)
 
-- [ ] T3.5 Adapter real de `EnrichmentQueue` (nudge) reemplazando el no-op de US-006 (0,2 h)
+- [x] T3.5 Adapter real de `EnrichmentQueue` (nudge) reemplazando el no-op de US-006 (0,2 h)
   - **Pattern**: implementar el puerto que US-006 T4.4 definió; `enqueue(ids)` **no** guarda una
     cola: registra el conteo y empuja el runner con `setImmediate`. La cola es
     `WHERE enrichment_done = false` (US-006 `design.md` §306-309), así que un nudge perdido no

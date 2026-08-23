@@ -163,6 +163,11 @@ describe('fail-fast de producción (§7)', () => {
         RESEND_API_KEY: 're_x',
         PASSWORD_RESET_FROM: 'no-responder@dsmferreteria.com.ar',
         PASSWORD_RESET_URL_BASE: 'https://dsmferreteria.com.ar',
+        // US-005 sumó su propia exigencia de producción por el mismo criterio que las tres
+        // de arriba (una feature que "funciona" sin hacer nada es peor que un arranque
+        // roto): sin `GEMINI_API_KEY` el enriquecimiento queda `disabled` y la búsqueda
+        // semántica no tendría vectores. Un entorno de producción válido las incluye todas.
+        GEMINI_API_KEY: 'g_x',
       }),
     ).not.toThrow();
   });

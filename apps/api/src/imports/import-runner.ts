@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { ImportFormat } from './detect-format';
 import { CatalogEventsService } from '../observability/catalog-events.service';
-import { ENRICHMENT_QUEUE, EnrichmentQueue } from './enrichment-queue';
+import { ENRICHMENT_QUEUE, EnrichmentQueue } from '../enrichment/ports/enrichment-queue.port';
 import {
   ImportJobsRepository,
   JobCounters,
