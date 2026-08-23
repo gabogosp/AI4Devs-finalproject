@@ -197,7 +197,7 @@ language: es
     `GEMINI_SEARCH_TIMEOUT_MS` la llamada se abandona y el resultado trae la señal de
     degradación en vez de lanzar)
 
-- [ ] T1.3 `queryVectorCache` — LRU en proceso, cachea el **vector** no los resultados
+- [x] T1.3 `queryVectorCache` — LRU en proceso, cachea el **vector** no los resultados
   - **Pattern**: LRU acotado por entradas y TTL; clave = consulta **normalizada**. Tercera
     instancia del patrón «ejecutor/almacén en proceso mientras Redis no exista» — `per
     ADR-0012 y ADR-0014` (no se agrega ADR: no hay durabilidad en juego).

@@ -26,9 +26,6 @@ describe('Presupuesto del camino interactivo (search-rate-budget)', () => {
       ...extra,
     }) as unknown as ConfigService;
 
-  /** `sleep` que no duerme: los tests miden decisiones, no reloj real. */
-  const sinDormir = async () => undefined;
-
   describe('los dos limitadores no comparten estado', () => {
     it('con el limitador del LOTE saturado, el de búsqueda sale sin esperar', async () => {
       // Se modela el escenario real: un lote en curso a 5 RPM (12 s de espaciado) y una
@@ -89,7 +86,7 @@ describe('Presupuesto del camino interactivo (search-rate-budget)', () => {
       // la prueba de que la búsqueda no gasta la cuota que habilita la búsqueda.
       const embedderLote = new FakeAiProvider();
       const embedderBusqueda = new FakeAiProvider();
-      const buscador = new QueryEmbedder(embedderBusqueda, configCon(), sinDormir);
+      const buscador = new QueryEmbedder(embedderBusqueda, configCon());
 
       await buscador.embedQuery('algo para colgar un cuadro');
       await buscador.embedQuery('mecha para hormigón');
@@ -147,7 +144,7 @@ describe('Presupuesto del camino interactivo (search-rate-budget)', () => {
           throw new Error('el proveedor respondió 401 con la clave AIzaSyXX');
         },
       };
-      const buscador = new QueryEmbedder(roto, configCon(), sinDormir);
+      const buscador = new QueryEmbedder(roto, configCon());
 
       const resultado = await buscador.embedQuery('consulta');
 
@@ -162,7 +159,7 @@ describe('Presupuesto del camino interactivo (search-rate-budget)', () => {
       // Cubre los dos motivos que el factory unifica: sin clave, o con la cuota entera
       // asignada al enriquecimiento (GEMINI_SEARCH_MAX_RPM=0, la primera corrida).
       const sinProveedor = new DisabledAiProvider() as unknown as AiEmbedder;
-      const buscador = new QueryEmbedder(sinProveedor, configCon(), sinDormir);
+      const buscador = new QueryEmbedder(sinProveedor, configCon());
 
       const resultado = await buscador.embedQuery('consulta');
 
@@ -172,7 +169,7 @@ describe('Presupuesto del camino interactivo (search-rate-budget)', () => {
 
     it('el camino feliz devuelve el vector y el modelo con el que se generó', async () => {
       // Contraste: sin esto, un `ok: false` en todos los tests anteriores no probaría nada.
-      const buscador = new QueryEmbedder(new FakeAiProvider(), configCon(), sinDormir);
+      const buscador = new QueryEmbedder(new FakeAiProvider(), configCon());
 
       const resultado = await buscador.embedQuery('taco fischer');
 

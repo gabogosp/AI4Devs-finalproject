@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiEmbedder } from '../ai/ports/ai.ports';
 import { configNumber } from '../enrichment/config-number';
+import { QUERY_VECTOR_CACHE, QueryVectorCache } from './query-vector.cache';
 import { SEARCH_EMBEDDER } from './search-embedder.provider';
 
 /**
@@ -14,7 +15,7 @@ import { SEARCH_EMBEDDER } from './search-embedder.provider';
 export type DegradationReason = 'unavailable' | 'timeout' | 'provider_error';
 
 export type QueryEmbedding =
-  | { ok: true; vector: number[]; model: string }
+  | { ok: true; vector: number[]; model: string; cached: boolean }
   | { ok: false; reason: DegradationReason };
 
 /**
@@ -41,10 +42,12 @@ export class QueryEmbedder {
   constructor(
     @Inject(SEARCH_EMBEDDER) private readonly embedder: AiEmbedder,
     private readonly config: ConfigService,
-    /** Inyectable para tests: evita esperar el presupuesto real de reloj. */
-    @Optional()
-    private readonly sleep: (ms: number) => Promise<void> = (ms) =>
-      new Promise((r) => setTimeout(r, ms)),
+    /**
+     * Caché **del vector**. Opcional para que los tests que miden el presupuesto de tasa no
+     * tengan que armarlo, pero en la app siempre está: con el free tier es lo único que hace
+     * tolerable el techo de RPM.
+     */
+    @Optional() @Inject(QUERY_VECTOR_CACHE) private readonly cache?: QueryVectorCache,
   ) {}
 
   /** El modelo con el que se generan los vectores de consulta (parte de la clave del caché). */
@@ -58,6 +61,17 @@ export class QueryEmbedder {
   }
 
   async embedQuery(consulta: string): Promise<QueryEmbedding> {
+    const model = this.model;
+
+    // El caché se consulta ANTES de mirar la disponibilidad del proveedor: un vector ya pagado
+    // sigue sirviendo aunque en este momento no haya cuota o no haya clave. Al revés —chequear
+    // disponibilidad primero— se degradaría a full-text teniendo el vector en la mano, que es
+    // regalar trabajo ya comprado justo cuando el recurso escasea.
+    const enCache = this.cache?.get(consulta, model);
+    if (enCache) {
+      return { ok: true, vector: enCache, model, cached: true };
+    }
+
     if (!this.embedder.available) {
       return { ok: false, reason: 'unavailable' };
     }
@@ -89,7 +103,8 @@ export class QueryEmbedder {
         return { ok: false, reason: 'timeout' };
       }
 
-      return { ok: true, vector: resultado, model: this.model };
+      this.cache?.set(consulta, model, resultado);
+      return { ok: true, vector: resultado, model, cached: false };
     } catch (error) {
       // El mensaje del error NO se propaga al cliente: puede traer el status del proveedor y
       // eso es diagnóstico interno. Al cliente le alcanza saber que la respuesta es degradada.
