@@ -14,7 +14,13 @@ Cuatro findings del frontend-web audit (`dsm-web/2026-08-22/audit.md`) con statu
 - DSM-WEB-002 (tokens Tailwind): `deferred` (deuda cosmética aceptada).
 - DSM-WEB-003 (Sentry SDK): `deferred` (requiere DSN de Sentry, depende de US-019).
 - DSM-WEB-005 (eslint-plugin-jsx-a11y): `deferred` (quick win que se incorpora al próximo deploy).
-- DSM-WEB-006 (contraste gray-500): `deferred`.
+- DSM-WEB-006 (contraste gray-500): `deferred`, pero **confirmado y relocalizado 2026-08-23**
+  con axe-core en chromium real: no es ProductDetail sino el hero de la home
+  (`app/(storefront)/page.tsx:25`), donde `text-muted` (#6b7280) sobre `bg-accent-subtle`
+  (#fff3ec) mide **4.43:1** contra el 4.5:1 que exige AA. Es el único elemento con violación de
+  contraste en `/`. El fix es de una línea —`text-foreground` da 15.9:1— y el trabajo real es
+  decidir si el token `--accent-subtle` admite texto secundario o no, que es una decisión del
+  design-system y no de este archivo.
 - DSM-WEB-007 (admin token en sessionStorage): ya tiene su change propio (`AUDIT-dsm-web-007-endurecimiento-panel-frontend-web`).
 - DSM-WEB-009 (lucide-react ^): ya `addressed`.
 - DSM-WEB-011 (initObservability no invocada): `deferred` (dependiente de DSM-WEB-003).
