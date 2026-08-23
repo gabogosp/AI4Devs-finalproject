@@ -759,8 +759,10 @@
   # DECISIONES DEL PO 2026-08-22: OQ-FE-15 (a) rutas /legales/privacidad + /legales/terminos ·
   # OQ-FE-16 (b) chequeo de deriva de la versión, implementado como TEST de la suite
   # (versionContract.test.ts) en vez de script de deploy — corre en cada CI y no depende de
-  # US-019 · OQ-FE-17 (a) SIN gate automático del texto provisional. OQ-FE-18 sigue abierta
-  # (¿BE-US-017 absorbida por US-008?) y no bloquea.
+  # US-019 · OQ-FE-17 (a) SIN gate automático del texto provisional.
+  # OQ-FE-18 RESUELTA 2026-08-23 → (a) BE-US-017 absorbida por US-008: sin contenido que servir
+  # (design D1/D5 lo dejan como módulo tipado en el FE) y el versionado ya es de US-008. `BE`
+  # sacado de `disciplines` en us-status.yaml; el detalle en la §7 de la US.
   #
   # 3,9 h AI-asistido / ~6,5 h tradicional (12 tasks + 4 pre-requisitos). La US §7 presupuesta
   # FE-US-017 en 4-6 h tradicional: se excede ~0,5-2,5 h con causa. Las páginas en sí son ~2 h (el

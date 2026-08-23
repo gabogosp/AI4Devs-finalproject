@@ -21,7 +21,7 @@ created: 2026-08-22
 > OQ-FE-16 **(b)** chequeo de deriva de la versión (implementado como test de la suite) ·
 > OQ-FE-17 **(a)** **sin gate automático** del texto provisional — la barrera es humana (DoD de
 > la US) y el riesgo residual queda declarado en §Preguntas abiertas y en `design.md` D6.
-> OQ-FE-18 sigue abierta y **no bloquea**.
+> OQ-FE-18 **resuelta 2026-08-23** → opción (a): `BE-US-017` absorbida por US-008.
 
 ## Why
 
@@ -260,8 +260,10 @@ verifica es OQ-FE-16.
   > despliegue de `Deferred: US-019`. Efecto lateral: **cae el campo `status`** del módulo de
   > contenido, porque sin gate no tendría lector y sería dato muerto (`AGENTS.md` §1.2).
 
-- **OQ-FE-18 — ¿Sigue existiendo `BE-US-017` o queda absorbida?** *(para el Arquitecto — sin
-  resolver; **no bloquea** este plan)*
+- **OQ-FE-18 — ¿Sigue existiendo `BE-US-017` o queda absorbida?** *(**RESUELTA 2026-08-23 →
+  opción (a): absorbida por US-008.** Documentada en la §7 de la US con las dos mitades y su
+  destino, y `BE` sacado de `disciplines` en `us-status.yaml` para que el flow-auditor no lea
+  una disciplina sin cobertura)*
   La US §7 le asigna al backend «servir el contenido legal + versionado». Pero el E2E §3 fija el
   contenido como **páginas estáticas SSR** (sin endpoint) y el plan de US-008 backend ya se quedó
   con el versionado (`LEGAL_TERMS_VERSION` + `consent_terms_version` + su `CHECK`). Con eso, a

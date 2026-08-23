@@ -139,6 +139,15 @@ language: es
     `LEGAL_TERMS_VERSION` (string no vacío, default `'2026-06-15'`). Un valor inválido
     (`CHECKOUT_RATE_LIMIT_MAX=-1`, `LEGAL_TERMS_VERSION=''`) hace **fallar el arranque**,
     no cae al default en silencio. No se agrega ningún secreto.
+  - ⚠ **`LEGAL_TERMS_VERSION` es un contrato con el frontend, ya verificado y ya rojo si se
+    rompe** (OQ-FE-18 resuelta 2026-08-23: `BE-US-017` quedó absorbida por esta US, así que el
+    versionado de los términos es responsabilidad de acá). El default **debe** coincidir con
+    `LEGAL_TERMS_VERSION` de `apps/web/src/features/legal/content.ts` —hoy `'2026-06-15'`— y
+    `apps/web/src/features/legal/versionContract.test.ts` (US-017 T4.3) lo verifica **en cada
+    CI**, leyendo el `.env.example` de la raíz y, en cuanto exista, el default de este mismo
+    `env.validation.ts`. Si divergen, la orden afirmaría que la persona aceptó una versión que
+    el sitio nunca publicó: un registro que contradice la evidencia, peor que no tenerlo.
+    Cambiar la versión es un cambio en **los dos lados a la vez**.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=env.validation`
     (casos nuevos: sin las variables → los 3 defaults **literales**, con
     `expect(env.CHECKOUT_RATE_LIMIT_MAX).toBe(10)`; `CHECKOUT_RATE_LIMIT_MAX=-1` →

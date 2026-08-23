@@ -67,7 +67,9 @@ despliegue de `Deferred: US-019` · checkbox de consentimiento y su captura → 
 (FE+BE)` · igualdad de la versión en el entorno de producción (Railway) → `Deferred: US-019` ·
 horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer documento legal →
 `Deferred: sin AC que lo pida` · banner de cookies → `Deferred: fuera de v1 (US §4)` ·
-`BE-US-017` → `Deferred: OQ-FE-18 (Arquitecto) — probablemente absorbida por US-008`.
+`BE-US-017` → **absorbida por US-008** (OQ-FE-18 resuelta 2026-08-23, opción (a): no hay
+contenido que servir —D1/D5 lo dejan como módulo tipado en el FE— y el versionado ya es de
+US-008; `BE` sacado de `disciplines`).
 
 ---
 

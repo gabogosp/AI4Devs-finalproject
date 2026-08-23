@@ -200,21 +200,37 @@
   status: In Progress
   priority: High
   prd-capacity: 10
-  disciplines: [FE, BE, QA]
+  # BE SACADO 2026-08-23 — resolución de OQ-FE-18, opción (a): `BE-US-017` queda ABSORBIDA por
+  # US-008. La US §7 le asignaba al backend «servir el contenido legal + versionado». Las dos
+  # mitades desaparecieron por decisiones de diseño ya tomadas, no por recorte de alcance:
+  #   · Servir el contenido: el design.md de US-017 D1 lo fija como módulo tipado en el FE y D5
+  #     la versión en el código. No hay endpoint que servir. Un endpoint para dos documentos que
+  #     cambian una vez por año le agregaría una dependencia de red a una página cuya razón de
+  #     ser es estar disponible siempre — lo que el guard noBackendNoTracking.test.tsx prohíbe.
+  #   · Versionado: se lo quedó US-008 (`LEGAL_TERMS_VERSION` + `orders.consent_terms_version` +
+  #     su CHECK). La propia US lo asigna ahí en AC-4 y AC-8. El FE verifica el contrato contra
+  #     esa declaración en versionContract.test.ts, en vez de construirlo.
+  # Se saca del array en vez de dejarlo como task fantasma para que el flow-auditor no lea una
+  # disciplina sin cobertura (opción (b) descartada, con su costo escrito en el proposal).
+  disciplines: [FE, QA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (frontend-web-developer)
   blocked_by: [US-001]
+  # QA SE MANTIENE, sin change propio: es la norma del repo (15 de 20 US con QA en `disciplines`
+  # no tienen change `-qa`; US-004/005/008/009/010 llevan su qa-plan.md DENTRO del change de
+  # backend). Acá la automatización vive en el change de FE —T5.1 e2e sobre el HTML servido,
+  # T3.2 a11y con axe, T4.3 contrato de versión— y la trazabilidad AC→task está en la matriz
+  # del tasks.md. Lo que queda de QA es la parte MANUAL del DoD, que no necesita un change.
   # 2026-08-23: el change de FE está IMPLEMENTED (12/12 tasks; 648 unit + 52 E2E verdes en
-  # @dsm/web). La US NO pasa a Done y son tres motivos concretos, no burocracia:
+  # @dsm/web). La US NO pasa a Done y son dos motivos concretos, no burocracia:
   #   1. El checkbox de consentimiento y su captura son de US-008 (FE+BE) — el seam ya existe
   #      (`CONSENT_COPY` en src/features/legal/routes.ts), pero nadie lo consume todavía.
   #   2. El texto legal es PROVISIONAL con marcadores `[PENDIENTE: …]` visibles en la página.
   #      Publicar así es incumplimiento con apariencia de cumplimiento. El gate es humano
   #      (dueño + asesoría legal) porque el PO descartó el automático (OQ-FE-17 (a)).
-  #   3. OQ-FE-18 sigue abierta: ¿BE-US-017 existe o la absorbe US-008?
 - id: US-018
   slug: contacto-whatsapp
   status: In Progress
