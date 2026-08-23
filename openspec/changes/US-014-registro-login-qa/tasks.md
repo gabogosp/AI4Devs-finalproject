@@ -152,15 +152,22 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     del backend, con bcrypt real —que es justo lo que introduce la diferencia de tiempo que
     este test acota—.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-144" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
-  - **DEFECTO (2026-08-23) — AC-5 no se sostiene**: el par de login del escenario devuelve
-    **500 para la cuenta que existe** (contraseña incorrecta) y **401 para la que no**, así
-    que la superficie **sí distingue** si el email está registrado — exactamente lo que AC-5
-    prohíbe, y con la peor señal posible: un 5xx. Hay además 500 en `/v1/auth/refresh` al
-    reusar un token rotado, donde ADR-0011 espera un rechazo limpio (401): un 5xx ahí
-    convierte la detección de reuso en un error del servidor y ensucia Sentry.
-    Los tres asserts de igualdad (status, cuerpo) y el de latencia están escritos y son los
-    que lo destapan; **no se debilita ninguno**. Corresponde al backend.
-    `Deferred: 500 en login de cuenta existente y en refresh reusado — owner: BE`.
+  - **ROJO, causa NO confirmada (2026-08-23)**. El escenario falló porque el login de la
+    cuenta **existente** devolvió **500** y el de la inexistente **401** — o sea, la
+    superficie distinguía si el email está registrado, que es lo que AC-5 prohíbe.
+    **Pero el 500 NO se reproduce en aislamiento**: el mismo flujo por `curl` (registrar,
+    después login con contraseña incorrecta) devuelve **401 correcto**, con
+    `dsm:auth/invalid-credentials`. Se revisó el camino que sólo existe para una cuenta real
+    —`registrarFallo` → `registerFailedLogin` / `lockUntil`— y sus tres parámetros de
+    configuración tienen default, así que no hay `NaN` que produzca una fecha inválida.
+    Lo que **sí** quedó en el log del proceso son 500 en **`/v1/auth/refresh`**, donde
+    ADR-0011 espera un rechazo limpio: un 5xx convierte la detección de reuso —un evento de
+    seguridad **esperado**— en un error de servidor que va a ensuciar Sentry.
+    **Lo honesto es no declarar un defecto de login sin evidencia reproducible.** Próximo
+    paso: correr TC-144 aislado (`--grep "TC-144"`, sin los otros escenarios) para separar si
+    el 500 es del login o contaminación de otro escenario del mismo worker; y capturar el
+    stack del 500 de `refresh`, que sí tiene rastro.
+    `Deferred: reproducir el 500 y capturar su stack — owner: QA + BE`.
   - **T2.2 (TC-148/148b) y T2.3 (TC-147) quedaron VERDES** en la misma corrida: cookies con
     sus flags, primer refresh válido, token rotado rechazado, y la contraseña canario ausente
     de respuestas y del log del proceso.
