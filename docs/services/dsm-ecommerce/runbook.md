@@ -91,6 +91,11 @@ no cobrar 429, así que la única palanca real es subir la cuota. Conviene dispa
 horario de más tráfico** del storefront, aunque el ejecutor ceda el event loop entre lotes y la
 API siga respondiendo.
 
+0. **Tener un JWT admin.** Las dos rutas son admin-only. Si la cuenta admin todavía no está
+   sembrada en ese entorno, el procedimiento está en `apps/api/README.md` §«Procedimiento de
+   corte del bootstrap token» (`ADMIN_SEED_EMAIL` + `ADMIN_SEED_PASSWORD` + `seed`, idempotente).
+   Sin admin no hay forma de disparar la corrida, y conviene descubrirlo antes de reservar la
+   ventana de 5,5 h.
 1. Confirmar que la clave está cargada: `GET /v1/admin/enrichment/status` debe devolver
    `runner_state` distinto de `disabled`. Si dice `disabled`, falta `GEMINI_API_KEY` o
    `ENRICHMENT_ENABLED` está en `false` — **no es una caída**.
