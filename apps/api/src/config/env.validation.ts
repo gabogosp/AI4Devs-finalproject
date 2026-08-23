@@ -5,6 +5,16 @@ import { z } from 'zod';
  * Si falta o es inválida una variable requerida, el arranque lanza y la app
  * NO levanta con configuración a medias.
  */
+/**
+ * Techo de requests por minuto del free tier de Gemini (ADR-0003).
+ *
+ * Está acá como constante y no como variable de entorno porque **no es configuración
+ * nuestra**: es una propiedad de la cuenta del proveedor. Subir de tier significa cambiar
+ * este número —una línea, con el test de abajo documentando el cambio— y es el momento de
+ * revisar ADR-0003, no de tocar un `.env` en producción.
+ */
+export const GEMINI_FREE_TIER_RPM = 15;
+
 export const envSchema = z.object({
   /**
    * Entorno de ejecución. No estaba declarado hasta T7.2, y hacía falta: sin él
@@ -199,7 +209,19 @@ export const envSchema = z.object({
   /** Timeout por llamada de embedding, en ms (la llamada es más chica que la de texto). */
   GEMINI_EMBED_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   /** Tope de requests por minuto del free tier; el limitador del adapter lo respeta. */
-  GEMINI_MAX_RPM: z.coerce.number().int().positive().default(15),
+  /**
+   * Cuota del **enriquecimiento**, que reparte los 15 RPM del free tier con la búsqueda
+   * (`GEMINI_SEARCH_MAX_RPM`). El default es el **estado estable** del sistema —5 para el
+   * lote, 10 para el camino interactivo— porque la búsqueda es la que hace esperar a un
+   * cliente y el enriquecimiento puede tardar.
+   *
+   * La **primera corrida** del catálogo es la excepción y es temporal: se le da toda la
+   * cuota (`GEMINI_MAX_RPM=15` + `GEMINI_SEARCH_MAX_RPM=0`, que deja la búsqueda degradada
+   * a full-text mientras dura). Está como paso del runbook §3.6, no como default: un
+   * default que codifica una migración de una sola vez es un default que queda mintiendo
+   * para siempre.
+   */
+  GEMINI_MAX_RPM: z.coerce.number().int().min(0).max(GEMINI_FREE_TIER_RPM).default(5),
 
   /** Kill-switch del runner: en `false` el catálogo queda navegable sin enriquecer (AC-5). */
   ENRICHMENT_ENABLED: z.enum(['true', 'false']).default('true'),
@@ -220,7 +242,72 @@ export const envSchema = z.object({
   /** §7.3 — presupuesto de los dos endpoints admin de enriquecimiento (ventana y máximo). */
   ENRICHMENT_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   ENRICHMENT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(6),
+
+  /**
+   * Búsqueda semántica (US-004). El camino interactivo tiene **su propio** presupuesto de
+   * tasa y su propio timeout, separados de los del enriquecimiento (D2 del design).
+   *
+   * El motivo es que la política de tasa es lo único que difiere entre un lote y una
+   * request: el limitador de US-005 serializa las salidas a `60_000 / GEMINI_MAX_RPM`, que
+   * con 15 RPM son 4 s — casi tres veces el presupuesto TOTAL de una búsqueda. Aplicar esa
+   * política al camino interactivo lo mataría; el puerto y el cliente HTTP, en cambio, se
+   * reusan tal cual.
+   */
+  GEMINI_SEARCH_MAX_RPM: z.coerce.number().int().min(0).max(GEMINI_FREE_TIER_RPM).default(10),
+  /**
+   * Timeout del embedding de la consulta. **Es el disparador de la degradación**, no un
+   * error a reportar: a los 900 ms se abandona el embedding y se responde por full-text
+   * marcando `degraded` (AC-4, D1). Así el camino degradado es el comportamiento por
+   * defecto cuando el presupuesto se agota, y no una rama que alguien tenga que recordar
+   * probar.
+   */
+  GEMINI_SEARCH_TIMEOUT_MS: z.coerce.number().int().positive().default(900),
+  /** Score mínimo (`1 - distancia_cosine`) para considerar la respuesta confiable. */
+  SEARCH_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.55),
+  /** Largo mínimo y máximo de la consulta aceptada. */
+  SEARCH_MIN_LENGTH: z.coerce.number().int().positive().default(2),
+  SEARCH_MAX_LENGTH: z.coerce.number().int().positive().default(200),
+  /** Tamaño de página por defecto y su techo. */
+  SEARCH_LIMIT_DEFAULT: z.coerce.number().int().positive().default(20),
+  SEARCH_LIMIT_MAX: z.coerce.number().int().positive().default(50),
+  /**
+   * Peso del camino léxico en el ranking. Arranca en 0 (vector puro) con la perilla lista:
+   * el full-text se construye igual porque AC-4 lo exige, y si la batería de relevancia no
+   * llega al 70 % se sube el peso sin desplegar código.
+   */
+  SEARCH_LEXICAL_WEIGHT: z.coerce.number().min(0).max(1).default(0),
+  /** `hnsw.ef_search` por consulta: perilla de precisión contra latencia del kNN. */
+  SEARCH_HNSW_EF_SEARCH: z.coerce.number().int().positive().default(64),
+  /**
+   * Caché **del vector de la consulta** (no de los resultados: un cambio de precio o de
+   * stock tiene que verse en la búsqueda siguiente). Con el free tier este caché no es una
+   * optimización sino lo único que hace tolerable el techo, de ahí el TTL de 24 h: el
+   * vector es determinista (`f(texto, modelo)`), así que no hay dato que pueda quedar
+   * viejo mientras el modelo no cambie. Lo que acota el caché es el LRU por tamaño.
+   */
+  SEARCH_CACHE_TTL_MS: z.coerce.number().int().positive().default(86_400_000),
+  SEARCH_CACHE_MAX_ENTRIES: z.coerce.number().int().positive().default(2_000),
+  /** §7.3 — presupuesto del endpoint público de búsqueda (ventana y máximo por IP). */
+  SEARCH_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  SEARCH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
 }).superRefine((env, ctx) => {
+  // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
+  // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la
+  // suma pasaría del techo del tier y el síntoma serían 429 del proveedor repartidos entre
+  // las dos superficies, atribuidos a "Gemini anda mal" en vez de a una config imposible.
+  //
+  // Se valida en TODOS los entornos y no sólo en producción: una suma inválida en desarrollo
+  // produce exactamente el mismo 429, y descubrirlo en local es barato.
+  if (env.GEMINI_SEARCH_MAX_RPM + env.GEMINI_MAX_RPM > GEMINI_FREE_TIER_RPM) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['GEMINI_SEARCH_MAX_RPM'],
+      message: `GEMINI_SEARCH_MAX_RPM (${env.GEMINI_SEARCH_MAX_RPM}) + GEMINI_MAX_RPM (${env.GEMINI_MAX_RPM}) = ${
+        env.GEMINI_SEARCH_MAX_RPM + env.GEMINI_MAX_RPM
+      } supera el techo de ${GEMINI_FREE_TIER_RPM} RPM del free tier de Gemini: las dos superficies comparten una sola cuota. Para darle toda la cuota al enriquecimiento (la primera corrida del catálogo), poné GEMINI_SEARCH_MAX_RPM=0 — la búsqueda queda degradada a full-text, que es un estado previsto y no una falla.`,
+    });
+  }
+
   // Sin esto, un deploy mal configurado caería al adapter de log y el flujo de
   // recuperación "funcionaría" sin enviar un solo email. Nadie se entera hasta
   // que un cliente no puede recuperar su cuenta — peor que no arrancar.

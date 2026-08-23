@@ -132,7 +132,7 @@ language: es
     verificar que `search_document @@ websearch_to_tsquery('spanish', <palabra nueva>)`
     da `true` **sin** haber corrido ningún código de aplicación)
 
-- [ ] T0.2 Variables de entorno de búsqueda validadas por Zod
+- [x] T0.2 Variables de entorno de búsqueda validadas por Zod
   - **Pattern**: extender `envSchema` en `apps/api/src/config/env.validation.ts` — `per
     backend-node-standards.md §7 — config validada al arranque, fail-fast`.
   - **Exit criterion**: se declaran con default seguro `GEMINI_SEARCH_MAX_RPM` (**valor

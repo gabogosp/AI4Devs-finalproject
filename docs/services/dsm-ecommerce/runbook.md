@@ -89,12 +89,25 @@ vectores y `/search` no tendría qué consultar.
 **proveedor**, no del código: el adapter espacia las salidas a `60000 / GEMINI_MAX_RPM` ms para
 no cobrar 429, así que la única palanca real es subir la cuota.
 
-> **Decisión del PO (2026-08-23): la primera corrida se lleva el free tier ENTERO.**
-> `GEMINI_MAX_RPM=15` mientras dure, y el reparto con la búsqueda (10 búsqueda / 5
-> enriquecimiento, que es lo que prevé el plan de US-004) se aplica **después**. El motivo es
-> que la búsqueda semántica no sirve de nada hasta que existan los vectores, así que darle los
-> 15 al enriquecimiento al principio no le quita nada a nadie. Con 5 RPM esta misma corrida
-> tardaría **≈ 33 h** —una ventana de fin de semana— en vez de ≈ 5,5 h.
+> **Decisión del PO (2026-08-23): la primera corrida se lleva el free tier ENTERO.** El motivo
+> es que la búsqueda semántica no sirve de nada hasta que existan los vectores, así que darle
+> los 15 RPM al enriquecimiento al principio no le quita nada a nadie. Con los 5 RPM del estado
+> estable, esta misma corrida tardaría **≈ 33 h** —una ventana de fin de semana— en vez de
+> ≈ 5,5 h.
+>
+> **Los defaults del código son el estado ESTABLE** (`GEMINI_MAX_RPM=5`,
+> `GEMINI_SEARCH_MAX_RPM=10`), no el de la primera corrida: un default que codifica una
+> migración de una sola vez queda mintiendo para siempre. Así que la primera corrida es un
+> **override explícito y temporal**, y son **dos** variables, no una:
+>
+> ```
+> GEMINI_MAX_RPM=15
+> GEMINI_SEARCH_MAX_RPM=0     # la búsqueda queda degradada a full-text mientras dura
+> ```
+>
+> El arranque **valida la suma** contra los 15 RPM del tier, así que poner sólo la primera
+> **no arranca** — y eso es deliberado: es la única forma de que nadie suba un presupuesto sin
+> bajar el otro y descubra el problema como 429 del proveedor atribuidos a «Gemini anda mal».
 >
 > ⚠ **Paso obligatorio al terminar la primera corrida** (ver el punto 5 de abajo): bajar
 > `GEMINI_MAX_RPM` a **5** antes de que `/v1/search` entre en servicio. Si no, las dos
@@ -120,11 +133,13 @@ API siga respondiendo.
 4. Al terminar, revisar `coverage.abandoned`. Si es > 0, esos productos **siguen publicados y
    visibles** (perdieron calidad de búsqueda, no presencia) y **no vuelven solos**: se recuperan
    con `POST /runs` y `{"force": true}` una vez resuelto el problema del proveedor.
-5. **Ceder la cuota a la búsqueda**: `GEMINI_MAX_RPM=5` en Railway + restart. Es la segunda
-   mitad de la decisión del PO de arriba y **no es opcional** si `/v1/search` va a estar en
-   servicio: sin ceder la cuota, un re-enriquecimiento de fondo le come los 15 RPM a las
-   consultas de los clientes. Desde acá el enriquecimiento incremental (altas y ediciones del
-   catálogo) corre a 5 RPM, que para un puñado de productos por día es de sobra.
+5. **Ceder la cuota a la búsqueda**: **borrar los dos overrides** en Railway (o dejarlos en
+   `GEMINI_MAX_RPM=5` y `GEMINI_SEARCH_MAX_RPM=10`, que es lo mismo que el default) + restart.
+   Es la segunda mitad de la decisión del PO de arriba y **no es opcional** si `/v1/search` va
+   a estar en servicio: sin ceder la cuota, un re-enriquecimiento de fondo le come los RPM a
+   las consultas de los clientes, que tienen presupuesto de p95 < 1,5 s. Desde acá el
+   enriquecimiento incremental (altas y ediciones del catálogo) corre a 5 RPM, que para un
+   puñado de productos por día es de sobra.
 
 > El ejecutor corre **in-process** (ADR-0014): no hay worker ni Redis. Si el proceso se reinicia a
 > mitad de la corrida no se pierde trabajo — la cola es `products.enrichment_done = false` y los

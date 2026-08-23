@@ -131,7 +131,12 @@ describe('Enriquecimiento IA + embeddings (US-005 T0.3) — defaults y fail-fast
     expect(env.GEMINI_EMBED_MODEL).toBe('text-embedding-004');
     expect(env.GEMINI_ENRICH_TIMEOUT_MS).toBe(20_000);
     expect(env.GEMINI_EMBED_TIMEOUT_MS).toBe(10_000);
-    expect(env.GEMINI_MAX_RPM).toBe(15);
+    // 5 y no 15: los 15 RPM del free tier se REPARTEN con la búsqueda (US-004), y el
+    // default codifica el estado estable (5 lote / 10 interactivo). La primera corrida del
+    // catálogo se lleva la cuota entera, pero eso es un override del runbook §3.6 y no un
+    // default — un default que codifica una migración de una sola vez queda mintiendo para
+    // siempre.
+    expect(env.GEMINI_MAX_RPM).toBe(5);
     expect(env.ENRICHMENT_ENABLED).toBe('true');
     expect(env.ENRICHMENT_BATCH_SIZE).toBe(25);
     expect(env.ENRICHMENT_CONCURRENCY).toBe(2);
@@ -271,5 +276,110 @@ describe('Import masivo de inventario (US-006 T0.3) — defaults y fail-fast', (
     // carrito no. Si algún día se invierten, el import quedó mal presupuestado.
     const env = validateEnv({ ...base });
     expect(env.IMPORT_RATE_LIMIT_MAX).toBeLessThan(env.CART_RATE_LIMIT_MAX);
+  });
+});
+
+/**
+ * T0.2 — configuración de la búsqueda semántica (US-004).
+ *
+ * Los defaults van con **valor literal** a propósito: son decisiones del PO (OQ-BE-1 (b),
+ * OQ-BE-2, OQ-BE-6) y no números de conveniencia. Si alguien los cambia sin discutirlo, un
+ * test se pone rojo y aparece la conversación; con `expect.any(Number)` el cambio pasaría.
+ */
+describe('envSchema — búsqueda semántica (US-004)', () => {
+  // El `base` del describe de arriba está en su scope; se repite el mínimo acá para que este
+  // bloque sea independiente y se pueda leer sin scrollear 280 líneas.
+  const base = {
+    DATABASE_URL: 'postgresql://dsm:dsm@localhost:55432/dsm?schema=public',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin las variables, los 13 defaults son los que fijó el PO', () => {
+    const env = validateEnv({ ...base });
+
+    expect(env.GEMINI_SEARCH_MAX_RPM).toBe(10);
+    expect(env.GEMINI_SEARCH_TIMEOUT_MS).toBe(900);
+    expect(env.SEARCH_MIN_SCORE).toBe(0.55);
+    expect(env.SEARCH_MIN_LENGTH).toBe(2);
+    expect(env.SEARCH_MAX_LENGTH).toBe(200);
+    expect(env.SEARCH_LIMIT_DEFAULT).toBe(20);
+    expect(env.SEARCH_LIMIT_MAX).toBe(50);
+    // Vector puro con la perilla lista: el blend léxico se enciende sólo si la batería de
+    // relevancia no llega al 70 %.
+    expect(env.SEARCH_LEXICAL_WEIGHT).toBe(0);
+    expect(env.SEARCH_HNSW_EF_SEARCH).toBe(64);
+    // 24 h: el vector de una consulta es determinista, así que no hay nada que pueda quedar
+    // viejo mientras no cambie el modelo. Un TTL corto sólo tiraría trabajo ya pagado.
+    expect(env.SEARCH_CACHE_TTL_MS).toBe(86_400_000);
+    expect(env.SEARCH_CACHE_MAX_ENTRIES).toBe(2_000);
+    expect(env.SEARCH_RATE_LIMIT_TTL_MS).toBe(60_000);
+    expect(env.SEARCH_RATE_LIMIT_MAX).toBe(20);
+  });
+
+  it('LA SUMA: las dos superficies no pueden pasarse de los 15 RPM del free tier', () => {
+    // Es el invariante que impide que alguien suba un presupuesto sin bajar el otro. Sin
+    // esto, el síntoma serían 429 del proveedor repartidos entre las dos superficies y
+    // atribuidos a «Gemini anda mal» en vez de a una configuración imposible.
+    expect(() =>
+      validateEnv({ ...base, GEMINI_SEARCH_MAX_RPM: '10', GEMINI_MAX_RPM: '10' }),
+    ).toThrow(/free tier/);
+
+    // Y el reparto válido arranca sin chistar.
+    const env = validateEnv({
+      ...base,
+      GEMINI_SEARCH_MAX_RPM: '10',
+      GEMINI_MAX_RPM: '5',
+    });
+    expect(env.GEMINI_SEARCH_MAX_RPM + env.GEMINI_MAX_RPM).toBe(15);
+  });
+
+  it('la primera corrida es representable: toda la cuota al lote y búsqueda en 0', () => {
+    // Es la decisión del PO (2026-08-23): la primera corrida se lleva el free tier entero
+    // porque la búsqueda no sirve de nada hasta que existan los vectores. Con
+    // GEMINI_SEARCH_MAX_RPM=0 la búsqueda queda degradada a full-text, que es un estado
+    // PREVISTO. Si el mínimo fuera 1, esta configuración no existiría y el operador tendría
+    // que elegir entre no arrancar o pasarse de la cuota.
+    const env = validateEnv({
+      ...base,
+      GEMINI_MAX_RPM: '15',
+      GEMINI_SEARCH_MAX_RPM: '0',
+    });
+
+    expect(env.GEMINI_MAX_RPM).toBe(15);
+    expect(env.GEMINI_SEARCH_MAX_RPM).toBe(0);
+  });
+
+  it('el default del lote es el estado ESTABLE, no el de la primera corrida', () => {
+    // 5 y no 15: un default que codifica una migración de una sola vez queda mintiendo para
+    // siempre. La excepción vive en el runbook, no en el esquema.
+    const env = validateEnv({ ...base });
+    expect(env.GEMINI_MAX_RPM).toBe(5);
+    expect(env.GEMINI_SEARCH_MAX_RPM).toBeGreaterThan(env.GEMINI_MAX_RPM);
+  });
+
+  it('un score fuera de 0..1 hace fallar el arranque', () => {
+    // `SEARCH_MIN_SCORE` se compara contra `1 - distancia_cosine`, que vive en [0,1]. Un 1.5
+    // haría que NADA supere el umbral: la búsqueda devolvería `confidence: none` siempre, y
+    // el síntoma sería «la IA no encuentra nada» sin un error a la vista.
+    expect(() => validateEnv({ ...base, SEARCH_MIN_SCORE: '1.5' })).toThrow();
+    expect(() => validateEnv({ ...base, SEARCH_MIN_SCORE: '-0.1' })).toThrow();
+  });
+
+  it('un peso léxico fuera de 0..1 hace fallar el arranque', () => {
+    expect(() => validateEnv({ ...base, SEARCH_LEXICAL_WEIGHT: '-1' })).toThrow();
+    expect(() => validateEnv({ ...base, SEARCH_LEXICAL_WEIGHT: '2' })).toThrow();
+  });
+
+  it('un límite no numérico hace fallar el arranque, no cae al default', () => {
+    // Un cap que se degrada a su default por un typo es un cap que no existe.
+    expect(() => validateEnv({ ...base, SEARCH_LIMIT_MAX: 'abc' })).toThrow();
+    expect(() => validateEnv({ ...base, GEMINI_SEARCH_TIMEOUT_MS: 'medio-segundo' })).toThrow();
+  });
+
+  it('el presupuesto de la búsqueda es más chico que el del storefront', () => {
+    // La búsqueda cuesta una llamada paga; navegar categorías no. Si algún día se invierten,
+    // alguien presupuestó mal la superficie que gasta dinero.
+    const env = validateEnv({ ...base });
+    expect(env.SEARCH_RATE_LIMIT_MAX).toBeLessThan(env.STOREFRONT_RATE_LIMIT_MAX);
   });
 });
