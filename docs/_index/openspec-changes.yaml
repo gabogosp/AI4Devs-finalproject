@@ -563,13 +563,34 @@
   # Q-4 abierta del E2E §23—, no exponer el texto enriquecido en la ficha, defaults del HNSW,
   # 5 intentos antes de abandonar).
   estimate-hours: 13.4
-  assignee: sin-identificar  # plan escrito en sesión de planning; ejecutor sin confirmar
-  branch: null
+  assignee: develop-backend  # ejecutado por /develop-backend en la sesión del 2026-08-23
+  branch: feature-entrega2-GOSP
   pr-url: null
   created: 2026-08-22
-  completed-at: null
+  completed-at: 2026-08-23  # 28/28 tasks cerradas con su Verify; AS-BUILT en tasks.md
   archived-at: null
   archive-path: null
+  # AS-BUILT (2026-08-23): las 28 tasks cerraron con su `Verify` en verde. Suite completa de
+  # apps/api en 1246 tests / 123 suites; `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test`
+  # en 0. Cuatro hallazgos que la ejecución destapó y que el plan no anticipaba:
+  #   1. Las primitivas de T1.3 (backoff + limitador de RPM) quedaron SIN CABLEAR al adapter
+  #      hasta T6.3. Sin tope de RPM, la primera corrida real habría cobrado 429 en masa
+  #      contra el free tier de 15 RPM.
+  #   2. `hashSourceText` se calculaba sobre el texto DERIVADO, así que en un producto ya
+  #      enriquecido un cambio de `description_raw` era invisible y el vector describía el
+  #      texto viejo para siempre. Se separó `buildChangeKey` (input) de `buildSourceText`
+  #      (lo que se embeddea).
+  #   3. `ConfigService.get()` lee `process.env` primero, donde todo valor es string:
+  #      `get<number>()` devolvía un string y el tope de concurrencia no existía en la
+  #      práctica (concatenación en vez de suma). Todas las lecturas numéricas del módulo
+  #      pasan por `configNumber()`, con un guard estático.
+  #   4. El runner reportaba `disabled` mirando sólo el flag; sin `GEMINI_API_KEY` arrancaba
+  #      corridas contra el adapter deshabilitado y ensuciaba productos sanos con rastro
+  #      durable de fallo. La disponibilidad ahora la declara el PUERTO.
+  # SIN EJERCITAR: ninguna llamada real al proveedor. Por decisión del PO no se cargó
+  # `GEMINI_API_KEY`, así que todo el pipeline se verificó con el fake determinista por DI.
+  # La calidad del texto de Gemini y el comportamiento del adapter HTTP contra la API real
+  # quedan sin evidencia; es el gate de la primera corrida (runbook §3.6).
 
 # qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 p95<500ms + E2E)
 - name: US-008-checkout-guest-backend

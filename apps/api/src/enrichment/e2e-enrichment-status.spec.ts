@@ -118,7 +118,7 @@ describe('GET /v1/admin/enrichment/status (e2e-enrichment-status)', () => {
   it('NO FILTRA LA CLAVE del proveedor ni ningún dato de comprador', async () => {
     // El test que justifica la suite. El endpoint reporta el estado del proveedor de IA:
     // es exactamente el lugar donde una clave se escaparía «para facilitar el diagnóstico».
-    const claveFalsa = 'AIzaSy-CLAVE-DE-PRUEBA-NO-DEBE-APARECER';
+    const claveFalsa = 'CLAVE-DE-PRUEBA-QUE-NO-DEBE-APARECER-EN-NINGUN-BODY';
     const previo = process.env.GEMINI_API_KEY;
     process.env.GEMINI_API_KEY = claveFalsa;
     try {
@@ -128,7 +128,9 @@ describe('GET /v1/admin/enrichment/status (e2e-enrichment-status)', () => {
 
       const serializado = JSON.stringify(res.body);
       expect(serializado).not.toContain(claveFalsa);
-      expect(serializado).not.toMatch(/AIzaSy/);
+      // También se descarta la FORMA de una clave real de Google, no sólo el valor exacto
+      // del canario: si alguien filtrara otra clave, el patrón la caza igual.
+      expect(serializado).not.toMatch(/AIza[0-9A-Za-z_-]{10,}/);
       // Ni la URL del proveedor: con la URL y el modelo, un log se vuelve una guía de cómo
       // llamar a la API en nombre del negocio.
       expect(serializado).not.toContain('generativelanguage');

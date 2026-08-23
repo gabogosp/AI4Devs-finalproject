@@ -618,27 +618,37 @@ estimate-hours: 13.4
 > fuente de verdad»), el `ImportRunner` sigue dependiendo del token, y las suites del import
 > siguen verdes. La costura entre los dos changes está bien.
 
-- [ ] Unit + integration colocados pasan: `pnpm --filter @dsm/api test -- --ci`
-- [ ] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] **Esquema materializado == `design.md` §Persistencia (F40)**: el `Verify` de T0.2 corrido de
-      nuevo sobre una base recreada desde cero:
-      `docker compose down -v && docker compose up -d postgres && sleep 8 && pnpm --filter @dsm/db migrate && pnpm --filter @dsm/db seed` y luego el bloque de asserts de T0.2 completo.
-- [ ] Contratos válidos:
+- [x] Unit + integration colocados pasan: `pnpm --filter @dsm/api test -- --ci` — **1246 tests / 123 suites**
+- [x] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e` — **411 tests / 54 suites**
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck` — exit 0 y 0
+- [x] **Esquema materializado == `design.md` §Persistencia (F40)** — verificado **sin destruir la
+      base compartida**. El comando del plan (`docker compose down -v`) borra el volumen del
+      Postgres de `docker-compose`, que en esta máquina lo comparten otras tres sesiones de
+      desarrollo: correrlo les habría borrado sus fixtures a mitad de trabajo. Se obtuvo la misma
+      evidencia creando una base **nueva** en la misma instancia:
+      `CREATE DATABASE dsm_us005_verify` → `DATABASE_URL=…/dsm_us005_verify pnpm --filter @dsm/db migrate:deploy`
+      (8 migraciones, sin pendientes) → los 6 asserts de T0.2 → `pnpm --filter @dsm/db seed`
+      (3 categorías, 4 productos) → `DROP DATABASE`. Resultado sobre la base virgen: las 6
+      columnas de `products` con sus tipos, `product_embeddings.embedding` como `vector(768)`,
+      FK con `ON DELETE CASCADE` (`confdeltype='c'`), índice
+      `product_embeddings_embedding_hnsw_idx` HNSW con `vector_cosine_ops` y `m=16 / ef_construction=64`,
+      índice parcial `products_enrichment_pending_idx ... WHERE enrichment_done = false`, y la
+      extensión `vector` presente. La base compartida quedó intacta (109 productos, 25 vectores).
+- [x] Contratos válidos (spectral exit 0, 0 errores):
       `npx @stoplight/spectral-cli lint openspec/changes/US-005-enriquecimiento-ia-embeddings-backend/contracts/openapi/*.yaml apps/api/docs/api/openapi.yaml`
-- [ ] **No regresión del catálogo existente (US-001/002/003/014)**:
+- [x] **No regresión del catálogo existente (US-001/002/003/014)** — **500 tests / 56 suites**:
       `pnpm --filter @dsm/api test -- --ci --testPathPattern='products|categories|storefront|auth'`
-- [ ] **El enriquecimiento nunca publica (AC-10, invariante global)**: probado en runtime por
+- [x] **El enriquecimiento nunca publica (AC-10, invariante global)** — 26 tests en verde: probado en runtime por
       `pnpm --filter @dsm/api test -- --ci --testPathPattern='enrichment.service|e2e-enrichment-cycle'`
       (un producto en `draft` sigue `draft` tras la corrida), y como red estática
       `! git grep -nE "status[[:space:]]*[:=][[:space:]]*['\"](published|archived|draft)['\"]" -- apps/api/src/enrichment`
-- [ ] **Ningún secreto en el árbol ni en los logs (AC-9)**:
+- [x] **Ningún secreto en el árbol ni en los logs (AC-9)**:
       `git grep -nE "AIza[0-9A-Za-z_-]{20,}" -- . ':(exclude).env.example' ':(exclude)*.md'` no devuelve nada, y la suite de T5.2 pasa.
-- [ ] **Sin dependencias nuevas**: `git diff --stat -- pnpm-lock.yaml` vacío (el adapter usa el
+- [x] **Sin dependencias nuevas**: `git diff --stat -- pnpm-lock.yaml` vacío (el adapter usa el
       `fetch` de Node 22; si alguna task agregó un paquete, es una desviación del `design.md`
       §Trade-offs y hay que declararla).
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
-- [ ] **Re-seed tras los tests** (las suites hacen `TRUNCATE`): `pnpm --filter @dsm/db seed`
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test` — exit 0 (api 1246, web 86 archivos)
+- [x] **Re-seed tras los tests** (las suites hacen `TRUNCATE`): `pnpm --filter @dsm/db seed` — 3 categorías, 4 productos
 
 ---
 
@@ -677,3 +687,87 @@ estimate-hours: 13.4
 | 9 eventos de observabilidad + costo aproximado | T5.1 |
 | Contratos por endpoint + spec publicado + runbook | T7.1, T7.2 |
 | **Diferidas** (no se construyen acá) | UI de curación (`Deferred: FE — owner: PO`) · migración a BullMQ (`Deferred: US-019 — owner: Arquitecto`) · re-embed masivo por cambio de modelo (`Deferred: US futura — owner: Arquitecto`) · exponer el texto enriquecido en el storefront (OQ-BE-3) |
+
+---
+
+## Reconciliación AS-BUILT (2026-08-23)
+
+Las **28 tasks** cerraron con su `Verify` en verde y los **11 gates** de la Verification
+suite-level también. Esto es lo que se construyó distinto de lo planificado, y por qué.
+
+### Lo que la ejecución destapó y el plan no anticipaba
+
+Cuatro hallazgos. Los cuatro habrían llegado a producción como bugs silenciosos —ninguno
+rompía un test existente— y los cuatro los encontró un test nuevo, no una revisión.
+
+1. **Las primitivas de T1.3 nunca estuvieron cableadas al adapter.** `withRetry` y
+   `RateLimiter` se construyeron con sus tests unitarios en T1.3 y quedaron **desconectadas**
+   del `GeminiHttpClient` hasta que T6.3 fue a probar el reintento. Consecuencia real: sin tope
+   de RPM, una corrida con concurrencia 2 dispara tan rápido como la red permita; el free tier
+   de Gemini son **15 RPM**, así que la primera corrida del catálogo habría cobrado 429 en masa
+   y el breaker habría abierto a los pocos productos. La causa de raíz es de método: leí el
+   `Verify` de T1.3 (`--testPathPattern='backoff|rate-limiter'`) como el contrato completo,
+   cuando su `Pattern` decía «decorador del cliente». Un test verde sobre una pieza no dice
+   nada sobre si la pieza está enchufada.
+
+2. **El hash de cambios se derivaba del output.** `hashSourceText` se calculaba sobre
+   `buildSourceText`, que en un producto ya enriquecido devuelve **el texto que escribió la
+   IA**. Resultado: corregir la `description_raw` no cambiaba el hash, la corrida siguiente lo
+   salteaba como «sin cambios», y el vector describía el texto viejo **para siempre**. El dueño
+   arreglaba una descripción mal cargada y la búsqueda nunca se enteraba. Se separó
+   `buildChangeKey` (nombre + rubro + curado ∥ raw — lo que el dueño controla) de
+   `buildSourceText` (curado ∥ enriquecido ∥ raw — el texto más rico para vectorizar).
+
+3. **`ConfigService.get<number>()` devuelve un string.** `get()` consulta `process.env` antes
+   que su config interna, y ahí todo valor es texto —Nest escribe de vuelta como string incluso
+   lo que `envSchema` validó como número—. Con `get<number>()`, TypeScript creía tener un
+   número y el runtime tenía un string, así que `i += concurrencia` **concatenaba**
+   (`0 + '2' === '02'`) y el segundo tramo del lote disparaba todo el resto de una vez: el tope
+   de concurrencia figuraba en la config y no existía en la práctica. Todas las lecturas
+   numéricas del módulo pasan por `configNumber()`, con un guard que falla si `get<number>`
+   reaparece.
+
+4. **El runner se creía habilitado sin proveedor.** Reportaba `disabled` mirando sólo
+   `ENRICHMENT_ENABLED`; sin `GEMINI_API_KEY` los puertos resuelven al `DisabledAiProvider`, así
+   que una corrida arrancaba, reclamaba productos y fallaba en cada uno **dejando rastro
+   durable** (intentos, `error_code`, backoff) en productos que no tenían nada de malo — a los
+   cinco, abandonados. Un entorno sin clave habría marcado el catálogo entero como problemático.
+   La disponibilidad ahora la declara el **puerto** (`AiAvailability.available`) y el runner se
+   la pregunta al adapter, en vez de re-derivar la regla del factory.
+
+### Desviaciones respecto del plan
+
+| Qué | Plan | AS-BUILT | Por qué |
+|---|---|---|---|
+| Puertos de IA | dos archivos (`ai-enricher.port.ts` + `ai-embedder.port.ts`) | uno: `ports/ai.ports.ts` | Los dos puertos comparten `AiAvailability` y el mismo adapter los implementa; separarlos habría duplicado el encabezado sin separar nada. |
+| `EnrichmentModule` | lo cableaba T4.4 | creado en **T3.5** | El adapter de la cola (nudge) no funciona sin el módulo: T3.5 no podía cerrar su `Verify` sin él. T4.4 quedó reducido a agregar el controller y el throttler. |
+| `registerFailure` | T3.3 | escrito en **T3.2** | Vive en el mismo archivo que `processProduct`; separarlo en dos commits habría dejado el service a medias. |
+| T2.4 (cobertura) | assertions sobre un catálogo de 10 exacto | assertions **por delta** + `coverageRatio` extraída como función pura | El Postgres de `docker-compose` es compartido con otras tres sesiones: un assert sobre el total de la tabla es verde o rojo según quién más esté corriendo. |
+| T4.3 (curado + raw) | un cambio de `description_raw` sobre un producto curado **re-embeddea** | la corrida lo **saltea** | Con la prioridad de D3, el texto fuente de un curado no incluye el `raw`: re-embeddear produciría el **mismo** vector y costaría una llamada paga. La línea del plan era incorrecta; el test verifica lo que importa (el texto del dueño sobrevive intacto). |
+| Throttler `enrichment` | registrado con su tope real | registrado con **techo inalcanzable**, tope real en el `@Throttle` del handler | `@nestjs/throttler` aplica **todos** los throttlers nombrados a **toda** ruta guardada: registrarlo con 6/min le impuso ese tope al storefront, a auth y a imports, y rompió 8 suites. La alternativa era un `@SkipThrottle({ enrichment: true })` en cada controller existente **y en todos los futuros**. |
+| Gate «esquema desde cero» | `docker compose down -v` | base nueva (`dsm_us005_verify`) en la misma instancia, migrada, verificada y borrada | El comando del plan borra el volumen compartido con otras tres sesiones. Misma evidencia, sin destruir el trabajo de nadie. |
+| Ejemplo del caso «sin clave» en el contrato | `examples` del OpenAPI | prosa del contrato | Spectral **crashea** al procesar un `null` literal dentro de un ejemplo (`Cannot read properties of null (reading 'enum')`). La nullabilidad sigue declarada en el esquema. |
+| `openapi.yaml` publicado | `type: [string, 'null']`, `const: true` | `nullable: true`, `enum: [true]` | El spec publicado es **OpenAPI 3.0**, no 3.1. |
+
+### Lo que quedó SIN EJERCITAR
+
+**Ninguna llamada real al proveedor de IA.** Por decisión del PO no se cargó `GEMINI_API_KEY`
+(cargarla mockeada contradice D6: con una clave falsa el runner arranca `enabled` y falla en
+cada llamada, ensuciando `enrichment_error_code` de todo el catálogo). Todo el pipeline se
+verificó con el `FakeAiProvider` inyectado por el token del puerto, que es el diseño previsto.
+
+Lo que eso deja sin evidencia, dicho con precisión:
+
+- **La calidad del texto que devuelve Gemini** con `ENRICH_PROMPT_V1`. Se probó que el texto se
+  guarda, se recorta y se embeddea; no que sirva para buscar.
+- **El comportamiento del adapter HTTP contra la API real**: la forma exacta de la respuesta de
+  `embedContent` y `generateContent`, y los códigos que el proveedor devuelve en la práctica. El
+  adapter se ejerció contra un stub con la forma documentada.
+- **La ventana de ≈ 5,5 h** de la primera corrida y el KPI de AC-3 (`coverage_ratio ≥ 0,9`)
+  sobre el catálogo real. El test de T6.4 prueba el **mecanismo de medición** con 100 productos
+  y fallo inyectado; el número de producción es un resultado de operación.
+
+El gate real es la **primera corrida** documentada en el runbook §3.6: cargar la clave, disparar
+`POST /v1/admin/enrichment/runs` y leer el `/status`. Si la forma de la respuesta del proveedor
+no coincide con la esperada, el síntoma va a ser `dsm:enrichment/ai-permanent` en
+`last_error_code` — y por eso ese campo existe.

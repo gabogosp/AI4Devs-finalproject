@@ -77,7 +77,10 @@ describe('errores del enriquecimiento (dsm:enrichment/*)', () => {
 
   it('ningún mensaje filtra la clave del proveedor', () => {
     // Los `detail` viajan al cliente y a los logs de error (AC-9).
-    const clave = 'AIzaSy-CLAVE-SECRETA-DEL-PROVEEDOR';
+    // No imita el prefijo `AIza` de una clave real, a propósito: el gate de secretos del
+    // change escanea ese patrón en todo el árbol y una clave de test que lo imite lo dejaría
+    // siempre en rojo — una red que siempre falla se ignora.
+    const clave = 'CLAVE-SECRETA-DEL-PROVEEDOR-DE-TEST';
     for (const e of [
       new AiTransientError(),
       new AiPermanentError('respuesta inesperada del proveedor'),

@@ -17,7 +17,12 @@ import {
  * llegaría a la base, entraría al índice HNSW y la búsqueda semántica lo devolvería como
  * resultado. Rechazarlo acá es más barato que descubrirlo en la demo.
  */
-const CLAVE = 'AIzaSy-CLAVE-SECRETA-DE-TEST';
+/**
+ * Clave de test. NO imita el prefijo `AIza` de una clave real de Google: el gate de secretos
+ * (`git grep -nE "AIza[0-9A-Za-z_-]{20,}"`) escanea todo el árbol, y una clave de test que lo
+ * imite lo deja siempre en rojo. Una red que siempre falla se ignora.
+ */
+const CLAVE = 'CLAVE-SECRETA-DE-TEST-NO-REAL';
 
 const config = new ConfigService({
   GEMINI_API_KEY: CLAVE,
