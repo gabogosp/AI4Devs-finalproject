@@ -293,6 +293,44 @@
   archived-at: null
   archive-path: null
 
+- name: US-006-import-masivo-inventario-frontend-web
+  us-id: US-006
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-006-import-masivo-inventario.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # DECISIONES DEL PO 2026-08-23 (las cinco de UX, cerradas ANTES de escribir el plan):
+  # OQ-FE-1 (a) página propia /admin/importar con entrada desde el listado · OQ-FE-2 (a) barra
+  # indeterminada mientras `total_rows` es null y determinada después (el contrato no da el total
+  # hasta que termina la lectura) · OQ-FE-3 (a) el id del trabajo va en la URL + sessionStorage,
+  # porque el backend NO tiene listado de imports y perder el id es perder de vista un trabajo que
+  # sigue corriendo · OQ-FE-4 (a) ante el 409 un aviso sin link, que es el costo visible de haber
+  # diferido GET /v1/admin/imports a US-016 · OQ-FE-5 (a) tabla de rechazos en pantalla Y descarga
+  # del CSV.
+  #
+  # 4,6 h AI-asistido / ~9 h tradicional (13 tasks + 4 pre-requisitos). La US §7 presupuesta
+  # FE-US-006 en 8-12 h tradicional: entra en el rango porque el contrato ya está publicado, las
+  # tres operaciones YA existen en el cliente generado (verificado al planificar) y se reusan
+  # patrones establecidos — productsService, AsyncState, TanStack Table y, sobre todo,
+  # revalidateCatalogSafely(), que ya existe y es la mitad de la costura que el backend declaró y
+  # no puede hacer. Lo que no estaba presupuestado y sí se paga: el deep-link + el respaldo del id
+  # (OQ-FE-3), que existen SÓLO porque el listado de imports quedó diferido.
+  #
+  # DEPENDENCIA CRÍTICA declarada: sin la llamada a revalidateCatalogSafely() al completarse el
+  # trabajo, el storefront sirve precios viejos después de un ajuste masivo de precios — el peor
+  # final de AC-4, con el import perfecto y el cliente viendo el precio anterior.
+  estimate-hours: 4.6
+  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-006-import-masivo-inventario-backend
   us-id: US-006
   discipline: backend
