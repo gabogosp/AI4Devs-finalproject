@@ -1,4 +1,6 @@
 import {
+  CAMPOS_REQUERIDOS_PARA_ALTA,
+  faltantesParaAlta,
   LIMITES_CAMPO,
   ParsedRow,
   parsePrecioACentavos,
@@ -139,18 +141,27 @@ describe('validateRow — fila válida', () => {
 
 describe('validateRow — filas rechazadas', () => {
   it.each([
-    ['sku', { sku: '' }, 'missing_required', 'sku'],
-    ['sku sólo espacios', { sku: '   ' }, 'missing_required', 'sku'],
-    ['nombre', { nombre: '' }, 'missing_required', 'nombre'],
-    ['precio', { precio: '' }, 'missing_required', 'precio'],
-    ['stock', { stock: '' }, 'missing_required', 'stock'],
-    ['categoria', { categoria: '' }, 'missing_required', 'categoria'],
+    ['vacío', { sku: '' }],
+    ['sólo espacios', { sku: '   ' }],
+  ])('un sku %s es missing_required: es la clave, no se puede omitir', (_caso, parcial) => {
+    const err = comoError(validar(parcial as Record<string, string>));
+    expect(err.errorCode).toBe('missing_required');
+    expect(err.field).toBe('sku');
+  });
+
+  it.each([
+    ['nombre', { nombre: '' }],
+    ['precio', { precio: '' }],
+    ['stock', { stock: '' }],
+    ['categoria', { categoria: '' }],
   ])(
-    'una columna requerida vacía (%s) es missing_required',
-    (_caso, parcial, codigo, campo) => {
-      const err = comoError(validar(parcial as Record<string, string>));
-      expect(err.errorCode).toBe(codigo);
-      expect(err.field).toBe(campo);
+    'una celda requerida vacía (%s) NO invalida la fila acá: puede ser un update',
+    (_campo, parcial) => {
+      // La decisión "falta un dato obligatorio" necesita saber si el SKU existe,
+      // y eso sólo lo sabe el service (OQ-8). Acá la fila pasa con el campo en
+      // undefined = "no cambiar".
+      const fila = comoFila(validar(parcial as Record<string, string>));
+      expect(fila.sku).toBe('REF-1');
     },
   );
 
@@ -162,11 +173,11 @@ describe('validateRow — filas rechazadas', () => {
     expect(err.field).toBe('sku');
   });
 
-  it('nombre de 201 caracteres es name_too_long', () => {
+  it('nombre de 201 caracteres es invalid_text', () => {
     const err = comoError(
       validar({ nombre: 'N'.repeat(LIMITES_CAMPO.nombreMax + 1) }),
     );
-    expect(err.errorCode).toBe('name_too_long');
+    expect(err.errorCode).toBe('invalid_text');
     expect(err.field).toBe('nombre');
     // El sku viaja en el error: es lo que le permite al dueño ubicar la fila.
     expect(err.sku).toBe('REF-1');
@@ -244,5 +255,50 @@ describe('validateRow — filas rechazadas', () => {
   it('conserva el rowNumber para que el reporte apunte a la fila real', () => {
     const err = comoError(validar({ precio: '0' }, 137));
     expect(err.rowNumber).toBe(137);
+  });
+});
+
+describe('faltantesParaAlta (completitud del alta, OQ-8)', () => {
+  const fila = (over: Partial<ParsedRow> = {}): ParsedRow => ({
+    kind: 'row',
+    rowNumber: 1,
+    sku: 'REF-1',
+    name: 'Heladera',
+    priceArsCents: 100000,
+    stock: 3,
+    categoryName: 'Refrigeración',
+    ...over,
+  });
+
+  it('una fila completa no le falta nada', () => {
+    expect(faltantesParaAlta(fila())).toEqual([]);
+  });
+
+  it('enumera los cuatro campos cuando sólo vino el sku', () => {
+    // Es el archivo de sólo precios aplicado a un SKU que NO existe: ahí sí es
+    // una fila inválida, y el motivo tiene que decir qué falta.
+    const soloSku: ParsedRow = { kind: 'row', rowNumber: 1, sku: 'REF-1' };
+    expect(faltantesParaAlta(soloSku)).toEqual([...CAMPOS_REQUERIDOS_PARA_ALTA]);
+  });
+
+  it.each([
+    ['nombre', { name: undefined }],
+    ['precio', { priceArsCents: undefined }],
+    ['stock', { stock: undefined }],
+    ['categoria', { categoryName: undefined }],
+  ])('detecta que falta %s', (campo, over) => {
+    expect(faltantesParaAlta(fila(over as Partial<ParsedRow>))).toEqual([campo]);
+  });
+
+  it('stock 0 y precio mínimo cuentan como presentes (no son falsy para esto)', () => {
+    // El bug clásico de `!valor`: un producto agotado tiene stock 0 y sigue
+    // siendo un alta completa.
+    expect(faltantesParaAlta(fila({ stock: 0, priceArsCents: 1 }))).toEqual([]);
+  });
+
+  it('las columnas opcionales nunca son faltantes', () => {
+    expect(
+      faltantesParaAlta(fila({ descriptionRaw: undefined, imageUrl: undefined })),
+    ).toEqual([]);
   });
 });

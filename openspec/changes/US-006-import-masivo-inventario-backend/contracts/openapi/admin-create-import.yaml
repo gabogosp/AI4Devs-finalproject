@@ -64,7 +64,14 @@ paths:
           descomprimirlo.
 
           Esquema de columnas v1 (fijo): requeridas `sku`, `nombre`, `precio`,
-          `stock`, `categoria`; opcionales `descripcion`, `imagen_url`. El
+          `stock`, `categoria`; opcionales `descripcion`, `imagen_url`.
+
+          El **encabezado** tiene que declarar las cinco requeridas, pero sus
+          **celdas** pueden ir vacías en una actualización: vacío significa "no
+          cambiar ese campo" (decisión del PO del 2026-08-22, OQ-8), y es lo que
+          permite el archivo de ajuste de precios sin repetir el stock ni la
+          categoría. En una fila de **alta**, una celda requerida vacía rechaza esa
+          fila con `missing_required`. El
           encabezado se reconoce normalizado (`Descripción` = `DESCRIPCION` =
           `descripcion`) y las columnas desconocidas se ignoran. El precio va en
           ARS con IVA incluido, con `,` o `.` como separador decimal y hasta 2

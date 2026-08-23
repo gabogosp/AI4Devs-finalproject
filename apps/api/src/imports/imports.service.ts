@@ -21,7 +21,12 @@ import {
   ImportNotFoundError,
 } from './import-errors';
 import { readRows } from './read-rows';
-import { ParsedRow, RowError, RowErrorCode } from './row-schema';
+import {
+  faltantesParaAlta,
+  ParsedRow,
+  RowError,
+  RowErrorCode,
+} from './row-schema';
 
 /** Resultado de preparar un import: el trabajo listo para encolar (o su réplica). */
 export interface PreparedImport {
@@ -231,8 +236,12 @@ export class ImportsService {
     const existentes = await this.products.findManyBySkus(
       filas.map((f) => f.sku),
     );
+    // Sólo se resuelven las categorías que el archivo nombra: una fila que dejó
+    // la celda vacía sobre un SKU existente conserva su categoría (OQ-BE-2).
     const categorias = await ctx.resolver.resolve(
-      filas.map((f) => f.categoryName),
+      filas
+        .map((f) => f.categoryName)
+        .filter((c): c is string => c !== undefined),
     );
 
     // Sólo las bases de los SKUs nuevos: para los existentes no se recalcula el
@@ -276,29 +285,55 @@ export class ImportsService {
     }
     ctx.vistos.add(fila.sku);
 
-    const categoryId = categorias.get(fila.categoryName);
-    if (categoryId === undefined) {
-      return this.error(
-        fila,
-        'categoria',
-        'invalid_category',
-        'la categoría no se pudo resolver ni crear',
-      );
+    // Acá —y sólo acá— se sabe si la fila es un alta o una actualización, que es
+    // lo que decide si una celda vacía es una omisión o una instrucción.
+    //
+    // En un alta faltan datos obligatorios ⇒ fila inválida. En una actualización,
+    // cada ausencia significa "no toques este campo" (OQ-BE-2 + decisión del PO
+    // del 2026-08-22, OQ-8): es lo que hace posible el archivo de ajuste de
+    // precios sin repetir el stock y la categoría de cada producto.
+    if (!existente) {
+      const faltantes = faltantesParaAlta(fila);
+      if (faltantes.length > 0) {
+        return this.error(
+          fila,
+          faltantes[0],
+          'missing_required',
+          `para dar de alta un producto nuevo hacen falta: ${faltantes.join(', ')}`,
+        );
+      }
+    }
+
+    // La categoría sólo se resuelve si el archivo la nombró; si no, el producto
+    // existente conserva la que tiene.
+    let categoryId: string | undefined;
+    if (fila.categoryName !== undefined) {
+      categoryId = categorias.get(fila.categoryName);
+      if (categoryId === undefined) {
+        return this.error(
+          fila,
+          'categoria',
+          'invalid_category',
+          'la categoría no se pudo resolver ni crear',
+        );
+      }
     }
 
     const base = this.baseSlug(fila);
-    if (base === null) {
+    if (!existente && base === null) {
       return this.error(
         fila,
         'nombre',
-        'name_too_long',
+        'invalid_text',
         'el nombre no permite derivar una URL amigable',
       );
     }
 
     // Para un SKU existente el slug propuesto es irrelevante (no se recalcula),
     // pero se manda el persistido para que el dato que viaja sea el verdadero.
-    const slug = existente ? existente.slug : ctx.allocator.allocate(base);
+    const slug = existente
+      ? existente.slug
+      : ctx.allocator.allocate(base as string);
 
     try {
       return this.aOutcome(
@@ -312,9 +347,13 @@ export class ImportsService {
         // tiene un slug que el allocator no conocía. Reintentar con el mismo set
         // sería repetir el error.
         try {
-          await ctx.allocator.refresh([base]);
+          await ctx.allocator.refresh([base as string]);
           return this.aOutcome(
-            await this.escribir(fila, ctx.allocator.allocate(base), categoryId),
+            await this.escribir(
+              fila,
+              ctx.allocator.allocate(base as string),
+              categoryId,
+            ),
             fila,
             existente,
           );
@@ -338,7 +377,7 @@ export class ImportsService {
           'no se pudo generar una URL única para este producto',
         );
       }
-      if (this.esCategoriaInexistente(error)) {
+      if (this.esCategoriaInexistente(error) && fila.categoryName !== undefined) {
         // La categoría desapareció entre la resolución y la escritura. Se olvida
         // del cache para que las filas siguientes del mismo rubro la vuelvan a
         // resolver: el borrado cuesta esta fila, no el resto del trabajo.
@@ -348,7 +387,11 @@ export class ImportsService {
     }
   }
 
-  private escribir(fila: ParsedRow, slug: string, categoryId: string) {
+  private escribir(
+    fila: ParsedRow,
+    slug: string,
+    categoryId: string | undefined,
+  ) {
     return this.products.upsertFromImport({
       sku: fila.sku,
       slug,
@@ -387,10 +430,13 @@ export class ImportsService {
     };
   }
 
-  /** `null` si ni el nombre ni el sku producen una base usable. */
+  /**
+   * Base del slug para un **alta**. `null` si ni el nombre ni el sku producen una
+   * base usable; en una actualización no se usa (el slug persistido no se toca).
+   */
   private baseSlug(fila: ParsedRow): string | null {
     // Mismo criterio que el alta de a uno (US-003): el `sku` es el fallback.
-    return slugify(fila.name) || slugify(fila.sku) || null;
+    return slugify(fila.name ?? '') || slugify(fila.sku) || null;
   }
 
   private esColisionDeSlug(error: unknown): boolean {

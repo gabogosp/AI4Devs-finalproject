@@ -579,7 +579,11 @@ paths:
         trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos
         devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1:
         requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales
-        `descripcion`, `imagen_url`; las desconocidas se ignoran. El precio va en
+        `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO
+        tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías
+        en una actualización: vacío significa "no cambiar ese campo" (así funciona
+        el archivo de ajuste de precios). En una fila de alta, una celda requerida
+        vacía la rechaza con missing_required. El precio va en
         ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un
         import vigente a la vez (409); un reintento con la misma `Idempotency-Key`
         devuelve 200 con el mismo trabajo.
@@ -1255,7 +1259,10 @@ components:
           type: string
           description: >-
             Catálogo cerrado por fila: missing_required, invalid_sku,
-            name_too_long, invalid_price, invalid_stock, invalid_category,
+            invalid_text, invalid_price, invalid_stock, invalid_category,
             invalid_image_url, duplicate_sku_in_file, slug_conflict, write_failed.
+            invalid_text cubre nombre y descripcion; missing_required sólo aplica
+            al sku o a una fila de ALTA con celdas requeridas vacías (en un update,
+            una celda vacía significa "no cambiar ese campo").
           example: 'invalid_price'
         error_message: { type: string }

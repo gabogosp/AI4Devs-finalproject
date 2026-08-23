@@ -169,6 +169,55 @@ describe('Import — reconciliación por SKU (e2e-imports-acceptance, AC-1/4/9/1
     expect(despues).toHaveLength(2);
   });
 
+  it('AC-4 + OQ-8: el archivo de ajuste de precios puede dejar las demás celdas VACÍAS', async () => {
+    await importar(
+      csv([
+        'REF-1,Heladera,100000,5,Refrigeración',
+        'REF-2,Mecha 8mm,90000,10,Herramientas',
+      ]),
+    );
+    await prisma.product.updateMany({ data: { status: 'published' } });
+    const antes = await catalogo();
+
+    // Lo que el dueño realmente hace el día 2: exporta la plantilla, borra todo
+    // menos el sku y escribe el precio nuevo. Las 5 columnas requeridas siguen en
+    // el encabezado (AC-6), pero sus celdas van vacías.
+    const job = await importar(
+      csv(['REF-1,,135000,,', 'REF-2,,121500,,']),
+    );
+
+    expect(job.status).toBe('completed');
+    expect(job.updated_count).toBe(2);
+    expect(job.failed_count).toBe(0);
+
+    const despues = await catalogo();
+    expect(despues.map((p) => p.price_ars_cents)).toEqual([
+      135000 * 100,
+      121500 * 100,
+    ]);
+    // Nada más se movió: nombre, stock, estado y URL intactos. Sin esta
+    // semántica, este archivo habría puesto el catálogo entero en stock 0.
+    expect(despues.map((p) => p.name)).toEqual(antes.map((p) => p.name));
+    expect(despues.map((p) => p.stock)).toEqual(antes.map((p) => p.stock));
+    expect(despues.map((p) => p.status)).toEqual(antes.map((p) => p.status));
+    expect(despues.map((p) => p.slug)).toEqual(antes.map((p) => p.slug));
+  });
+
+  it('OQ-8: la misma fila incompleta sobre un SKU que NO existe se rechaza', async () => {
+    const job = await importar(csv(['NO-EXISTE,,135000,,']));
+
+    expect(job.status).toBe('completed');
+    expect(job.created_count).toBe(0);
+    expect(job.failed_count).toBe(1);
+    expect(await prisma.product.count()).toBe(0);
+
+    const errores = await prisma.importJobRow.findMany({
+      where: { job_id: job.id },
+    });
+    expect(errores[0].error_code).toBe('missing_required');
+    expect(errores[0].error_message).toContain('nombre');
+  });
+
   it('AC-9: un producto creado por el import NO aparece en la ficha pública', async () => {
     await importar(csv(['REF-1,Heladera importada,100000,5,Refrigeración']));
 

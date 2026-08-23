@@ -182,9 +182,15 @@ components:
           type: string
           description: |
             Catálogo **cerrado** por fila: `missing_required`, `invalid_sku`,
-            `name_too_long`, `invalid_price`, `invalid_stock`, `invalid_category`,
+            `invalid_text`, `invalid_price`, `invalid_stock`, `invalid_category`,
             `invalid_image_url`, `duplicate_sku_in_file`, `slug_conflict`,
             `write_failed`.
+
+            `invalid_text` cubre `nombre` y `descripcion` (longitud o caracteres
+            no imprimibles). `missing_required` sólo aparece cuando falta el `sku`
+            o cuando una fila **de alta** no trae `nombre`, `precio`, `stock` o
+            `categoria`: en una **actualización**, una celda vacía significa "no
+            cambiar ese campo".
           examples: ['invalid_price']
         error_message:
           type: string

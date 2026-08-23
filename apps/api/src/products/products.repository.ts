@@ -37,19 +37,26 @@ export interface ImportProductRef {
 }
 
 /**
- * Fila del import lista para escribir. `descriptionRaw` e `imageUrl` en
- * `undefined` significan **"no cambiar ese campo"** (OQ-BE-2), que es lo que
- * permite el archivo de sólo precios del día 2 sin vaciar el catálogo.
+ * Fila del import lista para escribir.
+ *
+ * Todo lo que no es `sku` es **opcional**, y esa opcionalidad es la semántica de
+ * OQ-BE-2: un campo ausente significa **"no cambiar"**. Es lo que permite el
+ * archivo de sólo precios del día 2 sin pisar el stock real ni las descripciones.
+ *
+ * Para **crear** hacen falta `name`, `priceArsCents`, `stock` y `categoryId`; el
+ * service lo garantiza antes de llegar acá (`faltantesParaAlta`) y el repositorio
+ * lo vuelve a chequear porque un `create` sin ellos violaría el `NOT NULL` de la
+ * base con un error mucho menos claro.
  */
 export interface ImportUpsertData {
   sku: string;
   /** Slug propuesto por el allocator. Sólo se usa al **crear**. */
   slug: string;
-  name: string;
+  name?: string;
   descriptionRaw?: string;
-  priceArsCents: number;
-  stock: number;
-  categoryId: string;
+  priceArsCents?: number;
+  stock?: number;
+  categoryId?: string;
   imageUrl?: string;
 }
 
@@ -296,6 +303,21 @@ export class ProductsRepository {
         });
 
         if (existente === null) {
+          if (
+            data.name === undefined ||
+            data.priceArsCents === undefined ||
+            data.stock === undefined ||
+            data.categoryId === undefined
+          ) {
+            // Inalcanzable por contrato (el service filtra las filas incompletas
+            // antes de llamar), pero explícito a propósito: sin esto el `create`
+            // fallaría contra el NOT NULL de la base con un error opaco que el
+            // reporte mostraría como `write_failed`.
+            throw new ValidationError(
+              'La fila no tiene los datos mínimos para crear el producto',
+              [{ field: 'sku', message: 'faltan datos obligatorios del alta' }],
+            );
+          }
           const creado = await tx.product.create({
             data: {
               sku: data.sku,
@@ -322,10 +344,14 @@ export class ProductsRepository {
         const actualizado = await tx.product.update({
           where: { id: existente.id },
           data: {
-            name: data.name,
-            price_ars_cents: data.priceArsCents,
-            stock: data.stock,
-            category_id: data.categoryId,
+            ...(data.name !== undefined ? { name: data.name } : {}),
+            ...(data.priceArsCents !== undefined
+              ? { price_ars_cents: data.priceArsCents }
+              : {}),
+            ...(data.stock !== undefined ? { stock: data.stock } : {}),
+            ...(data.categoryId !== undefined
+              ? { category_id: data.categoryId }
+              : {}),
             ...(data.descriptionRaw !== undefined
               ? { description_raw: data.descriptionRaw }
               : {}),

@@ -353,11 +353,23 @@ adivinar sobre el precio de un catálogo es inaceptable: sólo dígitos y un
 separador decimal (`1234,56` o `1234.56`). Los centavos se calculan con aritmética
 entera, nunca con `parseFloat * 100`.
 
-**Una celda vacía en columna opcional significa «no cambiar ese campo»**: es lo
-que permite subir un archivo de ajuste de precios sin borrar las descripciones ya
-cargadas. En una columna **requerida**, una celda vacía invalida la fila
-(`missing_required`), así que un archivo de sólo precios tiene que traer las cinco
-columnas requeridas con su valor vigente.
+**Una celda vacía significa «no cambiar ese campo»** cuando el SKU **ya existe**.
+Es lo que hace posible el archivo de ajuste de precios del día 2: se exporta la
+plantilla, se borra todo menos el `sku` y se escribe el precio nuevo. El
+**encabezado** sí tiene que traer las cinco columnas requeridas (si falta una, se
+rechaza el archivo entero: AC-6), pero sus **celdas** pueden ir vacías.
+
+En una fila de **alta** —un SKU que no está en el catálogo— una celda requerida
+vacía rechaza esa fila con `missing_required`, y el motivo enumera qué falta. El
+`sku` es la excepción: nunca puede estar vacío, porque es la clave de la
+reconciliación.
+
+```csv
+sku,nombre,precio,stock,categoria
+REF-1,,135000,,          # actualiza SÓLO el precio de REF-1
+REF-2,,121500,,          # idem
+NUEVO-1,,99000,,         # RECHAZADA: para crear hacen falta nombre, stock y categoria
+```
 
 ### Límites vigentes
 
@@ -399,9 +411,9 @@ Aparecen en `errors[].error_code` del `GET` y en la columna `codigo` del CSV.
 
 | `error_code` | Cuándo |
 |---|---|
-| `missing_required` | falta una celda requerida (`sku`, `nombre`, `precio`, `stock`, `categoria`) |
+| `missing_required` | falta el `sku`, o es un **alta** sin `nombre`, `precio`, `stock` o `categoria` |
 | `invalid_sku` | sku de más de 64 caracteres o con caracteres no imprimibles |
-| `name_too_long` | texto libre inválido: `nombre` > 200, `descripcion` > 2000 o con caracteres de control |
+| `invalid_text` | texto libre inválido: `nombre` > 200, `descripcion` > 2000 o con caracteres de control |
 | `invalid_price` | no numérico, `<= 0`, más de 2 decimales, separador de miles o fuera de rango |
 | `invalid_stock` | no entero, negativo o fuera de rango |
 | `invalid_category` | categoría de más de 120 caracteres, con controles, o que no se pudo resolver |

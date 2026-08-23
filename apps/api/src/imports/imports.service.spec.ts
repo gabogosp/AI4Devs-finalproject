@@ -257,8 +257,111 @@ describe('ImportsService.processRow (integration)', () => {
     expect(p.enrichment_done).toBe(false);
   });
 
-  it('marca enrichmentPending sólo cuando cambia la descripción', async () => {
-    const ctx = service.createContext();
+  describe('celda requerida vacía según exista o no el SKU (OQ-8)', () => {
+    it('en un SKU EXISTENTE, sólo se toca lo que el archivo trajo', async () => {
+      const alta = service.createContext();
+      await service.processBatch(alta, [
+        fila({
+          descriptionRaw: 'la del local',
+          imageUrl: 'https://cdn.example.com/vieja.jpg',
+        }),
+      ]);
+      const antes = (await prisma.product.findUnique({
+        where: { sku: 'REF-1' },
+      }))!;
+
+      // El archivo de ajuste de precios: trae las 5 columnas, pero sólo `sku` y
+      // `precio` con valor. Lo demás vacío = no cambiar.
+      const soloPrecio = service.createContext();
+      const [r] = await service.processBatch(soloPrecio, [
+        {
+          kind: 'row',
+          rowNumber: 1,
+          sku: 'REF-1',
+          priceArsCents: 987600,
+        },
+      ]);
+
+      expect(r.kind).toBe('updated');
+      const despues = (await prisma.product.findUnique({
+        where: { sku: 'REF-1' },
+      }))!;
+      expect(despues.price_ars_cents).toBe(987600);
+      // Nada más se movió: ni el nombre, ni el stock, ni la categoría, ni la
+      // descripción, ni la imagen. Esto es lo que evita que un archivo de precios
+      // vacíe el inventario.
+      expect(despues.name).toBe(antes.name);
+      expect(despues.stock).toBe(antes.stock);
+      expect(despues.category_id).toBe(antes.category_id);
+      expect(despues.description_raw).toBe(antes.description_raw);
+      expect(despues.image_url).toBe(antes.image_url);
+      expect(despues.status).toBe(antes.status);
+      expect(despues.slug).toBe(antes.slug);
+    });
+
+    it('un update sin categoría no crea ninguna categoría nueva', async () => {
+      const alta = service.createContext();
+      await service.processBatch(alta, [fila()]);
+      const categorias = await prisma.category.count();
+
+      const ctx = service.createContext();
+      await service.processBatch(ctx, [
+        { kind: 'row', rowNumber: 1, sku: 'REF-1', stock: 42 },
+      ]);
+
+      expect(await prisma.category.count()).toBe(categorias);
+      expect(ctx.categoriesCreated).toBe(0);
+      expect(
+        (await prisma.product.findUnique({ where: { sku: 'REF-1' } }))!.stock,
+      ).toBe(42);
+    });
+
+    it('en un SKU NUEVO, la misma fila incompleta es missing_required y enumera qué falta', async () => {
+      const ctx = service.createContext();
+      const [r] = await service.processBatch(ctx, [
+        { kind: 'row', rowNumber: 7, sku: 'NUEVO-1', priceArsCents: 100000 },
+      ]);
+
+      const err = esError(r);
+      expect(err.errorCode).toBe('missing_required');
+      expect(err.rowNumber).toBe(7);
+      expect(err.errorMessage).toContain('nombre');
+      expect(err.errorMessage).toContain('stock');
+      expect(err.errorMessage).toContain('categoria');
+      expect(await prisma.product.count()).toBe(0);
+    });
+
+    it('el primer campo faltante es el que viaja en `field` (para agrupar en el panel)', async () => {
+      const ctx = service.createContext();
+      const [r] = await service.processBatch(ctx, [
+        {
+          kind: 'row',
+          rowNumber: 1,
+          sku: 'NUEVO-2',
+          priceArsCents: 100000,
+          stock: 1,
+          categoryName: 'Ferretería',
+        },
+      ]);
+      expect(esError(r).field).toBe('nombre');
+    });
+
+    it('un update de sólo stock a 0 se aplica (0 no es "vacío")', async () => {
+      const alta = service.createContext();
+      await service.processBatch(alta, [fila({ stock: 25 })]);
+
+      const ctx = service.createContext();
+      await service.processBatch(ctx, [
+        { kind: 'row', rowNumber: 1, sku: 'REF-1', stock: 0 },
+      ]);
+
+      expect(
+        (await prisma.product.findUnique({ where: { sku: 'REF-1' } }))!.stock,
+      ).toBe(0);
+    });
+  });
+
+  it('marca enrichmentPending sólo cuando cambia la descripción', async () => {    const ctx = service.createContext();
     await service.processBatch(ctx, [fila({ descriptionRaw: 'igual' })]);
 
     const soloPrecio = service.createContext();

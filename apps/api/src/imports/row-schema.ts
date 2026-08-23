@@ -13,16 +13,17 @@
  * Aparecen tal cual en el JSON del estado y en el CSV del reporte, así que
  * agregar uno es un cambio de contrato: se decide en el plan, no acá.
  *
- * Nota de precisión sobre `name_too_long`: es el código de las violaciones de
- * los campos de TEXTO libre (`nombre`, `descripcion`), y cubre tanto el exceso
- * de longitud como los caracteres no imprimibles. El nombre del código quedó más
- * angosto que su alcance; el `field` y el `motivo` de cada fila sí dicen la
- * verdad exacta. Renombrarlo es un cambio de contrato pendiente de decisión.
+ * `invalid_text` cubre las violaciones de los campos de **texto libre**
+ * (`nombre`, `descripcion`): exceso de longitud y caracteres no imprimibles. Se
+ * llamaba `name_too_long`, pero el nombre era más angosto que su alcance —una
+ * descripción de 3.000 caracteres se reportaba como "nombre demasiado largo"— y
+ * el PO ratificó el rename antes de que el panel escribiera sus textos
+ * (decisión del 2026-08-22, OQ-7).
  */
 export const ROW_ERROR_CODES = [
   'missing_required',
   'invalid_sku',
-  'name_too_long',
+  'invalid_text',
   'invalid_price',
   'invalid_stock',
   'invalid_category',
@@ -34,19 +35,37 @@ export const ROW_ERROR_CODES = [
 
 export type RowErrorCode = (typeof ROW_ERROR_CODES)[number];
 
-/** Fila válida, ya normalizada a las unidades y nombres del dominio. */
+/**
+ * Columnas que un **alta** necesita además del `sku`. En una actualización
+ * pueden venir vacías: eso significa "no cambiar ese campo" (OQ-BE-2 + decisión
+ * del PO del 2026-08-22, OQ-8).
+ */
+export const CAMPOS_REQUERIDOS_PARA_ALTA = [
+  'nombre',
+  'precio',
+  'stock',
+  'categoria',
+] as const;
+
+/** Fila leída y validada. Los campos opcionales son "no cambiar", no "vacío". */
 export interface ParsedRow {
   kind: 'row';
   rowNumber: number;
+  /** Siempre presente: es la clave de la reconciliación. */
   sku: string;
-  name: string;
-  /** `undefined` = la celda vino vacía ⇒ no cambiar el valor persistido (OQ-BE-2). */
+  /**
+   * Ausente = la celda vino vacía.
+   *
+   * En un **alta** eso es una fila inválida, pero esa decisión NO se toma acá:
+   * se toma cuando se sabe si el SKU existe (`ImportsService.processRow`), que es
+   * lo único que distingue "falta un dato obligatorio" de "no toques este campo".
+   */
+  name?: string;
   descriptionRaw?: string;
   /** Centavos ARS, entero (api-standards §5.5). */
-  priceArsCents: number;
-  stock: number;
-  categoryName: string;
-  /** `undefined` = celda vacía ⇒ no cambiar (OQ-BE-2). */
+  priceArsCents?: number;
+  stock?: number;
+  categoryName?: string;
   imageUrl?: string;
 }
 
@@ -128,6 +147,13 @@ export function parsePrecioACentavos(texto: string): number | null {
 /**
  * Valida una fila leída y la normaliza, o devuelve el primer error encontrado.
  *
+ * Sólo el `sku` es obligatorio en esta capa. El resto de las celdas se validan
+ * **si vinieron**; una celda vacía produce `undefined` y significa "no cambiar
+ * ese campo" (OQ-BE-2). Que falte un dato obligatorio es un error de **alta**, y
+ * eso lo decide `ImportsService.processRow`, que es el único que sabe si el SKU ya
+ * existe. Mezclar las dos cosas acá haría imposible el archivo de sólo precios,
+ * que es el caso day-2 de AC-4.
+ *
  * Se devuelve **un** error por fila (el primero), no la lista completa: el
  * reporte tiene una línea por fila y el dueño arregla y vuelve a subir. Guardar
  * cinco motivos de la misma fila multiplicaría el reporte sin cambiar lo que
@@ -173,109 +199,85 @@ export function validateRow(
     );
   }
 
-  if (nombre === undefined) {
-    return error(
-      rowNumber,
-      sku,
-      'nombre',
-      'missing_required',
-      'el nombre es obligatorio',
-    );
-  }
-  if (nombre.length > LIMITES_CAMPO.nombreMax) {
-    return error(
-      rowNumber,
-      sku,
-      'nombre',
-      'name_too_long',
-      `el nombre no puede tener más de ${LIMITES_CAMPO.nombreMax} caracteres`,
-    );
-  }
-  if (CONTROL_RE.test(nombre)) {
-    return error(
-      rowNumber,
-      sku,
-      'nombre',
-      'name_too_long',
-      'el nombre tiene caracteres no imprimibles',
-    );
+  if (nombre !== undefined) {
+    if (nombre.length > LIMITES_CAMPO.nombreMax) {
+      return error(
+        rowNumber,
+        sku,
+        'nombre',
+        'invalid_text',
+        `el nombre no puede tener más de ${LIMITES_CAMPO.nombreMax} caracteres`,
+      );
+    }
+    if (CONTROL_RE.test(nombre)) {
+      return error(
+        rowNumber,
+        sku,
+        'nombre',
+        'invalid_text',
+        'el nombre tiene caracteres no imprimibles',
+      );
+    }
   }
 
-  if (precio === undefined) {
-    return error(
-      rowNumber,
-      sku,
-      'precio',
-      'missing_required',
-      'el precio es obligatorio',
-    );
-  }
-  const priceArsCents = parsePrecioACentavos(precio);
-  if (priceArsCents === null) {
-    return error(
-      rowNumber,
-      sku,
-      'precio',
-      'invalid_price',
-      'el precio tiene que ser un número mayor a 0 con hasta 2 decimales, sin separador de miles (ej. 1234,56)',
-    );
+  let priceArsCents: number | undefined;
+  if (precio !== undefined) {
+    const centavos = parsePrecioACentavos(precio);
+    if (centavos === null) {
+      return error(
+        rowNumber,
+        sku,
+        'precio',
+        'invalid_price',
+        'el precio tiene que ser un número mayor a 0 con hasta 2 decimales, sin separador de miles (ej. 1234,56)',
+      );
+    }
+    priceArsCents = centavos;
   }
 
-  if (stockTexto === undefined) {
-    return error(
-      rowNumber,
-      sku,
-      'stock',
-      'missing_required',
-      'el stock es obligatorio',
-    );
-  }
-  if (!STOCK_RE.test(stockTexto)) {
-    return error(
-      rowNumber,
-      sku,
-      'stock',
-      'invalid_stock',
-      'el stock tiene que ser un número entero de 0 o más',
-    );
-  }
-  const stock = Number(stockTexto);
-  if (stock > LIMITES_CAMPO.int4Max) {
-    return error(
-      rowNumber,
-      sku,
-      'stock',
-      'invalid_stock',
-      'el stock es demasiado grande',
-    );
+  let stock: number | undefined;
+  if (stockTexto !== undefined) {
+    if (!STOCK_RE.test(stockTexto)) {
+      return error(
+        rowNumber,
+        sku,
+        'stock',
+        'invalid_stock',
+        'el stock tiene que ser un número entero de 0 o más',
+      );
+    }
+    const valor = Number(stockTexto);
+    if (valor > LIMITES_CAMPO.int4Max) {
+      return error(
+        rowNumber,
+        sku,
+        'stock',
+        'invalid_stock',
+        'el stock es demasiado grande',
+      );
+    }
+    stock = valor;
   }
 
-  if (categoria === undefined) {
-    return error(
-      rowNumber,
-      sku,
-      'categoria',
-      'missing_required',
-      'la categoría es obligatoria',
-    );
-  }
-  if (categoria.length > LIMITES_CAMPO.categoriaMax) {
-    return error(
-      rowNumber,
-      sku,
-      'categoria',
-      'invalid_category',
-      `la categoría no puede tener más de ${LIMITES_CAMPO.categoriaMax} caracteres`,
-    );
-  }
-  if (CONTROL_RE.test(categoria)) {
-    return error(
-      rowNumber,
-      sku,
-      'categoria',
-      'invalid_category',
-      'la categoría tiene caracteres no imprimibles',
-    );
+  if (categoria !== undefined) {
+    if (categoria.length > LIMITES_CAMPO.categoriaMax) {
+      return error(
+        rowNumber,
+        sku,
+        'categoria',
+        'invalid_category',
+        `la categoría no puede tener más de ${LIMITES_CAMPO.categoriaMax} caracteres`,
+      );
+    }
+    if (CONTROL_RE.test(categoria)) {
+      return error(
+        rowNumber,
+        sku,
+        'categoria',
+        'invalid_category',
+        'la categoría tiene caracteres no imprimibles',
+      );
+    }
   }
 
   if (descripcion !== undefined) {
@@ -284,7 +286,7 @@ export function validateRow(
         rowNumber,
         sku,
         'descripcion',
-        'name_too_long',
+        'invalid_text',
         `la descripción no puede tener más de ${LIMITES_CAMPO.descripcionMax} caracteres`,
       );
     }
@@ -293,7 +295,7 @@ export function validateRow(
         rowNumber,
         sku,
         'descripcion',
-        'name_too_long',
+        'invalid_text',
         'la descripción tiene caracteres no imprimibles',
       );
     }
@@ -346,4 +348,22 @@ export function validateRow(
     categoryName: categoria,
     imageUrl: imagenUrl,
   };
+}
+
+/**
+ * Campos obligatorios que le faltan a una fila **para poder crear** el producto.
+ * Vacío si la fila alcanza para un alta.
+ *
+ * Se consulta sólo cuando el SKU no existe: en una actualización, cada ausencia
+ * es una instrucción ("no toques este campo"), no una omisión.
+ */
+export function faltantesParaAlta(fila: ParsedRow): string[] {
+  const presentes: Record<(typeof CAMPOS_REQUERIDOS_PARA_ALTA)[number], boolean> =
+    {
+      nombre: fila.name !== undefined,
+      precio: fila.priceArsCents !== undefined,
+      stock: fila.stock !== undefined,
+      categoria: fila.categoryName !== undefined,
+    };
+  return CAMPOS_REQUERIDOS_PARA_ALTA.filter((campo) => !presentes[campo]);
 }

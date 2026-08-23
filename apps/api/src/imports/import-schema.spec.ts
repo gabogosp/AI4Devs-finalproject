@@ -101,7 +101,7 @@ describe('Esquema de import materializado (F40 — reconciliación con design.md
     });
   }
 
-  it('products pasa de 12 a 13 columnas, con enrichment_done en false por default', async () => {
+  it('products conserva sus 13 columnas de US-006, con enrichment_done en false por default', async () => {
     const filas = await prisma.$queryRawUnsafe<
       Array<{ column_name: string; column_default: string | null; is_nullable: string }>
     >(
@@ -110,9 +110,17 @@ describe('Esquema de import materializado (F40 — reconciliación con design.md
        WHERE table_schema='public' AND table_name='products'`,
     );
 
-    expect(filas.map((f) => f.column_name).sort()).toEqual(
-      [...PRODUCTS_ESPERADO].sort(),
-    );
+    // `products` es una tabla COMPARTIDA: US-005 le agregó las columnas del
+    // enriquecimiento después de este change, y va a seguir creciendo. Por eso
+    // acá se verifica que estén **todas** las que US-006 conoce (ninguna se
+    // perdió en el camino), y no que no sobre ninguna: esa afirmación convertía
+    // este guard en un test que rompe cada vez que otra US toca la tabla, que es
+    // ruido, no protección. El "no sobra ninguna" de F40 se mantiene entero para
+    // `import_jobs` e `import_job_rows`, que son las tablas que este change posee.
+    const presentes = filas.map((f) => f.column_name);
+    for (const columna of PRODUCTS_ESPERADO) {
+      expect(presentes).toContain(columna);
+    }
 
     const columna = filas.find((f) => f.column_name === 'enrichment_done');
     expect(columna?.is_nullable).toBe('NO');
