@@ -378,7 +378,7 @@
   us-id: US-007
   discipline: qa
   variant: null
-  status: in progress  # 6/22 cerradas 2026-08-23 (Fases 1-2); 4-5 bloqueadas por el FE
+  status: in progress  # 15/22 cerradas 2026-08-23 (Fases 1-3, 6, 7 + 3 gates); 4-5 bloqueadas por el FE
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null

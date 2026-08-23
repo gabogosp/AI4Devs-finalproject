@@ -313,6 +313,33 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Hallazgos fuera de alcance (no abren trabajo en esta US)
 
+- **H-2 — Los seeds de US-002 y US-003 no son idempotentes contra una base con residuo.**
+  - **Síntoma** (medido el 2026-08-23 en la corrida de la suite completa, 7 de 36 rojos):
+    `seed-categorias.ts` falla con `POST /v1/admin/products → 422 "La categoría indicada no
+    existe"` y con `PATCH /v1/admin/products/{id} → 404 "Producto no encontrado"`. La
+    categoría o el producto que el propio seed acaba de crear ya no está cuando lo
+    referencia, así que el escenario muere en el `Given` y nunca llega a su assert.
+  - **Contexto**: la base la comparten cuatro sesiones y las suites de integración del
+    backend truncan `products`/`categories`. Un seed que asume tablas estables se rompe; el
+    del carrito (T1.1) no se rompe porque crea todo con un prefijo único por corrida y no
+    reusa ids previos.
+  - **Por qué no se arregla acá**: son los seeds de los lanes de US-002 y US-003. Tocarlos
+    desde US-007 sería scope creep sobre changes ya cerrados. Queda para que el PO decida si
+    vale un pase de saneamiento junto con el de los `Verify:` sin ancla (H-1).
+  - **Efecto**: el gate cross-lane «la suite de aceptación completa sigue verde» **no se
+    puede cerrar** desde esta US. El del carrito (`@carrito`, 14/14) sí, y está verde.
+
+- **H-3 — Los defaults del soporte QA no coinciden entre sí ni con el entorno real.**
+  - `qa/acceptance/steps/world.ts` asume el web en `http://localhost:3100`;
+    `qa/support/cart-client.ts` usa `http://localhost:3210` como `Origin`; el storefront real
+    corre en `3200` y la allowlist del `.env` sólo tiene `3100`. Con los tres valores en
+    desacuerdo, una corrida sin variables explícitas falla por entorno y **el síntoma parece
+    de negocio**: cinco escenarios del carrito acusando asserts de dominio cuando lo que pasó
+    es que la segunda escritura murió en 403 por `Origin`.
+  - **Mitigación aplicada**: la receta de entorno quedó escrita arriba, en Verification.
+  - **Arreglo de fondo sugerido**: un único default compartido para el origen web del QA
+    (una constante en `qa/support/`), en vez de tres literales en tres archivos.
+
 - **H-1 — Un `Verify:` de Cucumber sin ancla de conteo pasa verde con 0 escenarios.**
   - **Síntoma**: `cucumber-js --config acceptance/cucumber.mjs --tags "@lo-que-sea"` con un
     tag que no matchea nada imprime `0 scenarios` y **sale con código 0** (medido el
@@ -330,15 +357,72 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Verification (suite-level)
 
-- [ ] **Aceptación del carrito verde — 12/12 escenarios** (`@carrito`)
-  - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@carrito" --format summary 2>&1 | grep -qE '^12 scenarios \(12 passed\)$'`
+> ### Receta de entorno de la corrida (2026-08-23) — esto es lo que hay que levantar
+>
+> Los `Verify` de abajo asumen una API apta para QA, y con una API arrancada con los valores
+> de producción **la mayoría falla por el entorno, no por el carrito**. Diagnosticado a mano
+> en esta corrida, con el costo que se evita documentándolo:
+>
+> ```bash
+> PORT=3009 \
+>   CORS_ALLOWED_ORIGINS="http://localhost:3100,http://localhost:3200,http://localhost:3210" \
+>   AUTH_COOKIE_SECURE=false \
+>   AUTH_RATE_LIMIT_MAX=100000 \
+>   CART_WRITE_RATE_LIMIT_MAX=100000 CART_RATE_LIMIT_MAX=100000 \
+>   STOREFRONT_RATE_LIMIT_MAX=100000 \
+>   node apps/api/dist/apps/api/src/main.js
+>
+> QA_API_BASE_URL=http://localhost:3009 QA_WEB_BASE_URL=http://localhost:3200 <verify>
+> ```
+>
+> Por qué cada una, con el síntoma que produce su ausencia:
+>
+> - **`CORS_ALLOWED_ORIGINS` con el origen del cliente QA** (`3210` por defecto en
+>   `cart-client.ts`). Es el prerrequisito que la Fase 0 ya declaraba, y su ausencia es
+>   engañosa: la **primera** escritura pasa (sin cookie no hay carrito que secuestrar) y la
+>   **segunda muere en 403`. Se ve como cinco escenarios fallando en asserts de negocio
+>   —«la línea quitada sigue en el carrito», «1 !== 2», «el rechazo no informa el stock»—
+>   cuando en realidad ninguna segunda escritura llegó a ejecutarse.
+> - **`AUTH_RATE_LIMIT_MAX` elevado**: cada escenario hace un login admin **real** en su
+>   `Before` (no se mintea token, `testing-standards §14.2`), y el presupuesto de producción
+>   es 5 por 15 minutos. Con 14 escenarios la suite se autobloquea con 429 en el sexto.
+> - **`CART_WRITE_RATE_LIMIT_MAX` elevado**: mismo motivo que en la carga (OQ-QA-2).
+> - **`QA_WEB_BASE_URL`**: los defaults del soporte QA **no coinciden entre sí** —
+>   `world.ts` asume el web en `3100` y `cart-client.ts` usa `3210` como `Origin`—, y el web
+>   real corre en `3200`. Sin fijarlo, los escenarios de navegador expiran contra un puerto
+>   donde no hay nada.
+
+- [x] **Aceptación del carrito verde — 14/14 escenarios** (`@carrito`)
+  - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@carrito" --format summary 2>&1 | grep -qE '^14 scenarios \(14 passed\)$'`
+  - **Corrida del 2026-08-23**: `14 scenarios (14 passed)` · `85 steps (85 passed)` con la
+    receta de arriba. El conteo del gate se corrige de **12 a 14**: la Fase 3 agregó
+    TC-708..TC-712 y el ancla quedó vieja, así que con la suite entera verde el `grep`
+    fallaba igual — exactamente el modo de fallo silencioso que este plan documenta en
+    «el ancla de conteo».
 - [ ] **La suite de aceptación completa sigue verde** (no se rompió US-001/US-002/US-003)
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance`
-- [ ] **Carga de escritura bajo presupuesto** (p95 < 500 ms, sin 429)
+  - **Corrida del 2026-08-23**: `36 scenarios (29 passed, 7 failed)`. **Ninguno de los 7 es
+    del carrito** — son TC-213/TC-215/TC-216 (US-002) y H-1/H-3/C-1/C-2 (US-003), y todos
+    mueren en su **propio seed**, no en un assert de negocio:
+    `POST /v1/admin/products → 422 "La categoría indicada no existe"` y
+    `PATCH /v1/admin/products/{id} → 404 "Producto no encontrado"`, es decir la categoría o
+    el producto que el seed acaba de crear ya no está cuando lo referencia. Es un problema
+    de **idempotencia del seed de esos lanes contra una base con residuo** —la base la
+    comparten cuatro sesiones y las suites de integración del backend la truncan—, no una
+    regresión de US-007. **No se marca**: el criterio es cross-lane y su arreglo pertenece a
+    US-002/US-003 (ver «Hallazgos fuera de alcance»).
+- [x] **Carga de escritura bajo presupuesto** (p95 < 500 ms, sin 429)
   - **Verify**: `k6 run --vus 2 --duration 20s qa/performance/cart-write.js`
+  - **Corrida del 2026-08-23**: **p95 4,28 ms** con `rate_limited = 0` y checks 34.794/34.794
+    (detalle en T6.1). Lectura sin umbral: **p95 1,61 ms**.
 - [ ] **E2E de navegador y a11y** — **Bloqueados**: el FE de US-007 está planificado y sin
   desarrollar (fases 4 y 5).
-- [ ] **Los 10 AC tienen ≥1 test-case ejecutable**: AC-1 TC-701/TC-712 · AC-2 TC-702 ·
+  - **Verificado el 2026-08-23**: `apps/web/app/(storefront)/carrito/page.tsx` **no existe**.
+    El FE avanzó en la capa de datos —`apps/web/src/features/cart/cartService.ts` y
+    `useCart.ts`, commits `7026c13`/`acc4fae` de esa sesión— pero todavía no hay pantalla que
+    conducir, así que T4.1, T4.2, T5.1, T5.2 y el charter TC-750 siguen sin poder ejecutarse.
+    Los criterios ya están escritos: se desbloquean solos cuando la ruta exista.
+- [x] **Los 10 AC tienen ≥1 test-case ejecutable**: AC-1 TC-701/TC-712 · AC-2 TC-702 ·
   AC-3 TC-703 · AC-4 TC-704 · AC-5 TC-705 · AC-6 TC-710/TC-707 (**la mitad «no permite
   avanzar al pago» la ejecuta US-008**, ver OQ-QA-3) · AC-7 TC-706 · AC-8 **TC-709** ·
   AC-9 TC-711 · AC-10 TC-708. La cobertura de UI de AC-1..AC-7 y AC-9 (TC-720..TC-725,
