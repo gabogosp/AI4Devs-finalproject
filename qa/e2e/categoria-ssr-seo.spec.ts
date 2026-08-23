@@ -217,8 +217,15 @@ test('TC-205b: un producto sin stock se lista pero no ofrece comprar (AC-5)', as
     page.getByRole('link', { name: new RegExp(escapeRegExp(seed.sinStock.name)) }),
   ).toBeVisible();
 
-  // Y ninguna card ofrece la compra desde el listado: el carrito es US-007.
-  await expect(page.getByRole('button', { name: /Agregar/i })).toHaveCount(0);
+  // ACTUALIZADO por US-007 T3.5 (OQ-FE-2 resuelta por el PO como «sí»): desde el
+  // carrito, la card CON stock ofrece «Agregar». Lo que sigue valiendo —y es lo que
+  // AC-5 afirma— es que la card SIN stock no ofrece comprar: el assert se acota a
+  // esa card en vez de negar el botón en toda la página, que era la lectura válida
+  // mientras el carrito no existía.
+  const cardSinStock = page
+    .locator('article')
+    .filter({ hasText: seed.sinStock.name });
+  await expect(cardSinStock.getByRole('button', { name: /Agregar/i })).toHaveCount(0);
 });
 
 function escapeRegExp(value: string): string {

@@ -430,8 +430,20 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
          card ofrece la compra desde el listado: el carrito es US-007». Eso era verdad hasta que
          el PO resolvió **OQ-FE-2 como «sí»** y la card ganó su «Agregar» (US-007 FE T3.5). El
          spec encodea una regla **superada**, no un defecto: hay que actualizarlo en la suite de
-         US-002, y no lo hace esta US.
-         `Deferred: QA de US-002 — owner: PO/QA`.
+         US-002. **RESUELTO el 2026-08-23 por decisión del PO**: el assert se acotó a la card
+         **sin stock** —que es lo que AC-5 de US-002 realmente afirma— en vez de negar el botón
+         en toda la página, que era la lectura válida mientras el carrito no existía. TC-205b
+         verde.
+      1.bis **Dos fragilidades PREEXISTENTES de la suite de US-002**, descubiertas al correrla
+         completa y **ajenas a US-007**:
+         - `TC-204` falla porque el sitemap anuncia categorías sembradas por **otras sesiones**
+           en la base compartida que ya no resuelven (404). Es contaminación de datos, no un
+           defecto del sitemap. `Deferred: aislamiento de datos QA — owner: QA`.
+         - `TC-208` asserta que el HTML **no** contiene el precio en centavos crudos, y ese
+           número colisiona con el **teléfono de WhatsApp** del footer (`5491100000000`)
+           cuando el seed sortea un precio como `100000`. El assert es frágil por construcción:
+           depende de qué precio salga. `Deferred: acotar el assert al bloque del precio —
+           owner: QA`.
       2. **Interferencia entre specs en la corrida completa.** TC-724 y TC-725 pasan aislados y
          fallan con la suite entera: mutan el catálogo por la API real (despublicar, cambiar
          precio) y el storefront cachea la ficha 3600 s, así que el orden de ejecución cambia lo
