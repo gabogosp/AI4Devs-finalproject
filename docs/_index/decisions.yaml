@@ -105,3 +105,11 @@
   triggered-by: "US-014 FE OQ-FE-1 — up.railway.app está en la PSL: la cookie del API no vuelve"
   supersedes: null
   superseded-by: null
+- id: ADR-0014
+  title: In-process executor for AI enrichment and embedding generation
+  status: Accepted
+  path: docs/architecture/decisions/0014-in-process-enrichment-executor.md
+  affects: [backend-nestjs, enrichment, semantic-search, async-processing]
+  triggered-by: "US-005 — Redis sin aprovisionar (US-019 T1.3 abierta) y apps/worker vacío; revisa la suposición de ADR-0012 de que el enriquecimiento esperaría la cola"
+  supersedes: null
+  superseded-by: null

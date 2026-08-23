@@ -43,7 +43,7 @@ estimate-hours: 13.4
 
 ## Fase 0: ADR, esquema y configuración — 2,3 h
 
-- [ ] T0.1 ADR-0014 — ejecutor in-process del enriquecimiento IA (0,5 h)
+- [x] T0.1 ADR-0014 — ejecutor in-process del enriquecimiento IA (0,5 h)
   - **Pattern**: estructura MADR del repo, copiando la forma de
     `docs/architecture/decisions/0012-in-process-import-executor.md`: `Status` / `Amends` /
     `Context` / `Decision` (con **criterio de migración** explícito) / `Consequences`
