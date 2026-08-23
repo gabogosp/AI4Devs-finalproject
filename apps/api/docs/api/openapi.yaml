@@ -46,6 +46,14 @@ tags:
       superficie donde un request de más cuesta plata (llamadas pagas al proveedor
       de IA), así que tiene su propio presupuesto de 6 por minuto por IP. Sin
       GEMINI_API_KEY el estado es `disabled` y no se generan vectores.
+  - name: search
+    description: >-
+      Búsqueda semántica en lenguaje natural (US-004) — el diferenciador del
+      producto. Superficie PÚBLICA. Consume los vectores que genera el
+      enriquecimiento (US-005) y DEGRADA a full-text cuando el proveedor de IA no
+      responde: en ese caso la respuesta sigue siendo 200 con `degraded: true`, no
+      un error. Presupuesto propio de 20 req/min por IP, más estricto que el del
+      storefront porque cada consulta puede costar una llamada paga a un tercero.
   - name: health
     description: Liveness / readiness
 security:
@@ -228,6 +236,7 @@ paths:
 
   /admin/auth/login:
     post:
+      operationId: adminLogin
       tags: [admin-auth]
       summary: Login admin — bootstrap token o credenciales (AC-8, US-014 T8.1)
       description: >-
@@ -268,6 +277,7 @@ paths:
         '503': { $ref: '#/components/responses/Problem' }
   /admin/categories:
     post:
+      operationId: createCategory
       tags: [admin-categories]
       summary: Crear categoría (AC-1)
       description: Crea una categoría; el slug se deriva del nombre (único).
@@ -283,6 +293,7 @@ paths:
         '409': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
     get:
+      operationId: listCategories
       tags: [admin-categories]
       summary: Listar categorías (AC-1)
       description: Devuelve todas las categorías.
@@ -292,6 +303,7 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
   /admin/categories/{id}:
     patch:
+      operationId: updateCategory
       tags: [admin-categories]
       summary: Editar categoría (AC-1)
       description: Actualiza el nombre/parent de una categoría.
@@ -308,6 +320,7 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
   /admin/products:
     post:
+      operationId: createProduct
       tags: [admin-products]
       summary: Crear producto en draft (AC-2, AC-5, AC-9)
       description: Alta en estado draft; SKU único; validación por campo (422).
@@ -323,6 +336,7 @@ paths:
         '409': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
     get:
+      operationId: listProducts
       tags: [admin-products]
       summary: Listar productos (paginado, NFR)
       description: Listado paginado del panel (limit/offset).
@@ -335,6 +349,7 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
   /admin/products/{id}:
     get:
+      operationId: getProduct
       tags: [admin-products]
       summary: Obtener producto (AC-3)
       description: Devuelve un producto por id.
@@ -345,6 +360,7 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
     patch:
+      operationId: updateProduct
       tags: [admin-products]
       summary: Editar o cambiar estado (AC-3, AC-4, AC-6, AC-7)
       description: >-
@@ -765,6 +781,143 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+  /search:
+    get:
+      operationId: searchProducts
+      tags: [search]
+      summary: Buscar productos en lenguaje natural (AC-1, AC-2)
+      description: >-
+        Embebe la consulta del cliente y hace kNN sobre pgvector (índice HNSW), con
+        `SET LOCAL hnsw.ef_search` por consulta. Si el proveedor de IA falla o agota
+        GEMINI_SEARCH_TIMEOUT_MS (900 ms), la respuesta sale por full-text
+        (`websearch_to_tsquery` en español) y marca `degraded: true` con status 200:
+        el timeout ES el disparador de la degradación, no un error a reportar (AC-4).
+        La consulta se normaliza (trim + minúsculas + colapso de espacios) antes de
+        embeberse y de usarse como clave del caché de vectores, así que dos clientes
+        que escriben lo mismo con otra capitalización no pagan dos llamadas. Menos de
+        SEARCH_MIN_LENGTH caracteres ÚTILES es 422 SIN llamar al proveedor (AC-5).
+        Sólo devuelve productos publicados (AC-6); los sin stock aparecen con
+        in_stock:false y NO se ocultan (AC-7); un producto sin embedding no rompe la
+        búsqueda y sigue siendo alcanzable por texto (AC-9). El texto del cliente
+        NUNCA llega a un modelo generativo —la interpretación se arma con las
+        categorías del catálogo—, así que la protección de AC-8 es estructural.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: >-
+            Consulta en lenguaje natural. Se mide su longitud ÚTIL (la del texto
+            normalizado), así que llenar de espacios no evade el mínimo.
+          example: algo para colgar un cuadro en pared dura
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: limit
+          in: query
+          required: false
+          description: 'Tamaño del top-N. Un pedido mayor al tope se acota en silencio.'
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: >-
+            Resultados rankeados. TAMBIÉN es 200 sin resultados (con `fallback`) y
+            cuando la respuesta viene degradada: la búsqueda no interrumpe la
+            navegación.
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: >-
+                Caché acotada (max-age=60, stale-while-revalidate=30), NO no-store:
+                es contenido público derivado del catálogo. Con no-store cada tecleo
+                llegaría al origen y a la cuota del proveedor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+              examples:
+                conResultados:
+                  summary: Confianza alta — el camino semántico funcionando
+                  value:
+                    results:
+                      - slug: taco-fischer-sx-8mm-x50
+                        name: Taco Fischer SX 8mm (x50)
+                        price_ars_cents: 320000
+                        in_stock: true
+                        image_url: null
+                        score: 0.89
+                      - slug: mecha-widia-8mm
+                        name: Mecha widia 8mm para hormigón
+                        price_ars_cents: 540000
+                        in_stock: true
+                        image_url: null
+                        score: 0.81
+                    confidence: high
+                    interpreted_as: 'Buscamos en: Fijaciones, Mechas y brocas'
+                    degraded: false
+                    fallback: null
+                bajaConfianza:
+                  summary: >-
+                    Hay candidatos pero ninguno convence: se devuelven IGUAL, con
+                    fallback, para que el frontend avise en vez de esconderlos
+                  value:
+                    results:
+                      - slug: cinta-aisladora-negra
+                        name: Cinta aisladora negra
+                        price_ars_cents: 45000
+                        in_stock: true
+                        image_url: null
+                        score: 0.41
+                    confidence: low
+                    interpreted_as: 'Buscamos en: Electricidad'
+                    degraded: false
+                    fallback:
+                      suggested_categories:
+                        - { slug: electricidad, name: Electricidad }
+                        - { slug: ferreteria, name: Ferretería }
+                sinResultados:
+                  summary: Nunca un «0 resultados» desnudo (AC-3)
+                  value:
+                    results: []
+                    confidence: none
+                    interpreted_as: null
+                    degraded: false
+                    fallback:
+                      suggested_categories:
+                        - { slug: ferreteria, name: Ferretería }
+                        - { slug: refrigeracion, name: Refrigeración }
+                degradado:
+                  summary: >-
+                    El proveedor de IA no respondió: full-text con degraded true y
+                    status 200 (AC-4)
+                  value:
+                    results:
+                      - slug: taladro-percutor-650w
+                        name: Taladro percutor 650W
+                        price_ars_cents: 4500000
+                        in_stock: false
+                        image_url: null
+                        score: 1
+                    confidence: high
+                    interpreted_as: 'Buscamos en: Ferretería'
+                    degraded: true
+                    fallback: null
+        '422':
+          description: >-
+            dsm:search/query-too-short (consulta más corta que SEARCH_MIN_LENGTH
+            caracteres útiles — AC-5, sin llamar al proveedor),
+            dsm:search/query-too-long, o dsm:catalog/validation por un query param
+            desconocido (whitelist).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/SearchRateLimited'
+        '503':
+          description: >-
+            dsm:search/unavailable — la BASE no responde. Es el ÚNICO 5xx de esta
+            superficie: el fallo del proveedor de IA es un 200 degradado, no un
+            error (AC-4).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
 components:
   securitySchemes:
     adminBearer:
@@ -851,6 +1004,24 @@ components:
       content:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
+    SearchRateLimited:
+      description: >-
+        Throttler `search` excedido (§7.3, AC-10): SEARCH_RATE_LIMIT_MAX por
+        SEARCH_RATE_LIMIT_TTL_MS y por IP (20 por minuto). Es más estricto que el del
+        storefront porque acá cada request puede costar plata en un tercero, no sólo
+        CPU. Agotar este cubo NO bloquea catálogo, carrito ni login: son cubos
+        independientes.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+        Cache-Control:
+          schema: { type: string }
+          description: 'no-store: un 429 cacheado en el edge convierte el rate-limit en un DoS.'
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
     EnrichmentRateLimited:
       description: >-
         Presupuesto del throttler `enrichment` excedido (§7.3):
@@ -887,6 +1058,99 @@ components:
         application/problem+json:
           schema: { $ref: '#/components/schemas/Problem' }
   schemas:
+    SearchResponse:
+      type: object
+      required: [results, confidence, interpreted_as, degraded, fallback]
+      additionalProperties: false
+      properties:
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+        confidence:
+          type: string
+          enum: [high, low, none]
+          description: >-
+            high = el top supera SEARCH_MIN_SCORE. low = hay candidatos por debajo
+            del umbral (el frontend los presenta CON RESERVA, no los esconde). none =
+            sin señal. La distinción low/none es lo que permite ser honesto en vez de
+            elegir entre mentir o esconder resultados que quizás sirven.
+        interpreted_as:
+          type: string
+          nullable: true
+          description: >-
+            «Interpretación visible» del design-system §7.12, DERIVADA de las
+            categorías de los productos que matchearon — no generada por un LLM
+            (OQ-BE-3). Dice dónde miró el sistema; no finge entender. Como el texto
+            del cliente nunca llega a un modelo generativo, AC-8 es estructural.
+          example: 'Buscamos en: Fijaciones, Mechas y brocas'
+        degraded:
+          type: boolean
+          description: >-
+            true cuando la respuesta salió por full-text porque el proveedor de IA
+            falló o agotó su timeout (AC-4). Viaja en el CUERPO y con 200: el
+            frontend tiene que poder avisar «esto es el plan B» sin tratarlo como
+            falla. Con el free tier es un estado común, no excepcional.
+        fallback:
+          nullable: true
+          type: object
+          required: [suggested_categories]
+          additionalProperties: false
+          description: >-
+            Salida ofrecida cuando la respuesta no convence (confidence low o none).
+            null sólo con confidence high.
+          properties:
+            suggested_categories:
+              type: array
+              minItems: 1
+              description: >-
+                NUNCA vacío cuando está presente (AC-3): si no hay candidatos, cae a
+                las categorías raíz con más productos publicados. Un «0 resultados»
+                desnudo es un callejón sin salida y el cliente que lo ve se va.
+              items:
+                type: object
+                required: [slug, name]
+                additionalProperties: false
+                properties:
+                  slug:
+                    type: string
+                    description: >-
+                      Con slug y no sólo el nombre: es lo que permite al frontend
+                      armar el enlace. Sin él la salida sería un callejón mejor
+                      redactado.
+                  name: { type: string }
+    SearchResult:
+      type: object
+      required: [slug, name, price_ars_cents, in_stock, image_url, score]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          description: >-
+            Identificador público del producto: el frontend enlaza a
+            /productos/{slug}. El id UUID NO se expone (convención de US-002/US-003).
+        name: { type: string }
+        price_ars_cents:
+          type: integer
+          description: Centavos ARS con IVA incluido, entero (§5.5).
+        in_stock:
+          type: boolean
+          description: >-
+            in_stock y no el stock exacto: la cantidad le dice a un competidor cuánto
+            rota cada producto. Un producto agotado APARECE con false y no se oculta
+            (AC-7): que exista y esté agotado es información útil.
+        image_url: { type: string, nullable: true }
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: >-
+            En la vía vectorial es 1 - distancia_cosine. En la léxica es ts_rank
+            NORMALIZADO al mejor del conjunto, porque las dos escalas no son
+            comparables (medido: un match léxico exacto puntúa ~0,10 contra un umbral
+            de 0,55 calibrado para cosine). Consecuencia: en el camino degradado el
+            score es un rango RELATIVO, no una similitud absoluta comparable entre
+            consultas.
     EnrichmentStatus:
       type: object
       required: [runner_state, coverage, models, last_error_code, last_run_at]

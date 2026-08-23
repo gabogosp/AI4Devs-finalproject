@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { Confidence, ScoredProduct } from '../relevance';
+import { CategoriaSugerida, Confidence, ScoredProduct } from '../relevance';
 import { SearchOutcome } from '../search.service';
 
 /**
@@ -95,7 +95,13 @@ export class SearchResponseDto {
    */
   degraded!: boolean;
   /** Salida ofrecida cuando la búsqueda no convence. `null` sólo con `confidence: high`. */
-  fallback!: { suggested_categories: string[] } | null;
+  /**
+   * Las categorías viajan con **slug y nombre**: el slug es lo que permite al frontend armar el
+   * enlace. Con sólo el nombre, la «salida» que se le ofrece al cliente sería un callejón mejor
+   * redactado — tendría que adivinar la URL, que es exactamente lo que US-003 evitó exponiendo
+   * slugs.
+   */
+  fallback!: { suggested_categories: CategoriaSugerida[] } | null;
 
   static from(outcome: SearchOutcome): SearchResponseDto {
     return {

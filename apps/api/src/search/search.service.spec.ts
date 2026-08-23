@@ -28,6 +28,9 @@ describe('SearchService (search.service)', () => {
     stock: 3,
     image_url: null,
     category_name,
+    category_slug: category_name
+      ? category_name.toLowerCase().replace(/\s+/g, '-')
+      : null,
     score,
   });
 
@@ -38,7 +41,11 @@ describe('SearchService (search.service)', () => {
     constructor(
       private readonly vectoriales: ScoredProduct[] = [],
       private readonly lexicos: ScoredProduct[] = [],
-      private readonly raices: string[] = ['Fijaciones', 'Herramientas', 'Plomería'],
+      private readonly raices = [
+        { slug: 'fijaciones', name: 'Fijaciones' },
+        { slug: 'herramientas', name: 'Herramientas' },
+        { slug: 'plomeria', name: 'Plomería' },
+      ],
     ) {}
     async knn(vector: number[], limit: number) {
       void vector;
@@ -188,7 +195,9 @@ describe('SearchService (search.service)', () => {
 
       expect(salida.confidence).toBe('low');
       expect(salida.results).toHaveLength(1);
-      expect(salida.fallback!.suggested_categories).toEqual(['Mechas y brocas']);
+      expect(salida.fallback!.suggested_categories).toEqual([
+        { slug: 'mechas-y-brocas', name: 'Mechas y brocas' },
+      ]);
     });
 
     it('sin resultados ⇒ none con las categorías raíz, nunca lista vacía', async () => {
@@ -200,9 +209,9 @@ describe('SearchService (search.service)', () => {
       expect(salida.confidence).toBe('none');
       expect(salida.results).toEqual([]);
       expect(salida.fallback!.suggested_categories).toEqual([
-        'Fijaciones',
-        'Herramientas',
-        'Plomería',
+        { slug: 'fijaciones', name: 'Fijaciones' },
+        { slug: 'herramientas', name: 'Herramientas' },
+        { slug: 'plomeria', name: 'Plomería' },
       ]);
       expect(salida.interpreted_as).toBeNull();
     });

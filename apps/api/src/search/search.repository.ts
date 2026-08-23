@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { configNumber } from '../enrichment/config-number';
-import { ScoredProduct } from './relevance';
+import { CategoriaSugerida, ScoredProduct } from './relevance';
 
 /**
  * Único punto de SQL de la búsqueda (US-004 T2.2/T2.3) —
@@ -59,6 +59,7 @@ export class SearchRepository {
                p.stock,
                p.image_url,
                c.name AS category_name,
+               c.slug AS category_slug,
                1 - (e.embedding <=> ${literal}::vector) AS score
           FROM product_embeddings e
           JOIN products p ON p.id = e.product_id
@@ -104,6 +105,7 @@ export class SearchRepository {
                p.stock,
                p.image_url,
                c.name AS category_name,
+               c.slug AS category_slug,
                ts_rank(p.search_document, q) AS rank
           FROM products p
           LEFT JOIN categories c ON c.id = p.category_id,
@@ -119,6 +121,7 @@ export class SearchRepository {
              stock,
              image_url,
              category_name,
+             category_slug,
              -- NULLIF evita la division por cero cuando todos los rangos son 0 (posible con
              -- pesos de tsvector nulos): en ese caso el score queda NULL, ordena al final por
              -- NULLS LAST y el resultado se clasifica como poco confiable, que es lo correcto.
@@ -133,15 +136,14 @@ export class SearchRepository {
    * Se ordenan por cantidad de productos: si hay que ofrecerle una salida a alguien que no
    * encontró lo que buscaba, conviene que sea por donde más hay para ver.
    */
-  async rootCategoriesByVolume(limit = 3): Promise<string[]> {
-    const filas = await this.prisma.$queryRaw<Array<{ name: string }>>`
-      SELECT c.name
+  async rootCategoriesByVolume(limit = 3): Promise<CategoriaSugerida[]> {
+    return this.prisma.$queryRaw<CategoriaSugerida[]>`
+      SELECT c.slug, c.name
         FROM categories c
         JOIN products p ON p.category_id = c.id AND p.status = 'published'
        WHERE c.parent_id IS NULL
-       GROUP BY c.id, c.name
+       GROUP BY c.id, c.slug, c.name
        ORDER BY count(p.id) DESC, c.name
        LIMIT ${limit}::int`;
-    return filas.map((f) => f.name);
   }
 }

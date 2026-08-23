@@ -19,6 +19,7 @@ describe('relevance — umbral, blend y fallback', () => {
     slug: string,
     score: number,
     category_name: string | null = 'Fijaciones',
+    category_slug: string | null = 'fijaciones',
   ): ScoredProduct => ({
     slug,
     name: `Producto ${slug}`,
@@ -26,6 +27,7 @@ describe('relevance — umbral, blend y fallback', () => {
     stock: 3,
     image_url: null,
     category_name,
+    category_slug,
     score,
   });
 
@@ -101,33 +103,47 @@ describe('relevance — umbral, blend y fallback', () => {
     it('sin candidatos cae a las categorías raíz y NUNCA a lista vacía', () => {
       // Un «0 resultados» desnudo es un callejón sin salida: el cliente que lo ve no vuelve a
       // buscar, se va. La lista vacía no es un caso válido de esta función, es un bug.
-      expect(suggestedCategories([], ['Fijaciones', 'Herramientas', 'Plomería'])).toEqual([
-        'Fijaciones',
-        'Herramientas',
-        'Plomería',
-      ]);
+      const raices = [
+        { slug: 'fijaciones', name: 'Fijaciones' },
+        { slug: 'herramientas', name: 'Herramientas' },
+        { slug: 'plomeria', name: 'Plomería' },
+      ];
+
+      expect(suggestedCategories([], raices)).toEqual(raices);
     });
 
     it('con candidatos usa sus categorías, sin repetir y en orden de ranking', () => {
       const candidatos = [
-        producto('a', 0.4, 'Mechas y brocas'),
-        producto('b', 0.3, 'Fijaciones'),
-        producto('c', 0.2, 'Mechas y brocas'),
+        producto('a', 0.4, 'Mechas y brocas', 'mechas-y-brocas'),
+        producto('b', 0.3, 'Fijaciones', 'fijaciones'),
+        producto('c', 0.2, 'Mechas y brocas', 'mechas-y-brocas'),
       ];
 
-      expect(suggestedCategories(candidatos, ['Raíz'])).toEqual([
-        'Mechas y brocas',
-        'Fijaciones',
+      expect(
+        suggestedCategories(candidatos, [{ slug: 'raiz', name: 'Raíz' }]),
+      ).toEqual([
+        { slug: 'mechas-y-brocas', name: 'Mechas y brocas' },
+        { slug: 'fijaciones', name: 'Fijaciones' },
       ]);
     });
 
     it('ignora categorías vacías o en blanco en vez de ofrecerlas', () => {
-      const candidatos = [producto('a', 0.4, null), producto('b', 0.3, '   ')];
-      expect(suggestedCategories(candidatos, ['Fijaciones'])).toEqual(['Fijaciones']);
+      const candidatos = [
+        producto('a', 0.4, null, null),
+        producto('b', 0.3, '   ', '  '),
+        // Con nombre pero SIN slug tampoco se ofrece: un enlace que no se puede armar no es
+        // una salida.
+        producto('c', 0.2, 'Sin slug', null),
+      ];
+      const raiz = [{ slug: 'fijaciones', name: 'Fijaciones' }];
+
+      expect(suggestedCategories(candidatos, raiz)).toEqual(raiz);
     });
 
     it('respeta el tope para no devolver un menú entero', () => {
-      const muchas = ['A', 'B', 'C', 'D', 'E'].map((c, i) => producto(`p${i}`, 0.4, c));
+      const muchas = ['A', 'B', 'C', 'D', 'E'].map((c, i) =>
+        producto(`p${i}`, 0.4, c, c.toLowerCase()),
+      );
       expect(suggestedCategories(muchas, [], 3)).toHaveLength(3);
     });
   });

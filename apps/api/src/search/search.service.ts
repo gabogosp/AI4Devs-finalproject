@@ -6,6 +6,7 @@ import { normalizeQuery, usefulLength } from './normalize-query';
 import { QueryEmbedder } from './query-embedder';
 import {
   blend,
+  CategoriaSugerida,
   classify,
   Confidence,
   interpretedAs,
@@ -22,7 +23,7 @@ export interface SearchOutcome {
   /** «Buscamos en: Fijaciones, Mechas y brocas» — o `null` si no hay de dónde armarlo. */
   interpreted_as: string | null;
   /** Presente cuando la respuesta no convence (AC-3). Nunca con lista vacía. */
-  fallback: { suggested_categories: string[] } | null;
+  fallback: { suggested_categories: CategoriaSugerida[] } | null;
   /** `true` cuando la respuesta salió del camino léxico por no tener vector (AC-4). */
   degraded: boolean;
   /** Insumo de observabilidad: si el vector vino del caché no se pagó una llamada. */

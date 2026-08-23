@@ -511,7 +511,7 @@ print('barrido de 5 umbrales medido:', [(r['threshold'], r['pct']) for r in d['r
 
 ## Fase 7: Contratos y documentación — 0,6 h
 
-- [ ] T7.1 OpenAPI publicado del servicio
+- [x] T7.1 OpenAPI publicado del servicio
   - **Pattern**: el draft de `contracts/openapi/search.yaml` se integra a
     `apps/api/docs/api/openapi.yaml`; el contrato **vivo** de `openspec/specs/busqueda/`
     lo escribe `/archive-change` — `per openspec-workflow §Living contract rule`.
@@ -523,7 +523,7 @@ print('barrido de 5 umbrales medido:', [(r['threshold'], r['pct']) for r in d['r
     T0.1) pueda generar los tipos de búsqueda para US-004 FE.
   - **Verify**: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
 
-- [ ] T7.2 README del módulo + runbook
+- [x] T7.2 README del módulo + runbook
   - **Exit criterion**: `apps/api/src/search/README.md` explica en ≤ 40 líneas: los dos
     caminos y cuándo se usa cada uno, por qué el timeout **es** la degradación, por qué el
     limitador es propio y no el de enriquecimiento (con el número: 4 s vs 1,5 s), qué se

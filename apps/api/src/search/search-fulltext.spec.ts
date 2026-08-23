@@ -161,9 +161,12 @@ describe('SearchRepository.fullText (integration, search-fulltext)', () => {
     const raices = await repo.rootCategoriesByVolume(3);
 
     expect(Array.isArray(raices)).toBe(true);
-    for (const nombre of raices) {
-      expect(typeof nombre).toBe('string');
-      expect(nombre.trim().length).toBeGreaterThan(0);
+    for (const categoria of raices) {
+      // Con slug: es lo que permite al frontend enlazar la salida que se ofrece.
+      expect(typeof categoria.slug).toBe('string');
+      expect(categoria.slug.trim().length).toBeGreaterThan(0);
+      expect(typeof categoria.name).toBe('string');
+      expect(categoria.name.trim().length).toBeGreaterThan(0);
     }
   });
 });

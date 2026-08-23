@@ -24,8 +24,20 @@ export interface ScoredProduct {
   stock: number;
   image_url: string | null;
   category_name: string | null;
+  /**
+   * Slug del rubro. Viaja junto al nombre porque el fallback tiene que ser **accionable**: con
+   * sólo el nombre, el frontend no puede armar el enlace a la categoría y la «salida» que se le
+   * ofrece al cliente vuelve a ser un callejón, mejor redactado.
+   */
+  category_slug: string | null;
   /** `0..1`. En la vía vectorial es `1 - distancia_cosine`; en la léxica, `ts_rank` normalizado. */
   score: number;
+}
+
+/** Una categoría ofrecida como salida. El `slug` es lo que hace que se pueda navegar. */
+export interface CategoriaSugerida {
+  slug: string;
+  name: string;
 }
 
 /**
@@ -84,10 +96,10 @@ export function blend(
  */
 export function suggestedCategories(
   candidates: ScoredProduct[],
-  rootCategories: string[],
+  rootCategories: CategoriaSugerida[],
   max = 3,
-): string[] {
-  const deCandidatos = distintas(candidates).slice(0, max);
+): CategoriaSugerida[] {
+  const deCandidatos = distintasCategorias(candidates).slice(0, max);
   if (deCandidatos.length > 0) return deCandidatos;
   return rootCategories.slice(0, max);
 }
@@ -110,7 +122,7 @@ export function interpretedAs(top: ScoredProduct[], max = 3): string | null {
   return `Buscamos en: ${categorias.join(', ')}`;
 }
 
-/** Categorías distintas, en el orden en que aparecen (el orden es el del ranking). */
+/** Nombres de categoría distintos, en el orden del ranking (para la interpretación). */
 function distintas(productos: ScoredProduct[]): string[] {
   const vistas = new Set<string>();
   const salida: string[] = [];
@@ -119,6 +131,21 @@ function distintas(productos: ScoredProduct[]): string[] {
     if (!c || vistas.has(c)) continue;
     vistas.add(c);
     salida.push(c);
+  }
+  return salida;
+}
+
+/** Categorías distintas **con su slug**, en el orden del ranking (para el fallback). */
+function distintasCategorias(productos: ScoredProduct[]): CategoriaSugerida[] {
+  const vistas = new Set<string>();
+  const salida: CategoriaSugerida[] = [];
+  for (const p of productos) {
+    const name = p.category_name?.trim();
+    const slug = p.category_slug?.trim();
+    // Sin slug no se puede ofrecer: un enlace que no se puede armar no es una salida.
+    if (!name || !slug || vistas.has(slug)) continue;
+    vistas.add(slug);
+    salida.push({ slug, name });
   }
   return salida;
 }
