@@ -222,7 +222,8 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Fase 1: Presentación — 0,7 h
 
-- [ ] **T1.1** `LegalDocument.tsx`: Server Component presentacional (0,4 h)
+- [x] **T1.1** `LegalDocument.tsx`: Server Component presentacional (0,4 h) *(verde 2026-08-22 — 6 tests)*
+  - **AS-BUILT**: dos guards del test tuvieron que anclarse al **uso** y no a la mención, porque matcheaban el propio comentario del componente que explica por qué no los lleva —rojo permanente, misma familia que F57—. `'use client'` se verifica como **primera sentencia** del archivo (que es donde Next la reconoce) y `dangerouslySetInnerHTML` como **atributo JSX** (`/dangerouslySetInnerHTML\s*=/`).
 
   - **Pattern**: Server Component **sin** `'use client'` (`frontend-next-standards.md` §2: cero
     JS de cliente en una página de texto). Ancho de lectura con `max-w-prose`, que es utilidad
@@ -266,7 +267,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
     literal** en pantalla —prueba de que no se interpreta HTML—; el archivo fuente no contiene
     `'use client'`)
 
-- [ ] **T1.2** `legalMetadata.ts`: metadata por documento (0,3 h)
+- [x] **T1.2** `legalMetadata.ts`: metadata por documento (0,3 h) *(verde 2026-08-22 — 8 tests)*
 
   - **Pattern**: espeja `src/features/storefront/metadata.ts` (US-003): `SITE_NAME`, description
     acotada, **canonical absoluta** desde `NEXT_PUBLIC_SITE_URL` — los buscadores la exigen
@@ -296,7 +297,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Fase 2: Rutas e indexabilidad — 0,6 h
 
-- [ ] **T2.1** Las dos páginas bajo `app/(storefront)/legales/` (0,3 h)
+- [x] **T2.1** Las dos páginas bajo `app/(storefront)/legales/` (0,3 h) *(verde 2026-08-22 — 4 tests + typecheck; sin `loading.tsx`)*
 
   - **Pattern**: página trivial que sólo compone — la lógica ya está en `content.ts`,
     `LegalDocument` y `legalMetadata`. Route group `(storefront)` para heredar header + footer
@@ -329,7 +330,8 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
     título del documento correcto y `metadata.alternates.canonical` apunta a la ruta correcta —
     si alguien cruza los documentos entre las dos páginas, falla)
 
-- [ ] **T2.2** Las dos URLs legales en el sitemap, **antes** de la degradación (0,3 h)
+- [x] **T2.2** Las dos URLs legales en el sitemap, **antes** de la degradación (0,3 h) *(verde 2026-08-22 — 9 tests)*
+  - **Desviación del plan, con motivo**: el plan decía que los casos de US-002 seguirían verdes "sin editarse", y no fue posible — uno afirmaba que el sitemap degradado tiene **exactamente** una entrada, y ahora tiene tres. Se ajustó a lo que su **propio nombre** declara ("al menos la home"): se asserta que la home está y que ninguna URL es relativa, en vez de un conteo exacto que ataba el test a cuántas rutas no dependen de la API — número que crece con cada US.
 
   - **Pattern**: hoy `buildSitemap()` devuelve `[home]` cuando el árbol de categorías falla. Las
     páginas legales **no dependen del árbol**, así que entran antes de ese `return` — si

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { publicEnv } from '@/lib/env';
 import { categoriesStorefrontService } from './categoriesStorefrontService';
+import { LEGAL_ROUTES } from '@/features/legal/routes';
 
 /**
  * Sitemap del sitio público (AC-4).
@@ -18,10 +19,16 @@ export async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
   const base = publicEnv.NEXT_PUBLIC_SITE_URL;
   const home = { url: base };
 
+  // Las páginas legales NO dependen del árbol de categorías, así que se arman
+  // antes de la degradación: si entraran después del `return` de abajo, un 5xx
+  // de la API las borraría del sitemap — y son justamente las que un buscador
+  // (o un organismo de control) tiene que poder encontrar siempre.
+  const legales = Object.values(LEGAL_ROUTES).map((ruta) => ({ url: `${base}${ruta}` }));
+
   // Un sitemap que responde 500 le enseña al crawler a no volver; uno
   // incompleto se corrige en la próxima regeneración. Se degrada, no se cae.
   const rubros = await categoriesStorefrontService.getTree().catch(() => []);
-  if (rubros.length === 0) return [home];
+  if (rubros.length === 0) return [home, ...legales];
 
   const categorias = rubros.flatMap((rubro) => [
     { url: `${base}/categorias/${rubro.slug}` },
@@ -45,5 +52,5 @@ export async function buildSitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${base}/productos/${slug}`,
   }));
 
-  return [home, ...categorias, ...productos];
+  return [home, ...legales, ...categorias, ...productos];
 }

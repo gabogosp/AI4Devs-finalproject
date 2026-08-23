@@ -84,8 +84,15 @@ describe('buildSitemap (AC-4)', () => {
     const entries = await buildSitemap();
 
     // Un sitemap que responde 500 le enseña al crawler a no volver.
-    expect(entries).toHaveLength(1);
-    expect(entries[0].url).toMatch(/^http/);
+    //
+    // Se asserta "al menos la home" —que es lo que el nombre del test declara—
+    // y no un conteo exacto: US-017 sumó las páginas legales al camino
+    // degradado a propósito, porque no dependen del árbol. Un `toHaveLength(1)`
+    // ataba el test a la cantidad de rutas que no dependen de la API, que crece
+    // con cada US.
+    expect(entries.length).toBeGreaterThanOrEqual(1);
+    expect(entries.some((e) => e.url === 'http://localhost:3000')).toBe(true);
+    expect(entries.every((e) => e.url.startsWith('http'))).toBe(true);
   });
 
   it('si falla el listado de UNA categoría, el resto del sitemap sobrevive', async () => {
@@ -95,5 +102,32 @@ describe('buildSitemap (AC-4)', () => {
 
     expect(urls.some((u) => u.endsWith('/productos/compresor-1hp'))).toBe(true);
     expect(urls.some((u) => u.endsWith('/productos/taladro'))).toBe(true);
+  });
+
+  it('incluye las dos URLs legales, absolutas (US-017 AC-1/AC-2)', async () => {
+    const urls = (await buildSitemap()).map((e) => e.url);
+
+    expect(urls.some((u) => u.endsWith('/legales/privacidad'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/legales/terminos'))).toBe(true);
+    expect(urls.every((u) => u.startsWith('http'))).toBe(true);
+  });
+
+  it('las legales SOBREVIVEN la degradación del árbol', async () => {
+    treeOk = false;
+
+    const urls = (await buildSitemap()).map((e) => e.url);
+
+    // Si se agregaran después del `return` de degradación, un 5xx de la API
+    // las borraría del sitemap — justo las páginas que siempre deben poder
+    // encontrarse.
+    expect(urls).toHaveLength(3);
+    expect(urls.some((u) => u.endsWith('/legales/privacidad'))).toBe(true);
+    expect(urls.some((u) => u.endsWith('/legales/terminos'))).toBe(true);
+  });
+
+  it('no se duplican con ninguna otra URL', async () => {
+    const urls = (await buildSitemap()).map((e) => e.url);
+
+    expect(new Set(urls).size).toBe(urls.length);
   });
 });
