@@ -43,6 +43,9 @@ DATABASE_URL=postgresql://dsm:dsm@localhost:55432/dsm?schema=public
 JWT_SECRET=dev-secret-cambiar
 ADMIN_BOOTSTRAP_TOKEN=demo-admin-token
 CORS_ALLOWED_ORIGINS=http://localhost:3200
+# En http local la cookie de sesión/carrito NO puede ser Secure (no volvería al
+# browser → el carrito se vería siempre vacío). En producción (https) va en true.
+AUTH_COOKIE_SECURE=false
 ENV
 
 # 4. Generar el cliente Prisma (tipos Customer/Cart/… que consume la API)
