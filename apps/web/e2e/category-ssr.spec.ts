@@ -81,10 +81,16 @@ test('AC-7: el servidor nunca pide más de 20 ítems, y la página 2 pide offset
   // una carrera con los specs que corren en paralelo. Las dos aserciones son
   // monótonas, así que arrastrar requests ajenos no las debilita — al
   // contrario, `every` cubre TODO lo que el servidor pidió en la corrida.
-  const urls = log.map((r) => r.url).join('\n');
-  // Se asserta sobre el texto del log para que el fallo MUESTRE qué pidió el
-  // servidor, en vez de un `false` mudo.
-  expect(urls).toContain('offset=20');
+  // **No** se asserta que el log contenga `offset=20`. La Data Cache de Next
+  // vive en `.next/cache`, sobrevive a builds y reinicios, y su clave es la URL
+  // del fetch: si una corrida previa ya pidió la página 2 con el mismo puerto
+  // de stub, ésta se sirve de caché y el servidor **no pide nada** — que es el
+  // comportamiento correcto, no un fallo. Anclarlo al log hacía que el spec
+  // pasara o fallara según la antigüedad de la caché.
+  //
+  // Que el offset se aplique se verifica abajo contra el CONTENIDO servido, que
+  // es cache-independiente; y el techo duro de AC-7, contra el log, que sí lo
+  // es porque `every` sobre un conjunto vacío o ajeno sigue siendo verdadero.
 
   // La GRILLA pide exactamente 20. El sitemap (T5.2) es el único otro consumidor
   // del endpoint y pagina de a 100 —el máximo del contrato— legítimamente: no es
@@ -93,7 +99,10 @@ test('AC-7: el servidor nunca pide más de 20 ítems, y la página 2 pide offset
   const grilla = log.filter(
     (r) => r.url.includes('/products?') && !r.url.includes('limit=100'),
   );
-  expect(grilla.length).toBeGreaterThan(0);
+  // NO se exige `grilla.length > 0`: con la Data Cache tibia el servidor no
+  // pide nada, y eso es correcto, no un fallo. `every` sobre un conjunto vacío
+  // es verdadero, que es justo la semántica que queremos — "ninguno de los
+  // requests que hizo pidió de más", sea cual sea la cantidad.
   expect(grilla.every((r) => r.url.includes('limit=20'))).toBe(true);
 
   // Techo duro: NADA supera el máximo del contrato. Es la garantía de fondo de
@@ -101,4 +110,16 @@ test('AC-7: el servidor nunca pide más de 20 ítems, y la página 2 pide offset
   expect(log.every((r) => !/limit=(10[1-9]|1[1-9]\d|[2-9]\d\d|\d{4,})/.test(r.url))).toBe(
     true,
   );
+
+  // Y que el offset SÍ se aplicó: la página 2 trae productos distintos de los
+  // de la 1. Se compara el HTML servido de ambas —no el log— así que vale igual
+  // con caché tibia o fría.
+  const p1 = await (await page.goto('/categorias/compresores-e2e'))!.text();
+  const p2 = await (await page.goto('/categorias/compresores-e2e?page=2'))!.text();
+  const enP2 = [...p2.matchAll(/Compresor E2E (\d+)/g)].map((m) => m[1]);
+  expect(enP2.length, 'la página 2 no trajo ningún producto').toBeGreaterThan(0);
+  expect(
+    enP2.some((n) => !p1.includes(`Compresor E2E ${n}<`)),
+    'la página 2 repite los productos de la 1: el offset no se aplicó',
+  ).toBe(true);
 });

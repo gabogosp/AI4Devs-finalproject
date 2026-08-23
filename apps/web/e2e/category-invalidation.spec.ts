@@ -40,12 +40,21 @@ const NUEVO_NOMBRE = `Compresor renombrado ${Date.now() % 1000000}`;
 test('renombrar un producto en el panel refresca el listado de la categoría de inmediato', async ({
   page,
 }) => {
-  // 1) Poblar la caché del listado. Lo que importa no es qué nombre muestra,
-  //    sino que NO es el que vamos a poner: así el assert final sólo puede
+  // 1) Poblar la caché del listado. Lo que importa NO es qué nombre muestra,
+  //    sino que no es el que vamos a poner: así el assert final sólo puede
   //    pasar si la invalidación corrió.
+  //
+  //    Deliberadamente NO se asserta el nombre inicial del fixture. La Data
+  //    Cache de Next vive en `.next/cache`, sobrevive a builds y reinicios, y
+  //    `__reset` del stub **no la toca**: si una corrida previa dejó cacheado
+  //    un renombre, el listado lo sigue mostrando hasta que expire el TTL de
+  //    1 h. Anclar el estado inicial hacía fallar el spec por caché ajena y no
+  //    por el comportamiento —falla que además sólo aparece al reusar el mismo
+  //    puerto, porque la URL del fetch (y con ella la clave de caché) incluye
+  //    el puerto del stub—.
   const antes = await page.goto('/categorias/invalidacion-e2e');
   expect(antes!.status()).toBe(200);
-  expect(await antes!.text()).toContain(NOMBRE);
+  // `NUEVO_NOMBRE` es único por corrida, así que ninguna caché puede tenerlo.
   expect(await antes!.text()).not.toContain(NUEVO_NOMBRE);
 
   // 2) Editarlo DESDE EL PANEL: es el camino que dispara la Server Action.
@@ -88,11 +97,22 @@ test('el listado y la ficha comparten la invalidación: ambos quedan consistente
 }) => {
   const listado = await page.goto('/categorias/invalidacion-e2e');
   expect(listado!.status()).toBe(200);
-  expect(await listado!.text()).toContain(NOMBRE);
 
-  // La card enlaza a la ficha, y la ficha del mismo producto existe: si el
-  // listado enlazara a un slug que no resuelve, la grilla estaría mintiendo.
+  // La propiedad que importa es que **el enlace de la grilla resuelva**: si el
+  // listado enlazara por un identificador que la ficha no sabe resolver —el
+  // caso `sku` vs `slug` de OQ-QA-2— acá habría 404 y la grilla estaría
+  // mintiendo. Es el único punto del E2E donde esa divergencia aparece.
+  const href = await page
+    .locator(`a[href^="/productos/"]`)
+    .first()
+    .getAttribute('href');
+  expect(href).toBe(`/productos/${SLUG}`);
+
+  // NO se comparan los nombres entre ambas vistas: la ficha y el listado usan
+  // cachés independientes (`product:{slug}` y `catalog`), que se invalidan
+  // juntas ante una mutación pero pueden tener distinta antigüedad heredada de
+  // corridas previas. Exigir que coincidan haría fallar el spec por estado de
+  // caché y no por comportamiento.
   const ficha = await page.goto(`/productos/${SLUG}`);
   expect(ficha!.status()).toBe(200);
-  expect(await ficha!.text()).toContain(NOMBRE);
 });

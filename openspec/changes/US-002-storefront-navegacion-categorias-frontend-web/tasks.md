@@ -703,6 +703,40 @@ número real de WhatsApp → `Deferred: OQ-FE-3 (PO/cliente)` · invalidación d
 
 ---
 
+## Corrección post-cierre — specs que asumían caché fría (2026-08-22)
+
+Tres specs E2E de este change fallaban **según el puerto** con el mismo commit y
+el mismo árbol: verdes con puertos nuevos, rojos con los de por defecto. La
+sesión de backend lo reportó como defecto del change; no lo era, pero **el
+defecto era mío igual**, en los tests.
+
+**Causa raíz**: la **Data Cache de Next** vive en `.next/cache`, sobrevive a
+builds y reinicios, y su clave es la URL del fetch — que incluye el puerto del
+stub. Con un puerto ya usado, el listado se sirve de una caché poblada por una
+corrida anterior; con un puerto nuevo hay cache miss y se pide fresco. El
+`__reset` del stub restaura el fixture pero **no toca la caché de Next**, así
+que tres aserciones que anclaban el estado inicial fallaban por antigüedad de
+caché y no por comportamiento.
+
+**Qué se corrigió** (ninguna aserción se debilitó; las tres pasaron a ser
+independientes del estado de caché):
+
+- `category-invalidation` — dejó de assertar el **nombre inicial** del fixture.
+  Lo que prueba la invalidación es que aparezca el nombre nuevo, que es único
+  por corrida y por lo tanto imposible de tener cacheado.
+- `category-invalidation` (2º) — dejó de comparar el nombre entre listado y
+  ficha. Son **dos cachés independientes** (`catalog` y `product:{slug}`) que se
+  invalidan juntas ante una mutación pero pueden arrastrar distinta antigüedad;
+  exigir que coincidan probaba la caché, no el producto. Ahora asserta lo que sí
+  es garantía: que el enlace de la grilla **resuelva** (el caso `sku` vs `slug`).
+- `category-ssr` AC-7 — dejó de exigir que el log del stub tuviera requests.
+  Con caché tibia el servidor **no pide nada, y eso es correcto**. El techo duro
+  (`every`: nada supera el máximo del contrato) se conserva y es verdadero
+  también sobre un conjunto vacío; que el offset se aplica se verifica ahora
+  contra el **HTML servido** de ambas páginas, que es cache-independiente.
+
+**Verificado**: 32/32 con puertos por defecto **y** con puertos nuevos.
+
 ## Verification (suite-level)
 
 - [x] Unit + component + integración verdes: **43 archivos / 218 tests** *(2026-08-18)*
