@@ -447,7 +447,7 @@ language: es
 
 ## Fase 6: Documentación — 0,6 h
 
-- [ ] T6.1 README del feature
+- [x] T6.1 README del feature
   - **Exit criterion**: `apps/web/src/features/cart/README.md` explica en ≤ 40 líneas: por
     qué el carrito es cliente y no servidor (el guard de `client.ts`), por qué el rewrite de
     ADR-0013 se extendió, los dos sujetos de CSRF, que los totales **vienen del servidor** y
@@ -455,7 +455,7 @@ language: es
     punteros a US-008/US-009/US-010).
   - **Verify**: `test -f apps/web/src/features/cart/README.md && grep -q "ADR-0013" apps/web/src/features/cart/README.md && grep -q "US-008" apps/web/src/features/cart/README.md && test $(wc -l < apps/web/src/features/cart/README.md) -le 40`
 
-- [ ] T6.2 Actualizar el README de la app con la variable que ahora comparte
+- [x] T6.2 Actualizar el README de la app con la variable que ahora comparte
   - **Exit criterion**: `apps/web/README.md` dice que `API_INTERNAL_ORIGIN` gobierna **dos**
     superficies same-origin (`/v1/auth/*` y `/v1/cart/*`), y que sin ella el carrito
     devuelve 404 con el mismo síntoma que el login.

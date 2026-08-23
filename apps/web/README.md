@@ -135,7 +135,7 @@ Con la marca pasan tres cosas: la URL queda relativa, la llamada va con
 Server Component que renderizara contenido personalizado lo dejaría en la Data
 Cache de Next, que se lo serviría después a otra persona.
 
-### Por qué la sesión viaja por el origen del sitio (ADR-0013)
+### Por qué la sesión y el carrito viajan por el origen del sitio (ADR-0013)
 
 Las cookies que emite el API son host-only y `up.railway.app` está en la Public
 Suffix List, así que el navegador trata al sitio y al API como **sitios
@@ -143,6 +143,14 @@ distintos**: una cookie emitida por el API no vuelve nunca, y no hay `SameSite`
 ni `Domain` que lo arregle. Por eso `next.config.mjs` reescribe `/v1/auth/*`
 hacia `API_INTERNAL_ORIGIN` (server-only, sin `NEXT_PUBLIC_`) y el navegador ve
 un solo origen. `e2e/auth-topology.spec.ts` lo prueba contra la app construida.
+
+**Desde US-007 la variable gobierna DOS superficies same-origin**: `/v1/auth/*`
+(sesión, cookies `dsm_session`/`dsm_csrf`) y `/v1/cart/*` (carrito del invitado,
+cookies `dsm_cart`/`dsm_cart_csrf`). Consecuencia operativa: un deploy sin
+`API_INTERNAL_ORIGIN` rompe **el login y el carrito**, y con el mismo síntoma
+—404 en las rutas reescritas— que no dice nada sobre su causa. El arranque falla
+ruidoso a propósito, con un mensaje que nombra las dos. `e2e/cart-topology.spec.ts`
+cubre el carrito con el mismo método que el de auth.
 
 ### La marca `dsm.session`
 
