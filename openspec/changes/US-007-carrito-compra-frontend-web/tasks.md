@@ -294,7 +294,7 @@ language: es
     (asserta `robots.index === false`) **y**
     `test ! -f "apps/web/app/(storefront)/carrito/loading.tsx"`
 
-- [ ] T3.2 `CartBadge` + `CartProvider` en el layout del storefront
+- [x] T3.2 `CartBadge` + `CartProvider` en el layout del storefront
   - **Pattern**: **isla cliente** dentro de un layout que sigue siendo Server Component
     (`CategoryNav` lo necesita para el SEO de US-002) — `per frontend-next-standards.md —
     frontera Server/Client`. El badge se suscribe al mismo estado que la página, para que

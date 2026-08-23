@@ -144,13 +144,32 @@ export function useCart(options: { autoload?: boolean } = {}): UseCart {
   // Evita el doble fetch del StrictMode en desarrollo.
   const cargado = useRef(false);
 
+  /**
+   * Lectura con **single-flight**: si ya hay una en vuelo, se devuelve la misma
+   * promesa en vez de disparar otra.
+   *
+   * No es una optimización: el badge del top-nav, la página del carrito y
+   * cualquier otro consumidor comparten este hook y llaman `reload()` al montar,
+   * así que sin esto una visita dispara varios `GET /v1/cart` y —peor— la
+   * rejección de la segunda no la consume nadie (aparece como unhandled).
+   */
+  const enVuelo = useRef<Promise<void> | null>(null);
+
   const reload = useCallback(async () => {
+    if (enVuelo.current) return enVuelo.current;
+
     dispatch({ type: 'load' });
-    try {
-      dispatch({ type: 'loaded', cart: await cartService.get() });
-    } catch (error) {
-      dispatch({ type: 'failed', error: appErrorDe(error) });
-    }
+    const promesa = (async () => {
+      try {
+        dispatch({ type: 'loaded', cart: await cartService.get() });
+      } catch (error) {
+        dispatch({ type: 'failed', error: appErrorDe(error) });
+      } finally {
+        enVuelo.current = null;
+      }
+    })();
+    enVuelo.current = promesa;
+    return promesa;
   }, []);
 
   const mutar = useCallback(
