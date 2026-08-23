@@ -68,6 +68,26 @@ model Product {
   /// Último fallo, para que "el fallo queda registrado" (AC-5) sea verdad.
   enrichment_error_code String?
 
+  /// US-004 — documento full-text de la búsqueda, `GENERATED ALWAYS ... STORED`
+  /// sobre `name` + `description_enriched` + `sku` con configuración `spanish`.
+  ///
+  /// `Unsupported` sin `@ignore`: `tsvector` no es un tipo de Prisma, y eso **ya**
+  /// deja la columna fuera del client tipado — Prisma rechaza explícitamente
+  /// combinar los dos («Fields of type `Unsupported` cannot take an `@ignore`
+  /// attribute. They are already treated as ignored by the client due to their
+  /// type»). Mismo tratamiento que `ProductEmbedding.embedding`.
+  ///
+  /// El efecto que se buscaba es el que importa y se cumple: el client no puede
+  /// leerla ni —sobre todo— escribirla. Un `UPDATE` a una columna generada es un
+  /// error de Postgres; dejarla fuera de los tipos lo hace imposible por
+  /// construcción y no por disciplina.
+  ///
+  /// Es GENERADA y no un trigger a propósito: una columna generada no puede quedar
+  /// desincronizada de su origen. Un trigger sí, el día que alguien escriba por una
+  /// vía que no lo dispare, y el síntoma —«la búsqueda no encuentra un producto que
+  /// existe»— es de los más difíciles de atribuir.
+  search_document Unsupported("tsvector")?
+
   cart_items CartItem[]
   embedding  ProductEmbedding?
 

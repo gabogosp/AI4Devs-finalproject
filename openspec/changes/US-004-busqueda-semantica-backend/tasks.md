@@ -104,7 +104,7 @@ language: es
 
 ## Fase 0: Esquema full-text y configuración — 1,4 h
 
-- [ ] T0.1 Migración: columna `tsvector` **generada** + índice GIN
+- [x] T0.1 Migración: columna `tsvector` **generada** + índice GIN
   - **Pattern**: columna generada de Postgres 12+ (no trigger) declarada en el
     `migration.sql` a mano, porque Prisma no expresa `GENERATED ... STORED` ni `tsvector`
     — igual que el HNSW de US-005 y los `CHECK` de US-007 — `per backend-node-standards.md
