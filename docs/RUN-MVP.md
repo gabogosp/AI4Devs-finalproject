@@ -6,17 +6,23 @@
 
 ## Qué incluye el MVP
 
-Un **catálogo navegable de punta a punta** para la ferretería/refrigeración:
+Un **e-commerce navegable de punta a punta** para la ferretería/refrigeración:
 
 - **Panel admin** (US-001): crear/editar productos y categorías, publicar/archivar.
 - **Storefront público** (US-002 + US-003): navegación por categorías con SSR/SEO + ficha de
   producto indexable (JSON-LD, metadatos), con estados **con stock / sin stock / sin imagen** y
   **404** real para productos ocultos o inexistentes.
-- **CTA "Consultar por WhatsApp"** en la ficha (US-018 Fase 1): el camino de compra del MVP
-  (todavía sin carrito).
+- **Búsqueda en lenguaje natural** (US-004 + US-005): caja de búsqueda que consulta el endpoint
+  semántico (kNN sobre embeddings) con **fallback full-text**; descripciones **enriquecidas por IA**.
+  *(La búsqueda semántica requiere `GEMINI_API_KEY`; sin ella degrada a full-text — igual funciona.)*
+- **Registro / login / sesión de cliente** (US-014): cookies HttpOnly + refresh rotado + CSRF.
+- **Carrito** (US-007): agregar/editar/quitar, badge en el top-nav, y **"Coordinar compra por
+  WhatsApp"** como cierre (el checkout con pago llega en la próxima entrega).
+- **Import masivo** de inventario CSV/Excel (US-006) + **CTA WhatsApp** en toda página (US-018) +
+  **páginas legales + consentimiento** (US-017).
 
-**Fuera del MVP (próximos 10 días):** login/registro de cliente (US-014 FE), carrito y checkout
-(US-007+), búsqueda IA (US-004/005), import masivo (US-006), infra cloud (US-019).
+**Roadmap (planeado, no en esta entrega):** checkout guest (US-008), pago MercadoPago (US-009),
+webhook + orden + stock (US-010), infra cloud (US-019). Sus planes viven en `openspec/changes/`.
 
 ## Requisitos
 
@@ -105,13 +111,17 @@ más tarde como un problema de dominio.
 ## Recorrido de demo (lo que se ve)
 
 1. **Storefront** → home → categoría **Refrigeración** → lista de productos publicados.
-2. **Ficha con stock** → `/productos/compresor-1-4-hp` → nombre, precio ARS, categoría, **botón
-   "Consultar por WhatsApp"**. "Ver código fuente" → metadatos + JSON-LD `schema.org/Product`.
-3. **Ficha SIN stock** → `/productos/taladro-percutor-650w` → visible pero marcada sin stock (AC-4).
-4. **Sin imagen** → cualquiera de los sembrados → placeholder del FE (AC-6).
-5. **404 real** → `/productos/cable-unipolar-2-5mm-x100m` (está en `draft`) o un slug inexistente.
-6. **Panel admin** → `/admin/acceso` → ingresar el `ADMIN_BOOTSTRAP_TOKEN` → gestionar productos;
-   podés **publicar** el producto draft y verlo aparecer en el storefront (el loop completo).
+2. **Búsqueda** → caja del top-nav → *"heladera"* / *"cable"* → resultados rankeados (semántico con
+   `GEMINI_API_KEY`, full-text sin ella).
+3. **Ficha con stock** → `/productos/compresor-1-4-hp` → nombre, precio ARS, categoría, descripción
+   (enriquecida por IA si hubo enrichment), **agregar al carrito** + **WhatsApp**. "Ver código
+   fuente" → metadatos + JSON-LD `schema.org/Product`.
+4. **Carrito** → agregar varios → badge en el top-nav → `/carrito` → editar cantidades → **"Coordinar
+   compra por WhatsApp"**.
+5. **Registro / login** → `/ingresar` → crear cuenta / iniciar sesión (sesión con cookie HttpOnly).
+6. **Ficha SIN stock** → `/productos/taladro-percutor-650w` (AC-4) · **sin imagen** → placeholder (AC-6)
+   · **404 real** → `/productos/cable-unipolar-2-5mm-x100m` (draft) o slug inexistente.
+7. **Panel admin** → `/admin/acceso` → `ADMIN_BOOTSTRAP_TOKEN` → gestionar/publicar productos (loop completo).
 
 ## Datos sembrados
 
