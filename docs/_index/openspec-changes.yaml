@@ -935,17 +935,20 @@
   us-id: US-004
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in-progress
   parent-us: docs/user-stories/US-004-busqueda-semantica.md
+  assignee: sesion-claude-bce7ffb7
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 6
   # 6 h AI-asistido / 12-18 h tradicional (14 tasks + 4 pre-requisitos). La US §7 presupuesta
   # FE-US-004 en 8-12 h y el readme §6 ticket 2 en 12-18 h: el AI-asistido entra comodo.
-  # EL DIFERENCIADOR NO TIENE PANTALLA: el backend esta construido (23/23, contrato publicado en
-  # apps/api/docs/api/openapi.yaml) y el layout del storefront todavia lleva el comentario
-  # "El buscador del top-nav sigue siendo Deferred: US-004". Sin este change la capacidad #2 del
+  # (Historico, ya resuelto) EL DIFERENCIADOR NO TENIA PANTALLA: el backend estaba construido
+  # (contrato publicado en apps/api/docs/api/openapi.yaml) y el layout del storefront llevaba el
+  # comentario "El buscador del top-nav sigue siendo Deferred: US-004". Ese comentario ya no
+  # existe: T3.2 monta el SearchBar en el layout. Se conserva la nota porque explica por que este
+  # change era critico, pero su tiempo verbal ya no describe el arbol. Sin este change la capacidad #2 del
   # PRD no existe para el cliente.
   # NO ES "poner un input": el design-system §7.12 lo llama componente estrella porque son CINCO
   # estados observables --con senal, con reserva, sin senal, degradado y consulta corta-- y cada

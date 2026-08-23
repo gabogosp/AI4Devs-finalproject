@@ -31,6 +31,18 @@ import { MIN_CARACTERES_UTILES } from './queryGuard';
 export const INVITACION_CONSULTA_CORTA =
   'Contanos un poco más de lo que necesitás para poder buscarlo.';
 
+/**
+ * Estado inicial de `/buscar`: se llegó sin consulta, así que no hay nada que
+ * reprochar — se invita y se ofrece la salida por rubros.
+ *
+ * Vive acá y no en la page porque Next **rechaza el build** ante cualquier
+ * export de un módulo de página que no sea uno de los suyos (`default`,
+ * `metadata`, `generateMetadata`, `revalidate`…). No es una convención de
+ * estilo: `next build` falla con «is not a valid Page export field».
+ */
+export const COPY_ESTADO_INICIAL =
+  'Contanos qué necesitás resolver y buscamos el producto. Si preferís, mirá los rubros.';
+
 export const COPY_CONSULTA_CORTA = `Escribí al menos ${MIN_CARACTERES_UTILES} caracteres para buscar.`;
 
 /**

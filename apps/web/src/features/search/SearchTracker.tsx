@@ -147,3 +147,33 @@ export function SearchRateLimitTracker({
   }, [retryAfterSeconds]);
   return null;
 }
+
+/**
+ * Manda el foco al encabezado de resultados tras la navegación (`design.md` D10).
+ *
+ * Sin esto, el foco se queda en el input del header: quien usa lector de
+ * pantalla presiona Enter, la página cambia entera, y el lector sigue parado
+ * sobre el buscador — para esa persona no pasó nada visible. Tiene que recorrer
+ * el documento a mano para descubrir que hay resultados.
+ *
+ * El encabezado lleva `tabIndex={-1}` para poder recibir foco por programa sin
+ * entrar en el orden de tabulación: no se le agrega una parada al recorrido, se
+ * lo hace enfocable **sólo** para este salto.
+ *
+ * Se re-arma con la consulta y no en cada render: mover el foco cuando la
+ * persona no pidió nada es lo contrario de ayudar.
+ */
+export function FocusResultsHeading({ query }: { query: string }) {
+  const enfocadoPara = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (enfocadoPara.current === query) return;
+    enfocadoPara.current = query;
+    document.getElementById(HEADING_ID)?.focus();
+  }, [query]);
+
+  return null;
+}
+
+/** Compartido con `SearchResults`: un solo lugar define el id del encabezado. */
+export const HEADING_ID = 'search-results-heading';

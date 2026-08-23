@@ -1,7 +1,12 @@
 import { SearchResultCard } from './SearchResultCard';
 import { SearchFallback } from './SearchFallback';
 import { derivarEstado } from './searchState';
-import { SearchTracker, SearchResultsClickTracker } from './SearchTracker';
+import {
+  SearchTracker,
+  SearchResultsClickTracker,
+  FocusResultsHeading,
+  HEADING_ID,
+} from './SearchTracker';
 import type { SearchResponse } from './searchService';
 
 export const COPY_BAJA_CONFIANZA =
@@ -39,8 +44,15 @@ export function SearchResults({
   return (
     <div>
       <SearchTracker query={query} response={response} />
+      <FocusResultsHeading query={query} />
 
-      <h1 className="text-xl font-semibold">
+      {/*
+        `tabIndex={-1}`: enfocable por programa, pero **fuera** del orden de
+        tabulación. Sin el atributo, `focus()` sobre un `<h1>` no hace nada; con
+        `tabIndex={0}` agregaríamos una parada más al recorrido de teclado de
+        toda persona, para beneficio de nadie.
+      */}
+      <h1 id={HEADING_ID} tabIndex={-1} className="text-xl font-semibold">
         {/* Eco de la consulta. Interpolado como texto: una consulta con
             `<img src=x onerror=...>` aparece literal. */}
         Resultados para: “{query}”

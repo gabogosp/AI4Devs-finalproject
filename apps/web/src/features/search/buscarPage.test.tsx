@@ -38,12 +38,13 @@ vi.mock('@/features/storefront/categoriesStorefrontService', () => ({
 }));
 
 const BuscarPage = (await import('../../../app/(storefront)/buscar/page')).default;
-const { generateMetadata, COPY_ESTADO_INICIAL } = await import(
-  '../../../app/(storefront)/buscar/page'
-);
-const { INVITACION_CONSULTA_CORTA, COPY_NO_DISPONIBLE, copyRateLimited } = await import(
-  './searchErrorCopy'
-);
+const { generateMetadata } = await import('../../../app/(storefront)/buscar/page');
+const {
+  COPY_ESTADO_INICIAL,
+  INVITACION_CONSULTA_CORTA,
+  COPY_NO_DISPONIBLE,
+  copyRateLimited,
+} = await import('./searchErrorCopy');
 
 function respuesta(over: Partial<SearchResponse> = {}): SearchResponse {
   return {

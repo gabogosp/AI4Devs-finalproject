@@ -240,26 +240,59 @@
 
 ## Verification (suite-level)
 
-- [ ] Unit + componente del web verdes: `pnpm --filter @dsm/web test`
-- [ ] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
-- [ ] Build de producción verde y `/buscar` presente en el manifiesto de rutas:
+- [x] Unit + componente del web verdes: `pnpm --filter @dsm/web test`
+- [x] Lint + typecheck limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
+- [x] Build de producción verde y `/buscar` presente en el manifiesto de rutas:
       `pnpm --filter @dsm/web build`
-- [ ] **Codegen fresco** (el gate de CI reejecuta esto y falla si produce diff):
+- [x] **Codegen fresco** (el gate de CI reejecuta esto y falla si produce diff):
       `pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated`
-- [ ] **No regresión del storefront ni del panel**:
+- [x] **No regresión del storefront ni del panel**:
       `pnpm --filter @dsm/web test -- "storefront ProductCard ProductDetail CategoryNav cart account"`
-- [ ] **Sin tipos del contrato escritos a mano** (§3.1):
-      `! grep -rnE "interface (SearchResponse|SearchResult)|type (SearchResponse|SearchResult) = \{" apps/web/src --exclude-dir=generated`
-- [ ] **Sin `dangerouslySetInnerHTML` en la feature** (§6, AC-8):
+- [x] **Sin tipos del contrato escritos a mano** (§3.1):
+      `! grep -rnE "^\s*(export )?(interface (SearchResponse|SearchResult)|type (SearchResponse|SearchResult) *=)" apps/web/src --exclude-dir=generated` — **anclado a principio de línea (F57)**: la forma original se matcheaba con el comentario de `searchService.ts` que explica justamente por qué no se escriben esos tipos a mano. Tercera auto-coincidencia de esta familia en este change.
+- [x] **Sin `dangerouslySetInnerHTML` en la feature** (§6, AC-8):
       `! grep -rn "dangerouslySetInnerHTML" apps/web/src/features/search/`
-- [ ] **El texto de la consulta no viaja en telemetría** (OQ-FE-5): cubierto por T4.1; se
+- [x] **El texto de la consulta no viaja en telemetría** (OQ-FE-5): cubierto por T4.1; se
       re-corre acá porque una regresión ahí es PII en los logs:
       `pnpm --filter @dsm/web test -- "search.events"`
-- [ ] **Un solo `loading.tsx` en todo `(storefront)`** (F59):
+- [x] **Un solo `loading.tsx` en todo `(storefront)`** (F59):
       `test "$(find 'apps/web/app/(storefront)' -name loading.tsx | wc -l | tr -d ' ')" = "1"`
-- [ ] **`/buscar` no indexable** (D2): cubierto por T3.1; el grep confirma que la decisión no se
+- [x] **`/buscar` no indexable** (D2): cubierto por T3.1; el grep confirma que la decisión no se
       perdió en un refactor: `grep -q "index: false" "apps/web/app/(storefront)/buscar/page.tsx"`
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+
+## Cierre del change (2026-08-23)
+
+**Reconciliación F51 — el design completo, no sólo los AC.** Se recorrió cada declaración de
+`design.md` contra el código construido, y apareció **un hueco real**: D10 declara que *«el foco
+va al encabezado de resultados tras la navegación, no se queda en el input del header»*, y eso
+no estaba construido — T5.1 se había cerrado con su `Verify` en verde **sin cubrir ese punto de
+su propio exit criterion**. Los tests de axe pasaban porque axe valida el árbol accesible, no el
+recorrido: nada en la suite miraba dónde quedaba el foco.
+
+Se implementó (`FocusResultsHeading` + `tabIndex={-1}` en el `h1`) y se agregaron cuatro tests,
+incluido el que fija que el foco se mueva **al cambiar la consulta y no en cada render** —
+robarle el foco a alguien que está leyendo los resultados es lo contrario de ayudar.
+
+Vale registrar cómo se encontró: no lo encontró ningún `Verify`, lo encontró leer el design
+entero al cerrar. Es exactamente el caso que F51 describe.
+
+**Lo que encontró `next build` y ningún test unitario podía ver.** Next rechaza cualquier export
+de un módulo de página que no sea de los suyos (`default`, `metadata`, `generateMetadata`…). Una
+constante de copy exportada desde `page.tsx` para poder testearla rompe el build con «is not a
+valid Page export field», y las 787 pruebas de vitest pasaban igual. Misma familia que F61: hay
+comprobaciones que sólo existen cuando algo se **construye** o se **arranca**.
+
+**Desviaciones declaradas del design-system**: las tres de la tabla de `design.md` (sin dropdown
+en vivo, sin vista full-screen en mobile, sin chip de match alto) siguen siendo decisiones
+ratificadas y están fuera de alcance por escrito, no ausencias silenciosas.
+
+**Un punto de D10 se cumple distinto de como está redactado, y se deja dicho**: el design pide
+*«label visible en la página de resultados, `aria-label` en el header»*, lo que supone dos
+instancias del buscador. Hay **una sola**, montada en el layout (T3.2), así que aparece también
+en la página de resultados y lleva `aria-label`. No se agregó un segundo buscador: dos campos de
+búsqueda en la misma pantalla es peor para quien navega por teclado, y el nombre accesible ya
+está cubierto. Se anota para que no se lea como un olvido.
 
 ## Fuera de alcance (declarado, no olvidado)
 

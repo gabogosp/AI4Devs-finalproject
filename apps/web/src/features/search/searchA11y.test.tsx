@@ -149,6 +149,44 @@ describe('a11y — lo que axe no puede ver (D10)', () => {
     expect(h1).toHaveTextContent('taco');
   });
 
+  it('el foco va al encabezado de resultados, no se queda en el input', () => {
+    render(<SearchResults query="taco" response={ESTADOS[0][1]} />);
+
+    // Sin esto, quien usa lector de pantalla presiona Enter, la página cambia
+    // entera y el lector sigue parado sobre el buscador: para esa persona no
+    // pasó nada. Tendría que recorrer el documento a mano para descubrir que
+    // hay resultados.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
+
+  it('el encabezado es enfocable por programa pero NO agrega una parada de tabulación', () => {
+    render(<SearchResults query="taco" response={ESTADOS[0][1]} />);
+
+    // `tabIndex={0}` también permitiría enfocarlo, pero le agregaría una parada
+    // al recorrido de teclado de toda persona para beneficio de nadie.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('el foco se mueve al cambiar la consulta, no en cada render', () => {
+    const { rerender } = render(
+      <SearchResults query="taco" response={ESTADOS[0][1]} />,
+    );
+
+    // Se saca el foco a mano y se re-renderiza con la MISMA consulta: si el
+    // efecto se disparara en cada render, robaría el foco mientras la persona
+    // está leyendo los resultados.
+    (document.activeElement as HTMLElement).blur();
+    rerender(<SearchResults query="taco" response={ESTADOS[0][1]} />);
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveFocus();
+
+    // Con una consulta nueva sí: es una búsqueda nueva y hay que reorientar.
+    rerender(<SearchResults query="mecha" response={ESTADOS[0][1]} />);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  });
+
   it('el aviso de baja confianza es TEXTO, no sólo color', () => {
     render(<SearchResults query="taco" response={ESTADOS[1][1]} />);
 
