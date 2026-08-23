@@ -213,6 +213,25 @@ C4Container
 
 ### **2.2. Descripción de componentes principales:**
 
+> **Estado de implementación (2026-08-23).** Esta sección describe la **arquitectura de
+> destino**, que es lo que corresponde a la Entrega 1. Como la Entrega 2 ya está en curso,
+> conviene el mapa de lo que existe hoy para que nadie lea esta lista como inventario:
+>
+> | Componente | Estado real |
+> |---|---|
+> | `catalog` (productos, categorías, storefront público) | **construido** — US-001, US-002, US-003 |
+> | `auth` (JWT + bcrypt, cookies, refresh rotado) | **construido** — US-014 |
+> | `cart` | **construido** (backend); el frontend en curso — US-007 |
+> | `import` masivo | **construido** — US-006 |
+> | `enrichment` (IA + embeddings) | **en curso** — US-005 |
+> | `search` (kNN + fallback) | **planificado** — US-004 |
+> | `checkout`, `payments`, `orders`, `stock` | **planificados** — US-008, US-009, US-010 |
+> | `metrics` | **planificado** — US-016 |
+> | `notifications` | **planificado** — US-011 |
+> | **Worker (BullMQ) y Redis** | **no aprovisionados.** El trabajo asíncrono corre **en proceso** dentro de `apps/api` con contrato asíncrono y estado durable, listo para cambiar el ejecutor por BullMQ cuando exista el add-on. Ver **ADR-0012** y **ADR-0014**, que enmiendan ADR-0004 |
+>
+> El detalle vive en `docs/_index/us-status.yaml` y `docs/_index/openspec-changes.yaml`.
+
 - **Web App (Next.js, SSR):** storefront público (home, categorías, ficha, búsqueda) **indexable** + el **backoffice del dueño** (catálogo, import, órdenes, métricas) como sección del mismo app. UI: Tailwind + ShadCN UI + TanStack Table + Recharts.
 - **API Backend (NestJS):** monolito modular. Módulos por dominio: `catalog`, `search` (embed de consulta + kNN sobre pgvector + fallback), `cart`, `checkout`, `payments` (webhook MP + medio simulado, idempotente), `orders` (FSM de orden), `stock` (decremento/reintegro atómico), `auth` (JWT + bcrypt), `import`, `metrics`, `notifications`.
 - **Worker (NestJS + BullMQ):** procesa import masivo, enriquecimiento de descripciones con IA y generación de embeddings, con reintentos y rate-limit del proveedor IA. Nunca bloquea el request.

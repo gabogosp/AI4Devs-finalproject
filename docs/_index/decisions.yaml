@@ -33,6 +33,14 @@
   triggered-by: "E2E §20"
   supersedes: null
   superseded-by: null
+  # AUDIT-DOC-003 / DOC-010 (2026-08-23) — ENMENDADA DE HECHO por ADR-0012 y ADR-0014, y el
+  # mismo patrón se aplicó en dos cargas más SIN ADR propio (caché de vectores de US-004 §D6;
+  # runners de notificaciones/reconciliación/limpieza de US-010 §D7-D8). Sigue `Accepted`
+  # porque la decisión de destino no cambió: cuando US-019 T1.3 provisione Redis, los cuatro
+  # ejecutores en proceso se cambian por procesadores BullMQ sobre el mismo estado durable.
+  # NO se agrega un campo `amended-by`: el schema (decisions.schema.yaml) sólo modela
+  # supersedes/superseded-by. GAP DEL SCHEMA anotado — enmendar no es superseder, y este
+  # proyecto ya tiene dos casos.
 - id: ADR-0005
   title: First-party JWT authentication in the NestJS backend
   status: Accepted
@@ -97,6 +105,7 @@
   triggered-by: "US-006 — Redis sin aprovisionar (US-019 pendiente) y apps/worker vacío"
   supersedes: null
   superseded-by: null
+  # Enmienda ADR-0004 para la 1ª carga (import masivo). Ver la nota en ADR-0004.
 - id: ADR-0013
   title: The browser talks only to the site origin for the session surface
   status: Accepted
@@ -113,3 +122,4 @@
   triggered-by: "US-005 — Redis sin aprovisionar (US-019 T1.3 abierta) y apps/worker vacío; revisa la suposición de ADR-0012 de que el enriquecimiento esperaría la cola"
   supersedes: null
   superseded-by: null
+  # Enmienda ADR-0004 para la 2ª carga (enriquecimiento + embeddings). Ver la nota en ADR-0004.
