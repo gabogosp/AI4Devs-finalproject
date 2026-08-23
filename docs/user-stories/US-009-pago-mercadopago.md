@@ -4,7 +4,7 @@ id: US-009
 slug: pago-mercadopago
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: M
 story_points_traditional: 8
@@ -12,8 +12,9 @@ story_points_ai_assisted: 4
 estimation_basis: "BE integración MercadoPago Checkout Pro (crear preferencia + manejo de retorno) + medio simulado tras feature flag (Cohn 2005 §8-10, 8) + INFRA secrets/credenciales (Cohn 2005 §11, 3), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-08-22
 ready-at: 2026-06-15
+in-progress-at: 2026-08-22
 authored-by: Gabriel Suarez
 disciplines: [BE, QA, INFRA]
 linear-issue-id: null

@@ -39,7 +39,12 @@
 - id: CAP-10
   title: Páginas legales + consentimiento
   priority: Must
-  us-coverage: [US-017-paginas-legales-consentimiento]
+  # US-020 y US-021 agregadas el 2026-08-22 (AUDIT-FLOW-002): las dos declaran
+  # `prd-capacity: 10` y cubren la otra mitad de la Ley 25.326 — borrado de cuenta a
+  # pedido (US-020) y retención/anonimización de la PII de las órdenes (US-021, PRD §6).
+  # Pendiente de decisión del PO: si esta capacidad debería partirse en «páginas legales +
+  # consentimiento» vs «cumplimiento de datos personales» (sería el primer CR del proyecto).
+  us-coverage: [US-017-paginas-legales-consentimiento, US-020-borrado-cuenta-datos-personales, US-021-retencion-datos-ordenes]
 - id: CAP-11
   title: Cancelación / reembolso de orden
   priority: Should

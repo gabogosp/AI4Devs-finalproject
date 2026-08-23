@@ -1,3 +1,9 @@
+---
+parent-us: US-001
+discipline: qa
+language: es
+---
+
 # US-001 QA — Tasks
 
 > **Estimación dual**: tradicional **6-8h** · AI-asistido **3-4h** (× ~0.45, Peng 2023). Coherente con QA-US-001 (§7 del US: 6-8h).
