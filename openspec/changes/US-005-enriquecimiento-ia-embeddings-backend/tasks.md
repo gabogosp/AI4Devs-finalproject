@@ -240,7 +240,7 @@ estimate-hours: 13.4
     un segundo `claimBatch` inmediato ⇒ 0 filas, porque todas están arrendadas; avanzar el reloj
     de la base con `next_attempt_at = now() - interval '1 min'` ⇒ vuelven a ser elegibles)
 
-- [ ] T2.2 Escritura del embedding + `model_version` (upsert) (0,4 h)
+- [x] T2.2 Escritura del embedding + `model_version` (upsert) (0,4 h)
   - **Pattern**: el `vector` no es tipo de Prisma ⇒ `$executeRaw` con el literal casteado —
     `per E2E §16`:
     ```ts
@@ -262,7 +262,7 @@ estimate-hours: 13.4
     `model_version === 'text-embedding-004'`; `DELETE FROM products WHERE id=...` ⇒
     `product_embeddings` queda en 0 filas; intentar persistir 767 dims ⇒ la promesa rechaza)
 
-- [ ] T2.3 Helper kNN `findNearest` + prueba de que el HNSW se usa (0,6 h)
+- [x] T2.3 Helper kNN `findNearest` + prueba de que el HNSW se usa (0,6 h)
   - **Pattern**: distancia coseno con el operador de pgvector y `LIMIT`, tipado a mano —
     `per E2E §8 — kNN por $queryRaw con embedding <=> :qvec`:
     ```ts
@@ -287,7 +287,7 @@ estimate-hours: 13.4
     `SET enable_seqscan = off; EXPLAIN SELECT ... ORDER BY embedding <=> $1 LIMIT 5` y asserta
     que la salida contiene `product_embeddings_embedding_hnsw_idx`)
 
-- [ ] T2.4 Consulta de cobertura del catálogo (0,3 h)
+- [x] T2.4 Consulta de cobertura del catálogo (0,3 h)
   - **Pattern**: una sola query con agregados condicionales (no cuatro `count`) —
     `per performance-standards.md — una consulta agregada en vez de N round-trips`.
   - **Exit criterion**: `coverage()` devuelve `{ total, enriched, embedded, pending, abandoned, coverage_ratio }`
