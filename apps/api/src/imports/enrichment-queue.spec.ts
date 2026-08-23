@@ -316,6 +316,9 @@ describe('EnrichmentQueue (puerto de enriquecimiento)', () => {
 
         expect(await prisma.product.count({ where: { enrichment_done: false } })).toBe(0);
         expect(fake.embedCalls).toHaveLength(3);
+        // El nudge dispara un barrido de TODO lo pendiente, no sólo de los 3 del import: hay
+        // que esperar a que termine o sigue escribiendo `products` durante la suite siguiente.
+        await esperarHasta(async () => runner.state !== 'running');
         // Y quedaron con vector: buscables, no sólo marcados.
         const vectores = await prisma.$queryRawUnsafe<Array<{ n: bigint }>>(
           'SELECT count(*)::bigint AS n FROM product_embeddings',

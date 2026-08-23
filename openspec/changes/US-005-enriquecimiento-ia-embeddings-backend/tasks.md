@@ -749,6 +749,39 @@ rompía un test existente— y los cuatro los encontró un test nuevo, no una re
 | Ejemplo del caso «sin clave» en el contrato | `examples` del OpenAPI | prosa del contrato | Spectral **crashea** al procesar un `null` literal dentro de un ejemplo (`Cannot read properties of null (reading 'enum')`). La nullabilidad sigue declarada en el esquema. |
 | `openapi.yaml` publicado | `type: [string, 'null']`, `const: true` | `nullable: true`, `enum: [true]` | El spec publicado es **OpenAPI 3.0**, no 3.1. |
 
+### Respuesta al hallazgo entrante de la sesión de US-006/QA (estabilidad de la suite)
+
+El hallazgo, medido sobre `9a823f3`, era real: dos corridas completas daban el mismo total de
+fallos (54) con **conjuntos distintos** de suites, y cada suite pasaba aislada. Eso es
+inestabilidad de estado compartido, no una regresión — y su recomendación #1 era «que las suites
+dejen de truncar tablas compartidas y usen un prefijo único por corrida».
+
+**Dos causas se atacaron desde este change:**
+
+1. **Las 7 suites del enriquecimiento no truncan nada.** Usan prefijo único por corrida
+   (`idDeCorrida()`) en `sku`/`slug`/`category`, assertions por subconjunto o por delta, y
+   `asegurarCategoria()` —un upsert al inicio de **cada** siembra— porque el `TRUNCATE CASCADE`
+   de otra suite ya se llevó una categoría a mitad de corrida y dejó todos los `product.create`
+   fallando por FK, con un error que no nombra la causa.
+2. **Los e2e que disparan trabajo asíncrono ahora lo esperan.** Esto era una causa **propia** y
+   la señala el hallazgo con precisión: el `POST /runs` devuelve 202 y la corrida sigue en
+   background barriendo *todo* lo pendiente —incluidas fixtures de otras suites—, así que un
+   test que sólo verificaba su propio producto dejaba un escritor vivo durante la suite
+   siguiente. Se agregó `esperarCorridaTerminada()` en el `afterEach` del spec de `runs` y la
+   espera equivalente en el del nudge.
+
+**Evidencia del cierre** (árbol quieto, sin otras corridas, tras los dos arreglos): **tres
+corridas completas consecutivas** de `pnpm --filter @dsm/api test -- --ci`, las tres
+`1246 passed / 123 suites`, sin una sola suite roja. Más `pnpm -r test` en 0.
+
+Lo que **no** se arregló y sigue siendo deuda de la infraestructura de test (recomendación #2 del
+hallazgo, fuera del alcance de este change): las 123 suites comparten un solo Postgres y las
+suites de otros módulos siguen truncando tablas comunes. Mientras eso exista, una corrida en
+paralelo con otra sesión puede dar rojo sin que haya un defecto — pasó durante esta ejecución
+(`customers` quedó con 0 admins a mitad de una corrida y 6 suites de auth fallaron; aisladas
+pasaban 12/12). La forma honesta de leer el gate sigue siendo: árbol quieto, y re-correr aislada
+cualquier suite roja antes de creerle.
+
 ### Lo que quedó SIN EJERCITAR
 
 **Ninguna llamada real al proveedor de IA.** Por decisión del PO no se cargó `GEMINI_API_KEY`

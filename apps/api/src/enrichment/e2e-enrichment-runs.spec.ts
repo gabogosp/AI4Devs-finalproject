@@ -65,7 +65,12 @@ describe('POST /v1/admin/enrichment/runs (e2e-enrichment-runs)', () => {
     runner = app.get(EnrichmentRunner);
     repo = app.get(EnrichmentRepository);
   });
+  afterEach(async () => {
+    // Red de seguridad: ninguna corrida disparada acá sobrevive al test que la disparó.
+    await esperarCorridaTerminada();
+  });
   afterAll(async () => {
+    await esperarCorridaTerminada();
     await app?.close();
     delete process.env.TRUST_PROXY_HOPS;
   });
@@ -111,6 +116,24 @@ describe('POST /v1/admin/enrichment/runs (e2e-enrichment-runs)', () => {
     return p.id;
   }
 
+  /**
+   * Espera a que el runner vuelva a `idle`.
+   *
+   * El `POST` devuelve 202 y la corrida sigue **en background**: si el test termina antes, el
+   * barrido queda escribiendo `products` y `product_embeddings` mientras corre la suite
+   * siguiente. Eso es exactamente la clase de inestabilidad de estado compartido que la sesión
+   * de US-006 midió (mismo total de fallos, conjuntos distintos de suites). Un e2e que dispara
+   * trabajo asíncrono tiene que esperarlo, no sólo verificar su resultado.
+   */
+  async function esperarCorridaTerminada(timeoutMs = 30_000): Promise<void> {
+    const limite = Date.now() + timeoutMs;
+    while (Date.now() < limite) {
+      if (runner.state !== 'running') return;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    throw new Error(`la corrida no terminó en ${timeoutMs} ms`);
+  }
+
   /** El 202 no espera a la corrida: hay que darle tiempo a terminar. */
   async function esperarHasta(
     cond: () => Promise<boolean>,
@@ -144,6 +167,10 @@ describe('POST /v1/admin/enrichment/runs (e2e-enrichment-runs)', () => {
     const final = await prisma.product.findUniqueOrThrow({ where: { id } });
     expect(final.description_enriched).not.toBeNull();
     expect(await repo.hasEmbedding(id)).toBe(true);
+
+    // El body vacío barre TODO lo pendiente, incluidas fixtures de otras suites: hay que
+    // esperar a que termine o el barrido sigue escribiendo durante la suite siguiente.
+    await esperarCorridaTerminada();
   });
 
   it('un segundo POST con la corrida en curso ⇒ 409 dsm:enrichment/run-in-progress', async () => {
