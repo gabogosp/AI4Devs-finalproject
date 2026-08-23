@@ -36,14 +36,27 @@ const DEFAULT_TIMEOUT_MS = 15_000;
 export type FetchInit = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
   /**
-   * Marca la llamada como parte de la **sesión del cliente** (US-014).
+   * Marca la llamada como parte de una **superficie autenticada por cookies**.
    *
-   * Son dos modelos de auth que conviven en un solo choke point: el panel usa
-   * `Bearer` desde memoria, el cliente usa cookies que el navegador maneja
-   * solo. Sin esta marca el comportamiento es exactamente el de antes.
+   * - `'customer'` — la sesión del cliente (US-014): cookies de sesión +
+   *   `dsm_csrf`.
+   * - `'cart'` — el carrito del invitado (US-007): `dsm_cart` (`httpOnly`) +
+   *   `dsm_cart_csrf`. Son **dos sujetos distintos** porque alguien sin cuenta
+   *   tiene carrito y no tiene sesión.
+   *
+   * Los dos comparten el mismo tratamiento —same-origin, `credentials`,
+   * double-submit, prohibido en servidor—; lo que cambia es de qué cookie sale
+   * el token. Sin esta marca el comportamiento es exactamente el de antes
+   * (el panel con `Bearer` desde memoria).
    */
-  session?: 'customer';
+  session?: 'customer' | 'cart';
 };
+
+/**
+ * Sujeto de CSRF por superficie. El carrito no puede reusar el token de la
+ * sesión: el backend valida cada uno contra su propia cookie.
+ */
+const SUJETO_CSRF = { customer: 'session', cart: 'cart' } as const;
 
 function hex(len: number): string {
   let out = '';
@@ -70,13 +83,18 @@ export async function customFetch<T>(
   init: FetchInit = {},
 ): Promise<T> {
   const isServer = typeof window === 'undefined';
+  // Las dos superficies con cookies comparten tratamiento; `conCookies` evita
+  // repetir la comparación en los cinco puntos donde importa (y evita que
+  // agregar un tercer sujeto se olvide en uno).
+  const conCookies = init.session === 'customer' || init.session === 'cart';
 
-  // La sesión del cliente es **sólo de navegador** (design.md D3): las cookies
-  // las maneja el navegador, y un Server Component que renderizara contenido
-  // personalizado lo metería en la Data Cache de Next — cacheado y servido a
-  // otra persona. Lanzar acá lo vuelve imposible por accidente, no por
-  // disciplina.
-  if (init.session === 'customer' && isServer) {
+  // Las superficies con cookies son **sólo de navegador** (design.md D3 de
+  // US-014, heredado por el carrito): las cookies las maneja el navegador, y un
+  // Server Component que renderizara contenido personalizado lo metería en la
+  // Data Cache de Next — cacheado y servido a otra persona. El carrito es dato
+  // personalizado por definición. Lanzar acá lo vuelve imposible por accidente,
+  // no por disciplina.
+  if (conCookies && isServer) {
     throw new AppErrorException({
       kind: 'server',
       message: 'La sesión del cliente es sólo de navegador (design.md D3)',
@@ -86,12 +104,11 @@ export async function customFetch<T>(
   // Same-origin a propósito (ADR-0013): el rewrite de Next lleva la llamada al
   // API, y así la cookie aterriza en el dominio del sitio y vuelve. Una URL
   // absoluta al API rompería la topología entera.
-  const absolute =
-    init.session === 'customer'
+  const absolute = conCookies
+    ? url
+    : url.startsWith('http')
       ? url
-      : url.startsWith('http')
-        ? url
-        : `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${url}`;
+      : `${publicEnv.NEXT_PUBLIC_API_BASE_URL}${url}`;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
@@ -111,12 +128,14 @@ export async function customFetch<T>(
     if (token) headers.set('authorization', `Bearer ${token}`);
   }
 
-  // Double-submit sólo donde el backend lo exige: escrituras de la sesión del
-  // cliente. Si la cookie no está, la llamada sale SIN header y el 403 se
-  // propaga — fail closed. Inventar un valor sólo cambiaría el 403 por un
-  // error más confuso.
-  if (init.session === 'customer' && requiereCsrf(init.method)) {
-    const csrf = readCsrfToken();
+  // Double-submit sólo donde el backend lo exige: escrituras de una superficie
+  // con cookies. El token sale de la cookie **del sujeto correspondiente** — el
+  // carrito no puede firmar con el token de la sesión, el backend valida cada
+  // uno contra su propia cookie. Si la cookie no está, la llamada sale SIN
+  // header y el 403 se propaga — fail closed. Inventar un valor sólo cambiaría
+  // el 403 por un error más confuso.
+  if (conCookies && requiereCsrf(init.method)) {
+    const csrf = readCsrfToken(SUJETO_CSRF[init.session!]);
     if (csrf) headers.set('x-csrf-token', csrf);
   }
 
@@ -128,7 +147,7 @@ export async function customFetch<T>(
       signal: controller.signal,
       // Sin `include` el navegador no manda las cookies ni guarda las que
       // vuelven, aunque el rewrite esté bien: la topología no alcanza sola.
-      ...(init.session === 'customer' ? { credentials: 'include' as const } : {}),
+      ...(conCookies ? { credentials: 'include' as const } : {}),
     });
   } catch {
     throw new AppErrorException(networkError());

@@ -136,7 +136,7 @@ language: es
 
 ## Fase 1: Cliente HTTP y repositorio — 1,4 h
 
-- [ ] T1.1 `session: 'cart'` en el cliente centralizado
+- [x] T1.1 `session: 'cart'` en el cliente centralizado
   - **Pattern**: tercer valor del discriminante existente; hereda same-origin,
     `credentials: 'include'`, header de double-submit **y el throw en servidor** — `per
     frontend-standards.md §11.1` y `per US-014 design.md D3 — la sesión del cliente es
@@ -146,8 +146,10 @@ language: es
     `x-csrf-token` leído con el sujeto `'cart'`, (d) **lanza** si se invoca desde el
     servidor, con el mismo mensaje-clase que `'customer'`. El comportamiento de
     `session: 'customer'` y de las llamadas públicas sin sesión queda **sin cambios**.
-  - **Verify**: `pnpm --filter @dsm/web test -- 'client'` (casos nuevos en `client.test.ts`
-    y `client.server.test.ts`: `session:'cart'` + `PUT` → el `fetch` espiado recibe URL
+  - **Verify**: `pnpm --filter @dsm/web test -- 'client'` (casos nuevos en `client.cart.test.ts`
+    y `client.server.cart.test.ts` —archivos aparte para que los specs de US-001/003/014
+    queden **intactos**, que es más fuerte que agregarles casos; el patrón `client` corre los
+    cuatro—: `session:'cart'` + `PUT` → el `fetch` espiado recibe URL
     relativa, `credentials:'include'` y el header con el valor de `dsm_cart_csrf`;
     `session:'cart'` + `GET` → **sin** header CSRF; sin la cookie → sale **sin** header y
     el 403 se propaga (fail closed); en entorno servidor → **lanza**; los casos existentes
