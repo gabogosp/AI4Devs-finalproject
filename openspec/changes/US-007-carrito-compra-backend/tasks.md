@@ -601,7 +601,7 @@ language: es
       `pnpm --filter @dsm/api test -- --testPathPattern='e2e-cart-events|e2e-cart-security'`
       → 41 tests verdes, incluidos el volcado completo de logs (sin el token, sin su
       hash SHA-256 y sin el valor CSRF derivado) y los tres cuerpos de respuesta.
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [x] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
       → **`pnpm -r typecheck` verde** en los 3 paquetes. Los otros dos están rojos por
       trabajo **de otras disciplinas en vuelo en la misma rama**, no por este change:
       - `pnpm -r lint`: 4 errores de `no-unused-vars` en
@@ -611,10 +611,20 @@ language: es
         curso — el error es de tipos de Prisma sobre `failed_count`) y el
         `e2e-security-edge` preexistente de arriba.
 
-      **No se toca ninguno de los dos**: son de otro dueño y arreglarlos desde acá
-      pisaría trabajo en curso. El gate se cierra cuando esas dos tasks cierren; lo
-      que este change controla (`@dsm/api` lint + typecheck + sus 12 suites del
-      carrito) está verde.
+      **Cerrado el 2026-08-23**: los dos impedimentos se resolvieron sin que este change
+      tocara nada ajeno. El lint lo arregló la propia US-014 frontend-web (los
+      `no-unused-vars` eran de sus stubs tipados) y el spec de import lo cerró US-006.
+      Medición final: `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test` en verde —
+      97 suites / 1012 tests en `@dsm/api`, 63 archivos / 353 tests en `@dsm/web`.
+
+      > **Aviso para quien vuelva a correr este gate**: la primera medición dio 7 suites
+      > rojas y en la segunda, aislada, pasaron las 97. La causa es un **tercer recurso
+      > compartido** que no teníamos identificado: las suites de integración corren contra
+      > **el mismo Postgres de docker-compose** y hacen `TRUNCATE` entre casos, así que dos
+      > sesiones testeando a la vez se borran los datos entre sí. Los síntomas son
+      > engañosos —"Record to update not found" de Prisma— y señalan al código. Antes de
+      > diagnosticar un fallo de integración, verificar que no haya otra corrida viva
+      > (`ps aux | grep jest`).
 
 ---
 

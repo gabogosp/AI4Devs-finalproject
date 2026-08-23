@@ -325,7 +325,7 @@
   us-id: US-007
   discipline: backend
   variant: null
-  status: in progress   # /develop-backend abrió la ejecución el 2026-08-22 (T0.1 cerrada)
+  status: in progress   # 37/37 cerradas 2026-08-23; CI del monorepo verde. Pendiente /commit (PR)
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
