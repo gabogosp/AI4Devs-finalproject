@@ -38,7 +38,16 @@ export function ProductImage({
 }: {
   src: string | null;
   name: string;
-  categoryName: string;
+  /**
+   * Opcional desde US-004 (`design.md` D6). Un resultado de búsqueda no trae
+   * categoría: `interpreted_as` describe la **consulta**, no el producto, y
+   * pasarlo acá pondría en el `alt` de una imagen una frase sobre lo que alguien
+   * buscó — peor para quien usa lector de pantalla que no decir la categoría.
+   *
+   * Sin ella el `alt` es el nombre del producto, que sigue siendo descriptivo.
+   * El cambio es aditivo: ningún call-site de US-002/US-003 se toca.
+   */
+  categoryName?: string;
   variant?: ImageVariant;
 }) {
   const [broken, setBroken] = useState(false);
@@ -63,7 +72,7 @@ export function ProductImage({
         src={src}
         // Alt descriptivo, nunca "imagen": es lo que lee un lector de pantalla
         // y lo que indexa Google Images (WCAG 2.1 AA).
-        alt={`${name} — ${categoryName}`}
+        alt={categoryName ? `${name} — ${categoryName}` : name}
         fill
         priority={priority}
         sizes={sizes}

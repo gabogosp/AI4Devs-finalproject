@@ -118,16 +118,24 @@
     una espera genérica cuando no; ningún mensaje culpa al cliente.
   - **Verify**: `pnpm --filter @dsm/web test -- searchErrorCopy`
 
+> **Corrección de tres `Verify` (2026-08-23).** Estaban escritos como
+> `test -- "A|B"` esperando que vitest leyera una alternancia. No la lee: pnpm le pasa el
+> argumento al shell, que escapa la barra, y vitest termina buscando un archivo llamado
+> literalmente `A|B` — sale `No test files found` y exit 1. Falla ruidoso, que es lo bueno; un
+> `Verify` que hubiera pasado por vacío sería mucho peor. La forma correcta es pasar los
+> filtros como **argumentos separados** (`test -- A B`), que es lo que ya hace la línea
+> suite-level de no-regresión. Corregidas T2.2, T3.2 y T4.1.
+
 ## Fase 2: Componentes — 2,25 h
 
-- [ ] **T2.1 `SearchBar.tsx`** — client leaf del header. `<form role="search">` +
+- [x] **T2.1 `SearchBar.tsx`** — client leaf del header. `<form role="search">` +
   `<input type="search">`, placeholder de §10.2, submit → `router.push('/buscar?q=…')`.
   - **Exit criterion**: con una consulta útil navega a `/buscar?q=` con el texto
     **encodeado**; con una consulta corta **no navega** (`push` no se llama) y muestra la
     invitación a describir la necesidad — que es AC-5 del lado del cliente; el input conserva
     lo escrito tras el rechazo; el nombre accesible existe sin depender del placeholder.
   - **Verify**: `pnpm --filter @dsm/web test -- SearchBar`
-- [ ] **T2.2 `SearchResultCard.tsx` + `ProductImage` con `categoryName` opcional.**
+- [x] **T2.2 `SearchResultCard.tsx` + `ProductImage` con `categoryName` opcional.**
   - **Exit criterion**: la tarjeta enlaza a `/productos/{slug}` (AC-1); muestra el precio con
     `formatArs` e «IVA incluido»; con `in_stock: false` muestra el badge **de texto** «Sin
     stock» y **no renderiza** `AddToCartButton` (AC-7: ausente, no deshabilitado); con
@@ -135,7 +143,7 @@
     `ProductImage` sin `categoryName` produce `alt` = nombre del producto y **con** ella sigue
     produciendo `{name} — {categoría}` (los tests existentes de `ProductImage` siguen verdes
     sin tocarlos).
-  - **Verify**: `pnpm --filter @dsm/web test -- "SearchResultCard|ProductImage"` y
+  - **Verify**: `pnpm --filter @dsm/web test -- SearchResultCard ProductImage` y
     `git diff --exit-code HEAD -- apps/web/src/features/storefront/ProductImage.test.tsx` **antes**
     de agregarle el caso nuevo (el test preexistente no se modifica para acomodar el cambio; el
     caso de `alt` sin categoría se **agrega**)
@@ -182,7 +190,7 @@
     vez); el layout **sigue siendo Server Component** —el `'use client'` vive en el `SearchBar`,
     que es hoja— y `CategoryNav` sigue renderizando en servidor, de lo que depende el SEO de
     US-002; el comentario `Deferred: US-004` ya no existe.
-  - **Verify**: `! grep -q "Deferred: US-004" "apps/web/app/(storefront)/layout.tsx" && ! grep -q "'use client'" "apps/web/app/(storefront)/layout.tsx" && pnpm --filter @dsm/web test -- "CategoryNav|storefront"`
+  - **Verify**: `! grep -q "Deferred: US-004" "apps/web/app/(storefront)/layout.tsx" && ! grep -q "'use client'" "apps/web/app/(storefront)/layout.tsx" && pnpm --filter @dsm/web test -- CategoryNav storefront`
 
 ## Fase 4: Observabilidad — 0,5 h
 
@@ -195,7 +203,7 @@
     tarjeta; `search_fallback_clicked` lleva `category_slug`; `search_rate_limited` lleva
     `retry_after_seconds`; **el volcado de los cuatro no contiene el texto de la consulta** ni
     ningún fragmento de él (OQ-FE-5, `observability-standards` §9).
-  - **Verify**: `pnpm --filter @dsm/web test -- "SearchTracker|search.events"`
+  - **Verify**: `pnpm --filter @dsm/web test -- SearchTracker searchEvents`
 
 ## Fase 5: A11y y SSR — 0,75 h
 

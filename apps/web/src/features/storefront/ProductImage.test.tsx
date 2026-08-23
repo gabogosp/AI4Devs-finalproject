@@ -47,3 +47,34 @@ describe('ProductImage', () => {
     ).toBeInTheDocument();
   });
 });
+
+/**
+ * `categoryName` se volvió opcional en US-004 (`design.md` D6): un resultado de
+ * búsqueda no trae categoría. Los casos de arriba NO se tocaron —siguen pasando
+ * la prop y siguen esperando `{nombre} — {categoría}`—, que es la comprobación
+ * de que el cambio fue aditivo y no una relajación del contrato existente.
+ */
+describe('ProductImage sin categoría (US-004)', () => {
+  it('usa el nombre del producto como alt', () => {
+    render(
+      <ProductImage
+        name="Taco Fischer SX 8mm"
+        src="https://cdn.example.com/taco.jpg"
+      />,
+    );
+
+    const img = screen.getByRole('img', { name: 'Taco Fischer SX 8mm' });
+    // Sin el guión colgado: `{nombre} — undefined` es lo que saldría de
+    // interpolar la prop ausente, y un lector de pantalla lo leería en voz alta.
+    expect(img.getAttribute('alt')).not.toContain('undefined');
+    expect(img.getAttribute('alt')).not.toMatch(/—\s*$/);
+  });
+
+  it('el placeholder sigue nombrando el producto sin categoría', () => {
+    render(<ProductImage name="Taco Fischer SX 8mm" src={null} />);
+
+    expect(
+      screen.getByRole('img', { name: 'Taco Fischer SX 8mm — sin imagen disponible' }),
+    ).toBeInTheDocument();
+  });
+});
