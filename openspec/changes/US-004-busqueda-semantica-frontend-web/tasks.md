@@ -76,7 +76,7 @@
     de la respuesta en `src/api/generated/zod.ts`. El diff del codegen **no** toca otras
     operaciones (si las toca, es contrato de otra sesión y hay que separarlo).
   - **Verify**: `pnpm --filter @dsm/web codegen && grep -q "searchProducts" apps/web/src/api/generated/endpoints.ts && ls apps/web/src/api/generated/model/ | grep -qE "^searchR(esponse|esult)" && grep -qi "searchProductsResponse" apps/web/src/api/generated/zod.ts && pnpm --filter @dsm/web typecheck`
-- [ ] **T0.2 `src/features/search/searchService.ts`.** Servicio hand-written sobre la operación
+- [x] **T0.2 `src/features/search/searchService.ts`.** Servicio hand-written sobre la operación
   generada, con validación runtime en el borde y tipos **re-exportados** del modelo generado.
   - **Exit criterion**: `search(q, { limit? })` devuelve `SearchResponse` validado con
     `parseContract`; los tipos se re-exportan del modelo generado (cero `interface SearchResponse`
