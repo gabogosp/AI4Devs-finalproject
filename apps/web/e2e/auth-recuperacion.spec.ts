@@ -54,7 +54,9 @@ test.describe('Journey de recuperación (T4.2)', () => {
   }) => {
     const email = await cuentaPropia(page);
     await pedirReset(page, email);
-    const { token } = await (await request.get(`${STUB}/__last-reset-token`)).json();
+    const { token } = await (
+      await request.get(`${STUB}/__last-reset-token?email=${encodeURIComponent(email)}`)
+    ).json();
     expect(token).toBeTruthy();
 
     await page.goto(`/recuperar/confirmar?token=${token}`);
@@ -74,8 +76,11 @@ test.describe('Journey de recuperación (T4.2)', () => {
   });
 
   test('el token desaparece de la URL al cargar la pantalla', async ({ page, request }) => {
-    await pedirReset(page, 'ana@example.com');
-    const { token } = await (await request.get(`${STUB}/__last-reset-token`)).json();
+    const email = await cuentaPropia(page);
+    await pedirReset(page, email);
+    const { token } = await (
+      await request.get(`${STUB}/__last-reset-token?email=${encodeURIComponent(email)}`)
+    ).json();
 
     await page.goto(`/recuperar/confirmar?token=${token}`);
 
@@ -90,7 +95,9 @@ test.describe('Journey de recuperación (T4.2)', () => {
   }) => {
     const email = await cuentaPropia(page);
     await pedirReset(page, email);
-    const { token } = await (await request.get(`${STUB}/__last-reset-token`)).json();
+    const { token } = await (
+      await request.get(`${STUB}/__last-reset-token?email=${encodeURIComponent(email)}`)
+    ).json();
 
     const confirmarCon = async (t: string) => {
       await page.goto(`/recuperar/confirmar?token=${t}`);

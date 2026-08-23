@@ -12,6 +12,9 @@
  * abiertas producen tres refresh concurrentes y el mismo problema.
  */
 
+import { AppErrorException } from './errors';
+import { customFetch } from './client';
+
 let inFlight: Promise<void> | null = null;
 
 /** Se inyecta desde el módulo de sesión para no acoplar esto al estado de React. */
@@ -40,22 +43,24 @@ export function sanitizeNext(next: string | null | undefined): string {
 const REFRESH_URL = '/v1/auth/refresh';
 
 async function doRefresh(): Promise<void> {
-  const { readCsrfToken } = await import('./csrf');
-  const csrf = readCsrfToken();
-  const headers: Record<string, string> = {};
-  if (csrf) headers['x-csrf-token'] = csrf;
-
-  // Sin reintento ante error de red, a propósito: reintentar un token de un
-  // solo uso es exactamente el patrón que el backend lee como reuso.
-  const res = await fetch(REFRESH_URL, {
-    method: 'POST',
-    credentials: 'include',
-    headers,
-  });
-
-  if (!res.ok) {
-    onSessionLost();
-    throw new Error(`refresh-failed:${res.status}`);
+  try {
+    // Por el mutator y no por un `fetch` crudo: es el único punto de red del
+    // frontend (F48), y de paso el header CSRF y `credentials: 'include'` los
+    // pone él — duplicar esa lógica acá sería un segundo lugar donde puede
+    // quedar desactualizada.
+    //
+    // Sin reintento ante error de red, a propósito: reintentar un token de un
+    // solo uso es exactamente el patrón que el backend lee como reuso.
+    await customFetch(REFRESH_URL, { method: 'POST', session: 'customer' });
+  } catch (e) {
+    const kind = e instanceof AppErrorException ? e.appError.kind : 'network';
+    // Sólo un rechazo de credenciales significa que la sesión murió. Un fallo
+    // de red no: la sesión puede seguir viva y matarla acá desloguearía a
+    // alguien por un corte de conexión.
+    if (kind === 'unauthorized' || kind === 'forbidden') {
+      onSessionLost();
+    }
+    throw new Error(`refresh-failed:${kind}`);
   }
 }
 

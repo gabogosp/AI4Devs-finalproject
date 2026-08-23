@@ -195,11 +195,14 @@ const initialResetTokens = () =>
 /** Sesiones vivas por token de acceso, para que `/auth/me` y logout sean reales. */
 let sessions = new Map();
 /**
- * Token del último reset solicitado, expuesto por `/__last-reset-token`.
- * El E2E no parsea emails ni adivina: pide el que el "backend" acaba de emitir,
- * que es lo que hace el journey determinista.
+ * Último token de reset **por email**, expuesto en `/__last-reset-token?email=`.
+ *
+ * Indexado por cuenta y no como un global de última escritura: con
+ * `fullyParallel`, dos specs que piden reset al mismo tiempo se pisarían el
+ * valor y el que leyera segundo usaría el token del otro. La carrera existía y
+ * se manifestaba como un fallo intermitente.
  */
-let ultimoResetToken = null;
+let ultimoResetToken = new Map();
 
 /**
  * Vista pública del cliente tal como la declara el contrato: exactamente cinco
@@ -370,7 +373,7 @@ const server = createServer(async (req, res) => {
       customers = initialCustomers();
       resetTokens = initialResetTokens();
       sessions = new Map();
-      ultimoResetToken = null;
+      ultimoResetToken = new Map();
     }
     // El log NO se limpia acá a propósito: es diagnóstico append-only, no
     // estado del fixture. Si el reset lo borrara, un spec corriendo en paralelo
@@ -389,7 +392,8 @@ const server = createServer(async (req, res) => {
   // Diagnóstico para el E2E de recuperación: el token que el "backend" acaba de
   // emitir. Análoga a `/__requests`; no existe en el backend real.
   if (req.method === 'GET' && path === '/__last-reset-token') {
-    return json(res, 200, { token: ultimoResetToken });
+    const email = (url.searchParams.get('email') ?? '').trim().toLowerCase();
+    return json(res, 200, { token: ultimoResetToken.get(email) ?? null });
   }
 
   // El log existe para afirmar QUÉ pidió el servidor de Next al renderizar el
@@ -493,8 +497,9 @@ const server = createServer(async (req, res) => {
       // Sólo se emite token si la cuenta existe — pero la RESPUESTA es la misma
       // en ambos casos, que es donde vive la anti-enumeración (AC-11).
       if (customers.has(email)) {
-        ultimoResetToken = nuevoToken('reset');
-        resetTokens.set(ultimoResetToken, { email, usado: false });
+        const token = nuevoToken('reset');
+        resetTokens.set(token, { email, usado: false });
+        ultimoResetToken.set(email, token);
       }
       res.statusCode = 202;
       return res.end();

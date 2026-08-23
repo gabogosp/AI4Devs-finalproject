@@ -15,9 +15,12 @@ import { expect, test } from '@playwright/test';
  * dice "hola" (misma familia que F59, el 404 degradado a soft-200).
  */
 test.describe('Topología de cookies de sesión (T0.3)', () => {
-  test.beforeEach(async ({ request }) => {
-    await request.post('http://localhost:4010/__reset?scope=auth');
-  });
+  /**
+   * **Sin reset del fixture**: el alcance `auth` lo comparten los tres specs de
+   * auth y con `fullyParallel` corren en workers distintos, así que resetear
+   * acá borra las cuentas que los otros acaban de crear. Estos tests sólo leen
+   * la cuenta sembrada y no la mutan, así que no necesitan fixture limpio.
+   */
 
   test('el login por el origen del sitio deja las cookies en el dominio del sitio', async ({
     page,

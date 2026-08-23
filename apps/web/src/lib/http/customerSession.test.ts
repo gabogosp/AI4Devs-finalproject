@@ -92,7 +92,7 @@ describe('refreshOnce (G-2: single-flight)', () => {
     const p = refreshOnce();
     liberar();
 
-    await expect(p).rejects.toThrow(/refresh-failed:401/);
+    await expect(p).rejects.toThrow(/refresh-failed:unauthorized/);
     expect(perdida).toHaveBeenCalledTimes(1);
   });
 

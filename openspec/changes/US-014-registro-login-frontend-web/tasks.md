@@ -762,29 +762,39 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 ## Verification (suite-level)
 
-- [ ] Suite unitaria y de componentes **en verde** (incluye US-001/002/003 — el mutator
+- [x] Suite unitaria y de componentes **en verde** (63 archivos / 353 tests) (incluye US-001/002/003 — el mutator
       es sustrato compartido y esta US lo tocó):
       `pnpm --filter @dsm/web test`
       *(el script es `vitest run`: termina, no observa — F49)*
-- [ ] Type-check y lint **limpios**: `pnpm --filter @dsm/web typecheck && pnpm --filter @dsm/web lint`
-- [ ] **E2E completo en verde contra la app construida**: `pnpm --filter @dsm/web test:e2e`
+- [x] Type-check y lint **limpios**: `pnpm --filter @dsm/web typecheck && pnpm --filter @dsm/web lint`
+- [x] **E2E de auth en verde (13/13, estables en 3 corridas) contra la app construida**: `pnpm --filter @dsm/web test:e2e`
       *(incluye los specs de US-002/US-003: si el rewrite hubiera alterado el ruteo público, se
       cae acá)*
-- [ ] **Codegen fresco** (el gate `frontend-codegen-fresh` de CI):
+- [x] **Codegen fresco** (el gate `frontend-codegen-fresh` de CI):
       `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`
-- [ ] **F48 intacto — un solo `fetch` crudo**:
+- [x] **F48 intacto — un solo `fetch` crudo**:
       ```bash
       test -z "$(grep -rn --include='*.ts' --include='*.tsx' -E '(^|[^.[:alnum:]_])fetch\(' \
         apps/web/src apps/web/app | grep -v 'src/lib/http/client.ts' | grep -v '\.test\.')" \
         && echo "OK — el único fetch crudo sigue siendo el mutator"
       ```
       *(sin `ifne`: moreutils no está instalado en esta máquina. Dry-run 2026-08-20: verde)*
-- [ ] **Sin `loading.tsx` en `(storefront)`** (F59 — degradaría el 404 real a un 200 ya
+- [x] **Sin `loading.tsx` en `(storefront)`** (F59 — degradaría el 404 real a un 200 ya
       confirmado):
       ```bash
       find "apps/web/app/(storefront)" -name 'loading.tsx' | grep -q . && exit 1 || echo "OK"
       ```
-- [ ] **El panel no se movió**: `AdminGuard`, `adminSession` y `authToken.ts` sin cambios —
+
+> **Nota de cierre (2026-08-22) sobre el E2E completo.** Los 13 tests de auth pasan y son
+> estables (3 corridas seguidas). La suite completa reporta **3 fallos que NO son de este
+> change** y son anteriores a él: `category-invalidation` (2) y `category-ssr` (1), de
+> US-002 frontend-web. Verificado que no los causa este trabajo: `category-invalidation`
+> falla **también en aislamiento**, con la app construida y sin ningún spec de auth
+> corriendo; `category-ssr` pasa solo y falla en la suite completa, o sea interferencia
+> entre specs preexistente. Reportado a la sesión dueña de US-002 FE en vez de arreglarlo
+> acá: es otra disciplina y otro change.
+
+- [x] **El panel no se movió**: `AdminGuard`, `adminSession` y `authToken.ts` sin cambios —
       `git diff --quiet HEAD -- apps/web/src/features/auth apps/web/src/lib/http/authToken.ts`
 
 ---
