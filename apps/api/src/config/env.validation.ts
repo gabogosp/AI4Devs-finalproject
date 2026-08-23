@@ -69,6 +69,18 @@ export const envSchema = z.object({
   // hace fallar el arranque si faltan con `NODE_ENV=production`.
   RESEND_API_KEY: z.string().min(1).optional(),
   PASSWORD_RESET_FROM: z.string().email().optional(),
+  /**
+   * AUDIT-dsm-api-003 — tope de espera de la llamada saliente a Resend. Sin él, un
+   * proveedor colgado cuelga la request de recuperación: la primera dependencia
+   * externa del proyecto en el camino de respuesta y la única sin cota.
+   *
+   * 5 s es holgado para una API de email y sigue muy por debajo del timeout del
+   * navegador. No se agrega reintento a propósito: un email de reset perdido lo
+   * recupera la persona pidiéndolo de nuevo (el flujo es idempotente por diseño),
+   * mientras una request colgada no la recupera nadie. El reintento con backoff sí
+   * corresponde donde hay dinero — el adaptador de MercadoPago de US-009.
+   */
+  RESEND_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000),
   /** Base del enlace del email — el reset se completa en el frontend. */
   PASSWORD_RESET_URL_BASE: z.string().url().optional(),
 

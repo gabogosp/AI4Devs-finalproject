@@ -32,13 +32,15 @@ export class ResendPasswordResetMailer implements PasswordResetMailer {
     const enlace = `${base.replace(/\/$/, '')}/recuperar/confirmar?token=${encodeURIComponent(input.rawToken)}`;
 
     try {
-      const { error } = await this.resend.emails.send({
-        from,
-        to: input.to,
-        subject: 'Recuperá tu contraseña — DSM Ferretería',
-        text: this.cuerpoTexto(enlace, input.ttlMinutes),
-        html: this.cuerpoHtml(enlace, input.ttlMinutes),
-      });
+      const { error } = await this.conTimeout(
+        this.resend.emails.send({
+          from,
+          to: input.to,
+          subject: 'Recuperá tu contraseña — DSM Ferretería',
+          text: this.cuerpoTexto(enlace, input.ttlMinutes),
+          html: this.cuerpoHtml(enlace, input.ttlMinutes),
+        }),
+      );
 
       if (error) {
         // El SDK de Resend devuelve el error en el resultado en vez de lanzarlo.
@@ -61,6 +63,35 @@ export class ResendPasswordResetMailer implements PasswordResetMailer {
         `password_reset.dispatch_failed customer_id=${input.customerId} provider=resend`,
         error instanceof Error ? error.message : String(error),
       );
+    }
+  }
+
+  /**
+   * Corta la espera de la llamada saliente a `RESEND_TIMEOUT_MS`
+   * (AUDIT-dsm-api-003).
+   *
+   * Es un `Promise.race` y no un `AbortSignal`: el SDK de Resend no expone la señal
+   * de su fetch interno, así que **la request subyacente no se cancela**, sólo se
+   * deja de esperar. Se acepta a conciencia — lo que había que acotar es el tiempo
+   * que la persona espera del otro lado, y el fetch huérfano termina solo y su
+   * resultado se descarta. El día que el SDK acepte `signal`, esto se reemplaza por
+   * `AbortSignal.timeout` y el comentario se borra.
+   */
+  private async conTimeout<T>(promesa: Promise<T>): Promise<T> {
+    const ms = this.config.get<number>('RESEND_TIMEOUT_MS', 5_000);
+    let temporizador: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race([
+        promesa,
+        new Promise<never>((_, reject) => {
+          temporizador = setTimeout(
+            () => reject(new Error(`resend_timeout_after_${ms}ms`)),
+            ms,
+          );
+        }),
+      ]);
+    } finally {
+      if (temporizador) clearTimeout(temporizador);
     }
   }
 

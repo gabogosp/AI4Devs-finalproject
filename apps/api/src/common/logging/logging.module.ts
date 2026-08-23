@@ -12,6 +12,30 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
   imports: [
     LoggerModule.forRoot({
       pinoHttp: {
+        /**
+         * AUDIT-dsm-api-009 — `service`, `version` y `env` en TODA línea, no sólo en
+         * las de request. Van en `base` y no en `customProps` justamente por eso:
+         * `customProps` se evalúa por request y deja sin identificar los logs de
+         * arranque, de los runners en proceso (US-005/US-006) y de los jobs
+         * periódicos que vienen con US-010.
+         *
+         * Sin estos tres campos, en Railway conviven los logs de `api`, `web` y
+         * `worker` en un mismo stream y no hay forma de filtrar por servicio ni de
+         * atribuir un error a un deploy concreto.
+         *
+         * `version` sale del entorno: en Railway se puebla con el SHA del commit, y
+         * en local queda `dev`. Un string hardcodeado acá driftearía en el primer
+         * release. Se omiten `pid`/`hostname` (defaults de pino) a propósito: en un
+         * único contenedor no aportan y ensucian cada línea.
+         */
+        base: {
+          service: 'dsm-api',
+          version:
+            process.env.APP_VERSION ??
+            process.env.RAILWAY_GIT_COMMIT_SHA ??
+            'dev',
+          env: process.env.NODE_ENV ?? 'development',
+        },
         genReqId: (req: IncomingMessage, res: ServerResponse): string => {
           const existing = req.headers['x-request-id'];
           const id =
