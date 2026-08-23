@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-const STUB = 'http://localhost:4010';
+// Puerto por env como el resto de los specs: hardcodear 4010 rompe a quien
+// corra con puertos propios para no chocar con otra sesión, y el síntoma
+// (ECONNREFUSED) no se parece a su causa.
+const STUB = `http://localhost:${process.env.API_STUB_PORT ?? 4010}`;
 
 /**
  * US-014 T4.2 — recuperación de contraseña de punta a punta (AC-4/AC-7/AC-11).
