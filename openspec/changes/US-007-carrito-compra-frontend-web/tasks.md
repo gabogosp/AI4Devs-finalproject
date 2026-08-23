@@ -181,7 +181,7 @@ language: es
 
 ## Fase 2: Estado y componentes del carrito — 2,6 h
 
-- [ ] T2.1 `useCart` — unión discriminada y reemplazo del estado
+- [x] T2.1 `useCart` — unión discriminada y reemplazo del estado
   - **Pattern**: `useReducer` con estado como **unión discriminada**, nunca banderas
     booleanas ni campos nulables — `per frontend-standards.md §11.4`. Cada mutación
     **reemplaza** el `CartView` completo (el backend lo devuelve entero), así no hay
@@ -192,6 +192,9 @@ language: es
       | { kind: 'ready'; cart: CartView; mutatingSlugs: string[] }
       | { kind: 'error'; error: AppError; cart?: CartView };
     ```
+    *(al ejecutar, la variante `ready` lleva además `conflicts: Record<slug, LineConflict>`:
+    el criterio pide «el conflicto expuesto **por línea**» y sin ese campo no hay dónde
+    ponerlo. Dos líneas pueden estar en conflicto a la vez y cada una muestra su «quedan N».)*
   - **Exit criterion**: expone `state`, `add(slug)`, `setQuantity(slug, n)` y
     `remove(slug)`. `mutatingSlugs` es **por línea**: mutar un ítem no bloquea los otros.
     Un 409 deja el estado en `ready` con el carrito del servidor y el conflicto expuesto por
