@@ -135,7 +135,7 @@ estimate-hours: 13.4
 
 ## Fase 1: Puertos de IA y adapter Gemini — 2,6 h
 
-- [ ] T1.1 Puertos `AI_ENRICHER` / `AI_EMBEDDER` + errores de dominio `dsm:enrichment/*` (0,4 h)
+- [x] T1.1 Puertos `AI_ENRICHER` / `AI_EMBEDDER` + errores de dominio `dsm:enrichment/*` (0,4 h)
   - **Pattern**: interfaz + token de inyección (`export const AI_EMBEDDER = Symbol('AI_EMBEDDER')`)
     inyectados con `@Inject(...)` — `per backend-node-standards.md §3 — depender de
     interfaces/tokens, no de clases concretas`. Mismo patrón que el puerto de mailer de US-014.
