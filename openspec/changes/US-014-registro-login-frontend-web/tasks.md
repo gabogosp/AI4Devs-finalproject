@@ -655,7 +655,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 ## Fase 4: E2E de journey — `design.md` D11
 
-- [ ] **T4.1** Journey: registro → sesión → logout → login (AC-1, AC-2, AC-3, AC-9) (0.5 h)
+- [x] **T4.1** Journey: registro → sesión → logout → login (AC-1, AC-2, AC-3, AC-9) (0.5 h)
 
   - **Pattern**:
     ```ts
@@ -677,7 +677,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     pnpm --filter @dsm/web exec playwright test e2e/auth-journey.spec.ts
     ```
 
-- [ ] **T4.2** Journey de recuperación + token inservible + `noindex` (AC-4, AC-7, AC-11) (0.5 h)
+- [x] **T4.2** Journey de recuperación + token inservible + `noindex` (AC-4, AC-7, AC-11) (0.5 h)
 
   - **Pattern**: el stub expone el token del último reset por una ruta de diagnóstico
     (`GET /__last-reset-token`, análoga a `/__requests` que ya existe) — el E2E **no** parsea

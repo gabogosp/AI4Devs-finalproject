@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -50,7 +50,18 @@ export function ResetConfirmForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
+  // El token se captura UNA sola vez y no se vuelve a leer de la URL.
+  //
+  // Sin este guard hay una carrera consigo mismo: limpiar la query con
+  // `replaceState` hace que `useSearchParams` emita un valor nuevo —ahora sin
+  // token—, el efecto se re-ejecuta y borra el token que acababa de guardar.
+  // El síntoma es peor que el bug: el formulario dice "el enlace no sirve"
+  // sobre un enlace perfectamente válido, y el usuario pide otro que también
+  // "falla".
+  const yaLeido = useRef(false);
   useEffect(() => {
+    if (yaLeido.current) return;
+    yaLeido.current = true;
     const t = searchParams.get('token');
     setToken(t);
     if (t && typeof window !== 'undefined') {

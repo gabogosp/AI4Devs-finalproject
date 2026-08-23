@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Stub del contrato para los E2E (design.md D10).
@@ -193,9 +194,36 @@ const initialResetTokens = () =>
 
 /** Sesiones vivas por token de acceso, para que `/auth/me` y logout sean reales. */
 let sessions = new Map();
+/**
+ * Token del último reset solicitado, expuesto por `/__last-reset-token`.
+ * El E2E no parsea emails ni adivina: pide el que el "backend" acaba de emitir,
+ * que es lo que hace el journey determinista.
+ */
+let ultimoResetToken = null;
+
+/**
+ * Vista pública del cliente tal como la declara el contrato: exactamente cinco
+ * campos. Devolver menos hace que la validación Zod del frontend rechace la
+ * respuesta —correctamente— y el journey falle por el stub, no por la app.
+ */
+const vistaPublica = (c) => ({
+  id: c.id,
+  email: c.email,
+  name: c.name,
+  phone: c.phone ?? null,
+  created_at: c.created_at ?? '2026-01-01T00:00:00Z',
+});
 
 const nuevoToken = (prefijo) =>
   `${prefijo}-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+
+/**
+ * El contrato declara `id` como **uuid**, así que un id con prefijo legible
+ * (`cust-abc…`) hace que la validación Zod del frontend rechace la respuesta.
+ * El stub tiene que respetar el contrato tanto como el backend real: si miente
+ * en el formato, el journey falla por el stub y no por la app.
+ */
+const nuevoUuid = () => randomUUID();
 
 /**
  * Emite las tres cookies con los atributos que el backend usa de verdad
@@ -334,10 +362,15 @@ const server = createServer(async (req, res) => {
     if (scope === null || scope === 'catalog') browseProducts = initialBrowseCatalog();
     // `auth` es su propio alcance: un spec de auth que resetea NO puede pisarle
     // el catálogo a un spec de PDP corriendo en paralelo (fullyParallel).
-    if (scope === null || scope === 'auth') {
+    // `auth` sólo se resetea si se pide EXPLÍCITAMENTE. El reset sin alcance
+    // existe desde antes que auth y sus llamadores quieren decir "restaurá el
+    // catálogo": si además borrara sesiones, un spec de catálogo desloguearía
+    // al de auth corriendo en paralelo.
+    if (scope === 'auth') {
       customers = initialCustomers();
       resetTokens = initialResetTokens();
       sessions = new Map();
+      ultimoResetToken = null;
     }
     // El log NO se limpia acá a propósito: es diagnóstico append-only, no
     // estado del fixture. Si el reset lo borrara, un spec corriendo en paralelo
@@ -353,7 +386,16 @@ const server = createServer(async (req, res) => {
     return json(res, 200, requestLog);
   }
 
-  if (req.method === 'GET' && path.startsWith('/v1/')) {
+  // Diagnóstico para el E2E de recuperación: el token que el "backend" acaba de
+  // emitir. Análoga a `/__requests`; no existe en el backend real.
+  if (req.method === 'GET' && path === '/__last-reset-token') {
+    return json(res, 200, { token: ultimoResetToken });
+  }
+
+  // El log existe para afirmar QUÉ pidió el servidor de Next al renderizar el
+  // catálogo (US-002 AC-7). Las llamadas de auth salen del navegador y son de
+  // otra superficie: incluirlas ensucia esas aserciones con ruido de otro spec.
+  if (req.method === 'GET' && path.startsWith('/v1/') && !path.startsWith('/v1/auth/')) {
     requestLog.push({ url: req.url, path, query: url.search });
   }
 
@@ -379,7 +421,7 @@ const server = createServer(async (req, res) => {
         });
       }
       const customer = {
-        id: nuevoToken('cust'),
+        id: nuevoUuid(),
         email,
         name: String(body.name ?? 'Cliente'),
         password: String(body.password ?? ''),
@@ -387,9 +429,7 @@ const server = createServer(async (req, res) => {
       };
       customers.set(email, customer);
       emitirSesion(res, customer);
-      return json(res, 201, {
-        data: { id: customer.id, email: customer.email, name: customer.name },
-      });
+      return json(res, 201, { customer: vistaPublica(customer) });
     }
 
     if (req.method === 'POST' && path === '/v1/auth/login') {
@@ -400,9 +440,7 @@ const server = createServer(async (req, res) => {
         return credencialesInvalidas(res);
       }
       emitirSesion(res, customer);
-      return json(res, 200, {
-        data: { id: customer.id, email: customer.email, name: customer.name },
-      });
+      return json(res, 200, { customer: vistaPublica(customer) });
     }
 
     // `refresh` y `logout` son escrituras autenticadas por cookie: exigen el
@@ -437,9 +475,7 @@ const server = createServer(async (req, res) => {
         (c) => c.id === sesion.customerId,
       );
       emitirSesion(res, customer);
-      return json(res, 200, {
-        data: { id: customer.id, email: customer.email, name: customer.name },
-      });
+      return json(res, 200, { customer: vistaPublica(customer) });
     }
 
     if (req.method === 'GET' && path === '/v1/auth/me') {
@@ -448,13 +484,18 @@ const server = createServer(async (req, res) => {
       const customer = [...customers.values()].find(
         (c) => c.id === sesion.customerId,
       );
-      return json(res, 200, {
-        data: { id: customer.id, email: customer.email, name: customer.name },
-      });
+      // `me` devuelve el cliente PLANO, no envuelto: es la forma del contrato.
+      return json(res, 200, vistaPublica(customer));
     }
 
     if (req.method === 'POST' && path === '/v1/auth/password-reset/request') {
-      // 202 SIEMPRE (AC-11): exista o no el email. Es la anti-enumeración.
+      const email = String(body.email ?? '').trim().toLowerCase();
+      // Sólo se emite token si la cuenta existe — pero la RESPUESTA es la misma
+      // en ambos casos, que es donde vive la anti-enumeración (AC-11).
+      if (customers.has(email)) {
+        ultimoResetToken = nuevoToken('reset');
+        resetTokens.set(ultimoResetToken, { email, usado: false });
+      }
       res.statusCode = 202;
       return res.end();
     }
