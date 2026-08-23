@@ -156,6 +156,14 @@ And no compromete recursos del servidor (protección anti-DoS)
 - FE: pantalla de importación (upload, estado/progreso async, descarga del reporte de filas rechazadas) según design-system.
 - QA: automatización de las AC (válidas/inválidas, idempotencia, autorización, límite) + archivos de prueba representativos.
 
+> **Handoff del backend al frontend (decisión del PO, 2026-08-22 — OQ-10).** `FE-US-006` toma
+> como criterio propio la **invalidación de la caché del catálogo**: cuando el panel vea
+> `status: "completed"` en `GET /v1/admin/imports/{id}`, tiene que llamar a `revalidateCatalog()`.
+> El backend no tiene canal hacia el renderizado de Next, así que **sin esto el storefront sirve
+> precios viejos después de un ajuste masivo** — es una dependencia bloqueante del corte de la US
+> a producción, no un detalle de UI. Detalle y contrato en `apps/api/README.md` §Importación
+> masiva de inventario.
+
 > Las tasks code-generating (BE/FE) abren su openspec change en `openspec/changes/US-006-import-masivo-inventario-{discipline}/`. La task QA vive en `tasks/US-006/qa-deliverable.md`.
 
 ## 8. Diseño

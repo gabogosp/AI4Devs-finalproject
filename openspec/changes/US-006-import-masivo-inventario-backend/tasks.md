@@ -684,3 +684,114 @@ language: es
 | Fallback de encoding windows-1252 | — | `Deferred: revisitar tras el primer import real — owner: Arquitecto` (OQ-BE-5) |
 | Entrada de runbook "import atascado en running" (E2E §18.5) | T8.2 | en este change |
 | Archivos de prueba representativos, carga y aceptación cross-stack | — | `Deferred: QA-US-006 — owner: QA` |
+
+---
+
+## Decisiones del PO sobre el ejecutado (2026-08-22)
+
+Once preguntas abiertas al cerrar el change, resueltas por el PO el mismo día. Las dos que
+cambiaron código están implementadas y verificadas; el resto quedó registrado donde corresponde.
+
+| # | Pregunta | Decisión | Dónde quedó |
+|---|---|---|---|
+| OQ-1 | ¿Rama y PR? | (a) Seguir en `feature-entrega2-GOSP`; la Entrega 2 se revisa como un PR de rama larga | sin acción de código; no se hizo push |
+| OQ-2 | Los 2 tests rojos de preflight CORS | (a) Abrir hallazgo y dejarlos rojos | `docs/audits/follow-ups/AUD-US006-cors-preflight-404.md` |
+| OQ-3 | `pnpm -r lint` rojo por `apps/web` | (a) Lo arregla la sesión de US-014 frontend (dueña del archivo) | anotado en §Verification |
+| OQ-4 | Los 3 avisos `high` de `multer@1.x` | (c) Subir a NestJS 11 | `docs/audits/follow-ups/AUD-PLATFORM-nestjs-11-multer.md` (agendar fuera del sprint concurrente) |
+| OQ-5 | El tope de 5.000 filas sin margen | (a) Dejarlo en 5.000 | ya documentado con su advertencia en `apps/api/README.md` |
+| OQ-6 | La purga de retención sólo corre al arrancar | (a) Aceptarlo + (c) job programado diferido a US-019 | fila nueva en esta tabla |
+| OQ-7 | `name_too_long` sobrecargado | (b) Renombrar a `invalid_text` | **implementado** (código, 3 contratos, spec publicado, README) |
+| OQ-8 | Celda requerida vacía en un update | (b) En un SKU existente significa "no cambiar"; en un alta sigue inválida | **implementado** (`validateRow` + `faltantesParaAlta` + `processRow`) |
+| OQ-9 | Falta la parte `file` → `dsm:catalog/validation` | (a) Ratificado | declarado en `admin-create-import.yaml` |
+| OQ-10 | Invalidación del catálogo del storefront | (a) FE-US-006 lo toma como AC propio | `docs/user-stories/US-006-import-masivo-inventario.md` §7 |
+| OQ-11 | Encolado real del enriquecimiento | (a) Sigue diferido a US-005 + US-019 | fila de la tabla F51 |
+
+### Lo que OQ-8 cambió respecto del plan
+
+`validateRow` **ya no** exige las cuatro columnas requeridas: sólo el `sku`, que es la clave de la
+reconciliación. La completitud se evalúa en `ImportsService.processRow` con `faltantesParaAlta()`,
+que es el único punto que sabe si el SKU existe — y por lo tanto el único que puede distinguir
+"falta un dato obligatorio" (alta) de "no toques este campo" (actualización).
+
+El **encabezado** sigue exigiendo las cinco columnas requeridas, así que **AC-6 no se movió**: un
+archivo sin la columna `precio` sigue devolviendo `422 dsm:import/missing-columns` sin crear el
+trabajo. Lo que se relajó son las **celdas**. Residual conocido y aceptado: un archivo de dos
+columnas literales (`sku,precio`) **sigue** rechazado por AC-6; habilitarlo sería un cambio de AC,
+no una decisión de desarrollo.
+
+Cobertura nueva: 5 casos en `imports.service.spec.ts`, 6 en `row-schema.spec.ts`
+(`faltantesParaAlta`, incluido stock 0 como presente) y 2 e2e en `e2e-imports-acceptance.spec.ts`
+—el archivo `REF-1,,135000,,` que actualiza sólo el precio, y la misma fila sobre un SKU
+inexistente que se rechaza con `missing_required`—.
+
+### Ajuste del guard F40 de `products` (no estaba en el plan)
+
+`import-schema.spec.ts` afirmaba que `products` tiene **exactamente** 13 columnas. US-005 le
+agregó las seis del enriquecimiento mientras este change se ejecutaba, y la afirmación pasó a
+romperse por trabajo legítimo de otra US. Ahora el spec verifica que estén **todas** las que
+US-006 conoce (ninguna se perdió) y que `enrichment_done` sea `NOT NULL DEFAULT false`; el "no
+sobra ninguna" de F40 se mantiene íntegro para `import_jobs` e `import_job_rows`, que son las
+tablas que este change **posee**.
+
+> Los guards equivalentes de US-007 (`cart-schema.spec.ts`) y US-014 (`auth-schema.spec.ts`)
+> están rojos por **la misma** causa y necesitan el mismo ajuste de sus dueños: hoy afirman que
+> la migración propia "no modificó `products`" y la migración de US-005 sí lo hizo.
+
+| Declaración diferida agregada por estas decisiones | Task | Estado |
+|---|---|---|
+| Job programado de purga de retención (hoy sólo corre al arrancar la API) | — | `Deferred: US-019 (Redis + BullMQ repeatable jobs) — owner: Arquitecto` (OQ-6) |
+| Upgrade a NestJS 11 para salir de `multer@1.x` | — | `Deferred: AUD-PLATFORM-nestjs-11-multer — owner: Arquitecto` (OQ-4) |
+
+### Hallazgo H-1 (OQ-2) — el preflight CORS del panel devuelve 404, **fuera de alcance**
+
+`docs/audits/` está gitignoreado, así que el registro versionado del hallazgo es éste.
+
+**Qué pasa.** `apps/api/src/common/e2e-security-edge.spec.ts` tiene 2 de 7 casos rojos: un
+`OPTIONS /v1/admin/categories` con `Origin: http://localhost:3200` y
+`Access-Control-Request-Method: GET` termina en el router de Nest (**404**) en vez de ser
+cortocircuitado por el middleware de `cors`, así que no lleva `Access-Control-Allow-Origin` ni
+`Access-Control-Max-Age` (el segundo test recibe `NaN`).
+
+**Severidad.** Alta en el navegador, nula por `curl`: el panel corre en otro origen que la API, y
+un preflight sin cabeceras de CORS **rompe todas las llamadas del panel** desde el browser aunque
+el servidor las sirva bien. Los otros 5 casos del spec (origen fuera de allowlist, no-match por
+sufijo, baseline de headers, `no-store` en `/v1/admin`, 429 del login) **pasan**, así que el resto
+de `configureApp` está activo.
+
+**No es regresión de US-006.** Se corrió la misma suite en un `git worktree` del commit `16fabe0`
+—anterior a la primera línea de este change— y los mismos 2 casos fallan igual.
+
+**Primera hipótesis a verificar.** `configureApp` lee la allowlist de `process.env
+.CORS_ALLOWED_ORIGINS` y no del `ConfigService` validado; si en ese momento no coincide con el
+`http://localhost:3200` que setea `test/jest.setup.js`, `allowed` queda vacío. Un log de `allowed`
+dentro de `configureApp` cierra la pregunta. Segunda: interacción de la versión de Express/`cors`
+bajo Node 23 cuando la ruta no tiene handler `OPTIONS`.
+
+**Coordinación.** `apps/api/src/bootstrap.ts` lo viene editando la sesión de **US-007** (T4.4).
+Avisar antes de tomarlo. Estimación S (1-3 h, casi todo diagnóstico; el fix probable es de una
+línea).
+
+### Hallazgo H-2 (OQ-4) — `multer@1.4.4-lts.1` con 3 avisos `high`
+
+Tres DoS (`crafted requests`, `unhandled exception`, `unhandled exception from malformed
+request`), parcheados en `multer >= 2.0.2`. Llega **transitivo** de
+`@nestjs/platform-express@10.4.15`, así que salir de él es subir a **NestJS 11** (decisión del PO,
+OQ-4 opción c).
+
+Hasta US-006 el aviso era teórico: nadie usaba multipart. `POST /v1/admin/imports` es la primera
+ruta que lo usa, así que la exposición es nueva y por eso el hallazgo nace acá.
+
+**Mitigación aplicada** (no reemplaza el upgrade): `limits` de `fileSize` 4 MiB, `files: 1`,
+`parts: 4`, `fields: 3`, `fieldSize: 1024` en `import-file.interceptor.ts`; ruta admin-only con
+presupuesto de 3 requests/hora/IP; `memoryStorage` (sin archivo temporal ni ruta derivada del
+`filename` del cliente).
+
+**Alcance del upgrade.** `@nestjs/*` 10.4.x → 11.x + `@nestjs/throttler` compatible; revisar
+Express 5 (matching de rutas y los middlewares propios de `configureApp`), la forma de los errores
+de `multer@2.x` —el interceptor traduce `LIMIT_FILE_SIZE` a `FileTooLargeError`— y los tres guards
+de throttling propios (`auth`, `storefront`, `cart`), que sobreescriben `handleRequest` y
+`throwThrottlingException`. Bajar `@types/multer` a la línea de multer 2.x. Estimación M (4-8 h).
+
+**Cuándo.** No con cuatro sesiones en vuelo sobre el mismo working tree: toca `package.json`, el
+lockfile y el borde HTTP compartido por US-006, US-007, US-014 y US-018. Ventana recomendada: con
+los changes cerrados y el árbol limpio, en un PR propio sin features.
