@@ -60,7 +60,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     la API (`getCart`, `setCartItem`, `removeCartItem`) y la suite e2e del carrito del
     backend está verde.
   - **Verify**: `grep -q "operationId: getCart" apps/api/docs/api/openapi.yaml && grep -q "operationId: setCartItem" apps/api/docs/api/openapi.yaml && grep -q "operationId: removeCartItem" apps/api/docs/api/openapi.yaml && pnpm --filter @dsm/api test -- --testPathPattern='e2e-cart' --ci`
-- [ ] **Entorno de ejecución del carrito arriba** — la API arrancada con la allowlist de
+- [x] **Entorno de ejecución del carrito arriba** — la API arrancada con la allowlist de
   CORS que incluye el origen del cliente QA y con `ADMIN_BOOTSTRAP_TOKEN`.
   - **Exit criterion**: el preflight de un `PUT` del carrito desde el origen web devuelve
     el `Access-Control-Allow-Origin` de ese origen y anuncia `PUT` y `DELETE` entre los
@@ -80,7 +80,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 1: Soporte — datos y cliente del carrito
 
-- [ ] T1.1 Seed **hermano** del carrito (`seed-carrito.ts`), no una extensión del de US-002
+- [x] T1.1 Seed **hermano** del carrito (`seed-carrito.ts`), no una extensión del de US-002
   - **Pattern**: mismo patrón que `qa/support/seed-categorias.ts` — `adminAuth()` +
     `apiCall('/v1/admin/products', 'POST'|'PATCH')` + builders con prefijo único; creación
     **secuencial** (en paralelo el orden deja de ser determinista) y archivado por la FSM
@@ -97,7 +97,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     producto de la invariante es exactamente 3, no «alguno»: sin ese número, N-2 no puede
     distinguir una reserva)*
 
-- [ ] T1.2 Cliente de carrito con identidad, CSRF y «cerrar y volver» (`cart-client.ts`)
+- [x] T1.2 Cliente de carrito con identidad, CSRF y «cerrar y volver» (`cart-client.ts`)
   - **Pattern**: un invitado = un `APIRequestContext` propio (su propio almacén de
     cookies); antes de cada escritura, leer `dsm_cart_csrf` de `context.storageState()` y
     mandarla en `X-CSRF-Token` junto con `Origin` de la allowlist; «cerrar el navegador»
