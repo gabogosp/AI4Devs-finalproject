@@ -95,6 +95,38 @@ language: es
 
 ## Hallazgos fuera de alcance (no abren trabajo en esta US)
 
+> ### Hallazgo ENTRANTE desde US-007 QA (2026-08-23) — pase de saneamiento agendado
+>
+> Decisión del PO del 2026-08-23 (D-1a + D-8): estos dos puntos se arreglan en un pase propio
+> sobre este lane, no desde US-007. Quedan acá para que quien lo tome no tenga que
+> reconstruirlos.
+>
+> **1. `seed-categorias.ts` no es idempotente contra una base con residuo.** Medido al correr
+> `pnpm --filter @dsm/qa test:acceptance` completo: `36 scenarios (29 passed, 7 failed)`, y los
+> 7 mueren en su propio `Given`, no en un assert:
+>
+> ```
+> POST /v1/admin/products      → 422 "La categoría indicada no existe"
+> PATCH /v1/admin/products/{id} → 404 "Producto no encontrado"
+> ```
+>
+> La categoría o el producto que el seed acaba de crear ya no está cuando lo referencia.
+> Afecta TC-213, TC-215 y TC-216 de este lane (y H-1/H-3/C-1/C-2 de US-003, cuyo change ya
+> está archivado). Contexto: la base la comparten varias sesiones y las suites de integración
+> del backend truncan `products`/`categories`. El seed del carrito (US-007 T1.1) **no** se
+> rompe porque crea todo con un prefijo único por corrida y no reusa ids previos — ese es el
+> patrón a copiar.
+>
+> **2. Los `Verify:` de Cucumber de este change no tienen ancla de conteo.** `cucumber-js`
+> con un tag que no matchea nada imprime `0 scenarios` y **sale con código 0**, así que esos
+> gates pasan verdes sin haber probado nada (el trap F50). US-007 aplicó el ancla
+> (`grep -qE '^14 scenarios \(14 passed\)$'`); acá los `Verify:` siguen sin ella.
+>
+> **Antes de tomarlo**: la infraestructura de entorno ya está resuelta —`qa/support/qa-env.ts`
+> como fuente única de puertos, `pnpm --filter @dsm/qa api:up` para levantar la API apta, y un
+> preflight que falla con mensaje de entorno—, así que el pase puede concentrarse en los seeds
+> y las anclas.
+
 - **H-1 — Un `429` del backend se convierte en un `500` en el storefront.**
   - **Síntoma**: cuando la API responde `429` (rate limit del storefront, default
     60 req/min), la página de ficha no lo trata como un caso esperado: el error
