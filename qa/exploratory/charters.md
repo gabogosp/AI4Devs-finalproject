@@ -121,3 +121,64 @@
   **usabilidad y juicio** —"¿se entiende dónde estoy?"— y no un assert. Un test
   puede verificar que el link exista; no que el árbol resultante sea navegable
   para una persona. Se ejecuta con el dueño antes del UAT.
+
+## TC-750 — El carrito frente a navegadores reales (US-007 AC-4) — **BLOQUEADO**
+
+> **Bloqueado por**: el FE de US-007 (`US-007-carrito-compra-frontend-web`) está en
+> construcción — al escribir este charter existen el `cartService` y el hook, pero
+> todavía no la pantalla. Sin UI no hay sesión que conducir. Se ejecuta cuando la
+> vista del carrito esté navegable.
+
+- **Misión**: descubrir en qué condiciones **reales de navegador** el carrito del
+  invitado se pierde, se duplica o se comparte, cuando el servidor está haciendo
+  todo bien.
+- **Áreas**: modo incógnito y su cierre; cookies de terceros bloqueadas y modo
+  "prevención de rastreo" estricto; dos pestañas operando el mismo carrito a la vez;
+  volver después de reiniciar el navegador; Safari/iOS con ITP; borrar cookies del
+  sitio a mitad de la compra; el sitio abierto en dos perfiles del mismo navegador.
+- **Riesgos**: la identidad del carrito **es** una cookie, así que su vida depende
+  del navegador y no de `CART_TTL_DAYS`. El techo de vida que ITP impone a las
+  cookies escritas por script cae **justo en los mismos 7 días** que el TTL
+  configurado, así que el peor caso del navegador y el del producto se superponen y
+  nadie los distingue desde el servidor. Dos pestañas pueden pisarse la cantidad
+  (la escritura es absoluta: la última gana) y el cliente no tiene forma de
+  detectarlo. Un carrito que "reaparece" en incógnito sería una fuga de identidad.
+- **Heurísticas**: variar un eje del navegador a la vez (privacidad, perfil,
+  pestañas, reinicio); "interrupción" (cerrar durante la escritura); comparar lo que
+  muestra la UI contra `GET /v1/cart` en la misma sesión; recorrer el ciclo completo
+  en el navegador **más restrictivo** disponible y no en el más cómodo.
+- **Justificación manual** (`execution_mode: manual`): ningún runner reproduce ese
+  conjunto —Playwright no implementa ITP ni el ciclo de vida de cookies de Safari—,
+  y automatizar una aproximación daría **falsa confianza** sobre AC-4, que es
+  precisamente el criterio que depende del navegador. Los tests de backend ya cubren
+  el vencimiento manipulando el reloj (dev L1/L2); acá se explora lo que el servidor
+  no puede ver.
+
+## TC-751 — La ventana de 7 días contra el ciclo real de compra del gremio (US-007 AC-4)
+
+- **Misión**: averiguar si la retención de **7 días** que el PO eligió alcanza para
+  el ciclo real de un cliente de ferretería, o si el costo aceptado por escrito es
+  mayor que lo estimado.
+- **Áreas**: el ciclo del gremio (plomero, electricista, refrigerista) — cotizar,
+  juntar materiales de varias obras, comprar al cobrar; el ciclo del particular que
+  arma el carrito el sábado y decide con la pareja; el efecto de una quincena o un
+  feriado largo en el medio; qué hace hoy el dueño cuando un cliente le pide "lo de
+  la semana pasada".
+- **Riesgos**: quien vuelve a los diez días encuentra el carrito **vacío, sin aviso
+  y sin recuperación** — es el costo que OQ-BE-1 aceptó explícitamente. Si el ciclo
+  típico supera la ventana, el efecto no es una molestia: es abandono silencioso que
+  el negocio no puede ver, porque un carrito vencido se purga y no deja rastro
+  medible. El riesgo inverso también existe: una ventana muy larga muestra precios
+  viejos como "lo que había en tu carrito" y erosiona la confianza en el precio.
+- **Heurísticas**: entrevistar antes de medir (el dueño conoce el ciclo de sus
+  clientes gremiales mejor que cualquier analítica que todavía no tenemos);
+  contrastar con los tiempos que él ya observa en el mostrador; buscar el caso
+  extremo real —la obra que se pausa— en vez del promedio.
+- **Justificación manual** (`execution_mode: manual`): el criterio es **de negocio**,
+  no un assert. No hay nada que verificar en el software: el comportamiento con 7
+  días ya está probado por los tests del backend, que manipulan el reloj. Lo que hay
+  que decidir es si **7 es el número correcto**, y eso sale de una conversación con
+  el dueño. La variable se cambia por entorno (`CART_TTL_DAYS`) sin deploy de código,
+  así que el resultado de esta sesión es accionable el mismo día.
+- **Salida esperada**: una recomendación con número —confirmar 7, o subir a 14/30—
+  registrada en OQ-BE-1 del change de backend, con el fundamento del ciclo observado.
