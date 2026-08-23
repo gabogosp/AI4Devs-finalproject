@@ -4,6 +4,8 @@ import { CategoryNav } from '@/features/storefront/CategoryNav';
 import { SiteFooter } from '@/features/contact/SiteFooter';
 import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
 import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
+import { AccountMenu } from '@/features/account/AccountMenu';
+import { SessionProvider } from '@/features/account/SessionProvider';
 
 /**
  * Layout del storefront público (ADR-0010: la raíz es pública).
@@ -15,13 +17,19 @@ import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
  * El `SiteFooter` (US-018 AC-1) se monta acá para que el canal de contacto esté
  * en toda página pública sin que ninguna página lo repita.
  *
+ * El `SessionProvider` (US-014) envuelve el árbol pero **este layout sigue
+ * siendo Server Component**: los `children` se pasan como prop, así que se
+ * renderizan en servidor igual. El `'use client'` vive en las hojas
+ * (`SessionProvider`, `AccountMenu`), no acá — next-standards §2.
+ *
  * ⚠ Sin `loading.tsx` en ningún nivel de `(storefront)`: la boundary de Suspense
  * transmite el shell con el status 200 ya comprometido y vuelve imposible un 404
  * real (US-003 `design.md` D1.bis; gap F59).
  */
 export default function StorefrontLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <SessionProvider>
+      <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
           <Link
@@ -38,16 +46,20 @@ export default function StorefrontLayout({ children }: { children: ReactNode }) 
           {/* Variante discreta y nombre accesible distinto al del footer: un
               lector de pantalla que liste los enlaces no muestra dos entradas
               idénticas. */}
-          <WhatsAppLink
-            variant="ghost"
-            label="WhatsApp"
-            message={WHATSAPP_MESSAGES.general}
-          />
+          <div className="flex items-center gap-4">
+            <WhatsAppLink
+              variant="ghost"
+              label="WhatsApp"
+              message={WHATSAPP_MESSAGES.general}
+            />
+            <AccountMenu />
+          </div>
         </div>
         <CategoryNav />
       </header>
-      <main className="flex-1">{children}</main>
-      <SiteFooter />
-    </div>
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
+      </div>
+    </SessionProvider>
   );
 }

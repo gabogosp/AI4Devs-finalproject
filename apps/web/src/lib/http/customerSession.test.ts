@@ -114,10 +114,14 @@ describe('refreshOnce (G-2: single-flight)', () => {
 
   it('manda el header CSRF cuando la cookie está', async () => {
     document.cookie = 'dsm_csrf=csrf-abc; Path=/';
-    const spy = vi.fn(
-      async (_url: string, _init?: RequestInit) =>
-        new Response('{}', { status: 200 }),
-    );
+    // Se declaran los parámetros para que `mock.calls` quede tipado, y se los
+    // referencia con `void` para no dejar argumentos sin usar: el linter los
+    // marcaría y silenciarlos con un disable escondería casos reales.
+    const spy = vi.fn(async (url: string, init?: RequestInit) => {
+      void url;
+      void init;
+      return new Response('{}', { status: 200 });
+    });
     vi.stubGlobal('fetch', spy);
 
     await refreshOnce();
@@ -128,10 +132,14 @@ describe('refreshOnce (G-2: single-flight)', () => {
   });
 
   it('la llamada sale con credentials include y contra el origen del sitio', async () => {
-    const spy = vi.fn(
-      async (_url: string, _init?: RequestInit) =>
-        new Response('{}', { status: 200 }),
-    );
+    // Se declaran los parámetros para que `mock.calls` quede tipado, y se los
+    // referencia con `void` para no dejar argumentos sin usar: el linter los
+    // marcaría y silenciarlos con un disable escondería casos reales.
+    const spy = vi.fn(async (url: string, init?: RequestInit) => {
+      void url;
+      void init;
+      return new Response('{}', { status: 200 });
+    });
     vi.stubGlobal('fetch', spy);
 
     await refreshOnce();

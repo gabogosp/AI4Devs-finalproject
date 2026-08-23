@@ -370,7 +370,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     acotado a `apps/web/**` y a `.tsx`, así que no puede matchearse a sí mismo — F57. Dry-run
     2026-08-20 con esta forma: verde)*
 
-- [ ] **T1.2** `sessionState` (unión discriminada) + `SessionProvider` + marca no-secreta (0.5 h)
+- [x] **T1.2** `sessionState` (unión discriminada) + `SessionProvider` + marca no-secreta (0.5 h)
 
   - **Pattern**:
     ```ts
@@ -394,7 +394,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     *(el caso "anónimo no llama a la red" se prueba con `onUnhandledRequest: 'error'` del setup
     MSW ya existente: si el provider llamara `/auth/me` sin handler, el test revienta)*
 
-- [ ] **T1.3** Montaje en el layout `(storefront)` + `AccountMenu` en el header (0.4 h)
+- [x] **T1.3** Montaje en el layout `(storefront)` + `AccountMenu` en el header (0.4 h)
 
   - **Pattern**: el layout **sigue siendo Server Component**; sólo se envuelve `{children}`:
     ```tsx
@@ -405,6 +405,14 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     ```
     `per frontend-next-standards.md §2 — Server Components por default, "use client" en las
     hojas; los children pasados como prop se siguen renderizando en servidor`.
+  > **Verify corregido al ejecutar (2026-08-22)**: el patrón original buscaba la cadena
+  > `use client` en cualquier parte del archivo, así que lo ponía en rojo un **comentario
+  > correcto** — el JSDoc del layout explica precisamente que la directiva vive en las hojas y
+  > no ahí. Comprobaba la apariencia de una cadena en vez del hecho. El ancla nueva exige la
+  > **directiva** al inicio de línea, y de paso verifica que sí esté en `SessionProvider.tsx`:
+  > así el check falla también si alguien "arregla" el layout moviendo el `'use client'` al
+  > lugar equivocado. Mismo defecto que reportó la sesión de frontend-web en su T2.1.
+
   - **Exit criterion**: `app/(storefront)/layout.tsx` **no** tiene `'use client'`; el header
     muestra "Ingresar" para anónimo y el nombre del cliente + "Cerrar sesión" para autenticado;
     en `unknown` muestra un placeholder del **mismo ancho** (sin salto de layout); el panel
@@ -412,8 +420,9 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
   - **Verify**:
     ```bash
     pnpm --filter @dsm/web exec vitest run src/features/account/AccountMenu.test.tsx \
-      && ! grep -q "use client" "apps/web/app/(storefront)/layout.tsx" \
-      && echo "OK — el layout sigue siendo Server Component"
+      && ! grep -qE "^\s*['\"]use client['\"]" "apps/web/app/(storefront)/layout.tsx" \
+      && grep -qE "^\s*['\"]use client['\"]" apps/web/src/features/account/SessionProvider.tsx \
+      && echo "OK — el layout sigue siendo Server Component y la directiva vive en la hoja"
     ```
 
 ---
