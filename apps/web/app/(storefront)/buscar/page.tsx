@@ -3,6 +3,7 @@ import { searchService } from '@/features/search/searchService';
 import { SearchResults } from '@/features/search/SearchResults';
 import { SearchFallback } from '@/features/search/SearchFallback';
 import {
+  COPY_ESTADO_INICIAL,
   INVITACION_CONSULTA_CORTA,
   searchErrorCopy,
 } from '@/features/search/searchErrorCopy';
@@ -10,9 +11,6 @@ import { esConsultaUtil, normalizar } from '@/features/search/queryGuard';
 import { SearchRateLimitTracker } from '@/features/search/SearchTracker';
 import { categoriesStorefrontService } from '@/features/storefront/categoriesStorefrontService';
 import { isAppError } from '@/lib/http/errors';
-
-export const COPY_ESTADO_INICIAL =
-  'Contanos qué necesitás resolver y buscamos el producto. Si preferís, mirá los rubros.';
 
 /**
  * Página de resultados (`design.md` D1: la URL es el estado de la búsqueda).
