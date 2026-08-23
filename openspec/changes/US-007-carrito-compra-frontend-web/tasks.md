@@ -391,13 +391,18 @@ language: es
     `textContent` del row incluye el motivo —el assert se hace sobre texto, no sobre
     `className`)
 
-- [ ] T4.3 Eventos de negocio del carrito, sin PII
+- [x] T4.3 Eventos de negocio del carrito, sin PII
   - **Pattern**: usar el módulo `lib/observability` existente; sin dimensión por producto
     (cardinalidad) — `per frontend-standards.md §11.8` y `per observability-patterns §3.3`.
   - **Exit criterion**: se emiten `cart.item_added`, `cart.quantity_changed`,
     `cart.item_removed`, `cart.viewed` y `cart.blocked_checkout` en sus puntos exactos.
     Ninguna carga útil incluye datos personales ni el token del carrito. `cart.blocked_checkout`
     se emite **una sola vez** por visualización con `has_blocking_issues`, no por render.
+  - **Nota de ejecución**: los nombres quedaron en `snake_case`
+    (`cart_item_added`, `cart_quantity_changed`, `cart_item_removed`, `cart_viewed`,
+    `cart_blocked_checkout`), que es la convención del módulo `lib/observability`; el plan los
+    escribía con punto, que es la del **backend**. `BusinessEvent` es una unión cerrada, así que
+    los cinco se declaran ahí y un nombre inventado no compila.
   - **Verify**: `pnpm --filter @dsm/web test -- cartTelemetry` (los 5 eventos se emiten en
     su escenario; `cart.blocked_checkout` se emite **1** vez tras 3 re-renders;
     `expect(JSON.stringify(todosLosPayloads)).not.toMatch(/dsm_cart|@|\+54/)`)

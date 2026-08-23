@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { track } from '@/lib/observability/events';
 import { useCartContext } from './CartProvider';
 import { CartItemRow } from './CartItemRow';
 import { CartSummary } from './CartSummary';
@@ -24,6 +25,44 @@ export function CartPage() {
     // single-flight, así que abrir la página no agrega un segundo GET.
     void reload();
   }, [reload]);
+
+  // Eventos de negocio (§D9). Sin PII y sin el token del carrito: el `slug` es
+  // público y no identifica a nadie.
+  const vistaRegistrada = useRef(false);
+  const bloqueoRegistrado = useRef(false);
+
+  const cartActual = state.kind === 'ready' ? state.cart : undefined;
+
+  useEffect(() => {
+    if (!cartActual || vistaRegistrada.current) return;
+    vistaRegistrada.current = true;
+    track('cart_viewed', { item_count: cartActual.item_count });
+  }, [cartActual]);
+
+  useEffect(() => {
+    if (!cartActual?.has_blocking_issues) return;
+    // Una sola vez por visualización, no por render: si no, tres re-pinturas
+    // inflarían la métrica que el dueño usa para medir demanda perdida.
+    if (bloqueoRegistrado.current) return;
+    bloqueoRegistrado.current = true;
+    track('cart_blocked_checkout');
+  }, [cartActual]);
+
+  const cambiarCantidad = useCallback(
+    (slug: string, quantity: number) => {
+      track('cart_quantity_changed', { product_slug: slug, quantity });
+      return setQuantity(slug, quantity);
+    },
+    [setQuantity],
+  );
+
+  const quitar = useCallback(
+    (slug: string) => {
+      track('cart_item_removed', { product_slug: slug });
+      return remove(slug);
+    },
+    [remove],
+  );
 
   if (state.kind === 'idle' || state.kind === 'loading') {
     return (
@@ -73,8 +112,8 @@ export function CartPage() {
                     state.kind === 'ready' && state.mutatingSlugs.includes(item.slug)
                   }
                   conflict={state.kind === 'ready' ? state.conflicts[item.slug] : undefined}
-                  onSetQuantity={setQuantity}
-                  onRemove={remove}
+                  onSetQuantity={cambiarCantidad}
+                  onRemove={quitar}
                 />
               ))}
             </ul>
