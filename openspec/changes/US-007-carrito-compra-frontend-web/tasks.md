@@ -369,7 +369,7 @@ language: es
 
 ## Fase 4: Accesibilidad y observabilidad — 1,2 h
 
-- [ ] T4.1 axe-core sin violaciones en el carrito
+- [x] T4.1 axe-core sin violaciones en el carrito
   - **Pattern**: `per qa-frontend-standards.md §23.6 — axe-core sobre la pantalla`; el repo
     ya tiene el precedente en `features/storefront/a11y.test.tsx` y `categoryA11y.test.tsx`.
   - **Exit criterion**: `CartPage` en sus estados `ready` (con una línea disponible y una
@@ -381,7 +381,7 @@ language: es
     `expect(await axe(container)).toHaveNoViolations()` en los dos estados + recorrido de
     `Tab` que llega a **todos** los controles interactivos en orden visual)
 
-- [ ] T4.2 El total se anuncia y los avisos no dependen del color
+- [x] T4.2 El total se anuncia y los avisos no dependen del color
   - **Exit criterion**: al cambiar una cantidad, el nuevo total queda en una región
     `aria-live="polite"` (se anuncia sin interrumpir). Cada estado de `availability` tiene
     **texto** que lo explica, no sólo una clase de color; verificado quitando las clases y
