@@ -77,13 +77,18 @@ language: es
     (el `--exit-code` prueba la **idempotencia**: si el codegen no estaba corrido, la
     primera ejecución deja diff y esta línea falla hasta que se commitee)
 
-- [ ] T0.2 El gate de CI de frescura del codegen cubre el carrito
+- [x] T0.2 El gate de CI de frescura del codegen cubre el carrito
   - **Exit criterion**: el workflow `frontend-codegen-fresh` corre `codegen` y **falla** si
     produce diff, incluidos los modelos del carrito. No hace falta modificarlo si ya es
     genérico; si estuviera acotado a rutas específicas, se generaliza.
   - **Verify**: `grep -q "codegen" .github/workflows/frontend-codegen-fresh.yml && grep -Eq "diff|--exit-code|git status" .github/workflows/frontend-codegen-fresh.yml`
-    y, como prueba de que el gate **muerde**: `sed -i.bak '1s/^/\/\/ drift\n/' apps/web/src/api/generated/endpoints.ts && ! (pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated) ; mv apps/web/src/api/generated/endpoints.ts.bak apps/web/src/api/generated/endpoints.ts`
-    (introduce drift a propósito, comprueba que el chequeo falla, y restaura)
+    y, como prueba de que el gate **muerde**, la edición a mano **en el índice** (que es el
+    caso que CI atrapa: un archivo generado editado y commiteado):
+    `F=apps/web/src/api/generated/endpoints.ts; printf '// drift\n%s' "$(cat $F)" > /tmp/d.ts && cp /tmp/d.ts $F && git add $F && pnpm --filter @dsm/web codegen >/dev/null && ! git diff --quiet -- apps/web/src/api/generated; R=$?; git checkout HEAD -- $F; git reset -q HEAD $F; rm -f /tmp/d.ts; exit $R`
+    *(corregido al ejecutar: la versión original prependía la línea y **después** corría el
+    codegen, que la sobreescribe — el `git diff` quedaba limpio y el chequeo daba un falso
+    rojo sobre un gate que funciona. Lo que CI detecta es el drift **commiteado**, y así se
+    simula.)*
 
 - [ ] T0.3 Extender el rewrite same-origin al carrito (**ADR-0013 heredado**)
   - **Pattern**: agregar una entrada al array de `rewrites()` en `next.config.mjs`, junto a
