@@ -14,6 +14,10 @@
 #   CART_*_RATE_LIMIT_MAX  el carrito de producción admite 30 escrituras/min/IP;
 #                          una suite —y el k6— lo superan de inmediato.
 #   AUTH_COOKIE_SECURE     en http local, una cookie `Secure` no vuelve al cliente.
+#   LOG_LEVEL              el token de recuperación se escribe en `debug` (es el único
+#                          canal: la tabla guarda sólo el hash). Con el default `info` la
+#                          línea no se emite y el flujo de recuperación no se puede
+#                          verificar ni a mano.
 #   TRUST_PROXY_HOPS       el rate-limit cuenta por IP y en producción el default es 0
 #                          (no confiar en `X-Forwarded-For`, o cualquiera evade el límite).
 #                          En QA se pone en 1 para que cada escenario pueda hablar desde su
@@ -50,6 +54,7 @@ exec env \
   CORS_ALLOWED_ORIGINS="$WEB_ORIGIN" \
   AUTH_COOKIE_SECURE=false \
   TRUST_PROXY_HOPS=1 \
+  LOG_LEVEL=debug \
   AUTH_RATE_LIMIT_MAX=100000 \
   CART_RATE_LIMIT_MAX=100000 \
   CART_WRITE_RATE_LIMIT_MAX=100000 \

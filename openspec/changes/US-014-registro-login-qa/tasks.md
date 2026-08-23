@@ -125,7 +125,18 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     (b) un endpoint de sólo-test que devuelva el token, detrás del mismo flag que el pago
     simulado de ADR-0006.
     **(a) es menos superficie y no agrega una ruta que haya que apagar en producción.**
-    `Deferred: habilitar la lectura del token de reset — owner: BE`.
+    **RESUELTO el 2026-08-23 con la opción (a)**, decidida por el PO: el módulo de logging
+    declara `level: process.env.LOG_LEVEL ?? 'info'` (default sin cambios en producción) y
+    `api-up.sh` corre con `LOG_LEVEL=debug`. El token **ya se lee**, y de paso cualquier otra
+    cosa se volvió depurable en QA.
+    **Falta un último detalle, del lado del test**: el helper toma «el último token del log»,
+    y con varios escenarios pidiendo reset ese último puede pertenecer a **otra cuenta** —el
+    `confirm` falla y el login con la contraseña nueva da 401—. La corrección es correlacionar
+    por cuenta: la línea del log trae `customer_id=`, así que el helper debe recibir el id (o
+    el email y resolverlo) y tomar **el token de esa cuenta**, no el último. Ya se agregó la
+    espera del flush de pino, que era el otro problema real (leer una vez encontraba el
+    archivo sin la línea todavía).
+    `Deferred: correlacionar el token por customer_id — owner: QA (30 min)`.
 
 ---
 

@@ -147,13 +147,35 @@ export async function pedirReset(
  *
  * `QA_API_LOG` apunta al stdout redirigido del proceso levantado con `api:up`.
  */
-export function ultimoTokenDeReset(logPath = process.env.QA_API_LOG ?? '/tmp/api.log'): string {
-  const log = readFileSync(logPath, 'utf8');
-  const tokens = [...log.matchAll(/password_reset\.token[^\n]*token=([A-Za-z0-9._-]+)/g)];
-  if (tokens.length === 0) {
-    throw new Error(
-      `no hay token de reset en ${logPath}. ¿La API corre con nivel debug y NODE_ENV != production?`,
-    );
+export async function ultimoTokenDeReset(
+  logPath = process.env.QA_API_LOG ?? '/tmp/api.log',
+): Promise<string> {
+  // Se ESPERA la línea en vez de leer una vez: pino bufferea, así que leer justo
+  // después del request encuentra el archivo sin el token todavía. Es una carrera, no
+  // una ausencia — y sin el reintento el fallo miente sobre su causa.
+  const limite = Date.now() + 3000;
+  let ultimo = '';
+  while (Date.now() < limite) {
+    const log = readFileSync(logPath, 'utf8');
+    const tokens = [...log.matchAll(/password_reset\.token[^\n]*token=([A-Za-z0-9._-]+)/g)];
+    if (tokens.length > 0) {
+      const candidato = tokens[tokens.length - 1]![1]!;
+      // Dos escenarios seguidos comparten el archivo: se espera a que aparezca uno
+      // NUEVO respecto de la última lectura de este proceso.
+      if (candidato !== visto) {
+        visto = candidato;
+        return candidato;
+      }
+      ultimo = candidato;
+    }
+    await new Promise((r) => setTimeout(r, 100));
   }
-  return tokens[tokens.length - 1]![1]!;
+  throw new Error(
+    ultimo
+      ? `el token de reset en ${logPath} no cambió: el pedido no generó uno nuevo`
+      : `no hay token de reset en ${logPath}. ¿La API corre con LOG_LEVEL=debug y NODE_ENV != production?`,
+  );
 }
+
+/** Último token ya consumido por ESTE proceso de test. */
+let visto = '';
