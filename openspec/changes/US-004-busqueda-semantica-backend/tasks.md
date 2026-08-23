@@ -32,6 +32,47 @@ language: es
 > degradación a full-text es un estado **común**, no excepcional. Los tres efectos están en
 > T0.2, T1.2, T1.3 y T7.2.
 
+> ### Traspaso ENTRANTE desde `/develop-backend US-005` (2026-08-23) — leer antes de arrancar
+>
+> **US-005 backend está cerrado**: 28/28 tasks y los 11 gates de su Verification suite-level.
+> PR #3 (`feature-entrega2-GOSP` → `main`). Los pre-requisitos de abajo se escribieron cuando
+> US-005 iba **1/28**, así que tres de sus datos están vencidos y **dos de sus `Verify` fallan
+> hoy**. Medido, no supuesto:
+>
+> | Pre-requisito, como está escrito | Estado real (2026-08-23) |
+> |---|---|
+> | «Hoy US-005 va 1/28 tasks» | **28/28**, `status: completed` en el índice |
+> | `test -f …/ai/ports/ai-embedder.port.ts \|\| test -f …/enrichment/ports/ai-embedder.port.ts` | **FALLA**: ese archivo no existe con ese nombre. Los dos puertos viven en **un** archivo, `apps/api/src/enrichment/ports/ai.ports.ts` (desviación declarada en el AS-BUILT de US-005). `Verify` corregido: `grep -q "AI_EMBEDDER" apps/api/src/enrichment/ports/ai.ports.ts` |
+> | `docker exec ai4devs-finalproject-postgres-1 psql -U postgres -d dsm …` | **FALLA**: `role "postgres" does not exist`. `Verify` corregido: `docker compose exec -T postgres psql -U dsm -d dsm -tAc "select indexname from pg_indexes where tablename='product_embeddings'" \| grep -q hnsw` (pasa: el HNSW está) |
+> | «la migración está **sin commitear**» | Commiteada en `4e89d17` (`20260823002111_add_enrichment_and_embeddings`) |
+> | «el árbol estaba **rojo**… sin baseline verde no se puede distinguir un fallo propio de uno ajeno» | **Baseline verde**: `apps/api` en **1246 tests / 123 suites**, tres corridas consecutivas; `typecheck` y `lint` en 0; `pnpm -r test` en 0 |
+> | «US-005 no en vuelo sobre `ports/`» | **Ya no está en vuelo.** Nada sin commitear en `apps/api/src/enrichment` |
+>
+> **Lo que este change hereda, ya construido y probado:** el puerto `AI_EMBEDDER` con su
+> adapter Gemini (clave en header, timeout por llamada, validación del vector a 768 dims),
+> `withRetry` + `RateLimiter` **ya cableados** al adapter, `product_embeddings` con el HNSW
+> `vector_cosine_ops`, el helper `findNearest(vector, limit)` con `EXPLAIN` que prueba que el
+> índice se usa y que **excluye borradores**, y el `FakeAiProvider` determinista para ejercer
+> todo sin red ni clave.
+>
+> **Dos puntos de coordinación que NO se resolvieron acá porque son decisiones, no bugs.**
+> Están planteados con opciones en el reporte de cierre de US-005; resumen:
+>
+> 1. **El reparto de los 15 RPM.** Este plan asume `GEMINI_SEARCH_MAX_RPM=10` +
+>    `GEMINI_MAX_RPM=5`. US-005 shippeó `GEMINI_MAX_RPM=15` y su runbook §3.6 documenta la
+>    primera corrida en **≈ 5,5 h** con ese valor. Bajarlo a 5 la lleva a **≈ 33 h** (el propio
+>    `proposal.md` de este change lo dice). Cambiar el default es una línea; el número del
+>    runbook hay que corregirlo en el mismo movimiento, o queda mintiendo.
+> 2. **T1.1 quiere mover el puerto a `src/ai/ports/`.** Hoy es `src/enrichment/ports/ai.ports.ts`
+>    con **los dos** puertos y `AiAvailability`, importado por ~8 archivos de producción y ~12
+>    specs de US-005. El movimiento es mecánico pero toca todo ese módulo; conviene decidir si
+>    se hace (y quién corre la suite de US-005 después) antes de empezar la Fase 1.
+>
+> **Lo que sigue bloqueado y no lo desbloquea el código**: la batería de relevancia ≥ 70 %
+> (`QA-004-REL-2`) necesita embeddings **reales**. Sin `GEMINI_API_KEY` cargada no hay vectores,
+> y el seed deja **4 productos**: con eso, 30 consultas no pueden medir nada. Es trabajo de
+> `/plan-qa US-004` + la primera corrida del runbook §3.6.
+
 - [ ] **US-005: el puerto `AI_EMBEDDER` existe.** Este change lo **reusa** y no duplica el
   cliente de Gemini. Hoy US-005 va 1/28 tasks.
   **Verify**: `test -f apps/api/src/ai/ports/ai-embedder.port.ts || test -f apps/api/src/enrichment/ports/ai-embedder.port.ts`

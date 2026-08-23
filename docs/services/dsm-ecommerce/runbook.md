@@ -87,7 +87,14 @@ vectores y `/search` no tendría qué consultar.
 
 **Ventana: ≈ 5,5 h** para 5.000 SKUs con el free tier de Gemini (15 RPM). Es techo del
 **proveedor**, no del código: el adapter espacia las salidas a `60000 / GEMINI_MAX_RPM` ms para
-no cobrar 429, así que la única palanca real es subir la cuota. Conviene dispararla **fuera del
+no cobrar 429, así que la única palanca real es subir la cuota.
+
+> ⚠ **Ese número asume `GEMINI_MAX_RPM=15`, es decir el free tier entero para el
+> enriquecimiento.** El plan de US-004 (búsqueda semántica) prevé **repartir** los 15 entre las
+> dos superficies —10 para la búsqueda, que es interactiva, y 5 para el enriquecimiento, que
+> puede esperar—. Si eso se aplica, esta ventana pasa de ≈ 5,5 h a **≈ 33 h**: una ventana de
+> fin de semana, no de una noche. Al cambiar `GEMINI_MAX_RPM` hay que corregir el número de acá
+> en el mismo movimiento, o esta sección queda mintiendo sobre el tiempo que hay que reservar. Conviene dispararla **fuera del
 horario de más tráfico** del storefront, aunque el ejecutor ceda el event loop entre lotes y la
 API siga respondiendo.
 
