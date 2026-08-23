@@ -15,7 +15,19 @@ export type BusinessEvent =
   // Storefront público: salida hacia el canal humano desde la ficha. Mide
   // demanda perdida cuando no hay stock, y —desde el CTA del MVP— el camino de
   // compra real mientras el carrito no exista.
-  | 'whatsapp_click';
+  | 'whatsapp_click'
+  // Auth de cliente (US-014). Ninguno lleva email, nombre, id de cliente ni
+  // valor de cookie: son eventos de la superficie pública y el email es PII
+  // (observability-standards §9). `login_failed` va sin propiedades a
+  // propósito — cualquier discriminador reintroduciría por telemetría la
+  // distinción que AC-5 borra en la respuesta.
+  | 'account_registered'
+  | 'login_succeeded'
+  | 'login_failed'
+  | 'logout'
+  | 'password_reset_requested'
+  | 'password_reset_completed'
+  | 'session_expired';
 
 export interface EventProps {
   operator_id?: string;
@@ -43,6 +55,13 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'pdp_shown',
   'category_shown',
   'whatsapp_click',
+  'account_registered',
+  'login_succeeded',
+  'login_failed',
+  'logout',
+  'password_reset_requested',
+  'password_reset_completed',
+  'session_expired',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

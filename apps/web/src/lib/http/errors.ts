@@ -3,9 +3,28 @@ export interface FieldError {
   message: string;
 }
 
-/** Unión discriminada de errores de aplicación (nunca se filtra el body crudo a la UI). */
+/**
+ * Unión discriminada de errores de aplicación (nunca se filtra el body crudo a
+ * la UI).
+ *
+ * `kind` agrupa por **cómo se trata** el error, y a veces eso junta cosas que
+ * la UI necesita separar: 400 y 422 son ambos `validation`, pero el backend usa
+ * el 400 para "este token de recuperación no sirve" y el 422 para "esta
+ * contraseña es débil" — reacciones opuestas, porque una manda a pedir un link
+ * nuevo y la otra deja reintentar en el mismo formulario.
+ *
+ * Por eso se propaga `problemType`: el `type` del envelope RFC 7807, que es un
+ * catálogo cerrado que el backend garantiza. Distinguir por la **forma** del
+ * error (por ejemplo, "si no trae fieldErrors es un token muerto") sería
+ * adivinar por apariencia en vez de leer el hecho.
+ */
 export type AppError =
-  | { kind: 'validation'; message: string; fieldErrors: FieldError[] }
+  | {
+      kind: 'validation';
+      message: string;
+      fieldErrors: FieldError[];
+      problemType?: string;
+    }
   | { kind: 'conflict'; message: string }
   | { kind: 'unauthorized'; message: string }
   | { kind: 'forbidden'; message: string }
@@ -35,7 +54,12 @@ export function mapProblemToAppError(
   switch (status) {
     case 400:
     case 422:
-      return { kind: 'validation', message, fieldErrors: p.errors ?? [] };
+      return {
+        kind: 'validation',
+        message,
+        fieldErrors: p.errors ?? [],
+        problemType: p.type,
+      };
     case 409:
       return { kind: 'conflict', message };
     case 401:

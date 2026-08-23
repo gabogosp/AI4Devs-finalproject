@@ -429,7 +429,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 ## Fase 2: Pantallas — `design.md` D8, D9, D10, D11, D13
 
-- [ ] **T2.1** `/crear-cuenta` — registro con sesión inmediata (AC-1, AC-6) (0.5 h)
+- [x] **T2.1** `/crear-cuenta` — registro con sesión inmediata (AC-1, AC-6) (0.5 h)
 
   - **Pattern**: mismo patrón de formulario que `ProductForm.tsx` (ya establecido):
     `useForm({ resolver: zodResolver(schema) })` + `<Field>` + banner `role="alert"` + mapeo de
@@ -448,7 +448,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     pnpm --filter @dsm/web exec vitest run src/features/account/RegisterForm.test.tsx
     ```
 
-- [ ] **T2.2** `/ingresar` — login y la **no-distinción** de AC-5 (AC-2, AC-5, AC-10) (0.5 h)
+- [x] **T2.2** `/ingresar` — login y la **no-distinción** de AC-5 (AC-2, AC-5, AC-10) (0.5 h)
 
   - **Pattern**:
     ```tsx
@@ -469,7 +469,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     ```
     *(la prueba dura de indistinguibilidad es T3.1; acá se cubre el comportamiento por caso)*
 
-- [ ] **T2.3** Cerrar sesión (AC-3) (0.2 h)
+- [x] **T2.3** Cerrar sesión (AC-3) (0.2 h)
 
   - **Pattern**: `await accountService.logout()` ⇒ borrar marca ⇒ `setState({kind:'anonymous'})`
     ⇒ `router.replace('/')`. `per frontend-standards.md §4.3 — el sign-out limpia TODO el estado
@@ -483,7 +483,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     pnpm --filter @dsm/web exec vitest run src/features/account/AccountMenu.test.tsx src/features/account/sessionState.test.ts
     ```
 
-- [ ] **T2.4** `/recuperar` — solicitud de recuperación (AC-11) (0.3 h)
+- [x] **T2.4** `/recuperar` — solicitud de recuperación (AC-11) (0.3 h)
 
   - **Pattern**: respuesta **única** para todos los casos:
     ```tsx
@@ -500,7 +500,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     pnpm --filter @dsm/web exec vitest run src/features/account/ResetRequestForm.test.tsx
     ```
 
-- [ ] **T2.5** `/recuperar/confirmar` — fijar contraseña nueva (AC-4, AC-7) (0.5 h)
+- [x] **T2.5** `/recuperar/confirmar` — fijar contraseña nueva (AC-4, AC-7) (0.5 h)
 
   **Ruta fijada por el backend**: el mailer arma
   `${PASSWORD_RESET_URL_BASE}/recuperar/confirmar?token=…`
@@ -525,7 +525,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     pnpm --filter @dsm/web exec vitest run src/features/account/ResetConfirmForm.test.tsx
     ```
 
-- [ ] **T2.6** `/mi-cuenta` + `CustomerGuard` (AC-2 — el destino de la sesión) (0.4 h)
+- [x] **T2.6** `/mi-cuenta` + `CustomerGuard` (AC-2 — el destino de la sesión) (0.4 h)
 
   `Gated: OQ-FE-2 (recomendación: opción b — página mínima)`. Si se ratifica (a), esta task cae
   y AC-2 se demuestra sólo en el header.
