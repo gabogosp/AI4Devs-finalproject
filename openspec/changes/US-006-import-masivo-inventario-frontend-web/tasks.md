@@ -82,7 +82,7 @@ language: es
 
 ## Fase 1: Estado del seguimiento — 1,2 h
 
-- [ ] T1.1 `useImportJob`: polling con corte duro, cancelación y tope
+- [x] T1.1 `useImportJob`: polling con corte duro, cancelación y tope
   - **Pattern**: unión discriminada `AsyncState<T>` de `src/lib/async.ts`, un `AbortController` por
     request y limpieza en el `useEffect`; el intervalo se **limpia** al cerrar el trabajo, no se
     deja morir solo — `per frontend-standards.md §11.4 (estado como unión discriminada, sin flags
