@@ -117,7 +117,8 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
 
 ## Fase 0: Contenido y fuente única — 0,9 h
 
-- [ ] **T0.1** `content.ts`: los dos documentos como dato tipado, con versión y `status` (0,5 h)
+- [x] **T0.1** `content.ts`: los dos documentos como dato tipado, con versión (0,5 h) *(verde 2026-08-22 — 14 tests)*
+  - **AS-BUILT**: los cuatro bloques de la Ley 25.326 son **claves obligatorias del tipo**, y el test los ejercita borrando cada uno y exigiendo que el schema rechace — AC-5 se prueba, no se declara. El texto provisional lleva los datos que hoy son ciertos (nombre, domicilio del footer publicado, email de `project-config.yml`) y marca lo que falta con `[PENDIENTE: …]` **visible en la página**. Sin campo `status`, per OQ-FE-17 (a).
 
   - **Pattern**: los cuatro bloques de la Ley 25.326 van como **claves obligatorias del tipo**,
     no como elementos de un array — así el test exige *cada uno* y no "al menos cuatro
@@ -182,7 +183,8 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
     `paragraphs: ['']` también falla; `version === effective_date`;
     `LEGAL_DOCUMENTS.terminos.version === LEGAL_TERMS_VERSION`; ningún párrafo contiene `<`)
 
-- [ ] **T0.2** `routes.ts`: fuente única de rutas + `CONSENT_COPY` (seam de US-008) (0,4 h)
+- [x] **T0.2** `routes.ts`: fuente única de rutas + `CONSENT_COPY` (seam de US-008) (0,4 h) *(verde 2026-08-22 — 4 tests)*
+  - **AS-BUILT**: el guard recorre `apps/web/src` y `apps/web/app` con `node:fs` y falla si el literal `'/legales/` aparece fuera de `routes.ts`. Se descartó una indirección extra (`routes.internal.ts`) que había escrito de más: agregaba una capa sin beneficio y se apartaba del `Pattern:`.
 
   - **Pattern**: `as const` para que las rutas sean tipos literales y un `href` mal escrito no
     compile. `CONSENT_COPY` materializa el copy del `design-system.md` §10.2 **con sus destinos
