@@ -68,6 +68,17 @@ describe('importErrorCopy — nivel archivo', () => {
     expect(texto).not.toBe('');
   });
 
+  it('un 404 se resuelve por `kind`, porque el AppError de notFound no trae problemType', () => {
+    const texto = copyDeRechazo({
+      kind: 'notFound',
+      message: 'No se encontró esa importación.',
+    });
+    // Sin este caso, el 404 caía al `detail` del servidor y se perdía la mitad
+    // útil del mensaje: que los trabajos se guardan 90 días.
+    expect(texto).toMatch(/no existe|purgó/i);
+    expect(texto).toContain('90 días');
+  });
+
   it('el 429 arma el mensaje con el Retry-After', () => {
     expect(
       copyDeRechazo({

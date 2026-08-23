@@ -41,7 +41,7 @@ export function ImportErrorsTable({
 
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="font-medium">Filas rechazadas</h3>
+      <h3 className="font-medium">Detalle de las filas rechazadas</h3>
 
       {job.report_truncated ? (
         <p role="alert" className="text-sm">

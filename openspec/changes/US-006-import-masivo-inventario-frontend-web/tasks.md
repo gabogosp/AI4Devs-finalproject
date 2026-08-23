@@ -180,7 +180,7 @@ language: es
     `aria-valuemax="500"`; el nodo `role="status"` contiene el conteo; re-render con más filas ⇒ el
     texto del `status` cambió)
 
-- [ ] T2.3 `ImportResult`: contadores, borrador, revalidación y foco
+- [x] T2.3 `ImportResult`: contadores, borrador, revalidación y foco
   - **Pattern**: efecto de **transición** (dispara al pasar a `completed`, no en cada render) para
     llamar `revalidateCatalogSafely()`, y `focus()` al encabezado del resumen — `per
     frontend-next-standards.md (invalidación de caché tras mutación) y qa-frontend-standards.md §19
@@ -194,6 +194,12 @@ language: es
     la reconciliación por SKU lo hace seguro»); si `report_truncated` es `true`, se avisa que la
     lista está recortada y que el CSV también.
   - **Verify**: `pnpm --filter @dsm/web test -- ImportResult`
+  - **Cerrada el 2026-08-23** (10 tests). Dos cosas que pidieron los tests: la garantía de que el
+    resumen sobrevive a un fallo de revalidación se hizo **local** con un `try` —depender de que un
+    helper ajeno nunca lance es prestarle a otro módulo una garantía propia—, y el copy del 404 se
+    resuelve por `kind` porque el `AppError` de `notFound` **no** propaga `problemType` (la unión
+    sólo lo lleva en `validation` y `conflict`), así que sin eso el mensaje caía al `detail` del
+    servidor y se perdía la mitad útil: que los trabajos se guardan 90 días.
     (componente con el módulo de revalidación espiado: pasar de `running` a `completed` ⇒ el espía
     se llamó **1** vez; re-render en `completed` ⇒ sigue en 1; un espía que lanza ⇒ el resumen
     igual se renderiza; el aviso de borrador está y linkea al listado; con `error_code:

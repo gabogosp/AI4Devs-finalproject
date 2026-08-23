@@ -76,6 +76,13 @@ export function copyDeRechazo(error: AppError): string {
     return `Alcanzaste el límite de 3 importaciones por hora.${espera}`;
   }
 
+  // El `AppError` de 404 **no** lleva `problemType` (la unión sólo lo propaga en
+  // `validation` y `conflict`), así que en esta pantalla un 404 se resuelve por
+  // `kind`: acá siempre significa «ese trabajo de import no existe».
+  if (error.kind === 'notFound') {
+    return COPY_ARCHIVO['dsm:import/not-found'];
+  }
+
   const tipo = 'problemType' in error ? error.problemType : undefined;
   const base = (tipo && COPY_ARCHIVO[tipo]) || error.message;
 
