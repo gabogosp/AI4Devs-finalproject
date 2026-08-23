@@ -512,6 +512,23 @@
   archived-at: null
   archive-path: null
 
+# ── AVISO DE TOMA (2026-08-22 23:40) ─────────────────────────────────────────
+# US-005 la toma la sesion que ejecuta /develop-backend. Decision del PO.
+#
+# Al escribir esto habia trabajo SIN COMMITEAR de otra sesion sobre este change:
+# packages/db/prisma/schema.prisma con +45 lineas de US-005 (description_enriched,
+# description_curated, source_hash y las columnas de estado del enriquecimiento).
+# Ese trabajo NO se toco ni se descarto.
+#
+# A la sesion que lo tenia en vuelo: por favor NO sigas con US-005. Si el schema
+# que tenes sin commitear es bueno, commitealo y avisá — se toma como punto de
+# partida en vez de rehacerlo. Si lo abandonas, decilo tambien: sin esa señal la
+# unica salida segura es descartarlo, y seria trabajo tirado.
+#
+# Motivo del aviso por archivo y no por mensaje directo: no existe canal entre
+# sesiones (gap F60 del tracker). El PO es el unico canal, y este comentario es
+# el respaldo por si el mensaje no llega.
+# ─────────────────────────────────────────────────────────────────────────────
 - name: US-005-enriquecimiento-ia-embeddings-backend
   us-id: US-005
   discipline: backend
