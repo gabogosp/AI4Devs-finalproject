@@ -14,6 +14,14 @@
 #   CART_*_RATE_LIMIT_MAX  el carrito de producción admite 30 escrituras/min/IP;
 #                          una suite —y el k6— lo superan de inmediato.
 #   AUTH_COOKIE_SECURE     en http local, una cookie `Secure` no vuelve al cliente.
+#   TRUST_PROXY_HOPS       el rate-limit cuenta por IP y en producción el default es 0
+#                          (no confiar en `X-Forwarded-For`, o cualquiera evade el límite).
+#                          En QA se pone en 1 para que cada escenario pueda hablar desde su
+#                          propia IP: sin esto TODOS comparten un cubo, el contador se agota
+#                          y no se puede registrar ni una cuenta — con la ventana de 15 min,
+#                          la suite queda bloqueada aunque `AUTH_RATE_LIMIT_MAX` esté alto.
+#                          Mismo mecanismo que usa `apps/api/test/e2e-app.ts` y por el mismo
+#                          motivo.
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -41,6 +49,7 @@ exec env \
   PORT="$PUERTO" \
   CORS_ALLOWED_ORIGINS="$WEB_ORIGIN" \
   AUTH_COOKIE_SECURE=false \
+  TRUST_PROXY_HOPS=1 \
   AUTH_RATE_LIMIT_MAX=100000 \
   CART_RATE_LIMIT_MAX=100000 \
   CART_WRITE_RATE_LIMIT_MAX=100000 \

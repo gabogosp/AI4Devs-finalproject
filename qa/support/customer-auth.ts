@@ -39,13 +39,35 @@ export function datosDeCuenta(sufijo = ''): Cuenta {
   };
 }
 
-/** Contexto de API con su propio almacén de cookies y el `Origin` de la allowlist. */
+/**
+ * IP propia por contexto.
+ *
+ * El rate-limit del backend cuenta **por IP**, así que sin esto todos los escenarios
+ * comparten un solo cubo: el contador se agota, y con la ventana de 15 minutos la suite
+ * no puede registrar ni una cuenta más — sin importar cuánto se eleve
+ * `AUTH_RATE_LIMIT_MAX`. Exige que la API corra con `TRUST_PROXY_HOPS=1`
+ * (`qa/scripts/api-up.sh` lo hace); es el mismo mecanismo que usa
+ * `apps/api/test/e2e-app.ts` por el mismo motivo.
+ *
+ * En producción `TRUST_PROXY_HOPS` es 0 a propósito: confiar en este header permitiría
+ * evadir el límite falsificándolo. Elevarlo es una decisión **del entorno de QA**.
+ */
+let ip = 0;
+const proximaIp = (): string => {
+  ip += 1;
+  return `10.${(ip >> 16) & 255}.${(ip >> 8) & 255}.${ip & 255}`;
+};
+
+/** Contexto de API con su propio almacén de cookies, su `Origin` y su IP. */
 export async function nuevoContexto(): Promise<APIRequestContext> {
   return request.newContext({
     baseURL: QA_API_BASE_URL,
-    // El backend valida `Origin` contra la allowlist de CORS además del
-    // double-submit: sin este header toda escritura muere en 403.
-    extraHTTPHeaders: { origin: QA_WEB_BASE_URL },
+    extraHTTPHeaders: {
+      // El backend valida `Origin` contra la allowlist de CORS además del
+      // double-submit: sin este header toda escritura muere en 403.
+      origin: QA_WEB_BASE_URL,
+      'x-forwarded-for': proximaIp(),
+    },
   });
 }
 

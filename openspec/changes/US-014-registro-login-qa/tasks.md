@@ -26,9 +26,9 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-140 | T1.1 | AC-1 | e2e | **verde** |
 | TC-141 | T1.1 | AC-2 | e2e | **verde** |
 | TC-142 | T1.1 | AC-3 | e2e | **verde** |
-| TC-143 | T1.2 | AC-4 | e2e | escrito, bloqueado |
-| TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | por ejecutar |
-| TC-145 | T1.2 | AC-7 | e2e | escrito, bloqueado |
+| TC-143 | T1.2 | AC-4 | e2e | escrito, bloqueado (token) |
+| TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | AC-11 **verde** (TC-145b); resto por ejecutar |
+| TC-145 | T1.2 | AC-7 | e2e | escrito, bloqueado (token) |
 | TC-146 | T2.4 | AC-10 | seguridad | por ejecutar |
 | TC-147 | T2.3 | AC-8 | seguridad | por ejecutar |
 | TC-148 | T2.2 | AC-9 | seguridad | por ejecutar |
@@ -110,7 +110,22 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     otra clave o tener el valor fijo—; (b) que la suite corra desde IPs distintas por
     escenario, como ya hace `apps/api/test/e2e-app.ts` con `TRUST_PROXY_HOPS=1` y
     `X-Forwarded-For`. **(b) es la que ya tiene precedente en el repo.**
-    `Deferred: desbloquear el entorno de QA para auth — owner: QA/BE`.
+    **DESBLOQUEADO PARCIALMENTE el 2026-08-23** con la opción (b), decidida por el PO:
+    `api-up.sh` ahora exporta `TRUST_PROXY_HOPS=1` y cada `nuevoContexto()` manda su propia
+    `X-Forwarded-For`. El 429 desapareció y **TC-145b quedó verde** (AC-11), junto con los
+    cinco de T1.1.
+    **Queda un bloqueo distinto y más profundo para TC-143/TC-145**: el token de
+    recuperación sólo existe en un `logger.debug` del mailer de log, y
+    `common/logging/logging.module.ts` **no declara `level`**, así que pino queda en `info` y
+    esa línea nunca se emite. La tabla guarda sólo el **hash**, así que la base tampoco puede
+    darlo. Consecuencia: **el flujo de recuperación no es automatizable de punta a punta**
+    con lo que hay hoy. Dos salidas, las dos tocan `apps/api` y ninguna la decide QA:
+    (a) `level: process.env.LOG_LEVEL ?? 'info'` en el módulo de logging (una línea, default
+    sin cambios, y de paso vuelve depurable cualquier otra cosa);
+    (b) un endpoint de sólo-test que devuelva el token, detrás del mismo flag que el pago
+    simulado de ADR-0006.
+    **(a) es menos superficie y no agrega una ruta que haya que apagar en producción.**
+    `Deferred: habilitar la lectura del token de reset — owner: BE`.
 
 ---
 
