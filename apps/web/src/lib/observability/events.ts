@@ -49,7 +49,21 @@ export type BusinessEvent =
   | 'import_upload_submitted'
   | 'import_upload_rejected'
   | 'import_job_finished'
-  | 'import_report_downloaded';
+  | 'import_report_downloaded'
+  // Búsqueda semántica (US-004). **El texto de la consulta no viaja en ninguno**
+  // y es la regla dura de esta familia: el input es entrada libre, así que
+  // alguien pega su email o su teléfono ahí y el volcado de telemetría se
+  // convierte en un registro de PII (observability-standards §9). Lo que sí
+  // viaja es `query_length`, que mide lo mismo que interesa —si la gente
+  // describe o tipea dos palabras— sin guardar qué escribió.
+  //
+  // Medir *qué* busca la gente sigue siendo valioso para decidir el catálogo,
+  // pero eso lo hace el backend, que ya tiene el texto y puede agregarlo con su
+  // propia retención y sus propios controles de acceso.
+  | 'search_performed'
+  | 'search_result_clicked'
+  | 'search_fallback_clicked'
+  | 'search_rate_limited';
 
 export interface EventProps {
   operator_id?: string;
@@ -84,6 +98,12 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'password_reset_requested',
   'password_reset_completed',
   'session_expired',
+  // Los emite quien busca, que es un visitante anónimo: sin esto quedarían
+  // etiquetados como acción del dueño y ensuciarían las métricas de US-016.
+  'search_performed',
+  'search_result_clicked',
+  'search_fallback_clicked',
+  'search_rate_limited',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

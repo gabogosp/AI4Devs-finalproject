@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { SearchResponse } from './searchService';
+import { SearchFallbackClickTracker } from './SearchTracker';
 
 /**
  * La red de seguridad de AC-3: cuando la búsqueda no convence, se ofrece por
@@ -30,11 +31,13 @@ export function SearchFallback({
       <h2 id="search-fallback-titulo" className="text-sm font-medium text-muted">
         {titulo}
       </h2>
+      <SearchFallbackClickTracker>
       <ul className="mt-2 flex flex-wrap gap-2">
         {categorias.map((categoria) => (
           <li key={categoria.slug}>
             <Link
               href={`/categorias/${categoria.slug}`}
+              data-fallback-slug={categoria.slug}
               className="inline-block rounded-full border border-border px-3 py-1 text-sm focus:outline-none focus-visible:shadow-focus"
             >
               {categoria.name}
@@ -42,6 +45,7 @@ export function SearchFallback({
           </li>
         ))}
       </ul>
+      </SearchFallbackClickTracker>
     </section>
   );
 }

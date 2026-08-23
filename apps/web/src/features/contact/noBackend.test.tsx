@@ -5,6 +5,13 @@ import { ProductPurchase } from '@/features/storefront/ProductPurchase';
 
 vi.mock('@/features/storefront/CategoryNav', () => ({ CategoryNav: () => null }));
 
+// El layout monta el `SearchBar` desde US-004, que usa `useRouter`. Sin el router
+// del App Router montado, React lanza «invariant expected app router to be
+// mounted» y el layout entero no renderiza.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+
 /**
  * El badge del carrito (US-007) **sí** lee el carrito al montar, y vive en el
  * header. Eso no viola AC-4: lo que el criterio afirma es que **el contacto** se

@@ -1,6 +1,7 @@
 import { SearchResultCard } from './SearchResultCard';
 import { SearchFallback } from './SearchFallback';
 import { derivarEstado } from './searchState';
+import { SearchTracker, SearchResultsClickTracker } from './SearchTracker';
 import type { SearchResponse } from './searchService';
 
 export const COPY_BAJA_CONFIANZA =
@@ -37,6 +38,8 @@ export function SearchResults({
 
   return (
     <div>
+      <SearchTracker query={query} response={response} />
+
       <h1 className="text-xl font-semibold">
         {/* Eco de la consulta. Interpolado como texto: una consulta con
             `<img src=x onerror=...>` aparece literal. */}
@@ -80,20 +83,27 @@ export function SearchResults({
           <p aria-live="polite" className="mt-3 text-sm text-muted">
             {cantidad === 1 ? '1 producto encontrado' : `${cantidad} productos encontrados`}
           </p>
-          <ul
-            data-testid="search-grid"
-            className="mt-3 grid grid-cols-2 gap-4 md:grid-cols-4"
-          >
-            {/*
-              Sin ordenar ni filtrar: el orden es la respuesta del ranking y
-              reordenarlo acá tiraría el trabajo del backend.
-            */}
-            {response.results.map((result) => (
-              <li key={result.slug}>
-                <SearchResultCard result={result} />
-              </li>
-            ))}
-          </ul>
+          <SearchResultsClickTracker confidence={response.confidence}>
+            <ul
+              data-testid="search-grid"
+              className="mt-3 grid grid-cols-2 gap-4 md:grid-cols-4"
+            >
+              {/*
+                Sin ordenar ni filtrar: el orden es la respuesta del ranking y
+                reordenarlo acá tiraría el trabajo del backend.
+              */}
+              {response.results.map((result, i) => (
+                /*
+                  `data-position` es 1-based: es lo que se lee en un panel
+                  («los clics caen en el puesto 4»), y un cero ahí obligaría a
+                  quien mire la métrica a acordarse de sumar uno.
+                */
+                <li key={result.slug} data-search-result data-position={i + 1}>
+                  <SearchResultCard result={result} />
+                </li>
+              ))}
+            </ul>
+          </SearchResultsClickTracker>
         </>
       )}
 

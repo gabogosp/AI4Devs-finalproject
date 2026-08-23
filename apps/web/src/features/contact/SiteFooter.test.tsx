@@ -5,6 +5,15 @@ import { whatsappHref, WHATSAPP_MESSAGES } from './whatsapp';
 // `CategoryNav` es async y pega a la API; acá no es el sujeto bajo prueba.
 vi.mock('@/features/storefront/CategoryNav', () => ({ CategoryNav: () => null }));
 
+// El layout monta el `SearchBar` desde US-004, que usa `useRouter`. Sin el
+// router del App Router montado, React lanza «invariant expected app router to
+// be mounted» y el layout entero no renderiza. No se stubea el SearchBar: la
+// gracia de este test es ejercitar el layout REAL, así que se le da lo que el
+// layout necesita en vez de recortarlo.
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+}));
+
 // Se ejercita el LAYOUT, no el componente suelto: así el test falla si alguien
 // construye el footer pero se olvida de montarlo, que es el modo de falla real
 // de AC-1 ("el enlace está en toda página pública").

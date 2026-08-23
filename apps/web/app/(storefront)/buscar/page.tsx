@@ -7,6 +7,7 @@ import {
   searchErrorCopy,
 } from '@/features/search/searchErrorCopy';
 import { esConsultaUtil, normalizar } from '@/features/search/queryGuard';
+import { SearchRateLimitTracker } from '@/features/search/SearchTracker';
 import { categoriesStorefrontService } from '@/features/storefront/categoriesStorefrontService';
 import { isAppError } from '@/lib/http/errors';
 
@@ -86,6 +87,11 @@ export default async function BuscarPage({
     // salida para algo que el backend ya dijo cómo resolver (AC-10).
     return (
       <div className="mx-auto max-w-5xl p-4">
+        {error.appError.kind === 'rateLimited' ? (
+          <SearchRateLimitTracker
+            retryAfterSeconds={error.appError.retryAfterSeconds}
+          />
+        ) : null}
         <h1 className="text-xl font-semibold">Resultados para: “{q}”</h1>
         <p role="status" className="mt-3 rounded-md border border-border p-3 text-sm">
           {searchErrorCopy(error.appError)}

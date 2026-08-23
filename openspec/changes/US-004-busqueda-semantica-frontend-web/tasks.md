@@ -212,7 +212,7 @@
 
 ## Fase 4: Observabilidad — 0,5 h
 
-- [ ] **T4.1 Los cuatro eventos + `SearchTracker.tsx`.** Se agregan a la unión cerrada
+- [x] **T4.1 Los cuatro eventos + `SearchTracker.tsx`.** Se agregan a la unión cerrada
   `BusinessEvent` y se emiten desde hojas cliente.
   - **Exit criterion**: `search_performed` (con `confidence`, `degraded`, `results_count`,
     `query_length`) se emite **una** vez por búsqueda y se re-arma al cambiar la consulta (el
