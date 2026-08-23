@@ -159,7 +159,7 @@ language: es
 
 ## Fase 1: El puerto de embeddings y su presupuesto propio — 1,6 h
 
-- [ ] T1.1 Mover `AI_EMBEDDER` a `src/ai/ports/` (refactor sin cambio de comportamiento)
+- [x] T1.1 Mover `AI_EMBEDDER` a `src/ai/ports/` (refactor sin cambio de comportamiento)
   - **Pattern**: **Move File** (Fowler) — el puerto pasa de `src/enrichment/ports/` a
     `src/ai/ports/` y los importadores cambian el import. Es el criterio que US-005 dejó
     escrito para `EnrichmentQueue` («su dueño natural es el consumidor»), aplicado ahora
