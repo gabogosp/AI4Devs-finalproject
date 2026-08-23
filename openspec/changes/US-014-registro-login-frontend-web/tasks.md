@@ -698,7 +698,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 
 ## Fase 5: Observabilidad, hardening y documentación — `design.md` D12, D13
 
-- [ ] **T5.1** Siete eventos públicos, sin una sola pieza de PII (0.3 h)
+- [x] **T5.1** Siete eventos públicos, sin una sola pieza de PII (0.3 h)
 
   - **Pattern**:
     ```ts
@@ -722,7 +722,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     *(el test recorre la lista de eventos de cuenta y afirma que `track()` NO agrega
     `operator_id` para ninguno — falla si alguien suma un evento y se olvida de `PUBLIC_EVENTS`)*
 
-- [ ] **T5.2** CSP: `form-action 'self'` (0.2 h)
+- [x] **T5.2** CSP: `form-action 'self'` (0.2 h)
 
   - **Pattern**: agregar la directiva al `Content-Security-Policy-Report-Only` existente en
     `next.config.mjs`. `per frontend-next-standards.md §8.bis` + `frontend-standards.md §12.4`.
@@ -736,7 +736,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     *(el test **importa** `next.config.mjs` y ejecuta `headers()`, en vez de greppear el archivo:
     un `form-action` dentro de un comentario no lo pondría verde — F50)*
 
-- [ ] **T5.3** README, `.env.example` y notas de despliegue (0.3 h)
+- [x] **T5.3** README, `.env.example` y notas de despliegue (0.3 h)
 
   - **Pattern**: `per documentation-standards §11.1 — el README se actualiza cuando cambian
     config o dependencias`.

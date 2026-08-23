@@ -16,5 +16,9 @@ export interface Problem {
   status: number;
   detail: string;
   instance: string;
+  /** Extension member RFC 7807 §3.2 de `dsm:cart/insufficient-stock` (US-007 AC-5): unidades realmente disponibles. Va como campo de primer nivel para que el frontend no tenga que sacarlo del detail con una regex. */
+  available_quantity?: number;
+  /** Extension member de `dsm:cart/too-many-items`: tope de líneas distintas por carrito (CART_MAX_ITEMS). */
+  max_items?: number;
   errors?: ProblemErrorsItem[];
 }

@@ -446,3 +446,218 @@ export const StorefrontListCategoryProductsResponse = zod.object({
   "total": zod.number().int().describe('Publicados que matchean el filtro, no los de la página.')
 })
 })
+
+
+/**
+ * Ruta PÚBLICA SIN auth. Operación **segura**: no crea carrito, no emite cookie y no desliza la ventana de retención. Sin cookie `dsm_cart`, con una cookie huérfana o con la fila vencida devuelve el carrito VACÍO con 200 (AC-7) — `id: null`, `items: []`, contadores en 0 y `updated_at: null`; la fila vencida se purga en el acto. Cada lectura recalcula precio y disponibilidad contra `products` (AC-6/AC-9), así que una línea despublicada o sin stock suficiente aparece marcada y fuera del total, no borrada. `Cache-Control: no-store` en toda la superficie.
+ * @summary Carrito del invitado con precios vigentes y disponibilidad (US-007 AC-4/AC-6/AC-7/AC-9)
+ */
+
+
+
+export const GetCartResponse = zod.object({
+  "cart": zod.object({
+  "id": zod.string().uuid().nullable().describe('null cuando todavía no hay carrito (AC-7). Conocerlo NO da acceso: el acceso es la cookie dsm_cart, y no hay ninguna ruta que acepte un id de carrito.'),
+  "items": zod.array(zod.object({
+  "slug": zod.string(),
+  "name": zod.string(),
+  "image_url": zod.string().nullable(),
+  "quantity": zod.number().int().min(1),
+  "unit_price_ars_cents": zod.number().int().describe('Precio VIGENTE en centavos ARS (AC-9), no la instantánea guardada.'),
+  "currency": zod.enum(['ARS']),
+  "subtotal_ars_cents": zod.number().int().describe('unit_price_ars_cents × quantity. Se calcula también en las líneas bloqueadas, aunque no entren en el total.'),
+  "availability": zod.enum(['available', 'insufficient_stock', 'unavailable']).describe('available: publicado con stock ≥ cantidad. insufficient_stock: publicado con stock < cantidad (AC-6). unavailable: draft o archived (AC-6). La línea nunca se borra sola.'),
+  "available_quantity": zod.number().int().optional().describe('Presente sólo cuando la línea pide más de lo que hay (OQ-BE-2).'),
+  "max_quantity": zod.number().int().describe('min(stock, CART_MAX_QTY_PER_LINE) — techo del stepper.'),
+  "price_changed": zod.boolean().describe('true si el precio vigente difiere de la instantánea del último toque: el cambio se muestra, no se aplica en silencio.'),
+  "previous_unit_price_ars_cents": zod.number().int().optional().describe('Presente sólo si price_changed es true.')
+}).describe('Línea del carrito (US-007). Sin product_id, cart_id, status ni stock crudo: el identificador público es el slug y el inventario se comunica como availability + max_quantity (OQ-BE-2).')),
+  "item_count": zod.number().int().describe('Líneas distintas (no unidades).'),
+  "total_quantity": zod.number().int().describe('Unidades, incluidas las bloqueadas.'),
+  "total_ars_cents": zod.number().int().describe('Suma de los subtotales de las líneas `available` SOLAMENTE (OQ-BE-4): un total que incluyera lo no comprable es un número que el checkout va a desmentir.'),
+  "has_blocking_issues": zod.boolean().describe('true si alguna línea no es available. Es la señal con la que US-008 impide avanzar al pago.'),
+  "updated_at": zod.string().datetime({"offset":true}).nullable()
+})
+})
+
+
+/**
+ * Ruta PÚBLICA SIN auth. El cuerpo fija la cantidad, no la suma: la operación es naturalmente idempotente (api-standards §10.5) y por eso no hay `Idempotency-Key`. Crea la línea si no existe, y crea el carrito + emite las cookies si no había. Orden de validación producto → stock → carrito, así que un rechazo NO escribe nada. `quantity` mayor al stock → 409 `dsm:cart/insufficient-stock` con `available_quantity` (AC-5); el stock NO se reserva ni se descuenta (AC-8). Un producto `draft`, `archived` o inexistente devuelve el MISMO 404 (AC-10). Superar `CART_MAX_ITEMS` líneas → 409 `dsm:cart/too-many-items` con `max_items`.
+ * @summary Fija la cantidad ABSOLUTA de un producto en el carrito (AC-1/AC-2/AC-5/AC-10)
+ */
+export const setCartItemPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
+export const SetCartItemParams = zod.object({
+  "slug": zod.string().regex(setCartItemPathSlugRegExp).describe('Identificador público del producto (US-002\/US-003 no exponen id).')
+})
+
+export const SetCartItemHeader = zod.object({
+  "X-CSRF-Token": zod.string().optional().describe('Double-submit firmado del carrito (§7.5): el valor de la cookie dsm_cart_csrf. Se exige junto con un Origin de la allowlist, cuya ausencia también se rechaza con 403. Es obligatorio CUANDO la petición trae la cookie dsm_cart; la primera escritura de un cliente nuevo no la trae y pasa, porque todavía no hay carrito que secuestrar.')
+})
+
+export const setCartItemBodyQuantityMax = 99;
+
+
+
+export const SetCartItemBody = zod.object({
+  "quantity": zod.number().int().min(1).max(setCartItemBodyQuantityMax).describe('Cantidad ABSOLUTA de unidades del producto en el carrito. El tope es CART_MAX_QTY_PER_LINE (99 por defecto, cota anti-DoS §7.3). No se acepta 0: cantidad 0 no es una línea, es un DELETE.')
+}).describe('Entrada de PUT \/cart\/items\/{slug} — UN SOLO campo a propósito. No hay unit_price_ars_cents, product_id ni cart_id: todo importe se deriva server-side del precio vigente y el carrito se identifica por la cookie. Con forbidNonWhitelisted, mandar un campo desconocido es 422 (no se ignora).')
+
+
+
+
+export const SetCartItemResponse = zod.object({
+  "cart": zod.object({
+  "id": zod.string().uuid().nullable().describe('null cuando todavía no hay carrito (AC-7). Conocerlo NO da acceso: el acceso es la cookie dsm_cart, y no hay ninguna ruta que acepte un id de carrito.'),
+  "items": zod.array(zod.object({
+  "slug": zod.string(),
+  "name": zod.string(),
+  "image_url": zod.string().nullable(),
+  "quantity": zod.number().int().min(1),
+  "unit_price_ars_cents": zod.number().int().describe('Precio VIGENTE en centavos ARS (AC-9), no la instantánea guardada.'),
+  "currency": zod.enum(['ARS']),
+  "subtotal_ars_cents": zod.number().int().describe('unit_price_ars_cents × quantity. Se calcula también en las líneas bloqueadas, aunque no entren en el total.'),
+  "availability": zod.enum(['available', 'insufficient_stock', 'unavailable']).describe('available: publicado con stock ≥ cantidad. insufficient_stock: publicado con stock < cantidad (AC-6). unavailable: draft o archived (AC-6). La línea nunca se borra sola.'),
+  "available_quantity": zod.number().int().optional().describe('Presente sólo cuando la línea pide más de lo que hay (OQ-BE-2).'),
+  "max_quantity": zod.number().int().describe('min(stock, CART_MAX_QTY_PER_LINE) — techo del stepper.'),
+  "price_changed": zod.boolean().describe('true si el precio vigente difiere de la instantánea del último toque: el cambio se muestra, no se aplica en silencio.'),
+  "previous_unit_price_ars_cents": zod.number().int().optional().describe('Presente sólo si price_changed es true.')
+}).describe('Línea del carrito (US-007). Sin product_id, cart_id, status ni stock crudo: el identificador público es el slug y el inventario se comunica como availability + max_quantity (OQ-BE-2).')),
+  "item_count": zod.number().int().describe('Líneas distintas (no unidades).'),
+  "total_quantity": zod.number().int().describe('Unidades, incluidas las bloqueadas.'),
+  "total_ars_cents": zod.number().int().describe('Suma de los subtotales de las líneas `available` SOLAMENTE (OQ-BE-4): un total que incluyera lo no comprable es un número que el checkout va a desmentir.'),
+  "has_blocking_issues": zod.boolean().describe('true si alguna línea no es available. Es la señal con la que US-008 impide avanzar al pago.'),
+  "updated_at": zod.string().datetime({"offset":true}).nullable()
+})
+})
+
+
+/**
+ * Ruta PÚBLICA SIN auth. Idempotente: quitar algo que no está devuelve el carrito igual con 200 y sin error. El producto se resuelve SIN filtrar por estado, para que una línea despublicada (AC-6) se pueda sacar. No crea carrito: sin cookie devuelve el vacío.
+ * @summary Quita una línea del carrito (AC-3)
+ */
+export const removeCartItemPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
+export const RemoveCartItemParams = zod.object({
+  "slug": zod.string().regex(removeCartItemPathSlugRegExp)
+})
+
+export const RemoveCartItemHeader = zod.object({
+  "X-CSRF-Token": zod.string().optional().describe('Double-submit firmado del carrito (§7.5): el valor de la cookie dsm_cart_csrf. Se exige junto con un Origin de la allowlist, cuya ausencia también se rechaza con 403. Es obligatorio CUANDO la petición trae la cookie dsm_cart; la primera escritura de un cliente nuevo no la trae y pasa, porque todavía no hay carrito que secuestrar.')
+})
+
+
+
+
+export const RemoveCartItemResponse = zod.object({
+  "cart": zod.object({
+  "id": zod.string().uuid().nullable().describe('null cuando todavía no hay carrito (AC-7). Conocerlo NO da acceso: el acceso es la cookie dsm_cart, y no hay ninguna ruta que acepte un id de carrito.'),
+  "items": zod.array(zod.object({
+  "slug": zod.string(),
+  "name": zod.string(),
+  "image_url": zod.string().nullable(),
+  "quantity": zod.number().int().min(1),
+  "unit_price_ars_cents": zod.number().int().describe('Precio VIGENTE en centavos ARS (AC-9), no la instantánea guardada.'),
+  "currency": zod.enum(['ARS']),
+  "subtotal_ars_cents": zod.number().int().describe('unit_price_ars_cents × quantity. Se calcula también en las líneas bloqueadas, aunque no entren en el total.'),
+  "availability": zod.enum(['available', 'insufficient_stock', 'unavailable']).describe('available: publicado con stock ≥ cantidad. insufficient_stock: publicado con stock < cantidad (AC-6). unavailable: draft o archived (AC-6). La línea nunca se borra sola.'),
+  "available_quantity": zod.number().int().optional().describe('Presente sólo cuando la línea pide más de lo que hay (OQ-BE-2).'),
+  "max_quantity": zod.number().int().describe('min(stock, CART_MAX_QTY_PER_LINE) — techo del stepper.'),
+  "price_changed": zod.boolean().describe('true si el precio vigente difiere de la instantánea del último toque: el cambio se muestra, no se aplica en silencio.'),
+  "previous_unit_price_ars_cents": zod.number().int().optional().describe('Presente sólo si price_changed es true.')
+}).describe('Línea del carrito (US-007). Sin product_id, cart_id, status ni stock crudo: el identificador público es el slug y el inventario se comunica como availability + max_quantity (OQ-BE-2).')),
+  "item_count": zod.number().int().describe('Líneas distintas (no unidades).'),
+  "total_quantity": zod.number().int().describe('Unidades, incluidas las bloqueadas.'),
+  "total_ars_cents": zod.number().int().describe('Suma de los subtotales de las líneas `available` SOLAMENTE (OQ-BE-4): un total que incluyera lo no comprable es un número que el checkout va a desmentir.'),
+  "has_blocking_issues": zod.boolean().describe('true si alguna línea no es available. Es la señal con la que US-008 impide avanzar al pago.'),
+  "updated_at": zod.string().datetime({"offset":true}).nullable()
+})
+})
+
+
+/**
+ * Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo `file`. El formato se decide por CONTENIDO (magic bytes), no por la extensión ni por el Content-Type. El archivo se valida ANTES de crear el trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1: requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías en una actualización: vacío significa "no cambiar ese campo" (así funciona el archivo de ajuste de precios). En una fila de alta, una celda requerida vacía la rechaza con missing_required. El precio va en ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un import vigente a la vez (409); un reintento con la misma `Idempotency-Key` devuelve 200 con el mismo trabajo.
+ * @summary Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
+ */
+export const createImportHeaderIdempotencyKeyMax = 255;
+
+
+
+export const CreateImportHeader = zod.object({
+  "Idempotency-Key": zod.string().max(createImportHeaderIdempotencyKeyMax).optional().describe('Clave de reintento (api-standards §10): la réplica devuelve 200 con el mismo id.')
+})
+
+export const CreateImportBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const CreateImportResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed'])
+})
+
+
+/**
+ * El progreso del panel es `processed_rows / total_rows`, y `total_rows` es null hasta que termina la lectura. `error_code` es el fallo GLOBAL del trabajo (`interrupted`, `missing-columns`, …), no los errores por fila. Este GET no consume el presupuesto del POST: el panel hace polling.
+ * @summary Estado, progreso y filas rechazadas del trabajo (AC-5, AC-7)
+ */
+export const GetImportParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const getImportQueryLimitDefault = 50;
+export const getImportQueryLimitMax = 200;
+
+export const getImportQueryOffsetDefault = 0;
+export const getImportQueryOffsetMin = 0;
+
+
+
+export const GetImportQueryParams = zod.object({
+  "limit": zod.number().int().min(1).max(getImportQueryLimitMax).default(getImportQueryLimitDefault).describe('Filas rechazadas por página. Default 50, máximo 200.'),
+  "offset": zod.number().int().min(getImportQueryOffsetMin).default(getImportQueryOffsetDefault)
+})
+
+export const GetImportResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed']),
+  "filename": zod.string().describe('Metadata del archivo subido; nunca se usó como ruta.'),
+  "source_format": zod.enum(['csv', 'xlsx']),
+  "total_rows": zod.number().int().nullable().describe('null hasta que termina la lectura del archivo.'),
+  "processed_rows": zod.number().int(),
+  "created_count": zod.number().int(),
+  "updated_count": zod.number().int(),
+  "failed_count": zod.number().int().describe('Total REAL de filas rechazadas, aun con el reporte recortado.'),
+  "categories_created_count": zod.number().int(),
+  "error_code": zod.string().nullable().describe('Fallo global: `interrupted` (el proceso se reinició y el reaper lo cerró), `missing-columns`, `row-limit-exceeded`, `unsupported-format`, `invalid-encoding` o `internal`. null si los fallos fueron por fila.'),
+  "error_message": zod.string().nullable(),
+  "report_truncated": zod.boolean().describe('true si se dejaron de persistir filas al llegar a IMPORT_MAX_REPORT_ROWS.'),
+  "started_at": zod.string().datetime({"offset":true}).nullable(),
+  "finished_at": zod.string().datetime({"offset":true}).nullable(),
+  "created_at": zod.string().datetime({"offset":true}),
+  "errors": zod.array(zod.object({
+  "row_number": zod.number().int().describe('1-based sobre las filas de datos (el encabezado no cuenta).'),
+  "sku": zod.string().nullable(),
+  "field": zod.string().nullable(),
+  "error_code": zod.string().describe('Catálogo cerrado por fila: missing_required, invalid_sku, invalid_text, invalid_price, invalid_stock, invalid_category, invalid_image_url, duplicate_sku_in_file, slug_conflict, write_failed. invalid_text cubre nombre y descripcion; missing_required sólo aplica al sku o a una fila de ALTA con celdas requeridas vacías (en un update, una celda vacía significa \"no cambiar ese campo\").'),
+  "error_message": zod.string()
+})),
+  "pagination": zod.object({
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "total": zod.number().int()
+}).describe('`total` son las filas rechazadas PERSISTIDAS (≤ failed_count).')
+}).describe('Estado del trabajo. NO incluye `idempotency_key` (credencial de reintento del cliente) ni `heartbeat_at` (plumbing del reaper) ni `created_by_subject`.')
+
+
+/**
+ * Todas las filas rechazadas persistidas (hasta IMPORT_MAX_REPORT_ROWS = 1.000), sin paginar. Las celdas van neutralizadas contra inyección de fórmulas (security-standards §6.3): el destino es una planilla. Un trabajo sin errores devuelve sólo el encabezado, no 404. Si el reporte está recortado, la última línea lo declara.
+ * @summary CSV descargable de las filas rechazadas (AC-5)
+ */
+export const GetImportReportParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const GetImportReportResponse = zod.unknown()

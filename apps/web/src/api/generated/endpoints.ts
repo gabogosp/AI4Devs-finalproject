@@ -8,13 +8,20 @@
 import type {
   AdminLogin,
   AdminLoginResponse,
+  CartEnvelope,
+  CartRateLimitedResponse,
   Category,
   CategoryTree,
   CreateCategory,
+  CreateImportBody,
   CreateProduct,
   Customer,
   CustomerEnvelope,
   GetAdminProductsParams,
+  GetImportParams,
+  ImportCreated,
+  ImportJob,
+  ImportRateLimitedResponse,
   LoginRequest,
   Problem,
   ProblemResponse,
@@ -24,6 +31,7 @@ import type {
   RegisterRequest,
   ResetConfirm,
   ResetRequest,
+  SetCartItemRequest,
   StorefrontCategory,
   StorefrontListCategoryProductsParams,
   StorefrontProduct,
@@ -1075,6 +1083,372 @@ export const storefrontListCategoryProducts = async (slug: string,
 );}
 
 
+
+export type getCartResponse200 = {
+  data: CartEnvelope
+  status: 200
+}
+
+export type getCartResponse429 = {
+  data: CartRateLimitedResponse
+  status: 429
+}
+
+export type getCartResponseSuccess = (getCartResponse200) & {
+  headers: Headers;
+};
+export type getCartResponseError = (getCartResponse429) & {
+  headers: Headers;
+};
+
+export type getCartResponse = (getCartResponseSuccess | getCartResponseError)
+
+export const getGetCartUrl = () => {
+
+
+
+
+  return `/v1/cart`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. Operación **segura**: no crea carrito, no emite cookie y no desliza la ventana de retención. Sin cookie `dsm_cart`, con una cookie huérfana o con la fila vencida devuelve el carrito VACÍO con 200 (AC-7) — `id: null`, `items: []`, contadores en 0 y `updated_at: null`; la fila vencida se purga en el acto. Cada lectura recalcula precio y disponibilidad contra `products` (AC-6/AC-9), así que una línea despublicada o sin stock suficiente aparece marcada y fuera del total, no borrada. `Cache-Control: no-store` en toda la superficie.
+ * @summary Carrito del invitado con precios vigentes y disponibilidad (US-007 AC-4/AC-6/AC-7/AC-9)
+ */
+export const getCart = async ( options?: Parameters<typeof customFetch>[1]): Promise<getCartResponse> => {
+
+  return customFetch<getCartResponse>(getGetCartUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type setCartItemResponse200 = {
+  data: CartEnvelope
+  status: 200
+}
+
+export type setCartItemResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type setCartItemResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type setCartItemResponse409 = {
+  data: ProblemResponse
+  status: 409
+}
+
+export type setCartItemResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type setCartItemResponse429 = {
+  data: CartRateLimitedResponse
+  status: 429
+}
+
+export type setCartItemResponseSuccess = (setCartItemResponse200) & {
+  headers: Headers;
+};
+export type setCartItemResponseError = (setCartItemResponse403 | setCartItemResponse404 | setCartItemResponse409 | setCartItemResponse422 | setCartItemResponse429) & {
+  headers: Headers;
+};
+
+export type setCartItemResponse = (setCartItemResponseSuccess | setCartItemResponseError)
+
+export const getSetCartItemUrl = (slug: string,) => {
+
+
+
+
+  return `/v1/cart/items/${slug}`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. El cuerpo fija la cantidad, no la suma: la operación es naturalmente idempotente (api-standards §10.5) y por eso no hay `Idempotency-Key`. Crea la línea si no existe, y crea el carrito + emite las cookies si no había. Orden de validación producto → stock → carrito, así que un rechazo NO escribe nada. `quantity` mayor al stock → 409 `dsm:cart/insufficient-stock` con `available_quantity` (AC-5); el stock NO se reserva ni se descuenta (AC-8). Un producto `draft`, `archived` o inexistente devuelve el MISMO 404 (AC-10). Superar `CART_MAX_ITEMS` líneas → 409 `dsm:cart/too-many-items` con `max_items`.
+ * @summary Fija la cantidad ABSOLUTA de un producto en el carrito (AC-1/AC-2/AC-5/AC-10)
+ */
+export const setCartItem = async (slug: string,
+    setCartItemRequest: SetCartItemRequest, options?: Parameters<typeof customFetch>[1]): Promise<setCartItemResponse> => {
+
+  return customFetch<setCartItemResponse>(getSetCartItemUrl(slug),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setCartItemRequest)
+  }
+);}
+
+
+
+export type removeCartItemResponse200 = {
+  data: CartEnvelope
+  status: 200
+}
+
+export type removeCartItemResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type removeCartItemResponse429 = {
+  data: CartRateLimitedResponse
+  status: 429
+}
+
+export type removeCartItemResponseSuccess = (removeCartItemResponse200) & {
+  headers: Headers;
+};
+export type removeCartItemResponseError = (removeCartItemResponse403 | removeCartItemResponse429) & {
+  headers: Headers;
+};
+
+export type removeCartItemResponse = (removeCartItemResponseSuccess | removeCartItemResponseError)
+
+export const getRemoveCartItemUrl = (slug: string,) => {
+
+
+
+
+  return `/v1/cart/items/${slug}`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. Idempotente: quitar algo que no está devuelve el carrito igual con 200 y sin error. El producto se resuelve SIN filtrar por estado, para que una línea despublicada (AC-6) se pueda sacar. No crea carrito: sin cookie devuelve el vacío.
+ * @summary Quita una línea del carrito (AC-3)
+ */
+export const removeCartItem = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<removeCartItemResponse> => {
+
+  return customFetch<removeCartItemResponse>(getRemoveCartItemUrl(slug),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+export type createImportResponse200 = {
+  data: ImportCreated
+  status: 200
+}
+
+export type createImportResponse202 = {
+  data: ImportCreated
+  status: 202
+}
+
+export type createImportResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type createImportResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type createImportResponse409 = {
+  data: ProblemResponse
+  status: 409
+}
+
+export type createImportResponse413 = {
+  data: ProblemResponse
+  status: 413
+}
+
+export type createImportResponse415 = {
+  data: ProblemResponse
+  status: 415
+}
+
+export type createImportResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type createImportResponse429 = {
+  data: ImportRateLimitedResponse
+  status: 429
+}
+
+export type createImportResponseSuccess = (createImportResponse200 | createImportResponse202) & {
+  headers: Headers;
+};
+export type createImportResponseError = (createImportResponse401 | createImportResponse403 | createImportResponse409 | createImportResponse413 | createImportResponse415 | createImportResponse422 | createImportResponse429) & {
+  headers: Headers;
+};
+
+export type createImportResponse = (createImportResponseSuccess | createImportResponseError)
+
+export const getCreateImportUrl = () => {
+
+
+
+
+  return `/v1/admin/imports`
+}
+
+/**
+ * Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo `file`. El formato se decide por CONTENIDO (magic bytes), no por la extensión ni por el Content-Type. El archivo se valida ANTES de crear el trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1: requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías en una actualización: vacío significa "no cambiar ese campo" (así funciona el archivo de ajuste de precios). En una fila de alta, una celda requerida vacía la rechaza con missing_required. El precio va en ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un import vigente a la vez (409); un reintento con la misma `Idempotency-Key` devuelve 200 con el mismo trabajo.
+ * @summary Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
+ */
+export const createImport = async (createImportBody: CreateImportBody, options?: Parameters<typeof customFetch>[1]): Promise<createImportResponse> => {
+    const formData = new FormData();
+formData.append(`file`, createImportBody.file);
+
+  return customFetch<createImportResponse>(getCreateImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+export type getImportResponse200 = {
+  data: ImportJob
+  status: 200
+}
+
+export type getImportResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getImportResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getImportResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type getImportResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type getImportResponseSuccess = (getImportResponse200) & {
+  headers: Headers;
+};
+export type getImportResponseError = (getImportResponse401 | getImportResponse403 | getImportResponse404 | getImportResponse422) & {
+  headers: Headers;
+};
+
+export type getImportResponse = (getImportResponseSuccess | getImportResponseError)
+
+export const getGetImportUrl = (id: string,
+    params?: GetImportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/imports/${id}?${stringifiedParams}` : `/v1/admin/imports/${id}`
+}
+
+/**
+ * El progreso del panel es `processed_rows / total_rows`, y `total_rows` es null hasta que termina la lectura. `error_code` es el fallo GLOBAL del trabajo (`interrupted`, `missing-columns`, …), no los errores por fila. Este GET no consume el presupuesto del POST: el panel hace polling.
+ * @summary Estado, progreso y filas rechazadas del trabajo (AC-5, AC-7)
+ */
+export const getImport = async (id: string,
+    params?: GetImportParams, options?: Parameters<typeof customFetch>[1]): Promise<getImportResponse> => {
+
+  return customFetch<getImportResponse>(getGetImportUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getImportReportResponse200 = {
+  data: string
+  status: 200
+}
+
+export type getImportReportResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getImportReportResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getImportReportResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type getImportReportResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type getImportReportResponseSuccess = (getImportReportResponse200) & {
+  headers: Headers;
+};
+export type getImportReportResponseError = (getImportReportResponse401 | getImportReportResponse403 | getImportReportResponse404 | getImportReportResponse422) & {
+  headers: Headers;
+};
+
+export type getImportReportResponse = (getImportReportResponseSuccess | getImportReportResponseError)
+
+export const getGetImportReportUrl = (id: string,) => {
+
+
+
+
+  return `/v1/admin/imports/${id}/report`
+}
+
+/**
+ * Todas las filas rechazadas persistidas (hasta IMPORT_MAX_REPORT_ROWS = 1.000), sin paginar. Las celdas van neutralizadas contra inyección de fórmulas (security-standards §6.3): el destino es una planilla. Un trabajo sin errores devuelve sólo el encabezado, no 404. Si el reporte está recortado, la última línea lo declara.
+ * @summary CSV descargable de las filas rechazadas (AC-5)
+ */
+export const getImportReport = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<getImportReportResponse> => {
+
+  return customFetch<getImportReportResponse>(getGetImportReportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
 export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
@@ -1106,6 +1480,18 @@ export const getStorefrontListCategoriesResponseMock = (overrideResponse: Partia
 export const getStorefrontGetCategoryResponseMock = (overrideResponse: Partial<Extract<StorefrontCategory, object>> = {}): StorefrontCategory => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), parent: faker.helpers.arrayElement([faker.helpers.arrayElement([{slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})},null,]), null]), children: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})})), ...overrideResponse})
 
 export const getStorefrontListCategoryProductsResponseMock = (overrideResponse: Partial<Extract<StorefrontProductPage, object>> = {}): StorefrontProductPage => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean()})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
+
+export const getGetCartResponseMock = (overrideResponse: Partial<Extract<CartEnvelope, object>> = {}): CartEnvelope => ({cart: {id: faker.helpers.arrayElement([faker.string.uuid(), null]), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int({min: 1}), unit_price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), subtotal_ars_cents: faker.number.int(), availability: faker.helpers.arrayElement(['available','insufficient_stock','unavailable'] as const), available_quantity: faker.helpers.arrayElement([faker.number.int(), undefined]), max_quantity: faker.number.int(), price_changed: faker.datatype.boolean(), previous_unit_price_ars_cents: faker.helpers.arrayElement([faker.number.int(), undefined])})), item_count: faker.number.int(), total_quantity: faker.number.int(), total_ars_cents: faker.number.int(), has_blocking_issues: faker.datatype.boolean(), updated_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, ...overrideResponse})
+
+export const getSetCartItemResponseMock = (overrideResponse: Partial<Extract<CartEnvelope, object>> = {}): CartEnvelope => ({cart: {id: faker.helpers.arrayElement([faker.string.uuid(), null]), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int({min: 1}), unit_price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), subtotal_ars_cents: faker.number.int(), availability: faker.helpers.arrayElement(['available','insufficient_stock','unavailable'] as const), available_quantity: faker.helpers.arrayElement([faker.number.int(), undefined]), max_quantity: faker.number.int(), price_changed: faker.datatype.boolean(), previous_unit_price_ars_cents: faker.helpers.arrayElement([faker.number.int(), undefined])})), item_count: faker.number.int(), total_quantity: faker.number.int(), total_ars_cents: faker.number.int(), has_blocking_issues: faker.datatype.boolean(), updated_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, ...overrideResponse})
+
+export const getRemoveCartItemResponseMock = (overrideResponse: Partial<Extract<CartEnvelope, object>> = {}): CartEnvelope => ({cart: {id: faker.helpers.arrayElement([faker.string.uuid(), null]), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int({min: 1}), unit_price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), subtotal_ars_cents: faker.number.int(), availability: faker.helpers.arrayElement(['available','insufficient_stock','unavailable'] as const), available_quantity: faker.helpers.arrayElement([faker.number.int(), undefined]), max_quantity: faker.number.int(), price_changed: faker.datatype.boolean(), previous_unit_price_ars_cents: faker.helpers.arrayElement([faker.number.int(), undefined])})), item_count: faker.number.int(), total_quantity: faker.number.int(), total_ars_cents: faker.number.int(), has_blocking_issues: faker.datatype.boolean(), updated_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, ...overrideResponse})
+
+export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
+
+export const getGetImportResponseMock = (overrideResponse: Partial<Extract<ImportJob, object>> = {}): ImportJob => ({id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), filename: faker.string.alpha({length: {min: 10, max: 20}}), source_format: faker.helpers.arrayElement(['csv','xlsx'] as const), total_rows: faker.helpers.arrayElement([faker.number.int(), null]), processed_rows: faker.number.int(), created_count: faker.number.int(), updated_count: faker.number.int(), failed_count: faker.number.int(), categories_created_count: faker.number.int(), error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_message: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), report_truncated: faker.datatype.boolean(), started_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), finished_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', errors: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row_number: faker.number.int(), sku: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), field: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_code: faker.string.alpha({length: {min: 10, max: 20}}), error_message: faker.string.alpha({length: {min: 10, max: 20}})})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
+
+export const getGetImportReportResponseMock = (): string => (faker.word.sample())
 
 
 export const getRegisterCustomerMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
@@ -1329,6 +1715,79 @@ export const getStorefrontListCategoryProductsMockHandler = (overrideResponse?: 
       })
   }, options)
 }
+
+export const getGetCartMockHandler = (overrideResponse?: CartEnvelope | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CartEnvelope> | CartEnvelope), options?: RequestHandlerOptions) => {
+  return http.get('*/cart', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetCartResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getSetCartItemMockHandler = (overrideResponse?: CartEnvelope | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<CartEnvelope> | CartEnvelope), options?: RequestHandlerOptions) => {
+  return http.put('*/cart/items/:slug', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getSetCartItemResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRemoveCartItemMockHandler = (overrideResponse?: CartEnvelope | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<CartEnvelope> | CartEnvelope), options?: RequestHandlerOptions) => {
+  return http.delete('*/cart/items/:slug', async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRemoveCartItemResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateImportResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetImportMockHandler = (overrideResponse?: ImportJob | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<ImportJob> | ImportJob), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/imports/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetImportResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetImportReportMockHandler = (overrideResponse?: string | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<string> | string), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/imports/:id/report', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const resolvedBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetImportReportResponseMock();
+    const textBody = typeof resolvedBody === 'string' ? resolvedBody : JSON.stringify(resolvedBody ?? null);
+    return HttpResponse.text(textBody,
+      { status: 200
+      })
+  }, options)
+}
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getRegisterCustomerMockHandler(),
   getLoginCustomerMockHandler(),
@@ -1348,5 +1807,11 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getStorefrontGetProductMockHandler(),
   getStorefrontListCategoriesMockHandler(),
   getStorefrontGetCategoryMockHandler(),
-  getStorefrontListCategoryProductsMockHandler()
+  getStorefrontListCategoryProductsMockHandler(),
+  getGetCartMockHandler(),
+  getSetCartItemMockHandler(),
+  getRemoveCartItemMockHandler(),
+  getCreateImportMockHandler(),
+  getGetImportMockHandler(),
+  getGetImportReportMockHandler()
 ]

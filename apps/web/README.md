@@ -111,6 +111,61 @@ pnpm --filter @dsm/web typecheck
   ofrecerlo. El gate es `scripts/check-whatsapp-configured.mjs`, para enganchar al job de
   deploy (`Deferred: US-019`).
 
+## Cuenta del cliente (US-014)
+
+Cinco pantallas públicas, todas `noindex` — una pantalla de auth no le aporta
+nada a un buscador:
+
+| Ruta | Qué hace |
+|---|---|
+| `/crear-cuenta` | Alta con sesión activa inmediata, sin verificación de email |
+| `/ingresar` | Login; respeta `?next=` **saneado a ruta relativa del mismo origen** |
+| `/recuperar` | Solicita el link de recuperación |
+| `/recuperar/confirmar` | Fija la contraseña nueva. **La ruta la fija el backend**: el mailer arma `${PASSWORD_RESET_URL_BASE}/recuperar/confirmar?token=…`, así que renombrarla rompe la recuperación en producción sin romper un solo test |
+| `/mi-cuenta` | Destino de la sesión, detrás de `CustomerGuard` |
+
+### Dos modelos de sesión que conviven
+
+El panel usa **Bearer desde memoria** (ADR-0009) y el cliente usa **cookies**
+que maneja el navegador. Conviven en un solo punto de red: el mutator acepta
+`session: 'customer'`, y sin esa marca el camino del panel no cambia en nada.
+
+Con la marca pasan tres cosas: la URL queda relativa, la llamada va con
+`credentials: 'include'`, y **en servidor lanza**. Esto último no es celo: un
+Server Component que renderizara contenido personalizado lo dejaría en la Data
+Cache de Next, que se lo serviría después a otra persona.
+
+### Por qué la sesión viaja por el origen del sitio (ADR-0013)
+
+Las cookies que emite el API son host-only y `up.railway.app` está en la Public
+Suffix List, así que el navegador trata al sitio y al API como **sitios
+distintos**: una cookie emitida por el API no vuelve nunca, y no hay `SameSite`
+ni `Domain` que lo arregle. Por eso `next.config.mjs` reescribe `/v1/auth/*`
+hacia `API_INTERNAL_ORIGIN` (server-only, sin `NEXT_PUBLIC_`) y el navegador ve
+un solo origen. `e2e/auth-topology.spec.ts` lo prueba contra la app construida.
+
+### La marca `dsm.session`
+
+Un booleano en `localStorage`, **no una credencial**: sólo evita que todo
+visitante anónimo pague un `GET /auth/me` y un 401 por carga. Escribirla a mano
+no da acceso a nada — el backend responde 401 y el estado cae a anónimo.
+
+### Lo que el backend tiene que tener configurado
+
+Este frontend **asume** tres cosas del lado del API, y las tres fallan de
+formas que no se parecen a su causa:
+
+- **`CORS_ALLOWED_ORIGINS` debe incluir el origen del storefront.** Si no,
+  `/logout` y `/refresh` responden **403** porque el backend exige un `Origin`
+  declarado en las escrituras autenticadas por cookie.
+- **`PASSWORD_RESET_URL_BASE` debe apuntar al origen del storefront.** Si no, el
+  link del email va a ninguna parte y la recuperación se rompe **sólo en
+  producción**.
+- **`AUTH_COOKIE_SECURE=true` fuera de local**, o las cookies de sesión viajan
+  sin protección de transporte.
+
+**API y web se despliegan juntas**: el contrato de sesión es compartido.
+
 ## Auth admin (seam, ADR-0009)
 
 El panel obtiene un JWT `role=admin` vía una **página de acceso mínima**

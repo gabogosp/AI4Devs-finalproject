@@ -13,7 +13,10 @@ const securityHeaders = [
     value:
       "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' " +
       (process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000') +
-      "; frame-ancestors 'none'; base-uri 'self'",
+      // `form-action 'self'`: aunque un XSS lograra inyectar un formulario, no
+      // podría apuntar su submit a otro origen. Es la defensa que importa en
+      // pantallas que reciben contraseñas (US-014 T5.2).
+      "; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   },
 ];
 
