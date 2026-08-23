@@ -191,7 +191,7 @@
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 10
   disciplines: [FE, BE, QA]
@@ -199,6 +199,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-22        # first plan invocation (frontend-web-developer)
   blocked_by: [US-001]
 - id: US-018
   slug: contacto-whatsapp

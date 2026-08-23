@@ -563,3 +563,52 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-017-paginas-legales-consentimiento-frontend-web
+  us-id: US-017
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-017-paginas-legales-consentimiento.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 4,2 h AI-asistido / ~7 h tradicional (13 tasks + 4 pre-requisitos). La US §7 presupuesta
+  # FE-US-017 en 4-6 h tradicional: se excede ~1-3 h con causa. Las páginas en sí son ~2 h (el
+  # footer YA existe — US-018 dejó el hueco con un comentario `Deferred: US-017` — y no hay
+  # consumo de API ni estados asíncronos). El resto es lo que convierte los AC en propiedades
+  # verificadas: gate que impide publicar el texto provisional (AC-6), chequeo de deriva de la
+  # versión contra LEGAL_TERMS_VERSION del backend (AC-8 es una igualdad entre dos sistemas),
+  # guard de no-dependencia/no-tracking (AC-7 + US §9) y fuente única de rutas para el checkout.
+  # Si OQ-FE-16 y OQ-FE-17 se ratifican como "(a) sólo documentarlo", baja a 3,7 h / ~6 h a
+  # cambio de dejar AC-6 y AC-8 sin guard.
+  #
+  # ALCANCE: entrega las dos páginas SSR (/legales/privacidad, /legales/terminos), el contenido
+  # como módulo tipado con versión y `status: draft`, los enlaces del footer y el gate de
+  # despliegue. NO entrega el checkbox de consentimiento del checkout (US-008, que todavía no
+  # tiene plan de FE): lo que entrega para él es la fuente única LEGAL_ROUTES + CONSENT_COPY,
+  # para que no nazca con el `href="#"` que hoy tiene el copy del design-system §10.2.
+  #
+  # Sin ADR nuevo (verificado contra los 14 vigentes) y sin delta de contrato: no consume API,
+  # así que el gate frontend-codegen-fresh no aplica. El contenido vive en el repo porque el
+  # E2E §3 (capacidad 10) declara "páginas estáticas SSR", no un endpoint.
+  #
+  # 4 preguntas abiertas, ninguna bloquea el arranque. Las dos que conviene decidir ANTES:
+  #   OQ-FE-16 — cómo se garantiza que la versión publicada == LEGAL_TERMS_VERSION del backend
+  #              (recomendada: chequeo de deriva en el repo + gate de deploy en US-019). Hoy
+  #              apps/api/.env.example NO declara la variable: T4.3 nace Gated.
+  #   OQ-FE-18 — ¿BE-US-017 sigue existiendo? El E2E fija páginas estáticas y US-008 ya se quedó
+  #              con el versionado; probablemente quede absorbida. Decisión del Arquitecto.
+  #
+  # DEPLOYMENT: SÍ conviene /plan-deployment — no por riesgo técnico (cero migración, cero
+  # secretos) sino porque es un GATE LEGAL: US-008/US-009 no pueden desplegarse antes que esto,
+  # y dos guards (check-legal-content.mjs + el ya existente check-whatsapp-configured.mjs)
+  # esperan enganche al job de deploy de US-019.
+  estimate-hours: 4.2
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
