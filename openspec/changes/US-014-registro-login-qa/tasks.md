@@ -26,12 +26,12 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-140 | T1.1 | AC-1 | e2e | **verde** |
 | TC-141 | T1.1 | AC-2 | e2e | **verde** |
 | TC-142 | T1.1 | AC-3 | e2e | **verde** |
-| TC-143 | T1.2 | AC-4 | e2e | escrito, bloqueado (token) |
-| TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | AC-11 **verde** (TC-145b); resto por ejecutar |
-| TC-145 | T1.2 | AC-7 | e2e | escrito, bloqueado (token) |
+| TC-143 | T1.2 | AC-4 | e2e | **verde** |
+| TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | AC-11 verde; **AC-5 ROJO: defecto** |
+| TC-145 | T1.2 | AC-7 | e2e | **verde** |
 | TC-146 | T2.4 | AC-10 | seguridad | por ejecutar |
-| TC-147 | T2.3 | AC-8 | seguridad | por ejecutar |
-| TC-148 | T2.2 | AC-9 | seguridad | por ejecutar |
+| TC-147 | T2.3 | AC-8 | seguridad | **verde** |
+| TC-148 | T2.2 | AC-9 | seguridad | **verde** |
 | TC-150 | T3.1 | AC-1, AC-2 | a11y | por ejecutar |
 | TC-151 | T3.1 | AC-4 | a11y | por ejecutar |
 | TC-160 | T4.1 | AC-2 (PRD §4) | carga | por ejecutar |
@@ -89,7 +89,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     refresh anterior deja de servir contra la API.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-140|TC-141|TC-142" --reporter=line 2>&1 | grep -qE '^ *3 passed'`
 
-- [ ] T1.2 TC-143 + TC-145 — recuperación completa y token muerto (AC-4, AC-7) — ⚠ **ESCRITO, BLOQUEADO POR ENTORNO**
+- [x] T1.2 TC-143 + TC-145 — recuperación completa y token muerto (AC-4, AC-7) — ⚠ **ESCRITO, BLOQUEADO POR ENTORNO**
   - **Exit criterion**: TC-143 verde — con el token que la API expone en test, se fija una
     contraseña nueva, se entra con ella y **no** se entra con la anterior (sin ese último
     assert, el escenario pasaría aunque la contraseña no hubiera cambiado); TC-145 verde —
@@ -142,7 +142,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Fase 2: Las tres propiedades de seguridad — 2,0 h
 
-- [ ] T2.1 TC-144 — anti-enumeración en login, registro y recuperación (AC-5, AC-6, AC-11)
+- [ ] T2.1 TC-144 — anti-enumeración ⚠ **DEFECTO ENCONTRADO** en login, registro y recuperación (AC-5, AC-6, AC-11)
   - **Pattern**: `APIRequestContext` directo (no la UI): lo que hay que comparar es
     **status + cuerpo + latencia**, y el DOM no los muestra. Latencia como **banda
     amplia**, nunca un umbral fino (OQ-QA-3).
@@ -152,8 +152,20 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     del backend, con bcrypt real —que es justo lo que introduce la diferencia de tiempo que
     este test acota—.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-144" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
+  - **DEFECTO (2026-08-23) — AC-5 no se sostiene**: el par de login del escenario devuelve
+    **500 para la cuenta que existe** (contraseña incorrecta) y **401 para la que no**, así
+    que la superficie **sí distingue** si el email está registrado — exactamente lo que AC-5
+    prohíbe, y con la peor señal posible: un 5xx. Hay además 500 en `/v1/auth/refresh` al
+    reusar un token rotado, donde ADR-0011 espera un rechazo limpio (401): un 5xx ahí
+    convierte la detección de reuso en un error del servidor y ensucia Sentry.
+    Los tres asserts de igualdad (status, cuerpo) y el de latencia están escritos y son los
+    que lo destapan; **no se debilita ninguno**. Corresponde al backend.
+    `Deferred: 500 en login de cuenta existente y en refresh reusado — owner: BE`.
+  - **T2.2 (TC-148/148b) y T2.3 (TC-147) quedaron VERDES** en la misma corrida: cookies con
+    sus flags, primer refresh válido, token rotado rechazado, y la contraseña canario ausente
+    de respuestas y del log del proceso.
 
-- [ ] T2.2 TC-148 — cookies y rotación del refresh (AC-9, ADR-0011)
+- [x] T2.2 TC-148 — cookies y rotación del refresh (AC-9, ADR-0011)
   - **Exit criterion**: la cookie de sesión es `httpOnly` y **no** aparece en
     `document.cookie`; la de CSRF sí (el double-submit la necesita); usar el **mismo
     refresh dos veces** da error en el segundo uso y **revoca la familia** —verificado
@@ -161,7 +173,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     y no probado.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-148" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
 
-- [ ] T2.3 TC-147 — la contraseña no se filtra por ningún canal (AC-8)
+- [x] T2.3 TC-147 — la contraseña no se filtra por ningún canal (AC-8)
   - **Pattern**: se captura el **stdout del proceso de la API** durante el escenario, no
     sólo las respuestas: un log con la credencial es el modo de fallo real y no se ve desde
     el cliente.

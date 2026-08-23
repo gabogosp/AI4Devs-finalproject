@@ -5,7 +5,8 @@ import {
   nuevaCuenta,
   nuevoContexto,
   pedirReset,
-  ultimoTokenDeReset,
+  marcaDeLog,
+  tokenDeResetDesde,
 } from '../support/customer-auth';
 
 /**
@@ -32,15 +33,13 @@ test.describe('Recuperación de contraseña contra la API real', () => {
     const { cuenta, ctx } = await nuevaCuenta();
     await ctx.dispose();
 
-    const pedido = await (async () => {
-      const anon = await nuevoContexto();
-      const r = await pedirReset(anon, cuenta.email);
-      await anon.dispose();
-      return r;
-    })();
+    const marca = marcaDeLog();
+    const anon = await nuevoContexto();
+    const pedido = await pedirReset(anon, cuenta.email);
+    await anon.dispose();
     expect(pedido.status).toBeLessThan(400);
 
-    expect(await confirmar(await ultimoTokenDeReset(), NUEVA)).toBeLessThan(400);
+    expect(await confirmar(await tokenDeResetDesde(marca), NUEVA)).toBeLessThan(400);
 
     // Entra con la nueva...
     const conNueva = await login(cuenta, NUEVA);
@@ -59,11 +58,12 @@ test.describe('Recuperación de contraseña contra la API real', () => {
     const { cuenta, ctx } = await nuevaCuenta();
     await ctx.dispose();
 
+    const marca = marcaDeLog();
     const anon = await nuevoContexto();
     await pedirReset(anon, cuenta.email);
     await anon.dispose();
 
-    const token = await ultimoTokenDeReset();
+    const token = await tokenDeResetDesde(marca);
     expect(await confirmar(token, NUEVA)).toBeLessThan(400);
 
     // Segundo uso del MISMO enlace: uso único (AC-7).

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { request, type APIRequestContext } from '@playwright/test';
 import { QA_API_BASE_URL, QA_WEB_BASE_URL } from './qa-env';
 
@@ -147,35 +147,42 @@ export async function pedirReset(
  *
  * `QA_API_LOG` apunta al stdout redirigido del proceso levantado con `api:up`.
  */
-export async function ultimoTokenDeReset(
+/**
+ * Posición actual del log. Se toma **antes** de pedir el reset, y el token se busca
+ * a partir de ahí: así el token que se lee es el de ESTE pedido y no el último del
+ * archivo, que con varios escenarios pidiendo reset puede ser de otra cuenta.
+ */
+export function marcaDeLog(logPath = process.env.QA_API_LOG ?? '/tmp/api.log'): number {
+  try {
+    return statSync(logPath).size;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Token de recuperación escrito **después** de `marca`.
+ *
+ * Se ESPERA la línea en vez de leer una vez: pino bufferea, así que leer justo después
+ * del request encuentra el archivo sin el token todavía. Es una carrera, no una
+ * ausencia — y sin el reintento el fallo miente sobre su causa.
+ *
+ * No hay endpoint que exponga el token, y está bien que no lo haya: viaja por email.
+ * Fuera de producción el mailer de log lo escribe con `LOG_LEVEL=debug` (OQ-QA-4).
+ */
+export async function tokenDeResetDesde(
+  marca: number,
   logPath = process.env.QA_API_LOG ?? '/tmp/api.log',
 ): Promise<string> {
-  // Se ESPERA la línea en vez de leer una vez: pino bufferea, así que leer justo
-  // después del request encuentra el archivo sin el token todavía. Es una carrera, no
-  // una ausencia — y sin el reintento el fallo miente sobre su causa.
-  const limite = Date.now() + 3000;
-  let ultimo = '';
+  const limite = Date.now() + 5000;
   while (Date.now() < limite) {
-    const log = readFileSync(logPath, 'utf8');
+    const log = readFileSync(logPath, 'utf8').slice(marca);
     const tokens = [...log.matchAll(/password_reset\.token[^\n]*token=([A-Za-z0-9._-]+)/g)];
-    if (tokens.length > 0) {
-      const candidato = tokens[tokens.length - 1]![1]!;
-      // Dos escenarios seguidos comparten el archivo: se espera a que aparezca uno
-      // NUEVO respecto de la última lectura de este proceso.
-      if (candidato !== visto) {
-        visto = candidato;
-        return candidato;
-      }
-      ultimo = candidato;
-    }
+    if (tokens.length > 0) return tokens[tokens.length - 1]![1]!;
     await new Promise((r) => setTimeout(r, 100));
   }
   throw new Error(
-    ultimo
-      ? `el token de reset en ${logPath} no cambió: el pedido no generó uno nuevo`
-      : `no hay token de reset en ${logPath}. ¿La API corre con LOG_LEVEL=debug y NODE_ENV != production?`,
+    `no apareció un token de reset después del byte ${marca} en ${logPath}. ` +
+      '¿La API corre con LOG_LEVEL=debug y NODE_ENV != production?',
   );
 }
-
-/** Último token ya consumido por ESTE proceso de test. */
-let visto = '';
