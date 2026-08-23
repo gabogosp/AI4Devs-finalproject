@@ -534,7 +534,10 @@
   us-id: US-005
   discipline: backend
   variant: null
-  status: in progress
+  # `completed` es el valor del enum del schema (draft|ready|approved|in-progress|completed|
+  # archived). Nota: otras 12 entradas de este archivo usan `in progress` con espacio, que NO
+  # está en el enum — deriva preexistente, no se toca acá para no pisar trabajo ajeno.
+  status: completed
   parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
   linear-task-id: null
   audit-baseline: null
