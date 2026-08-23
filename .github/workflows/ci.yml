@@ -72,6 +72,28 @@ jobs:
       #
       # Va DESPUÉS de los tests a propósito: un test roto se diagnostica más
       # rápido que un build roto, y así el feedback más barato llega primero.
+      # ALCANCE DE ESTE PASO, dicho explícito para que nadie lo lea de más:
+      # verifica que el front COMPILE. No verifica que el artefacto sea
+      # desplegable, y su salida no debe desplegarse nunca.
+      #
+      # La diferencia es concreta: de las cinco variables que el front consume,
+      # sólo `API_INTERNAL_ORIGIN` lanza si falta. Las cuatro `NEXT_PUBLIC_*`
+      # tienen `default` en el schema de `apps/web/src/lib/env.ts`, así que su
+      # ausencia **no rompe el build: hornea placeholders en silencio**. Un
+      # pipeline sin `NEXT_PUBLIC_SITE_URL` construye verde y publica canonicals
+      # y `sitemap.xml` apuntando a `localhost`; el deploy se reporta exitoso y
+      # el daño aparece días después en el índice de un buscador.
+      #
+      # Ese modo de falla NO lo cubre este paso ni ningún gate que sólo mire si
+      # el build pasó — por construcción, porque el build pasa. Se cubre
+      # inspeccionando el ARTEFACTO servido (US-019 T2.3: el `sitemap.xml`
+      # publicado no debe contener `localhost`), que es un chequeo de despliegue
+      # y no de compilación.
+      #
+      # Ojo con `.min(1, '… es requerida')` en ese schema: va seguido de
+      # `.default(...)`, así que el mensaje NUNCA se dispara. Leer «requerida»
+      # ahí y concluir que el build protege contra su ausencia es exactamente el
+      # error que este comentario existe para evitar.
       - name: Build del frontend
         env:
           # Mismas variables que el build de producción exige. `next build` corre
