@@ -34,6 +34,7 @@ export function ProductImage({
   src,
   name,
   categoryName,
+  decorative = false,
   variant = 'hero',
 }: {
   src: string | null;
@@ -48,6 +49,19 @@ export function ProductImage({
    * El cambio es aditivo: ningún call-site de US-002/US-003 se toca.
    */
   categoryName?: string;
+  /**
+   * Marca la imagen como **decorativa** (US-004): el nombre del producto ya
+   * está como texto justo al lado, dentro del mismo enlace.
+   *
+   * Sin esto, un lector de pantalla lee el nombre dos veces —una por el `alt` y
+   * otra por el encabezado— y axe lo reporta como `image-redundant-alt`. La
+   * imagen no aporta información que el texto adyacente no dé ya, y en ese caso
+   * lo accesible es que no la anuncie: repetir no es describir.
+   *
+   * En la ficha (`hero`) NO aplica: ahí la imagen es el contenido principal y su
+   * `alt` es lo que indexa Google Images.
+   */
+  decorative?: boolean;
   variant?: ImageVariant;
 }) {
   const [broken, setBroken] = useState(false);
@@ -57,8 +71,11 @@ export function ProductImage({
   if (!src || broken) {
     return (
       <div
-        role="img"
-        aria-label={`${name} — sin imagen disponible`}
+        // Decorativa: se oculta del árbol accesible en vez de anunciar un
+        // placeholder que no agrega nada al nombre que ya está al lado.
+        {...(decorative
+          ? { 'aria-hidden': true }
+          : { role: 'img', 'aria-label': `${name} — sin imagen disponible` })}
         className="flex aspect-square w-full items-center justify-center rounded-lg bg-gray-100"
       >
         <Package className="h-16 w-16 text-gray-400" aria-hidden="true" />
@@ -72,7 +89,7 @@ export function ProductImage({
         src={src}
         // Alt descriptivo, nunca "imagen": es lo que lee un lector de pantalla
         // y lo que indexa Google Images (WCAG 2.1 AA).
-        alt={categoryName ? `${name} — ${categoryName}` : name}
+        alt={decorative ? '' : categoryName ? `${name} — ${categoryName}` : name}
         fill
         priority={priority}
         sizes={sizes}

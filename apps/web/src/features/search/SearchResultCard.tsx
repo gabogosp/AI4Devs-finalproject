@@ -25,9 +25,29 @@ export function SearchResultCard({ result }: { result: SearchResult }) {
         href={`/productos/${result.slug}`}
         className="focus:outline-none focus-visible:shadow-focus"
       >
-        {/* Sin `categoryName`: la búsqueda no la trae por resultado (D6). */}
-        <ProductImage src={result.image_url} name={result.name} variant="card" />
-        <h3 className="mt-2 text-sm font-medium leading-snug">{result.name}</h3>
+        {/*
+          Sin `categoryName`: la búsqueda no la trae por resultado (D6). Y
+          decorativa, porque el nombre está como texto en el `<h3>` de acá
+          abajo, dentro del mismo enlace: sin eso un lector de pantalla lo lee
+          dos veces.
+        */}
+        <ProductImage
+          src={result.image_url}
+          name={result.name}
+          variant="card"
+          decorative
+        />
+        {/*
+          `h2` y no `h3`: el único encabezado por encima es el `h1` del eco de la
+          consulta, así que un `h3` saltea un nivel. Quien navega por encabezados
+          —una de las formas más comunes de recorrer una página con lector de
+          pantalla— lee ese salto como que se perdió una sección.
+
+          Es distinto de `ProductCard` (US-002), que vive bajo el `h2` de una
+          categoría y por eso ahí `h3` es correcto. El nivel depende de dónde
+          está el componente, no de cuán importante parece.
+        */}
+        <h2 className="mt-2 text-sm font-medium leading-snug">{result.name}</h2>
       </Link>
 
       <p className="text-base font-semibold">

@@ -225,13 +225,13 @@
 
 ## Fase 5: A11y y SSR — 0,75 h
 
-- [ ] **T5.1 A11y de la experiencia de búsqueda** (axe sobre los cuatro estados + teclado).
+- [x] **T5.1 A11y de la experiencia de búsqueda** (axe sobre los cuatro estados + teclado).
   - **Exit criterion**: cero violaciones de axe en los cuatro estados de `SearchResults` y en el
     `SearchBar`; el formulario se opera **sólo con teclado** (Tab al input, Enter para buscar);
     el foco va al encabezado de resultados tras la navegación; el aviso de baja confianza y el
     de degradado son **texto** y no sólo color.
   - **Verify**: `pnpm --filter @dsm/web test -- "searchA11y"`
-- [ ] **T5.2 El contenido no depende de JS.** Test de la página servida (el patrón de US-002/003
+- [x] **T5.2 El contenido no depende de JS.** Test de la página servida (el patrón de US-002/003
   para SSR).
   - **Exit criterion**: el render de servidor de `/buscar?q=…` incluye los nombres de los
     resultados, el eco de la consulta y los enlaces a `/productos/{slug}`; el `SearchBar` no es

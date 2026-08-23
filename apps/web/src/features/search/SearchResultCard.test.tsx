@@ -85,19 +85,42 @@ describe('SearchResultCard — stock (AC-7)', () => {
   });
 });
 
-describe('SearchResultCard — imagen', () => {
-  it('sin imagen cae al placeholder nombrando el producto', () => {
-    renderCard(result({ image_url: null }));
+/**
+ * La imagen de la tarjeta es **decorativa**, y es una decisión de accesibilidad,
+ * no una omisión: el nombre del producto está como texto en el `<h3>` de al
+ * lado, dentro del mismo enlace. Con `alt` = nombre, un lector de pantalla lo
+ * lee dos veces y axe lo reporta como `image-redundant-alt`. Repetir no es
+ * describir.
+ *
+ * En la ficha (`hero`) sigue sin aplicar: ahí la imagen ES el contenido y su
+ * `alt` es lo que indexa Google Images.
+ */
+describe('SearchResultCard — imagen decorativa', () => {
+  it('la imagen no se anuncia: el nombre ya está al lado', () => {
+    const { container } = renderCard(
+      result({ image_url: 'https://cdn.example.com/taco.jpg' }),
+    );
 
-    expect(
-      screen.getByRole('img', { name: /Taco Fischer SX 8mm \(x50\) — sin imagen/ }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('img')).toBeNull();
+    // El elemento existe y se ve; lo que no hace es duplicar el nombre.
+    expect(container.querySelector('img')).not.toBeNull();
+    expect(container.querySelector('img')!.getAttribute('alt')).toBe('');
   });
 
-  it('con imagen el alt es el nombre, sin categoría colgada (D6)', () => {
+  it('el nombre del producto se anuncia UNA sola vez', () => {
     renderCard(result({ image_url: 'https://cdn.example.com/taco.jpg' }));
 
-    const img = screen.getByRole('img', { name: 'Taco Fischer SX 8mm (x50)' });
-    expect(img.getAttribute('alt')).not.toContain('undefined');
+    expect(screen.getAllByText('Taco Fischer SX 8mm (x50)')).toHaveLength(1);
+  });
+
+  it('sin imagen el placeholder tampoco anuncia nada redundante', () => {
+    renderCard(result({ image_url: null }));
+
+    expect(screen.queryByRole('img')).toBeNull();
+    // Y el enlace conserva su nombre accesible, que sale del `<h3>`: la tarjeta
+    // sigue siendo navegable y anunciable sin la imagen.
+    expect(
+      screen.getByRole('link', { name: /Taco Fischer SX 8mm/ }),
+    ).toBeInTheDocument();
   });
 });
