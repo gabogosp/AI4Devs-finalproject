@@ -6,7 +6,7 @@ import {
   AI_ENRICHER,
   AiEmbedder,
   AiEnricher,
-} from './ports/ai.ports';
+} from '../ai/ports/ai.ports';
 import { ClaimedProduct, EnrichmentRepository } from './enrichment.repository';
 import { buildSourceText, hashSourceText, SourceTextInput } from './source-text';
 import { configNumber } from './config-number';

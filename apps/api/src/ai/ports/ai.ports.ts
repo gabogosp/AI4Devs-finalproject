@@ -1,5 +1,5 @@
 /**
- * Puertos de IA del enriquecimiento (US-005 T1.1) — `backend-node-standards.md` §3:
+ * Puertos de IA — `backend-node-standards.md` §3:
  * el dominio depende de **interfaces y tokens**, no de clases concretas.
  *
  * Ni una sola firma de acá menciona Gemini, `fetch`, headers ni JSON del proveedor. Es
@@ -8,6 +8,13 @@
  *
  * Mismo patrón que el puerto de mailer de US-014 (`password-reset-mailer.ts`): interfaz
  * + `Symbol` como token de inyección.
+ *
+ * **Viven en `src/ai/ports/` y no en `src/enrichment/`** (movidos el 2026-08-23, decisión del
+ * PO): el enriquecimiento fue el primer consumidor, no el dueño. La búsqueda semántica
+ * (US-004) necesita embeddear la consulta del cliente por el mismo puerto, y un puerto
+ * compartido que viva dentro del módulo de su primer consumidor obliga al segundo a importar
+ * "desde el vecino" — el momento de mover esto es antes de que haya dos consumidores, no
+ * después.
  */
 
 /** Token de DI del enriquecedor de texto. */

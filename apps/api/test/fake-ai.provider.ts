@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { AiEmbedder, AiEnricher, EnrichInput } from '../src/enrichment/ports/ai.ports';
+import { AiEmbedder, AiEnricher, EnrichInput } from '../src/ai/ports/ai.ports';
 import { EMBEDDING_DIMS } from '../src/enrichment/ai/gemini-http.client';
 
 /**

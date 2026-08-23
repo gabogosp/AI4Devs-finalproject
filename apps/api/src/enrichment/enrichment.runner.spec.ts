@@ -10,7 +10,7 @@ import { EnrichmentRunner } from './enrichment.runner';
 import { FakeAiProvider } from '../../test/fake-ai.provider';
 import { AiTransientError } from '../common/errors/enrichment-errors';
 import { DisabledAiProvider } from './ai/disabled-ai.provider';
-import { AiEmbedder, AiEnricher } from './ports/ai.ports';
+import { AiEmbedder, AiEnricher } from '../ai/ports/ai.ports';
 import { asegurarCategoria } from '../../test/enrichment-fixtures';
 
 /**

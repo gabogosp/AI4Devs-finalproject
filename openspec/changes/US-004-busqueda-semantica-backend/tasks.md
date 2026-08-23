@@ -55,18 +55,22 @@ language: es
 > índice se usa y que **excluye borradores**, y el `FakeAiProvider` determinista para ejercer
 > todo sin red ni clave.
 >
-> **Dos puntos de coordinación que NO se resolvieron acá porque son decisiones, no bugs.**
-> Están planteados con opciones en el reporte de cierre de US-005; resumen:
+> **Los dos puntos de coordinación quedaron RESUELTOS por el PO el 2026-08-23:**
 >
-> 1. **El reparto de los 15 RPM.** Este plan asume `GEMINI_SEARCH_MAX_RPM=10` +
->    `GEMINI_MAX_RPM=5`. US-005 shippeó `GEMINI_MAX_RPM=15` y su runbook §3.6 documenta la
->    primera corrida en **≈ 5,5 h** con ese valor. Bajarlo a 5 la lleva a **≈ 33 h** (el propio
->    `proposal.md` de este change lo dice). Cambiar el default es una línea; el número del
->    runbook hay que corregirlo en el mismo movimiento, o queda mintiendo.
-> 2. **T1.1 quiere mover el puerto a `src/ai/ports/`.** Hoy es `src/enrichment/ports/ai.ports.ts`
->    con **los dos** puertos y `AiAvailability`, importado por ~8 archivos de producción y ~12
->    specs de US-005. El movimiento es mecánico pero toca todo ese módulo; conviene decidir si
->    se hace (y quién corre la suite de US-005 después) antes de empezar la Fase 1.
+> 1. **El reparto de los 15 RPM — `[Resolved: la primera corrida se lleva el free tier entero]`.**
+>    `GEMINI_MAX_RPM` se queda en **15** mientras dure la primera corrida (≈ 5,5 h), porque la
+>    búsqueda no sirve de nada hasta que existan los vectores. El reparto **10 búsqueda / 5
+>    enriquecimiento** que asume este plan se aplica **después**, y está escrito como paso
+>    obligatorio en el runbook §3.6 punto 5. Consecuencia para este change: `GEMINI_SEARCH_MAX_RPM`
+>    puede nacer en **10** como dice T0.2, y la suma `SEARCH + ENRICHMENT <= 15` se cumple recién
+>    cuando ese paso se ejecuta — el assert de T0.2 sobre la suma hay que leerlo contra el valor
+>    **de destino** (5), no contra el 15 transitorio.
+> 2. **El puerto ya se movió — `[Resolved: hecho, no queda trabajo para T1.1]`.** Vive en
+>    **`apps/api/src/ai/ports/ai.ports.ts`** con los dos puertos (`AI_ENRICHER`, `AI_EMBEDDER`) y
+>    `AiAvailability`. Lo movió la sesión de US-005 junto con su guardarraíl
+>    (`src/ai/ports/ai-ports.spec.ts`), reescribió los 13 importadores y corrió la suite completa
+>    en verde: **T1.1 de este plan queda sin trabajo por hacer**, sólo verificar la ruta.
+>    `Verify` sugerido: `grep -q "AI_EMBEDDER" apps/api/src/ai/ports/ai.ports.ts`.
 >
 > **Lo que sigue bloqueado y no lo desbloquea el código**: la batería de relevancia ≥ 70 %
 > (`QA-004-REL-2`) necesita embeddings **reales**. Sin `GEMINI_API_KEY` cargada no hay vectores,

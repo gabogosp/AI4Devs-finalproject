@@ -12,7 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EnrichmentModule } from './enrichment.module';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentRunner } from './enrichment.runner';
-import { AI_EMBEDDER, AI_ENRICHER } from './ports/ai.ports';
+import { AI_EMBEDDER, AI_ENRICHER } from '../ai/ports/ai.ports';
 
 /**
  * T4.2 — `POST /v1/admin/enrichment/runs`.

@@ -13,7 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProductsModule } from '../products/products.module';
 import { EnrichmentModule } from './enrichment.module';
 import { EnrichmentRunner } from './enrichment.runner';
-import { AI_EMBEDDER, AI_ENRICHER } from './ports/ai.ports';
+import { AI_EMBEDDER, AI_ENRICHER } from '../ai/ports/ai.ports';
 
 /**
  * T6.2 — idempotencia y texto curado (AC-6, AC-7).

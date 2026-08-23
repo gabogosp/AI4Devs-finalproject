@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AiDisabledError } from '../../common/errors/enrichment-errors';
-import { AiEmbedder, AiEnricher } from '../ports/ai.ports';
+import { AiEmbedder, AiEnricher } from '../../ai/ports/ai.ports';
 
 /**
  * Proveedor de IA **deshabilitado** (US-005 T1.4, D6 del `design.md`).

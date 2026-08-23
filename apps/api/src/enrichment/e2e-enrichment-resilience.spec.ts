@@ -14,7 +14,7 @@ import { EnrichmentEventsService } from './enrichment-events.service';
 import { EnrichmentModule } from './enrichment.module';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentRunner } from './enrichment.runner';
-import { AI_EMBEDDER, AI_ENRICHER } from './ports/ai.ports';
+import { AI_EMBEDDER, AI_ENRICHER } from '../ai/ports/ai.ports';
 
 /**
  * T6.3 — resiliencia ante un proveedor que falla (AC-4, AC-5).

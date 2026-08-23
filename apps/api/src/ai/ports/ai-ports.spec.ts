@@ -75,7 +75,7 @@ describe('puertos de IA (AI_ENRICHER / AI_EMBEDDER)', () => {
     // desacopla —y eso es valioso—, mientras que un `import { GoogleGenerativeAI }`
     // o un campo `apiKey` en una firma serían el acoplamiento real.
     const fuente: string = readFileSync(
-      'src/enrichment/ports/ai.ports.ts',
+      'src/ai/ports/ai.ports.ts',
       'utf8',
     );
     const codigo = fuente

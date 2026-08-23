@@ -4,7 +4,7 @@ import {
   AiPermanentError,
   AiTransientError,
 } from '../../common/errors/enrichment-errors';
-import { AiEmbedder, AiEnricher, EnrichInput } from '../ports/ai.ports';
+import { AiEmbedder, AiEnricher, EnrichInput } from '../../ai/ports/ai.ports';
 import { configNumber } from '../config-number';
 import { withRetry } from './backoff';
 import { RateLimiter } from './rate-limiter';

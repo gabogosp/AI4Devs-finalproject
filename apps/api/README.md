@@ -544,7 +544,7 @@ y el vector describiría el texto viejo para siempre.
 | `GEMINI_EMBED_MODEL` | `text-embedding-004` | Modelo de embeddings. Su dimensión (768) está fijada en el esquema |
 | `GEMINI_ENRICH_TIMEOUT_MS` | 20000 | Timeout por llamada de enriquecimiento |
 | `GEMINI_EMBED_TIMEOUT_MS` | 10000 | Timeout por llamada de embedding |
-| `GEMINI_MAX_RPM` | 15 | Tope de requests por minuto del free tier. El adapter espacia las salidas a `60000 / GEMINI_MAX_RPM` |
+| `GEMINI_MAX_RPM` | 15 | Tope de requests por minuto del free tier. El adapter espacia las salidas a `60000 / GEMINI_MAX_RPM`. **Es 15 sólo para la primera corrida** (decisión del PO 2026-08-23): cuando `/v1/search` entre en servicio baja a **5** y la búsqueda se queda con 10, porque es interactiva y el enriquecimiento puede esperar. Ver runbook §3.6 |
 | `ENRICHMENT_ENABLED` | `true` | Kill-switch. En `false` el catálogo queda navegable sin enriquecer (AC-5) |
 | `ENRICHMENT_BATCH_SIZE` | 25 | Productos arrendados por lote |
 | `ENRICHMENT_CONCURRENCY` | 2 | Productos procesados en paralelo dentro del lote |

@@ -11,7 +11,7 @@ import { EnrichmentModule } from './enrichment.module';
 import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentRunner } from './enrichment.runner';
 import { EMBEDDING_DIMS } from './ai/gemini-http.client';
-import { AI_EMBEDDER, AI_ENRICHER } from './ports/ai.ports';
+import { AI_EMBEDDER, AI_ENRICHER } from '../ai/ports/ai.ports';
 
 /**
  * T6.1 — ciclo completo de aceptación (AC-1, AC-2, AC-8, AC-10).

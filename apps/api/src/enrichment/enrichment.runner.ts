@@ -4,7 +4,7 @@ import { EnrichmentRepository } from './enrichment.repository';
 import { EnrichmentService, ProcessOutcome } from './enrichment.service';
 import { EnrichmentEventsService } from './enrichment-events.service';
 import { AiTransientError } from '../common/errors/enrichment-errors';
-import { AI_EMBEDDER, AI_ENRICHER, AiEmbedder, AiEnricher } from './ports/ai.ports';
+import { AI_EMBEDDER, AI_ENRICHER, AiEmbedder, AiEnricher } from '../ai/ports/ai.ports';
 import { configNumber } from './config-number';
 
 export type RunnerState = 'idle' | 'running' | 'cooldown' | 'disabled';

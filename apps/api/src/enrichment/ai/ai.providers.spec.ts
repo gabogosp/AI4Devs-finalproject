@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { ConfigService } from '@nestjs/config';
 import { AiDisabledError } from '../../common/errors/enrichment-errors';
-import { AI_EMBEDDER, AI_ENRICHER, AiEmbedder, AiEnricher } from '../ports/ai.ports';
+import { AI_EMBEDDER, AI_ENRICHER, AiEmbedder, AiEnricher } from '../../ai/ports/ai.ports';
 import { aiEmbedderProvider, aiEnricherProvider } from './ai.providers';
 import { DisabledAiProvider } from './disabled-ai.provider';
 import { GeminiHttpClient } from './gemini-http.client';
