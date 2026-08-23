@@ -577,6 +577,47 @@ estimate-hours: 13.4
 
 ## Verification (suite-level)
 
+> ### Hallazgo ENTRANTE desde la sesión de US-006/QA (2026-08-23 13:30) — leer antes de cerrar
+>
+> El gate «suite completa verde» de acá abajo **hoy es inestable**, y no por un defecto del
+> enriquecimiento. Medido con el árbol quieto (después de `9a823f3`):
+>
+> | Medición | Resultado |
+> |---|---|
+> | Suite completa, corrida 1 | `1155 passed, 54 failed` — 20 suites rojas |
+> | Suite completa, corrida 2 | `1155 passed, 54 failed` — **mismo total, otro conjunto de suites** |
+> | Con `ENRICHMENT_ENABLED=false` | idéntico total: el barrido en segundo plano **no** es la causa |
+> | `src/imports/**` aislado | **259/259** |
+> | `categories.repository` aislado | **12/12** |
+> | `e2e-enrichment-runs*` aislado | **12/12** (falló al correr con otra suite, y volvió a pasar al reintentar el par) |
+>
+> **Lectura**: cada suite pasa sola; el conjunto no. Un total estable con un conjunto que se
+> mueve y un reintento que cambia el resultado es inestabilidad de **estado compartido**, no
+> una regresión reproducible. Las 118 suites comparten un solo Postgres y un solo proceso
+> (`maxWorkers: 1`), varias truncan las mismas tablas, y ahora hay además barridos en segundo
+> plano que escriben `products`/`product_embeddings` después de que el test que los disparó
+> terminó.
+>
+> **No es trabajo de este change arreglar la infraestructura de test**, pero sí es su problema
+> práctico: tal como está, el gate va a dar rojo o verde según el orden, y eso no es evidencia
+> de nada. Dos caminos, en orden de costo:
+>
+> 1. **Que las suites dejen de truncar tablas compartidas** y usen un prefijo único por corrida,
+>    como hace el seed del carrito de US-007 (que por eso no se rompe). Es el cambio más chico
+>    y ataca la causa.
+> 2. **Aislar la base por corrida** (`?schema=` propio por proceso de jest, con las migraciones
+>    aplicadas en el arranque). Resuelve la clase entera de problemas y también el cruce entre
+>    sesiones paralelas, a costa de segundos de setup por corrida.
+>
+> Mientras eso no exista, la forma honesta de cerrar el gate es: árbol quieto, **una** corrida,
+> y re-correr aislada cualquier suite roja antes de creerle — que es además lo que ya dice el
+> ítem de re-seed de abajo.
+>
+> Dato útil para el cierre: **el contrato del puerto que este change heredó de US-006 sobrevivió
+> intacto** al `git mv` a `src/enrichment/ports/` («`enqueue` nunca propaga», «la cola no es la
+> fuente de verdad»), el `ImportRunner` sigue dependiendo del token, y las suites del import
+> siguen verdes. La costura entre los dos changes está bien.
+
 - [ ] Unit + integration colocados pasan: `pnpm --filter @dsm/api test -- --ci`
 - [ ] Suite e2e-nest dedicada pasa: `pnpm --filter @dsm/api test:e2e`
 - [ ] Lint + typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
