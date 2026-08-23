@@ -393,7 +393,7 @@ horarios del local en el footer → `Deferred: OQ-FE-14 (dueño)` · tercer docu
     nombre y dirección del local— siguen verdes **sin editarse**; y un caso que asserta que
     **ningún** `href` del footer es `'#'`)
 
-- [ ] **T3.2** axe sobre las dos páginas y sobre el footer con enlaces (0,2 h)
+- [x] **T3.2** axe sobre las dos páginas y sobre el footer con enlaces (0,2 h) *(verde 2026-08-23 — 16 tests: 10 nuevos en legalA11y + 6 de contactA11y con 2 casos nuevos)*
 
   - **Pattern**: `jest-axe` como en `src/features/storefront/a11y.test.tsx` y
     `contactA11y.test.tsx`. Además del `expect(...).toHaveNoViolations()`, se asserta la

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
 expect.extend(toHaveNoViolations);
@@ -50,5 +50,35 @@ describe('a11y — header y footer de contacto', () => {
 
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+  });
+
+  // ── US-017 T3.2 — los enlaces legales que T3.1 agregó al footer ─────────────
+  it('los dos enlaces legales tienen nombre accesible propio y área táctil ≥44px', () => {
+    render(StorefrontLayout({ children: <p>contenido</p> }));
+
+    const legales = within(screen.getByRole('contentinfo')).getByRole(
+      'navigation',
+      { name: 'Legales' },
+    );
+    const enlaces = within(legales).getAllByRole('link');
+
+    // Nombres DISTINTOS: listar los enlaces de la página no debe mostrar dos
+    // filas indistinguibles (mismo criterio que US-018 aplicó al de WhatsApp).
+    expect(new Set(enlaces.map((a) => a.textContent)).size).toBe(2);
+
+    // Área táctil del design-system §11. jsdom no calcula layout, así que lo
+    // verificable es la CLASE declarada — se asserta explícitamente en vez de
+    // fingir que se midió el pixel.
+    enlaces.forEach((a) => {
+      expect(a.className).toContain('min-h-[44px]');
+      expect(a.className).toContain('focus-visible:shadow-focus');
+    });
+  });
+
+  it('el footer con los enlaces legales sigue sin violaciones de axe', async () => {
+    const { container } = render(
+      StorefrontLayout({ children: <p>contenido</p> }),
+    );
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
