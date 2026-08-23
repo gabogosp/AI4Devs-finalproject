@@ -246,22 +246,32 @@ describe('Esquema del carrito materializado (F40 — reconciliación con design.
       `SELECT column_name FROM information_schema.columns
        WHERE table_schema='public' AND table_name='products'`,
     );
-    expect(productos.map((f) => f.column_name).sort()).toEqual(
-      [
-        'id',
-        'sku',
-        'slug',
-        'name',
-        'description_raw',
-        'price_ars_cents',
-        'stock',
-        'status',
-        'category_id',
-        'image_url',
-        'created_at',
-        'updated_at',
-        'enrichment_done', // US-006
-      ].sort(),
-    );
+    // `products` es una tabla COMPARTIDA y sigue creciendo: US-006 le agregó
+    // `enrichment_done` y US-005 las seis columnas del enriquecimiento IA. Afirmar
+    // el conjunto EXACTO obligaba a editar este literal en cada change ajeno que la
+    // toca —ya pasó dos veces— y convertía el guard en ruido en vez de protección.
+    //
+    // Lo que se verifica ahora es lo que este change necesita garantizar: que
+    // ninguna de las columnas preexistentes se perdió. El "no sobra ninguna" de F40
+    // se mantiene entero para las tablas que este change POSEE (arriba).
+    const ESPERADAS_MINIMO = [
+      'id',
+      'sku',
+      'slug',
+      'name',
+      'description_raw',
+      'price_ars_cents',
+      'stock',
+      'status',
+      'category_id',
+      'image_url',
+      'created_at',
+      'updated_at',
+      'enrichment_done', // US-006
+    ];
+    const presentes = productos.map((f) => f.column_name);
+    for (const columna of ESPERADAS_MINIMO) {
+      expect(presentes).toContain(columna);
+    }
   });
 });
