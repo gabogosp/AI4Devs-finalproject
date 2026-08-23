@@ -89,12 +89,28 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     refresh anterior deja de servir contra la API.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-140|TC-141|TC-142" --reporter=line 2>&1 | grep -qE '^ *3 passed'`
 
-- [ ] T1.2 TC-143 + TC-145 — recuperación completa y token muerto (AC-4, AC-7)
+- [ ] T1.2 TC-143 + TC-145 — recuperación completa y token muerto (AC-4, AC-7) — ⚠ **ESCRITO, BLOQUEADO POR ENTORNO**
   - **Exit criterion**: TC-143 verde — con el token que la API expone en test, se fija una
     contraseña nueva, se entra con ella y **no** se entra con la anterior (sin ese último
     assert, el escenario pasaría aunque la contraseña no hubiera cambiado); TC-145 verde —
     reusar el mismo enlace no permite cambiar nada y la pantalla indica pedir uno nuevo.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-143|TC-145" --reporter=line 2>&1 | grep -qE '^ *2 passed'`
+  - **BLOQUEO (2026-08-23)**: los tres escenarios están escritos en
+    `qa/e2e/cuenta-recuperacion.spec.ts` y **no pueden correr**: `POST /v1/auth/register`
+    devuelve **429** incluso con un solo escenario y tras esperar, porque el contador por IP
+    está agotado y la ventana es de 15 min (`AUTH_RATE_LIMIT_TTL_MS`).
+    **La causa es que `AUTH_RATE_LIMIT_MAX=100000`, que `qa/scripts/api-up.sh` exporta
+    justamente para esto, NO surte efecto en el throttler del registro** — verificado: la
+    variable está en el entorno del proceso (`ps`) y el 429 igual sale de ese proceso (un
+    solo listener en `:3009`, sin error de bind).
+    Es un hallazgo del runbook de QA, no de US-014: el script promete algo que no cumple, y
+    va a bloquear **toda** suite futura que registre cuentas reales. Sin resolverlo, las
+    fases 2 a 5 de este plan tampoco pueden correr (todas empiezan registrando).
+    Salidas posibles: (a) revisar por qué el throttler `auth` ignora la variable —puede leer
+    otra clave o tener el valor fijo—; (b) que la suite corra desde IPs distintas por
+    escenario, como ya hace `apps/api/test/e2e-app.ts` con `TRUST_PROXY_HOPS=1` y
+    `X-Forwarded-For`. **(b) es la que ya tiene precedente en el repo.**
+    `Deferred: desbloquear el entorno de QA para auth — owner: QA/BE`.
 
 ---
 
