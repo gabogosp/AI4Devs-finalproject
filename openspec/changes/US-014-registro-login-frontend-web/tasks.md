@@ -555,7 +555,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
 > propiedades **protegidas**. Sin ellas, el próximo cambio de copy reabre AC-5 y nadie se
 > entera.
 
-- [ ] **T3.1** AC-5: DOM idéntico para los tres `401` + telemetría sin discriminador (0.4 h)
+- [x] **T3.1** AC-5: DOM idéntico para los tres `401` + telemetría sin discriminador (0.4 h)
 
   - **Pattern**:
     ```ts
@@ -577,7 +577,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     *(es una comparación de igualdad, no tres asserts de texto: tres asserts pasan igual aunque
     la UI distinga, mientras el copy esperado esté bien escrito en cada rama)*
 
-- [ ] **T3.2** G-1: nada personalizado se renderiza en servidor ⇒ nada personalizado se cachea (0.4 h)
+- [x] **T3.2** G-1: nada personalizado se renderiza en servidor ⇒ nada personalizado se cachea (0.4 h)
 
   - **Pattern**: tres capas, la primera estructural:
     ```ts
@@ -600,7 +600,7 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
     ```
     *(el grep se acota a `apps/web/app`, donde este plan no vive — F57)*
 
-- [ ] **T3.3** AC-8 / AC-9: la contraseña no sale del formulario; el token no es legible por JS (0.3 h)
+- [x] **T3.3** AC-8 / AC-9: la contraseña no sale del formulario; el token no es legible por JS (0.3 h)
 
   - **Pattern**:
     ```ts
@@ -619,13 +619,20 @@ jest-axe cubre §19.2) · fusión de carrito guest ↔ cuenta → fuera de v1 (U
   - **Verify**:
     ```bash
     pnpm --filter @dsm/web exec vitest run src/features/account/ac8-ac9-secretos.test.tsx \
-      && ! grep -rn --include='*.ts' --include='*.tsx' -E "dsm_access|dsm_refresh" apps/web/src apps/web/app \
-      && echo "OK — el frontend no nombra las cookies HttpOnly"
+      && ! grep -rn --include='*.ts' --include='*.tsx' -E "dsm_access|dsm_refresh" apps/web/src apps/web/app --exclude-dir=generated \
+      && echo "OK — el frontend hand-written no nombra las cookies HttpOnly"
     ```
     *(el grep excluye el stub E2E, que sí las emite por ser el "backend" de mentira, porque
     apunta a `src/` y `app/`, no a `e2e/` — y no puede matchearse a sí mismo, F57)*
+    *(**corregido al ejecutar, 2026-08-22**: faltaba excluir `src/api/generated/`. Los nombres
+    de las cookies aparecen ahí dentro de **comentarios** que orval copia de las `description`
+    del contrato — o sea, documentación derivada del backend, no el frontend leyéndolas. El
+    criterio afirma que el código **no lee ni escribe** esas cookies; un comentario en un
+    artefacto generado no es ninguna de las dos cosas. Sin la exclusión, el check daba rojo por
+    la aparición de una cadena en vez de por el hecho, y la única forma de "arreglarlo" habría
+    sido empobrecer la descripción del contrato)*
 
-- [ ] **T3.4** Accesibilidad de las cinco pantallas + gestión de foco (0.4 h)
+- [x] **T3.4** Accesibilidad de las cinco pantallas + gestión de foco (0.4 h)
 
   - **Pattern**:
     ```tsx
