@@ -18,6 +18,14 @@ describe('StorefrontService.getPublishedProduct', () => {
     category_id: 'cat-1',
     image_url: null,
     enrichment_done: false,
+    // US-005 agregó estas 6 columnas a `products` (migración aditiva): el fixture
+    // las declara para seguir satisfaciendo el tipo generado por Prisma.
+    description_enriched: null,
+    description_curated: false,
+    enrichment_source_hash: null,
+    enrichment_attempts: 0,
+    enrichment_next_attempt_at: null,
+    enrichment_error_code: null,
     created_at: new Date(),
     updated_at: new Date(),
     category: {
