@@ -214,7 +214,13 @@ language: es
     por control`.
   - **Exit criterion**: el botón «+» se deshabilita al alcanzar `max_quantity`; el «−» al
     llegar a 1 (quitar es una acción aparte, no un stepper en 0). Cada botón tiene
-    `aria-label` que **nombra el producto**. El input expone `aria-valuemax = max_quantity`.
+    `aria-label` que **nombra el producto**. El input lleva **`role="spinbutton"`** y expone `aria-valuemin` /
+    `aria-valuemax = max_quantity` / `aria-valuenow`. **El rol es obligatorio, no
+    decorativo**: esos atributos NO son válidos en `textbox` —el rol implícito de
+    `<input>`— así que sin él un lector de pantalla los ignora y la persona no se entera
+    del tope. Corregido el 2026-08-23: la versión original de esta task pedía
+    `aria-valuemax` sin nombrar el rol, la implementación fue fiel al plan incompleto y lo
+    detectó el gate de `eslint-plugin-jsx-a11y` (AUDIT-DSM-WEB-005) el día que se instaló.
     Mientras la línea está mutando, ambos botones quedan deshabilitados (OQ-FE-1:
     pesimista) y los cambios se agrupan con debounce de **400 ms**. Operable con
     `Tab` + `Enter`/`Space` y con flechas ↑/↓ sobre el input.

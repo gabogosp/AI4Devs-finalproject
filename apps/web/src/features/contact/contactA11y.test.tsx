@@ -14,7 +14,7 @@ const { default: StorefrontLayout } = await import(
  * WCAG 2.1 AA sobre las dos superficies que agrega US-018 (design-system §11).
  *
  * **Límite conocido, aprendido en US-003**: jsdom no calcula contraste. El fallo
- * del `text-gray-500` (4.39:1 contra el 4.5:1 que exige AA) lo encontró axe en
+ * del `text-muted` (4.39:1 contra el 4.5:1 que exige AA) lo encontró axe en
  * un browser real, no un test como éste. Acá se cubren nombres accesibles,
  * landmarks y roles; el contraste de los tokens `accent-strong` sobre blanco ya
  * está verificado en `design-system.md` §2.4, y la verificación en browser real

@@ -112,6 +112,15 @@ export function QuantityStepper({
         }}
         disabled={mutating}
         aria-label={`Cantidad de ${productName}`}
+        // AUDIT-DSM-WEB-005 — `aria-valuemin/max/now` NO son válidos en el rol
+        // `textbox`, que es el implícito de `<input>`: un lector de pantalla los
+        // ignora y la persona no se entera del tope. El rol correcto para un campo
+        // numérico con flechas es `spinbutton`, que sí los soporta.
+        //
+        // El plan de US-007 FE (T2.2) pedía `aria-valuemax` sin nombrar el rol, así
+        // que la implementación fue fiel a un plan incompleto. Lo detectó el gate de
+        // `eslint-plugin-jsx-a11y` el día que se instaló.
+        role="spinbutton"
         aria-valuemin={1}
         aria-valuemax={maxQuantity}
         aria-valuenow={visible}

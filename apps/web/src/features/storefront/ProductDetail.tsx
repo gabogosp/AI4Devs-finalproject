@@ -54,7 +54,7 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
           <p className="text-3xl font-bold text-foreground">
             {formatArs(product.price_ars_cents)}
           </p>
-          <p className="text-xs text-gray-500">IVA incluido</p>
+          <p className="text-xs text-muted">IVA incluido</p>
         </div>
 
         <ProductPurchase
