@@ -451,6 +451,7 @@
   archived-at: null
   archive-path: null
 
+# qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + E2E pago simulado)
 - name: US-009-pago-mercadopago-backend
   us-id: US-009
   discipline: backend
@@ -570,6 +571,7 @@
   archived-at: null
   archive-path: null
 
+# qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 p95<500ms + E2E)
 - name: US-008-checkout-guest-backend
   us-id: US-008
   discipline: backend
@@ -779,6 +781,7 @@
   archived-at: null
   archive-path: null
 
+# qa-plan.md agregado 2026-08-23 por /plan-qa (batería relevancia QA-001 + contract QA-002 + k6 + BDD + E2E)
 - name: US-004-busqueda-semantica-backend
   us-id: US-004
   discipline: backend
@@ -855,6 +858,7 @@
   archived-at: null
   archive-path: null
 
+# qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 webhook + E2E loop completo)
 - name: US-010-orden-webhook-stock-backend
   us-id: US-010
   discipline: backend
