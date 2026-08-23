@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SearchEventsService } from '../observability/search-events.service';
 import { configNumber } from '../enrichment/config-number';
 import { normalizeQuery, usefulLength } from './normalize-query';
 import { QueryEmbedder } from './query-embedder';
@@ -48,9 +49,15 @@ export class SearchService {
     private readonly repo: SearchRepository,
     private readonly embedder: QueryEmbedder,
     private readonly config: ConfigService,
+    /** Eventos de negocio. `@Optional()` para no arrastrar el contenedor a un unit test. */
+    @Optional() private readonly events?: SearchEventsService,
   ) {}
 
-  async search(consultaCruda: string, limitPedido?: number): Promise<SearchOutcome> {
+  async search(
+    consultaCruda: string,
+    limitPedido?: number,
+    traceId?: string,
+  ): Promise<SearchOutcome> {
     const minimo = configNumber(this.config, 'SEARCH_MIN_LENGTH', 2);
     const maximo = configNumber(this.config, 'SEARCH_MAX_LENGTH', 200);
     const utiles = usefulLength(consultaCruda);
@@ -72,8 +79,9 @@ export class SearchService {
       this.logger.warn(
         `búsqueda degradada a full-text (motivo: ${embedding.reason}); la navegación no se interrumpe`,
       );
+      this.events?.emit('search.degraded', { query: consulta, degraded: true }, traceId);
       const lexicos = await this.repo.fullText(consulta, limit);
-      return this.componer(lexicos, { degraded: true, cached: false });
+      return this.componer(lexicos, { degraded: true, cached: false }, consulta, traceId);
     }
 
     const vectoriales = await this.repo.knn(embedding.vector, limit);
@@ -86,10 +94,18 @@ export class SearchService {
         ? blend(vectoriales, await this.repo.fullText(consulta, limit), peso).slice(0, limit)
         : vectoriales;
 
-    return this.componer(resultados, {
-      degraded: false,
-      cached: embedding.cached,
-    });
+    if (embedding.cached) {
+      // Señal de costo: cada `cache_hit` es una llamada paga que no se hizo. Con el free tier
+      // es la métrica que dice si el techo de RPM es tolerable (D6).
+      this.events?.emit('search.cache_hit', { query: consulta }, traceId);
+    }
+
+    return this.componer(
+      resultados,
+      { degraded: false, cached: embedding.cached },
+      consulta,
+      traceId,
+    );
   }
 
   /**
@@ -100,6 +116,8 @@ export class SearchService {
   private async componer(
     resultados: ScoredProduct[],
     señales: { degraded: boolean; cached: boolean },
+    consulta: string,
+    traceId?: string,
   ): Promise<SearchOutcome> {
     const minScore = Number(this.config.get('SEARCH_MIN_SCORE') ?? 0.55);
     const confidence = classify(resultados, minScore);
@@ -115,6 +133,35 @@ export class SearchService {
           ),
         }
       : null;
+
+    // Los eventos se emiten acá —en la composición común— y no en cada rama: si vivieran en el
+    // camino feliz y en el degradado por separado, agregar una tercera vía dejaría la
+    // instrumentación a medias sin que nada falle.
+    this.events?.emit(
+      'search.performed',
+      {
+        query: consulta,
+        resultCount: resultados.length,
+        confidence,
+        degraded: señales.degraded,
+      },
+      traceId,
+    );
+    if (confidence === 'none') {
+      // La señal de DEMANDA NO CUBIERTA: qué busca la gente que el catálogo no tiene. Es
+      // información que el negocio hoy no tiene de ninguna otra forma.
+      this.events?.emit(
+        'search.no_results',
+        { query: consulta, resultCount: 0, confidence },
+        traceId,
+      );
+    } else if (confidence === 'low') {
+      this.events?.emit(
+        'search.low_confidence',
+        { query: consulta, resultCount: resultados.length, confidence },
+        traceId,
+      );
+    }
 
     return {
       results: resultados,

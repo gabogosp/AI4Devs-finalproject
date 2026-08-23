@@ -364,7 +364,7 @@ language: es
 
 ## Fase 4: Observabilidad — 0,8 h
 
-- [ ] T4.1 `SearchEventsService`
+- [x] T4.1 `SearchEventsService`
   - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
     `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
     el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese
@@ -398,7 +398,7 @@ language: es
     conjunto de claves; el contador **no** se segmenta por consulta: 50 consultas
     distintas dejan `count('search.performed') === 50` y **un solo** contador)
 
-- [ ] T4.2 Instrumentación de los 6 eventos en su punto exacto
+- [x] T4.2 Instrumentación de los 6 eventos en su punto exacto
   - **Exit criterion**: `search.performed` en toda búsqueda ejecutada; `no_results` cuando
     `confidence === 'none'`; `low_confidence` cuando `'low'`; `degraded` cuando se cayó a
     full-text; `cache_hit` cuando el vector salió del caché; `rate_limited` en el 429.

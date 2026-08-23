@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { CartModule } from './cart/cart.module';
 import { ImportsModule } from './imports/imports.module';
 import { EnrichmentModule } from './enrichment/enrichment.module';
+import { SearchModule } from './search/search.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -22,6 +23,9 @@ import { EnrichmentModule } from './enrichment/enrichment.module';
  * in-process (ADR-0012) y el barrido de trabajos huérfanos al arrancar.
  * `EnrichmentModule` (US-005) enriquece y vectoriza el catálogo con su propio ejecutor
  * in-process (ADR-0014); sin `GEMINI_API_KEY` queda `disabled` y la app arranca igual.
+ * `SearchModule` (US-004) expone `GET /v1/search`, el diferenciador del producto: superficie
+ * PÚBLICA que consume los vectores de US-005 y degrada a full-text cuando el proveedor no
+ * responde, sin romper la navegación.
  */
 @Module({
   imports: [
@@ -38,6 +42,7 @@ import { EnrichmentModule } from './enrichment/enrichment.module';
     CartModule,
     ImportsModule,
     EnrichmentModule,
+    SearchModule,
   ],
   controllers: [],
   providers: [],

@@ -1,9 +1,10 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ExecutionContext, Inject, Injectable, Optional } from '@nestjs/common';
 import {
   ThrottlerGuard,
   ThrottlerLimitDetail,
   ThrottlerRequest,
 } from '@nestjs/throttler';
+import { SearchEventsService } from '../observability/search-events.service';
 
 /**
  * Throttle de `/v1/search` (US-004 AC-10) — espejo de `StorefrontThrottlerGuard`.
@@ -20,6 +21,18 @@ import {
  */
 @Injectable()
 export class SearchThrottlerGuard extends ThrottlerGuard {
+  /**
+   * El evento `rate_limited` se emite acá porque el guard es **el único** que sabe del 429: el
+   * handler nunca corre. Ponerlo en el service dejaría el evento sin emitir justo en el caso
+   * que interesa medir — el de abuso.
+   *
+   * `@Optional()` + `@Inject` explícito: `ThrottlerGuard` tiene su propio constructor con tres
+   * dependencias posicionales, así que la propia se agrega al final y sin romper las suyas.
+   */
+  @Optional()
+  @Inject(SearchEventsService)
+  private readonly events?: SearchEventsService;
+
   private static toSeconds(ms: number): number {
     return Math.max(1, Math.ceil(ms / 1000));
   }
@@ -52,6 +65,11 @@ export class SearchThrottlerGuard extends ThrottlerGuard {
     // `no-store` en el 429: un rate-limit cacheado en el edge se convierte en un DoS —la misma
     // lección que el runbook ya tiene anotada para el carrito.
     res.setHeader?.('Cache-Control', 'no-store');
+
+    // Sin `query`: en un 429 no hay búsqueda que registrar, y el texto de quien está abusando
+    // no aporta nada que el conteo por IP del throttler no diga mejor.
+    this.events?.emit('search.rate_limited');
+
     return super.throwThrottlingException(context, detail);
   }
 }

@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Query,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import {
   StorefrontCache,
@@ -50,8 +57,11 @@ export class SearchController {
   @Throttle({ search: { limit: RATE_LIMIT_MAX, ttl: RATE_LIMIT_TTL_MS } })
   // 60 s de frescura + 30 s de `stale-while-revalidate`, igual que la ficha pública.
   @StorefrontCache({ maxAge: 60, swr: 30 })
-  async buscar(@Query() query: SearchQueryDto): Promise<SearchResponseDto> {
-    const outcome = await this.search.search(query.q, query.limit);
+  async buscar(
+    @Query() query: SearchQueryDto,
+    @Headers('traceparent') traceparent?: string,
+  ): Promise<SearchResponseDto> {
+    const outcome = await this.search.search(query.q, query.limit, traceparent);
     return SearchResponseDto.from(outcome);
   }
 }

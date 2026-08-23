@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { SearchEventsService } from '../observability/search-events.service';
 import { QUERY_VECTOR_CACHE, InMemoryQueryVectorCache } from './query-vector.cache';
 import { QueryEmbedder } from './query-embedder';
 import { searchEmbedderProvider } from './search-embedder.provider';
@@ -24,6 +25,7 @@ import { SearchThrottlerGuard } from './search-throttler.guard';
   providers: [
     SearchService,
     SearchRepository,
+    SearchEventsService,
     QueryEmbedder,
     SearchThrottlerGuard,
     searchEmbedderProvider,
