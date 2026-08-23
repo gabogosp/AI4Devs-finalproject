@@ -202,7 +202,7 @@ estimate-hours: 13.4
     invocación; 30 llamadas a 15 RPM ⇒ tiempo simulado ≥ 116_000 ms; el test **termina en < 5 s
     de reloj real**, prueba de que no duerme de verdad)
 
-- [ ] T1.4 Proveedor deshabilitado sin clave + fake determinista para tests (0,5 h)
+- [x] T1.4 Proveedor deshabilitado sin clave + fake determinista para tests (0,5 h)
   - **Pattern**: factory por config con el mismo patrón que
     `apps/api/src/auth/mail/password-reset-mailer.provider.ts` (US-014): un `useFactory` que
     elige adapter según `ConfigService` — `per backend-node-standards.md §3`. El fake vive en
