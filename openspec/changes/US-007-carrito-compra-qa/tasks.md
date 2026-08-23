@@ -125,7 +125,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 2: Aceptación BDD API-level — happy y corner
 
-- [ ] T2.1 Escenarios happy del carrito (AC-1, AC-2, AC-3, AC-4)
+- [x] T2.1 Escenarios happy del carrito (AC-1, AC-2, AC-3, AC-4)
   - **Pattern**: feature en español con `# language: es` y tag de feature `@carrito`,
     escenarios titulados `TC-NNN — …` como `browse.feature`; steps que reusan el world
     existente (`this.admin` para sembrar, el cliente de T1.2 para el invitado) —
@@ -138,7 +138,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     ninguna cuenta** de por medio; reusar el mismo contexto no probaría AC-4.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@carrito and @happy" --format summary 2>&1 | grep -qE '^4 scenarios \(4 passed\)$'`
 
-- [ ] T2.2 Escenarios corner del carrito (AC-5, AC-7, AC-6 parcial)
+- [x] T2.2 Escenarios corner del carrito (AC-5, AC-7, AC-6 parcial)
   - **Pattern**: el estado previo se arma con el cliente del invitado, nunca con datos
     dejados por otro escenario — `per qa-three-layer-regression §Cross-layer rules — un
     escenario nunca depende del residuo de otro`.

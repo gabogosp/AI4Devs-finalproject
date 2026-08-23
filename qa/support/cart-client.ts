@@ -4,13 +4,29 @@ const API = process.env.QA_API_BASE_URL ?? 'http://localhost:3000';
 /** Origen que la allowlist de CORS del API debe admitir; el `CartCsrfGuard` lo verifica. */
 const WEB = process.env.QA_WEB_BASE_URL ?? 'http://localhost:3210';
 
+/**
+ * Estados de una línea, tal como los declara el contrato. No es un booleano:
+ * `insufficient_stock` (publicado pero sin stock suficiente) y `unavailable`
+ * (borrador o archivado) son casos distintos que AC-6 diferencia.
+ */
+export type Disponibilidad = 'available' | 'insufficient_stock' | 'unavailable';
+
 export interface CartItem {
   slug: string;
   name: string;
+  image_url: string | null;
   quantity: number;
   unit_price_ars_cents: number;
+  currency: string;
   subtotal_ars_cents: number;
-  available: boolean;
+  availability: Disponibilidad;
+  max_quantity: number;
+  price_changed: boolean;
+}
+
+/** Una línea es comprable sólo si está plenamente disponible. */
+export function esComprable(item: CartItem): boolean {
+  return item.availability === 'available';
 }
 
 export interface Cart {
