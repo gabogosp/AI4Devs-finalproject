@@ -39,12 +39,30 @@
 - id: CAP-10
   title: Páginas legales + consentimiento
   priority: Must
-  # US-020 y US-021 agregadas el 2026-08-22 (AUDIT-FLOW-002): las dos declaran
-  # `prd-capacity: 10` y cubren la otra mitad de la Ley 25.326 — borrado de cuenta a
-  # pedido (US-020) y retención/anonimización de la PII de las órdenes (US-021, PRD §6).
-  # Pendiente de decisión del PO: si esta capacidad debería partirse en «páginas legales +
-  # consentimiento» vs «cumplimiento de datos personales» (sería el primer CR del proyecto).
-  us-coverage: [US-017-paginas-legales-consentimiento, US-020-borrado-cuenta-datos-personales, US-021-retencion-datos-ordenes]
+  # PARTIDA el 2026-08-23 por decisión del PO (AUDIT-FLOW-002 la había dejado como pregunta
+  # abierta). CAP-10 se queda con lo que el PRD §2.1 cap. 10 describe literalmente: las DOS
+  # páginas publicadas —privacidad y términos— más el registro del consentimiento al comprar.
+  # Es contenido publicado + un flag en la orden: se entrega una vez y no vuelve a tocarse.
+  us-coverage: [US-017-paginas-legales-consentimiento]
+- id: CAP-13
+  title: Cumplimiento de datos personales (Ley 25.326)
+  priority: Must
+  # Capacidad NUEVA, no una renumeración: sale de partir CAP-10. Va con id 13 y no 11 para no
+  # correr las diez que ya existen, que romperían el `prd-capacity` del frontmatter de todas
+  # las US y la trazabilidad del build-order.
+  #
+  # Por qué es otra capacidad y no la misma: publicar dos páginas es contenido; atender los
+  # DERECHOS de las personas sobre sus datos es un proceso operativo con obligaciones propias
+  # —plazos, irreversibilidad, auditoría— que se ejerce cada vez que alguien lo pide, y que
+  # además cubre a compradores INVITADOS, que no tienen cuenta y por eso quedan fuera del
+  # alcance de US-020. Agruparlas hacía que «capacidad 10 entregada» significara dos cosas
+  # distintas según a quién se le preguntara.
+  #
+  # Es la única capacidad que NO viene del PRD §2.1: emergió del plan de backend de US-008 al
+  # modelar la primera PII en reposo del proyecto (su OQ-BE-5). El PRD §6 sí fija los 12 meses
+  # y la anonimización, así que el requisito existía; lo que faltaba era la capacidad que lo
+  # nombrara. Vale como CR contra el PRD.
+  us-coverage: [US-020-borrado-cuenta-datos-personales, US-021-retencion-datos-ordenes]
 - id: CAP-11
   title: Cancelación / reembolso de orden
   priority: Should

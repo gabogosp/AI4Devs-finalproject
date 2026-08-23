@@ -230,7 +230,7 @@
   slug: borrado-cuenta-datos-personales
   status: Backlog
   priority: Medium
-  prd-capacity: 10
+  prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null
@@ -240,7 +240,7 @@
   slug: retencion-datos-ordenes
   status: Ready
   priority: High
-  prd-capacity: 10
+  prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null

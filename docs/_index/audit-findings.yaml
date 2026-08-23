@@ -246,9 +246,12 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: addressed
   confidence: medium
   created: 2026-08-22
+  # Enmendada §21 el 2026-08-23: la suposición valía para el enriquecimiento por lotes y no
+  # cubría el camino interactivo. Decisión del PO: free tier, 15 RPM repartidos 10/5, techo
+  # aceptado como limitación conocida. Consecuencias declaradas en el propio §21.
   # la decisión está tomada (free tier aceptado, OQ-BE-1 de US-004 opción b); falta actualizar el §21 del E2E
 - id: AUDIT-E2E-002
   title: "§14 STRIDE es una tabla de controles, no un modelo de amenazas por flujo"
@@ -277,9 +280,12 @@
   remediation-target: docs
   source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
   related-us: null
-  status: open
+  status: addressed
   confidence: medium
   created: 2026-08-22
+  # Enmendada la fila del §17 el 2026-08-23: decía «cache Redis de queries frecuentes» y Redis
+  # no está aprovisionado. Ahora dice caché de vectores EN PROCESO, con el puntero a
+  # ADR-0012/0014 que enmiendan ADR-0004.
 - id: AUDIT-E2E-005
   title: "§12 FSM menciona 'job de limpieza' de pending_payment sin US/AC que lo cubra (parcialmente mitigado)"
   severity: Major

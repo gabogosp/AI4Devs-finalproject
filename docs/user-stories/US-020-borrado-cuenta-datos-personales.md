@@ -3,7 +3,7 @@ type: user-story
 id: US-020
 slug: borrado-cuenta-datos-personales
 parent-prd: docs/product/prd.md
-prd-capacity: 10
+prd-capacity: 13
 parent-e2e: docs/product/design-e2e.md
 status: Backlog
 priority: Medium

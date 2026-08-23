@@ -4,6 +4,7 @@ id: US-021
 slug: retencion-datos-ordenes
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
+prd-capacity: 13   # CAP-13 «Cumplimiento de datos personales», partida de CAP-10 el 2026-08-23
 status: Ready
 priority: High
 estimate-tshirt: S

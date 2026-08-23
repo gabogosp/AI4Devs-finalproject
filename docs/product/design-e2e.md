@@ -6,7 +6,7 @@ status: Approved               # Draft → In Review → Approved (aprueba el Ar
 version: 1
 language: es                  # hereda del PRD
 created: 2026-06-14
-updated: 2026-06-15
+updated: 2026-08-23   # §17 y §21 enmendadas (AUDIT-E2E-001): free tier de Gemini
 arquitecto: Gabriel Suarez
 approved-at: 2026-06-15
 linear-doc-id: null
@@ -608,7 +608,7 @@ flowchart LR
 | 99.5% disponibilidad mensual | Railway health checks + restart automático; Neon managed. Sin multi-AZ (aceptable). |
 | p95 lectura < 300ms (catálogo/ficha) | SSR + índices (`category_id,status`) + cache de listados en Redis + CDN Cloudflare para estáticos/imágenes. |
 | p95 escritura < 500ms (carrito/orden) | Transacciones cortas; decremento atómico de stock. |
-| p95 búsqueda IA < 1.5s | `text-embedding-004` (latencia baja) + HNSW kNN + cache Redis de queries frecuentes; degradación a full-text si Gemini lento. |
+| p95 búsqueda IA < 1.5s | `text-embedding-004` + HNSW kNN + **caché de vectores de consulta en proceso** (no Redis: sigue sin aprovisionar — ADR-0012/0014 enmiendan ADR-0004); degradación a full-text cuando el proveedor no responde en 900 ms. **Con el free tier de 15 RPM la degradación es esperada bajo ráfaga** (§21 enmendada 2026-08-23): el presupuesto se cumple en los dos caminos, pero el semántico no está garantizado para todo el tráfico. |
 | SEO / LCP < 2.5s | Next.js SSR, `next/font` self-host, imágenes optimizadas en R2/CDN, sitemap + JSON-LD de producto. |
 | ~50 concurrentes pico / ≥5.000 SKUs | HNSW escala a decenas de miles de vectores; paginación cursor/offset en listados y panel. |
 | RPO ≤ 24h | Neon snapshots diarios + PITR. |
@@ -701,7 +701,21 @@ Cómo se **opera** el sistema una vez desplegado. Dos roles de operación:
 - Neon soporta la extensión `pgvector` con índice HNSW en el plan elegido.
 - El volumen del catálogo (~5.000 SKUs) y la concurrencia (~50) caben en planes económicos de Railway/Neon sin sharding ni réplicas.
 - MercadoPago provee firma verificable de webhook y endpoint de consulta de pago + refund en la cuenta de DSM.
-- Gemini tiene cuota/rate-limit suficiente para enriquecer el catálogo inicial en una ventana razonable (worker con backoff).
+- ~~Gemini tiene cuota/rate-limit suficiente para enriquecer el catálogo inicial en una ventana razonable (worker con backoff).~~
+  **ENMENDADA el 2026-08-23 (AUDIT-E2E-001).** La suposición valía para el enriquecimiento
+  —trabajo por lotes, que tolera esperar— y **no cubría el camino interactivo de la
+  búsqueda**, que no existía cuando se escribió este E2E. El free tier de Gemini son
+  **15 RPM**, y el limitador es un serializador de intervalo mínimo (`60_000 / RPM`): son
+  **4 s entre llamadas** contra un presupuesto de p95 < 1,5 s, y **15 búsquedas por minuto
+  para todo el sitio** contra los ~50 concurrentes que dimensiona el §17.
+  **Decisión del PO (2026-08-23): se sigue en free tier para esta entrega**, con los 15 RPM
+  repartidos **10 para búsqueda / 5 para enriquecimiento** y el techo aceptado como
+  limitación conocida del ambiente. Consecuencias asumidas, no descubiertas después:
+  la **degradación a full-text pasa a ser un estado común** bajo ráfaga (no excepcional), el
+  **caché de vectores de consulta es *load-bearing*** y no una optimización, y enriquecer el
+  catálogo inicial (~5.000 SKUs × 2 llamadas) a 5 RPM toma del orden de **33 horas** — una
+  ventana de fin de semana, que es la pregunta Q-4 del §23 todavía abierta.
+  Detalle en `openspec/changes/US-004-busqueda-semantica-backend/proposal.md` §OQ-BE-1.
 - El dueño provee un CSV/Excel con columnas mínimas (SKU, descripción base, precio, stock, categoría).
 
 ## 22. Riesgos técnicos
