@@ -22,3 +22,15 @@ export function normalizeQuery(consulta: string): string {
       .toLowerCase()
   );
 }
+
+/**
+ * Longitud **útil** de la consulta: la del texto normalizado, no la del crudo (AC-5).
+ *
+ * La distinción importa porque es la que decide si se gasta una llamada paga. `"   a   "` tiene
+ * 7 caracteres y **una** letra útil: cobrarle un embedding a eso sería pagar por un espacio en
+ * blanco. Al medir sobre el normalizado, el rechazo por consulta demasiado corta no se puede
+ * evadir escribiendo espacios.
+ */
+export function usefulLength(consulta: string): number {
+  return normalizeQuery(consulta).length;
+}

@@ -222,7 +222,7 @@ language: es
 
 ## Fase 2: Los dos caminos de búsqueda — 2,4 h
 
-- [ ] T2.1 `queryNormalizer` + `relevance` — la lógica que decide, pura
+- [x] T2.1 `queryNormalizer` + `relevance` — la lógica que decide, pura
   - **Pattern**: funciones puras sin tipos de framework ni acceso a base, igual que
     `cart-view.ts` de US-007 — `per backend-node-standards.md §2`. Es donde vive el umbral,
     y así se ejerce sin HTTP, sin Postgres y sin Gemini.
