@@ -153,7 +153,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 3: Negative-space y cross-feature
 
-- [ ] T3.1 **AC-8 — el carrito no reserva ni descuenta stock** (el escenario de más valor)
+- [x] T3.1 **AC-8 — el carrito no reserva ni descuenta stock** (el escenario de más valor)
   - **Pattern**: tres `APIRequestContext` independientes ponen el stock completo cada uno;
     la aserción de inventario se hace **contra el panel del dueño** (`GET /v1/admin/products`)
     y contra la **ficha pública**, nunca contra el repositorio del carrito —
@@ -168,7 +168,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     solo invitado no vale: pasa igual con la reserva implementada.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@carrito" --name "N-2" --format summary 2>&1 | grep -qE '^1 scenario \(1 passed\)$'`
 
-- [ ] T3.2 AC-10 — lo no publicado no entra, y no se distingue de lo inexistente
+- [x] T3.2 AC-10 — lo no publicado no entra, y no se distingue de lo inexistente
   - **Pattern**: `Esquema del escenario` con `Ejemplos` para los tres estados, en vez de
     tres escenarios casi idénticos — `per bdd-scenario-quality §Scenario Outline`.
   - **Exit criterion**: TC-708 verde en los tres ejemplos (borrador, archivado,
@@ -178,7 +178,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     carrito sería un oráculo de enumeración del catálogo oculto.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@carrito" --name "N-1" --format summary 2>&1 | grep -qE '^3 scenarios \(3 passed\)$'`
 
-- [ ] T3.3 Cross-feature: la costura con el panel (US-001) y con la ficha (US-003)
+- [x] T3.3 Cross-feature: la costura con el panel (US-001) y con la ficha (US-003)
   - **Pattern**: el dueño muta **por la API de admin real** (no por la base) mientras el
     invitado tiene el producto en el carrito; el invitado relee — `per
     qa-three-layer-regression §Layer 3 — flujos que cruzan changes de disciplinas`.

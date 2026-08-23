@@ -68,3 +68,62 @@ Característica: Carrito de compra del invitado (US-007)
     Entonces ve las dos líneas, cada una con su propio subtotal
     Y el total del carrito es solamente el de la línea que sí puede comprar
     Y el carrito avisa que hay algo que impide avanzar al pago
+
+  @negative @critical-path
+  Esquema del escenario: TC-708 — Lo que no está publicado no entra, y no se distingue de lo inexistente
+    Cuando un invitado intenta agregar a su carrito un producto en estado "<estado>"
+    Entonces el sistema rechaza la operación
+    Y el producto no queda incorporado al carrito
+    # Si el borrador respondiera distinto del inexistente, el carrito sería un
+    # oráculo de enumeración del catálogo oculto del dueño.
+    Y la respuesta es indistinguible de la de un producto que no existe
+
+    Ejemplos:
+      | estado      |
+      | borrador    |
+      | archivado   |
+      | inexistente |
+
+  @negative @critical-path
+  Escenario: TC-709 — N-2 — El carrito no reserva ni descuenta stock, por más carritos que haya
+    Dado un producto publicado con exactamente 3 unidades de stock
+    # Con reserva implementada, el segundo invitado recibiría rechazo o quedaría
+    # con stock insuficiente. Un solo invitado no distinguiría nada.
+    Cuando tres invitados distintos ponen las 3 unidades cada uno en su carrito
+    Entonces los tres carritos tienen las 3 unidades disponibles para comprar
+    Y el dueño sigue viendo 3 unidades de stock en su panel
+    Y la ficha pública sigue anunciando el producto como disponible
+    Cuando los tres modifican y quitan líneas de sus carritos
+    Entonces el dueño sigue viendo 3 unidades de stock en su panel
+
+  @cross-feature @critical-path
+  Escenario: TC-710 — Despublicar desde el panel marca la línea del carrito, no la borra
+    Dado un invitado con un producto publicado en su carrito
+    Cuando el dueño despublica ese producto desde el panel
+    Y el invitado vuelve a abrir su carrito
+    Entonces la línea sigue estando, marcada como no disponible
+    Y queda fuera del total del carrito
+    Y el carrito avisa que hay algo que impide avanzar al pago
+    # Cierra el callejón sin salida: un ítem que no se puede comprar ni sacar
+    # dejaría al cliente encerrado.
+    Cuando el invitado quita esa línea
+    Entonces la línea desaparece sin error
+
+  @cross-feature
+  Escenario: TC-711 — El carrito cobra el precio vigente aunque la ficha siga cacheada
+    Dado un invitado con un producto de precio conocido en su carrito
+    Cuando el dueño le cambia el precio desde el panel
+    Y el invitado vuelve a abrir su carrito
+    Entonces el importe unitario, el subtotal y el total usan el precio nuevo
+    Y el carrito avisa que ese precio cambió desde que lo agregó
+    # La asimetría es deliberada: la ficha puede servir el precio viejo desde su
+    # caché de 60 s; el carrito no puede.
+    Y la respuesta del carrito no es cacheable
+
+  @cross-feature
+  Escenario: TC-712 — El producto que publica la ficha es el que acepta el carrito
+    Dado un producto publicado que el invitado encontró en su ficha pública
+    Cuando lo agrega al carrito usando el identificador que la ficha publica
+    Entonces el producto entra al carrito
+    Y el precio que el carrito cobra es el que la ficha mostraba
+

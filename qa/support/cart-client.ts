@@ -51,6 +51,8 @@ interface CartEnvelope {
 export interface Respuesta<T> {
   status: number;
   body: T;
+  /** Cabeceras de la respuesta: X-2 asserta que el carrito no sea cacheable. */
+  headers: Record<string, string>;
 }
 
 /**
@@ -73,7 +75,7 @@ export class Invitado {
   async ver(): Promise<Respuesta<Cart>> {
     const res = await this.ctx.get('/v1/cart');
     const sobre = (await res.json()) as CartEnvelope;
-    return { status: res.status(), body: sobre.cart };
+    return { status: res.status(), body: sobre.cart, headers: res.headers() };
   }
 
   /**
@@ -91,7 +93,11 @@ export class Invitado {
       data: { quantity },
       headers: token ? { 'x-csrf-token': token } : {},
     });
-    return { status: res.status(), body: await res.json().catch(() => undefined) };
+    return {
+      status: res.status(),
+      body: await res.json().catch(() => undefined),
+      headers: res.headers(),
+    };
   }
 
   async quitar(slug: string): Promise<Respuesta<unknown>> {
@@ -99,7 +105,11 @@ export class Invitado {
     const res = await this.ctx.delete(`/v1/cart/items/${slug}`, {
       headers: token ? { 'x-csrf-token': token } : {},
     });
-    return { status: res.status(), body: await res.json().catch(() => undefined) };
+    return {
+      status: res.status(),
+      body: await res.json().catch(() => undefined),
+      headers: res.headers(),
+    };
   }
 
   async cerrar(): Promise<void> {
