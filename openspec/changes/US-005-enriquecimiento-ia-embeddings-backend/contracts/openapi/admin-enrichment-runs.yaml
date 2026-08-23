@@ -1,0 +1,241 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /admin/enrichment/runs
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-005 (enriquecimiento IA + embeddings). Al archivar el change extiende la
+    capacidad **existente** `openspec/specs/catalogo/`.
+
+    **Esta es la única superficie de la API donde un request de más cuesta plata**: cada corrida
+    son llamadas pagas al proveedor de IA. De ahí salen tres decisiones del contrato que conviene
+    leer juntas:
+
+    - **202 y no 200**: una corrida sobre miles de productos no cabe en el tiempo de un request
+      (`api-standards §10`). El progreso se consulta en `GET /admin/enrichment/status`.
+    - **Una corrida a la vez** (409): dos barridos del mismo catálogo gastarían el doble para
+      producir el mismo resultado.
+    - **Presupuesto propio y chico** (429): 6 por minuto por IP, con su propio cubo y no el de
+      `auth` — compartirlo haría que unas cuantas corridas dejen al dueño sin poder entrar al
+      panel.
+
+    El trabajo pendiente es **durable** en `products.enrichment_done`: no hay tabla de corridas.
+    El `run_id` es un identificador de correlación para los logs, no una entidad consultable.
+servers:
+  - url: /v1
+tags:
+  - name: admin-enrichment
+    description: Enriquecimiento IA y embeddings del catálogo (US-005). Sólo admin.
+paths:
+  /admin/enrichment/runs:
+    post:
+      operationId: startEnrichmentRun
+      tags: [admin-enrichment]
+      summary: Disparar una corrida de enriquecimiento (AC-1, AC-5)
+      description: |
+        Arranca una corrida sobre todo lo pendiente, o sobre un subconjunto si se envían
+        `product_ids`. Responde **202** de inmediato y sigue procesando en background con el
+        ejecutor in-process (ADR-0014).
+
+        El cuerpo normal es `{}`. Los dos campos opcionales existen para casos concretos:
+
+        - **`force: true`** devuelve a la cola los productos **abandonados** (los que agotaron
+          `ENRICHMENT_MAX_ATTEMPTS`). Es explícito a propósito: si el reintento de los
+          abandonados fuera automático, el tope de intentos no serviría para nada y un proveedor
+          caído generaría reintentos infinitos.
+        - **`product_ids`** acota la corrida. Cada id es una llamada paga, así que el tope es de
+          500; para el catálogo completo se manda `{}`, que va por lotes con su propio control de
+          concurrencia y de RPM.
+
+        Un campo desconocido en el cuerpo es **422**, no un valor ignorado: `{"forced": true}` es
+        un typo plausible de `force`, y aceptarlo en silencio haría una corrida que el dueño cree
+        que rehabilita abandonados y no lo hace.
+      security:
+        - adminBearer: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StartEnrichmentRun' }
+            examples:
+              todoElCatalogo:
+                summary: El pedido normal — barre todo lo pendiente
+                value: {}
+              reintentarAbandonados:
+                summary: Después de resolver un problema con el proveedor
+                value: { force: true }
+              soloUnosProductos:
+                summary: Tras corregir la descripción de dos productos puntuales
+                value:
+                  product_ids:
+                    - 6f9619ff-8b86-d011-b42d-00c04fc964ff
+                    - 3f2504e0-4f89-11d3-9a0c-0305e82c3301
+      responses:
+        '202':
+          description: |
+            Corrida aceptada y arrancada. **No** terminada: el resultado se consulta en
+            `GET /admin/enrichment/status`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentRunAccepted' }
+              examples:
+                aceptada:
+                  value:
+                    run_id: 9f8c2e14-6a3b-4c1d-9e2f-7b5a1c0d3e6f
+                    accepted: true
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          description: |
+            Dos situaciones distintas, con `type` distinto, porque se resuelven distinto:
+
+            - `dsm:enrichment/run-in-progress` — ya hay una corrida. Se espera y se mira el
+              `/status`.
+            - `dsm:enrichment/cooldown` — el breaker está abierto tras fallos consecutivos del
+              proveedor. Acá no hay nada que esperar del sistema: hay un problema con el
+              proveedor. Devolver «ya hay una corrida» mandaría al dueño a mirar un progreso que
+              no existe.
+
+            Las dos llevan `runner_state` como extension member de RFC 7807 §3.2, para que el
+            panel no tenga que parsear la frase del `detail`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                corridaEnCurso:
+                  value:
+                    type: 'dsm:enrichment/run-in-progress'
+                    title: Conflict
+                    status: 409
+                    detail: 'Ya hay una corrida de enriquecimiento en curso (estado: running).'
+                    instance: /v1/admin/enrichment/runs
+                    runner_state: running
+                enfriamiento:
+                  value:
+                    type: 'dsm:enrichment/cooldown'
+                    title: Conflict
+                    status: 409
+                    detail: El enriquecimiento está en enfriamiento tras fallos consecutivos del proveedor de IA.
+                    instance: /v1/admin/enrichment/runs
+                    runner_state: cooldown
+        '422':
+          description: |
+            `dsm:catalog/validation` — cuerpo inválido: un campo desconocido (whitelist del
+            `ValidationPipe`), un `product_ids` que no son UUID v4, o más de 500 ids.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: |
+            `dsm:enrichment/disabled` — no hay proveedor configurado (`GEMINI_API_KEY` ausente) o
+            `ENRICHMENT_ENABLED=false`. No es «ocupado»: no hay con qué trabajar, y por eso es
+            5xx y no 409.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: |
+        Presupuesto de la superficie de enriquecimiento excedido: **6 por minuto por IP**
+        (`ENRICHMENT_RATE_LIMIT_MAX` / `ENRICHMENT_RATE_LIMIT_TTL_MS`,
+        `security-standards §7.3`). El `GET /admin/enrichment/status` **no** consume este
+        presupuesto.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    StartEnrichmentRun:
+      type: object
+      additionalProperties: false
+      description: |
+        Todos los campos son opcionales; el cuerpo vacío es el pedido normal. Un campo
+        desconocido es 422.
+      properties:
+        force:
+          type: boolean
+          default: false
+          description: |
+            Rehabilita los productos abandonados antes de barrer: pone `enrichment_attempts = 0`
+            y limpia la espera y el `error_code`.
+        product_ids:
+          type: array
+          maxItems: 500
+          items: { type: string, format: uuid }
+          description: |
+            Acota la corrida a estos productos. Un array **vacío** significa «ninguno», no
+            «todos»: interpretarlo como el catálogo entero sería la peor lectura posible de un
+            pedido acotado.
+    EnrichmentRunAccepted:
+      type: object
+      required: [run_id, accepted]
+      additionalProperties: false
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          description: |
+            Identificador de **correlación** para los logs de esta corrida. No hay
+            `GET /runs/{id}`: el estado se consulta en `/admin/enrichment/status`, porque el
+            trabajo pendiente ya es durable en el catálogo y una tabla de corridas sería estado
+            duplicado que puede desincronizarse.
+        accepted:
+          type: boolean
+          const: true
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            Catálogo **cerrado** de esta superficie:
+            `dsm:enrichment/run-in-progress` (409),
+            `dsm:enrichment/cooldown` (409),
+            `dsm:enrichment/disabled` (503),
+            `dsm:catalog/validation` (422),
+            más `dsm:catalog/http-401` / `dsm:catalog/http-403` de la frontera admin y el 429 del
+            throttler.
+          examples: ['dsm:enrichment/run-in-progress']
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: |
+            **Nunca** contiene la clave del proveedor, su URL ni el texto de un producto (AC-9).
+        instance: { type: string }
+        runner_state:
+          type: string
+          enum: [idle, running, cooldown, disabled]
+          description: |
+            Extension member de RFC 7807 §3.2 en los 409: el estado del ejecutor viaja como dato
+            y no incrustado en una frase que el panel tenga que parsear.

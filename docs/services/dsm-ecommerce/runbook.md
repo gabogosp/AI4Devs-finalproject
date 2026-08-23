@@ -80,6 +80,33 @@ Aplica a `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_K
 >
 > Los secretos **nunca** van al repo ni a la imagen (`security-standards` §5; `.env.production` en git está prohibido). Si un secreto se filtró en un commit: rotar primero, limpiar historia después.
 
+### 3.6 Primera corrida del enriquecimiento IA (US-005)
+
+Es la operación que **habilita la búsqueda semántica**: hasta que corra, el catálogo no tiene
+vectores y `/search` no tendría qué consultar.
+
+**Ventana: ≈ 5,5 h** para 5.000 SKUs con el free tier de Gemini (15 RPM). Es techo del
+**proveedor**, no del código: el adapter espacia las salidas a `60000 / GEMINI_MAX_RPM` ms para
+no cobrar 429, así que la única palanca real es subir la cuota. Conviene dispararla **fuera del
+horario de más tráfico** del storefront, aunque el ejecutor ceda el event loop entre lotes y la
+API siga respondiendo.
+
+1. Confirmar que la clave está cargada: `GET /v1/admin/enrichment/status` debe devolver
+   `runner_state` distinto de `disabled`. Si dice `disabled`, falta `GEMINI_API_KEY` o
+   `ENRICHMENT_ENABLED` está en `false` — **no es una caída**.
+2. Disparar: `POST /v1/admin/enrichment/runs` con cuerpo `{}` (responde **202**, no espera a
+   terminar).
+3. Seguir el avance con el `GET /status`: `coverage.embedded` sube y `coverage.pending` baja. El
+   objetivo de AC-3 es `coverage_ratio >= 0.9`.
+4. Al terminar, revisar `coverage.abandoned`. Si es > 0, esos productos **siguen publicados y
+   visibles** (perdieron calidad de búsqueda, no presencia) y **no vuelven solos**: se recuperan
+   con `POST /runs` y `{"force": true}` una vez resuelto el problema del proveedor.
+
+> El ejecutor corre **in-process** (ADR-0014): no hay worker ni Redis. Si el proceso se reinicia a
+> mitad de la corrida no se pierde trabajo — la cola es `products.enrichment_done = false` y los
+> productos arrendados vuelven a estar disponibles al vencer su lease
+> (`ENRICHMENT_LEASE_MS`). Basta con volver a disparar.
+
 ## 4. Respuesta a alertas
 
 | Síntoma / alerta | Severidad | Qué significa | Acción inmediata |
@@ -89,8 +116,8 @@ Aplica a `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_K
 | **`/ready` devuelve 503** | Alta | El proceso vive pero **la DB no responde** | Verificar Neon (estado del proyecto, autosuspend en free tier despierta en el primer query). Si Neon está caído, es incidente de proveedor → §7. |
 | **Webhook MP no llega / órdenes atascadas en `pending_payment`** | Alta | El pago se cobró pero la orden no avanzó | Reconciliar consultando el estado a la API de MP (operación **idempotente**) y reintentar el decremento de stock. Nunca marcar la orden a mano sin confirmar el pago en MP. |
 | **Un endpoint responde 429/404 a todos los clientes, pero el origen está sano** | Alta | Probable **respuesta no-2xx cacheada en el edge**. El síntoma no delata la causa: el origen se ve bien y las métricas de Railway no muestran carga. | 1. Pegarle al host de Railway **directo, salteando Cloudflare**: si responde 200, el problema es la caché de edge, no la app. 2. Purgar esa URL en Cloudflare. 3. Revisar si alguien creó una **page rule de caché**: no debe haber ninguna — la política es honrar el `Cache-Control` del origen (ver `design.md` §Topología). Una regla con TTL fijo cachea los no-2xx y convierte el rate-limit en un DoS. |
-| **Cola BullMQ atascada** | Media | Jobs encolados sin drenar (enriquecimiento/emails) | Revisar jobs fallidos / dead-letter en el dashboard de la cola; verificar que Redis esté up y que el `worker` esté corriendo; reprocesar los fallidos. |
-| **Gemini caído / rate-limited** | Baja | Búsqueda semántica y enriquecimiento degradados | **Sin acción**: la búsqueda degrada a full-text automáticamente y los jobs reintentan con backoff. Si persiste, subir cuota. |
+| **Cola BullMQ atascada** | Media | Jobs encolados sin drenar (emails). **El enriquecimiento IA no pasa por acá**: corre in-process (ADR-0014) y su cola es `products.enrichment_done = false`; se diagnostica con `GET /v1/admin/enrichment/status`. | Revisar jobs fallidos / dead-letter en el dashboard de la cola; verificar que Redis esté up y que el `worker` esté corriendo; reprocesar los fallidos. |
+| **Gemini caído / rate-limited** | Baja | Enriquecimiento degradado (y, cuando exista US-004, búsqueda semántica degradada). **El catálogo sigue navegable y vendible**: los productos sin vector no desaparecen de la tienda (AC-5). | 1. **Diagnóstico**: `GET /v1/admin/enrichment/status` con el JWT admin. `runner_state: "cooldown"` + `last_error_code: "dsm:enrichment/ai-transient"` ⇒ el breaker se abrió tras `ENRICHMENT_FAILURE_THRESHOLD` fallos consecutivos; reabre solo a los `ENRICHMENT_COOLDOWN_MS` (5 min por defecto). `runner_state: "disabled"` ⇒ **no es una caída del proveedor**: falta `GEMINI_API_KEY` o `ENRICHMENT_ENABLED=false`. 2. **Sin acción en el caso normal**: los transitorios se reintentan dentro de la llamada respetando el `Retry-After`, y lo que igual falla queda con backoff durable en la base (1 m · 5 m · 25 m · 2 h · 10 h) — sobrevive a un reinicio. 3. **Corte manual** si hay que dejar de gastar cuota ya (pico de costo, incidente del proveedor): `ENRICHMENT_ENABLED=false` en Railway + restart del servicio. Es variable de entorno, **no requiere deploy de código**. El catálogo sigue navegable; se pierde la mejora de búsqueda, no la tienda. 4. **Recuperación**: volver a `true` y `POST /v1/admin/enrichment/runs`. Si `coverage.abandoned > 0`, los abandonados **no vuelven solos** (el tope de intentos existe justamente para eso): `POST /v1/admin/enrichment/runs` con `{"force": true}`. 5. Si persiste, subir cuota en Google AI Studio o bajar `GEMINI_MAX_RPM` para dejar de pedir 429. |
 | **Resend caído** | Baja | No salen emails transaccionales | Los jobs reintentan; verificar estado del proveedor. No bloquea la compra. |
 | **«Se me borró el carrito»** (reclamo de cliente, US-007) | Baja | **No es un bug.** La identidad del carrito del invitado **es la cookie** `dsm_cart`, y el carrito vive **7 días desde la última escritura** (`CART_TTL_DAYS`), no desde la última visita. Borrar cookies, cambiar de navegador o de dispositivo, o volver pasada la ventana ⇒ carrito vacío. **No hay forma de recuperarlo**: la fila se borró y el token en claro no se guarda en ninguna parte (sólo su hash), así que tampoco se puede buscar por token desde una consola. | 1. Confirmar el patrón con el cliente (¿limpió el navegador? ¿cuánto tiempo pasó? ¿otro dispositivo?). 2. Explicar que el carrito no se pierde por un error del sistema y que los productos siguen en el catálogo. 3. **Si los reclamos se repiten**, subir `CART_TTL_DAYS` en Railway — es una variable de entorno, **no requiere deploy de código** (sí un restart del servicio). Gatillo cuantitativo: reclamos recurrentes o `cart.viewed` sobre carritos vacíos **con** cookie presente subiendo de forma sostenida. 4. No inventar un carrito a mano en la base: sin el token del cliente, esa fila es inalcanzable. |
 | **Tabla `carts` creciendo** (carritos vencidos) | Baja | La purga es **oportunista**: una fila vencida se borra recién cuando alguien intenta usarla, y sus líneas se van por `ON DELETE CASCADE`. Un carrito abandonado por un cliente que nunca vuelve queda como fila muerta. El job programado de barrido está **diferido** (OQ-BE-6 / US-019: Redis y BullMQ todavía no están aprovisionados). | Con el volumen esperado (miles de filas) es irrelevante durante meses; con `CART_TTL_DAYS = 7` la purga oportunista se dispara seguido. Si hiciera falta limpiar a mano: `DELETE FROM carts WHERE expires_at <= now();` — es seguro (la cascada se lleva `cart_items`) y **nunca** toca `products`: el carrito no reserva ni descuenta stock (ADR-0008). |
@@ -102,7 +129,7 @@ Aplica a `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_K
 | **Neon free tier en staging**: autosuspend + ventana de restore mínima | Activo (Q-2) | Aceptado para staging. El primer query tras suspensión tarda más. El upgrade a plan pago con PITR real es **gate previo al primer deploy productivo** (`/plan-deployment`). |
 | **Sin sink de retención de logs** | Activo (Q-E, diferido) | Sentry cubre errores; los logs de Railway rotan. Sin auditoría de logs a largo plazo — deuda consciente. |
 | **Sin dominio custom** | Activo (2026-08-16) | Se usan los subdominios `*.up.railway.app` con TLS de Railway. DNS/TLS custom en Cloudflare → `/plan-deployment`. |
-| **`worker` sin config de deploy** | Activo | `apps/worker` es placeholder; su `railway.json` llega con US-005. |
+| **`worker` sin config de deploy** | Activo | `apps/worker` sigue siendo placeholder. US-005 **no** lo necesitó: el enriquecimiento corre in-process (ADR-0014), con contrato asíncrono y estado durable, listo para cambiar el ejecutor por BullMQ cuando exista el add-on de Redis (US-019). |
 | **Sin job de purga de carritos vencidos** (US-007) | Activo (diferido, OQ-BE-6) | La purga oportunista al resolver alcanza con la ventana de **7 días**; el barrido programado necesita BullMQ (US-019). Deuda anotada con dueño, sin urgencia mientras la tabla siga en miles de filas. |
 
 ## 6. Procedimientos de recuperación

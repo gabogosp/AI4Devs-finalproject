@@ -548,7 +548,7 @@ estimate-hours: 13.4
 
 ## Fase 7: Contratos y documentación — 0,7 h
 
-- [ ] T7.1 Dos contratos OpenAPI draft (1 por endpoint) + lint (0,4 h)
+- [x] T7.1 Dos contratos OpenAPI draft (1 por endpoint) + lint (0,4 h)
   - **Pattern**: un archivo por endpoint bajo
     `openspec/changes/US-005-enriquecimiento-ia-embeddings-backend/contracts/openapi/`, igual que
     US-002/US-006/US-007; errores como `application/problem+json` —
@@ -559,7 +559,7 @@ estimate-hours: 13.4
     `type` `dsm:enrichment/*`. Spectral pasa con 0 errores.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-005-enriquecimiento-ia-embeddings-backend/contracts/openapi/*.yaml && python3 -c "import yaml; d=yaml.safe_load(open('openspec/changes/US-005-enriquecimiento-ia-embeddings-backend/contracts/openapi/admin-enrichment-runs.yaml')); ops=[m for p in d['paths'].values() for m in p.values()]; rs=set(); [rs.update(o['responses'].keys()) for o in ops]; assert {'202','409','422','429','401'} <= {str(r) for r in rs}, rs"`
 
-- [ ] T7.2 Spec publicado + README + runbook (0,3 h)
+- [x] T7.2 Spec publicado + README + runbook (0,3 h)
   - **Pattern**: sumar los dos paths a `apps/api/docs/api/openapi.yaml` (base `/v1`, sin
     prefijo duplicado) con su `tag` nuevo `admin-enrichment`; documentar las variables en
     `apps/api/README.md`; agregar las filas de operación al runbook —

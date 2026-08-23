@@ -474,7 +474,101 @@ camino y el trabajo queda `running` en la base.
 Un valor inválido **hace fallar el arranque** (Zod, fail-fast §7): un cap que se
 degrada a su default por un typo es un cap que no existe.
 
-> **Diferido a US-005 / US-019**: el encolado real del enriquecimiento en BullMQ.
-> Hoy el import deja la marca durable `products.enrichment_done = false`, así que
-> `SELECT … WHERE enrichment_done = false` reconstruye el trabajo pendiente y no
-> se pierde nada mientras Redis no esté aprovisionado.
+> **Diferido a US-019**: el encolado en BullMQ. US-005 ya conectó el enriquecimiento
+> por el mismo puerto (`ENRICHMENT_QUEUE`): al terminar un import se empuja el
+> ejecutor in-process. La marca durable `products.enrichment_done = false` sigue
+> siendo la cola real, así que un empujón perdido no pierde trabajo.
+
+## Enriquecimiento IA y embeddings (US-005)
+
+Convierte las descripciones pobres del catálogo en descripciones ricas y genera el
+**vector** con el que funciona la búsqueda semántica (US-004). Es la capacidad que
+habilita el diferenciador del producto: sin vectores, `/search` no tiene qué consultar.
+
+El trabajo corre **en proceso** dentro de `apps/api` (ADR-0014, que enmienda ADR-0004
+igual que ADR-0012 lo hizo para el import): no hay worker ni Redis todavía. La cola no
+es una tabla de jobs: **es `WHERE enrichment_done = false`**, y el reparto seguro entre
+réplicas lo da un claim por lease (`UPDATE … FOR UPDATE SKIP LOCKED`).
+
+### Superficie admin
+
+| Método y ruta | Para qué |
+|---|---|
+| `GET /v1/admin/enrichment/status` | Cobertura del catálogo y estado del ejecutor (AC-3) |
+| `POST /v1/admin/enrichment/runs` | Dispara una corrida: **202**, o 409 si ya hay una |
+| `PATCH /v1/admin/products/{id}` con `description_enriched` | El dueño **cura** el texto: la IA no lo vuelve a pisar (AC-7) |
+
+El `GET` **no** consume el presupuesto del `POST`: el panel lo consulta en loop mientras
+una corrida avanza, y si mirar el progreso gastara el cupo de disparo, el dueño se
+quedaría sin poder lanzar una corrida por haber mirado la barra.
+
+### Sin `GEMINI_API_KEY` la app arranca, pero el enriquecimiento **no corre**
+
+Es deliberado y conviene entenderlo antes de la primera demo:
+
+- **En desarrollo**, sin la clave los dos puertos resuelven al `DisabledAiProvider`, el
+  `/status` reporta `runner_state: "disabled"` y **no se genera ni un vector**. El
+  catálogo queda navegable por categoría (AC-5) y la búsqueda semántica no tiene con qué
+  responder. No hay adapter que devuelva vectores sintéticos: uno haría que la búsqueda
+  «funcione» devolviendo basura, y eso se descubre en la demo.
+- **En producción**, faltar la clave **hace fallar el arranque** (refinement de
+  `envSchema`, mismo criterio que `RESEND_API_KEY`). Una feature que "funciona" sin hacer
+  nada es peor que un arranque roto.
+- El estado del ejecutor (`idle | running | cooldown | disabled`) es **en memoria**; lo
+  durable es `products.enrichment_done`. Un reinicio no pierde trabajo pendiente.
+
+### Cuándo se gasta plata, y cuándo no
+
+Cada corrida son llamadas pagas al proveedor, así que el control de costo está en el
+código y probado por tests que **cuentan invocaciones**:
+
+| Cambio en el producto | Enricher | Embedder |
+|---|---|---|
+| Nada cambió y ya tiene vector | 0 | 0 |
+| Cambió sólo el precio o el stock | 0 | 0 |
+| Cambió `description_raw` | 1 | 1 |
+| El dueño curó el texto (`description_curated = true`) | **0** | 1 |
+| Nada cambió pero le falta el vector (falló una corrida previa) | 0 | 1 |
+
+La decisión se toma comparando `enrichment_source_hash` con el hash de **lo que el dueño
+controla** (nombre + rubro + texto curado o base). El texto que escribió la IA **no
+participa del hash**: si participara, corregir una `description_raw` no cambiaría el hash
+y el vector describiría el texto viejo para siempre.
+
+### Variables de entorno
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `GEMINI_API_KEY` | — | Clave del proveedor. **Requerida en producción**; sin ella el runner queda `disabled`. Viaja en el header `x-goog-api-key`, nunca en la URL (AC-9) |
+| `GEMINI_ENRICH_MODEL` | `gemini-1.5-flash` | Modelo del enriquecedor de texto (ADR-0003) |
+| `GEMINI_EMBED_MODEL` | `text-embedding-004` | Modelo de embeddings. Su dimensión (768) está fijada en el esquema |
+| `GEMINI_ENRICH_TIMEOUT_MS` | 20000 | Timeout por llamada de enriquecimiento |
+| `GEMINI_EMBED_TIMEOUT_MS` | 10000 | Timeout por llamada de embedding |
+| `GEMINI_MAX_RPM` | 15 | Tope de requests por minuto del free tier. El adapter espacia las salidas a `60000 / GEMINI_MAX_RPM` |
+| `ENRICHMENT_ENABLED` | `true` | Kill-switch. En `false` el catálogo queda navegable sin enriquecer (AC-5) |
+| `ENRICHMENT_BATCH_SIZE` | 25 | Productos arrendados por lote |
+| `ENRICHMENT_CONCURRENCY` | 2 | Productos procesados en paralelo dentro del lote |
+| `ENRICHMENT_MAX_ATTEMPTS` | 5 | Intentos antes de abandonar un producto (AC-5) |
+| `ENRICHMENT_LEASE_MS` | 120000 | Duración del lease del claim: cuánto tarda en volver a la cola un producto de una corrida que murió |
+| `ENRICHMENT_COOLDOWN_MS` | 300000 | Enfriamiento del breaker tras fallos consecutivos (AC-4) |
+| `ENRICHMENT_FAILURE_THRESHOLD` | 5 | Fallos **consecutivos** que abren el breaker |
+| `ENRICHMENT_MAX_ENRICHED_CHARS` | 1200 | Tope del texto generado (se recorta sin partir palabras) |
+| `ENRICHMENT_RATE_LIMIT_MAX` | 6 | `POST /runs` por ventana e IP |
+| `ENRICHMENT_RATE_LIMIT_TTL_MS` | 60000 | Ventana del presupuesto del `POST` (1 min) |
+
+Un valor inválido **hace fallar el arranque** (Zod, fail-fast §7).
+
+### Resiliencia: degradar sin desaparecer
+
+- Un fallo **transitorio** (429, 5xx, timeout) se reintenta dentro de la llamada
+  respetando el `Retry-After` del proveedor, y si igual falla queda un **backoff durable
+  en la base** (1 m · 5 m · 25 m · 2 h · 10 h): el reintento sobrevive a un reinicio.
+- A los `ENRICHMENT_MAX_ATTEMPTS` el producto queda **abandonado**: sale de la cola,
+  conserva su `description_raw`, **sigue publicado y visible en la tienda** y aparece en
+  `coverage.abandoned`. Se recupera con `POST /runs` y `{ "force": true }` — explícito,
+  porque un reintento automático haría que el tope de intentos no sirva para nada.
+- Tras `ENRICHMENT_FAILURE_THRESHOLD` fallos **consecutivos** el breaker abre y el
+  ejecutor deja de llamar durante `ENRICHMENT_COOLDOWN_MS`. Insistir contra un proveedor
+  caído sólo quema cuota que después falta para el catálogo real.
+- **El enriquecimiento nunca publica ni despublica** (AC-10): el `UPDATE` enumera sus
+  columnas y `status` no está entre ellas. Un borrador se enriquece y **sigue** borrador.
