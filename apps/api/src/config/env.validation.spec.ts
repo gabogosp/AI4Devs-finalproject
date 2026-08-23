@@ -117,6 +117,103 @@ describe('Carrito del invitado (US-007 T0.2) — defaults y fail-fast', () => {
   });
 });
 
+describe('Enriquecimiento IA + embeddings (US-005 T0.3) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin ninguna de las 16 variables, aplica los defaults exactos', () => {
+    const env = validateEnv({ ...base });
+
+    expect(env.GEMINI_API_KEY).toBeUndefined();
+    expect(env.GEMINI_ENRICH_MODEL).toBe('gemini-1.5-flash');
+    expect(env.GEMINI_EMBED_MODEL).toBe('text-embedding-004');
+    expect(env.GEMINI_ENRICH_TIMEOUT_MS).toBe(20_000);
+    expect(env.GEMINI_EMBED_TIMEOUT_MS).toBe(10_000);
+    expect(env.GEMINI_MAX_RPM).toBe(15);
+    expect(env.ENRICHMENT_ENABLED).toBe('true');
+    expect(env.ENRICHMENT_BATCH_SIZE).toBe(25);
+    expect(env.ENRICHMENT_CONCURRENCY).toBe(2);
+    expect(env.ENRICHMENT_MAX_ATTEMPTS).toBe(5);
+    expect(env.ENRICHMENT_LEASE_MS).toBe(120_000);
+    expect(env.ENRICHMENT_COOLDOWN_MS).toBe(300_000);
+    expect(env.ENRICHMENT_FAILURE_THRESHOLD).toBe(5);
+    expect(env.ENRICHMENT_MAX_ENRICHED_CHARS).toBe(1_200);
+    expect(env.ENRICHMENT_RATE_LIMIT_TTL_MS).toBe(60_000);
+    expect(env.ENRICHMENT_RATE_LIMIT_MAX).toBe(6);
+  });
+
+  it('en DESARROLLO sin GEMINI_API_KEY parsea OK (el runner queda disabled)', () => {
+    // D6: sin clave la feature no funciona, pero el arranque local no se rompe —
+    // el catálogo sigue navegable por categoría (AC-5).
+    const env = validateEnv({ ...base, NODE_ENV: 'development' });
+    expect(env.GEMINI_API_KEY).toBeUndefined();
+  });
+
+  it('en PRODUCCIÓN sin GEMINI_API_KEY lanza, y el mensaje nombra la variable', () => {
+    // Una feature de IA que arranca muda en producción no se descubre hasta la demo.
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        RESEND_API_KEY: 'k',
+        PASSWORD_RESET_FROM: 'a@b.com',
+        PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+      }),
+    ).toThrow(/GEMINI_API_KEY/);
+  });
+
+  it('en PRODUCCIÓN con GEMINI_API_KEY arranca', () => {
+    const env = validateEnv({
+      ...base,
+      NODE_ENV: 'production',
+      GEMINI_API_KEY: 'clave-real',
+      RESEND_API_KEY: 'k',
+      PASSWORD_RESET_FROM: 'a@b.com',
+      PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+    });
+    expect(env.GEMINI_API_KEY).toBe('clave-real');
+  });
+
+  it('ENRICHMENT_CONCURRENCY=0 hace fallar el arranque, no cae al default', () => {
+    expect(() =>
+      validateEnv({ ...base, ENRICHMENT_CONCURRENCY: '0' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('GEMINI_MAX_RPM=abc hace fallar el arranque', () => {
+    expect(() => validateEnv({ ...base, GEMINI_MAX_RPM: 'abc' })).toThrow(
+      /fail-fast/,
+    );
+  });
+
+  it('los topes de cuota se respetan: batch > 200 y concurrencia > 8 fallan', () => {
+    // Los máximos no son decorativos: protegen la cuota del proveedor y el
+    // request path (una corrida gigante compite con el tráfico real).
+    expect(() =>
+      validateEnv({ ...base, ENRICHMENT_BATCH_SIZE: '201' }),
+    ).toThrow(/fail-fast/);
+    expect(() =>
+      validateEnv({ ...base, ENRICHMENT_CONCURRENCY: '9' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ENRICHMENT_ENABLED sólo acepta true|false', () => {
+    expect(() =>
+      validateEnv({ ...base, ENRICHMENT_ENABLED: 'yes' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('una clave vacía NO cuenta como clave presente', () => {
+    // `GEMINI_API_KEY=` en un .env es el error de configuración más común, y
+    // `.min(1)` es lo que evita que el adapter arranque con una cadena vacía.
+    expect(() => validateEnv({ ...base, GEMINI_API_KEY: '' })).toThrow(
+      /fail-fast/,
+    );
+  });
+});
+
 describe('Import masivo de inventario (US-006 T0.3) — defaults y fail-fast', () => {
   const base = {
     DATABASE_URL: 'postgresql://x',

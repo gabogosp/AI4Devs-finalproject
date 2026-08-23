@@ -166,6 +166,48 @@ export const envSchema = z.object({
     .int()
     .positive()
     .default(3_600_000), // 1 h
+
+  /**
+   * US-005 — enriquecimiento IA + embeddings (ADR-0003 el proveedor, ADR-0014 el
+   * ejecutor in-process). Defaults seguros; un valor inválido hace **FALLAR el
+   * arranque** (§7), nunca cae al default en silencio.
+   *
+   * `GEMINI_API_KEY` es opcional a nivel de campo pero **requerida en producción**
+   * (refinement de abajo): sin ella el runner queda `disabled` y la búsqueda semántica
+   * de US-004 no tendría vectores. Es el mismo precedente de `RESEND_API_KEY` — una
+   * feature que "funciona" sin hacer nada es peor que un arranque roto (D6).
+   */
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  /** Modelo del enriquecedor de texto (ADR-0003). */
+  GEMINI_ENRICH_MODEL: z.string().min(1).default('gemini-1.5-flash'),
+  /** Modelo de embeddings. Su dimensión (768) está fijada en el esquema. */
+  GEMINI_EMBED_MODEL: z.string().min(1).default('text-embedding-004'),
+  /** Timeout por llamada de enriquecimiento, en ms. */
+  GEMINI_ENRICH_TIMEOUT_MS: z.coerce.number().int().positive().default(20_000),
+  /** Timeout por llamada de embedding, en ms (la llamada es más chica que la de texto). */
+  GEMINI_EMBED_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  /** Tope de requests por minuto del free tier; el limitador del adapter lo respeta. */
+  GEMINI_MAX_RPM: z.coerce.number().int().positive().default(15),
+
+  /** Kill-switch del runner: en `false` el catálogo queda navegable sin enriquecer (AC-5). */
+  ENRICHMENT_ENABLED: z.enum(['true', 'false']).default('true'),
+  /** Productos por corrida. Tope 200: una corrida larga compite con el request path. */
+  ENRICHMENT_BATCH_SIZE: z.coerce.number().int().positive().max(200).default(25),
+  /** Productos en paralelo dentro de la corrida. Tope 8 por la cuota del proveedor. */
+  ENRICHMENT_CONCURRENCY: z.coerce.number().int().positive().max(8).default(2),
+  /** Intentos antes de abandonar un producto (AC-4/AC-5). */
+  ENRICHMENT_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  /** Lease del claim, en ms: una corrida que muere libera la fila al vencer (ADR-0014). */
+  ENRICHMENT_LEASE_MS: z.coerce.number().int().positive().default(120_000),
+  /** Enfriamiento del breaker una vez abierto, en ms. */
+  ENRICHMENT_COOLDOWN_MS: z.coerce.number().int().positive().default(300_000),
+  /** Fallos consecutivos del proveedor que abren el breaker. */
+  ENRICHMENT_FAILURE_THRESHOLD: z.coerce.number().int().positive().default(5),
+  /** Tope de caracteres del texto enriquecido: control de costo y de ruido. */
+  ENRICHMENT_MAX_ENRICHED_CHARS: z.coerce.number().int().positive().default(1_200),
+  /** §7.3 — presupuesto de los dos endpoints admin de enriquecimiento (ventana y máximo). */
+  ENRICHMENT_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  ENRICHMENT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(6),
 }).superRefine((env, ctx) => {
   // Sin esto, un deploy mal configurado caería al adapter de log y el flujo de
   // recuperación "funcionaría" sin enviar un solo email. Nadie se entera hasta
@@ -185,6 +227,19 @@ export const envSchema = z.object({
           'requerida en producción: sin ella el reset caería al adapter de log y no se enviaría ningún email',
       });
     }
+  }
+
+  // US-005 D6 — mismo razonamiento, otra feature: sin clave el enriquecimiento
+  // arranca `disabled`, así que el catálogo queda sin `description_enriched` y sin
+  // embeddings. La búsqueda semántica (US-004) no tendría con qué responder y nadie
+  // se enteraría hasta la demo: un arranque roto es preferible a una feature muda.
+  if (!env.GEMINI_API_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['GEMINI_API_KEY'],
+      message:
+        'GEMINI_API_KEY es requerida en producción: sin ella el enriquecimiento IA queda deshabilitado, el catálogo no genera embeddings y la búsqueda semántica no tendría vectores que consultar',
+    });
   }
 });
 

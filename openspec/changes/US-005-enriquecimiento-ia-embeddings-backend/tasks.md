@@ -24,18 +24,18 @@ estimate-hours: 13.4
 
 ## Pre-requisitos
 
-- [ ] **`products.enrichment_done` existe** en el esquema AS-BUILT (US-006 T0.2, ya migrado en
+- [x] **`products.enrichment_done` existe** en el esquema AS-BUILT (US-006 T0.2, ya migrado en
   `20260820164630_add_import_jobs`). Verificar: `grep -q "enrichment_done" packages/db/prisma/schema.prisma`.
-- [ ] **Postgres local arriba con pgvector**: `docker compose up -d postgres` (imagen
+- [x] **Postgres local arriba con pgvector**: `docker compose up -d postgres` (imagen
   `pgvector/pgvector:pg16`; la extensión ya la habilita `20260715000000_enable_pgvector`).
   Verificar: `docker compose exec -T postgres psql -U dsm -d dsm -c "SELECT extname FROM pg_extension WHERE extname='vector'"` devuelve una fila.
-- [ ] **`GEMINI_API_KEY` en `.env`** (free tier de ADR-0003). Sin ella, T1.4 y las suites corren
+- [x] **`GEMINI_API_KEY` en `.env`** (free tier de ADR-0003). Sin ella, T1.4 y las suites corren
   con el fake determinista y el runner arranca `disabled` — ninguna task queda bloqueada, pero
   T6.1 no ejercita el proveedor real.
-- [ ] **`apps/api` sin cambios sin commitear de otras lanes** (worktree aislado — sprint MVP-2
+- [x] **`apps/api` sin cambios sin commitear de otras lanes** (worktree aislado — sprint MVP-2
   §Coordinación 1). `git status --porcelain apps/api packages/db` vacío antes de T0.2: esta task
   toca `schema.prisma`, que es superficie compartida con US-006/US-007.
-- [ ] **Coordinación con US-006** (misma lane C): si `/develop-backend US-006` ya creó
+- [x] **Coordinación con US-006** (misma lane C): si `/develop-backend US-006` ya creó
   `src/imports/enrichment/enrichment-queue.port.ts`, T3.5 lo **mueve** a `src/enrichment/ports/`
   en vez de crearlo. Si US-006 no llegó, este change define el puerto y US-006 lo consume.
 
@@ -97,7 +97,7 @@ estimate-hours: 13.4
   - **Verify**: `pnpm --filter @dsm/db migrate && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='products' AND column_name IN ('description_enriched','description_curated','enrichment_source_hash','enrichment_attempts','enrichment_next_attempt_at','enrichment_error_code')" | grep -qx 6 && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='product_embeddings' AND column_name IN ('product_id','embedding','model_version','generated_at')" | grep -qx 4 && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT indexdef FROM pg_indexes WHERE indexname='product_embeddings_embedding_hnsw_idx'" | grep -q "hnsw" && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT indexdef FROM pg_indexes WHERE indexname='product_embeddings_embedding_hnsw_idx'" | grep -q "vector_cosine_ops" && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT indexdef FROM pg_indexes WHERE indexname='products_enrichment_pending_idx'" | grep -q "enrichment_done = false" && docker compose exec -T postgres psql -U dsm -d dsm -tAc "SELECT confdeltype FROM pg_constraint WHERE conrelid='product_embeddings'::regclass AND contype='f'" | grep -qx c`
     *(`confdeltype = 'c'` prueba el `ON DELETE CASCADE`, no sólo la existencia de la FK.)*
 
-- [ ] T0.3 Variables de entorno del enriquecimiento validadas por Zod (0,6 h)
+- [x] T0.3 Variables de entorno del enriquecimiento validadas por Zod (0,6 h)
   - **Pattern**: agregar al `envSchema` existente con defaults seguros + `superRefine` de
     producción, exactamente como el bloque de `RESEND_API_KEY` — `per backend-node-standards.md §7
     — config validada al arranque, fail-fast`. Un valor inválido **falla el arranque**, nunca cae
