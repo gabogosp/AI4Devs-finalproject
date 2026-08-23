@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AppErrorException } from '@/lib/http/errors';
 
+// US-007 T3.5: la card con stock incluye `AddToCartButton`, que consume el
+// CartProvider del layout. Este test renderiza la grilla aislada — se stubea el
+// botón y ninguna aserción cambia.
+vi.mock('@/features/cart/AddToCartButton', () => ({
+  AddToCartButton: () => null,
+}));
+
 /**
  * La ruta de categoría: éxito renderiza server-side, y un 404 del contrato se
  * traduce a `notFound()` de Next — que es lo que produce un status HTTP 404

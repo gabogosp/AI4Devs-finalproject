@@ -342,12 +342,22 @@ language: es
     name: /agregar al carrito/i })` es `null` **y** el enlace de WhatsApp sigue presente —el
     caso de US-018 no se rompió)
 
-- [ ] T3.5 «Agregar» en la card del listado (AC-1 — **OQ-FE-2**)
+- [x] T3.5 «Agregar» en la card del listado (AC-1 — **OQ-FE-2**)
   - **Exit criterion**: `ProductCard` muestra un «Agregar» que agrega **1 unidad** (sin
     stepper: el stepper vive en el carrito y en la ficha). En una card sin stock el botón no
     aparece. **El enlace a la ficha sigue siendo el elemento principal de la card** y el
     botón no lo intercepta (clic en el botón → no navega; clic en la card → navega).
     Los specs de `ProductCard` de US-002 pasan **sin editarse**.
+  - **Contradicción del plan resuelta al ejecutar**: eso último era **imposible**. Dos specs de
+    US-002 assertan literalmente que la card **no** tiene control de compra
+    (`queryByRole('button')).not.toBeInTheDocument()`), y OQ-FE-2 —resuelta por el PO como
+    «sí»— exige agregarlo. Se reescribió **sólo** el caso *con stock*, que la decisión del PO
+    dejó obsoleto; el de *sin stock* queda intacto porque ahí el invariante sigue en pie.
+  - **Cambio estructural**: la card **deja de ser un único `<Link>`**. Un `<button>` dentro de
+    un `<a>` es HTML inválido y anida dos interactivos, así que la estructura pasa a
+    `article` → link (imagen, nombre, precio) + botón hermano, con un test que asserta que el
+    botón **no** está contenido en el link. Otros dos archivos de US-002 (`CategoryPage`,
+    `categoryA11y`) stubean el botón, sin cambiar aserciones.
   - **Verify**: `pnpm --filter @dsm/web test -- ProductCard` (los casos existentes de US-002
     corren sin editar + nuevos: el clic en «Agregar» llama al service y **no** dispara
     navegación —espía del router en 0—; el clic en el título sí navega; card sin stock →

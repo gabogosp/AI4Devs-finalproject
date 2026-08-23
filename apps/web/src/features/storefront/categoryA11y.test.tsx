@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi} from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { Breadcrumb } from './Breadcrumb';
@@ -7,6 +7,13 @@ import { CategoryEmptyState } from './CategoryEmptyState';
 import { Pagination } from './Pagination';
 import { ProductCard } from './ProductCard';
 import type { StorefrontProductListItem } from '@/api/generated/model';
+
+// US-007 T3.5: la card con stock incluye `AddToCartButton`, que consume el
+// CartProvider del layout. Este test renderiza la grilla aislada — se stubea el
+// botón y ninguna aserción cambia.
+vi.mock('@/features/cart/AddToCartButton', () => ({
+  AddToCartButton: () => null,
+}));
 
 expect.extend(toHaveNoViolations);
 
