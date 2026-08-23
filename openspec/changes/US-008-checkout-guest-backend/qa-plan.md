@@ -139,6 +139,19 @@ Característica: Checkout guest — datos, consentimiento y retiro (US-008)
   Escenario: SC-008-X2 — CSRF requerido en la escritura
     Cuando el cliente envía el checkout sin el header X-CSRF-Token
     Entonces recibe 403
+
+  # Hereda la MITAD FRONTEND de US-017 AC-4. Se escribe acá porque no se puede escribir
+  # antes: necesita que exista el formulario de checkout. La mitad backend de ese AC ya
+  # está arriba (SC-008-A3) y la de AC-8 en SC-008-N3. Ejecutor: el change
+  # `US-008-checkout-guest-frontend-web` cuando se planifique — este plan de backend NO lo
+  # implementa, sólo evita que el escenario se caiga entre las dos US.
+  @cross-feature @frontend
+  Escenario: SC-008-X3 — El consentimiento enlaza a las dos páginas legales (US-017 AC-4)
+    Dado el formulario de checkout renderizado
+    Cuando el cliente mira el checkbox de consentimiento
+    Entonces ve un enlace a /legales/privacidad y otro a /legales/terminos
+    Y ninguno de los dos es "#"
+    Y los href provienen de CONSENT_COPY (src/features/legal/routes.ts), no de literales
 ```
 
 **Tooling**: Cucumber-js con `qa/acceptance/steps/checkout.steps.ts`.

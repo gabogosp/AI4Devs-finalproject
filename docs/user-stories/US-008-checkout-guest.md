@@ -138,6 +138,26 @@ And ese registro queda disponible para trazabilidad legal
 
 > Las tasks code-generating (BE/FE) abren su openspec change en `openspec/changes/US-008-checkout-guest-{discipline}/`. La task QA vive en `tasks/US-008/qa-deliverable.md`.
 
+> **Para `FE-US-008`: el consentimiento tiene su seam YA CONSTRUIDO — no lo escribas a mano.**
+> US-017 dejó, y su suite lo custodia:
+>
+> | Qué necesitás | De dónde sale | Qué pasa si lo escribís a mano |
+> |---|---|---|
+> | Las rutas legales | `LEGAL_ROUTES` en `apps/web/src/features/legal/routes.ts` | `routes.test.ts` **falla**: hay un guard que recorre `apps/web/src` y `apps/web/app` y rechaza el literal `'/legales/` fuera de ese módulo |
+> | El copy del consentimiento y sus dos enlaces | `CONSENT_COPY`, en el mismo archivo | Se duplica el copy del `design-system.md` §10.2 y divergen al primer cambio |
+> | La versión de los términos | `LEGAL_TERMS_VERSION` en `apps/web/src/features/legal/content.ts` | `versionContract.test.ts` **falla** si no coincide con el default del backend |
+>
+> `CONSENT_COPY` existe **exactamente** para ser consumida acá: se construyó en US-017 T0.2 como
+> seam de esta US, con sus `href` reales en vez de los dos `(#)` que tenía el copy del
+> design-system. La mitad frontend de **US-017 AC-4** (que el checkbox enlace a las dos páginas)
+> se verifica en este change, no en US-017: allá no se podía escribir porque el formulario no
+> existía. El escenario está redactado como **`SC-008-X3`** en
+> `openspec/changes/US-008-checkout-guest-backend/qa-plan.md`.
+>
+> Y el **versionado de los términos es de esta US**, no de US-017: `BE-US-017` quedó absorbida
+> acá (OQ-FE-18 (a), 2026-08-23). `LEGAL_TERMS_VERSION` es un **contrato con el frontend
+> verificado en cada CI** — cambiar la versión es un cambio en los dos lados a la vez.
+
 ## 8. Diseño
 
 - **Tiene Figma**: no. Hereda de `docs/product/design-system.md` — formulario de checkout (Input/Select §7.2), selección/confirmación de retiro, checkbox de consentimiento, resumen de orden con PriceTag, CTA "Ir al pago" (botón accent), tono de copy §10.2.
