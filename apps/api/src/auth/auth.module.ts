@@ -77,6 +77,19 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: Number(config.get('ENRICHMENT_RATE_LIMIT_TTL_MS') ?? 60_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — quinto throttler nombrado: la búsqueda semántica (US-004). Es la única
+        // superficie PÚBLICA donde un request de más puede costar plata en un tercero.
+        //
+        // Mismo criterio que `enrichment` y por la misma razón medida: `@nestjs/throttler`
+        // aplica TODOS los throttlers nombrados a TODA ruta guardada, así que un tope chico
+        // acá se lo impondría al storefront, al carrito y a auth. El techo de acá es
+        // inalcanzable y el presupuesto real (SEARCH_RATE_LIMIT_MAX, 20/min) va en el
+        // `@Throttle` del handler.
+        {
+          name: 'search',
+          ttl: Number(config.get('SEARCH_RATE_LIMIT_TTL_MS') ?? 60_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],

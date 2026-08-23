@@ -300,7 +300,7 @@ language: es
 
 ## Fase 3: Superficie HTTP — 1,4 h
 
-- [ ] T3.1 DTOs de query y de respuesta
+- [x] T3.1 DTOs de query y de respuesta
   - **Pattern**: `class-validator` + el `ValidationPipe` global (whitelist, 422) sobre los
     **query params** — `per backend-node-standards.md §4` y `per api-standards.md §2.6`.
     Respuesta en `snake_case`, dinero en centavos (§5.2/§5.5).
@@ -317,7 +317,7 @@ language: es
     `?foo=bar` → 422 por whitelist; el 200 **no** contiene ningún UUID
     —`not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)`— ni la clave `embedding`)
 
-- [ ] T3.2 `SearchController` — `GET /v1/search`
+- [x] T3.2 `SearchController` — `GET /v1/search`
   - **Exit criterion**: `GET /v1/search?q=…` devuelve **200** con el DTO de T3.1. Lleva
     `Cache-Control` acotado y **no** `no-store` (es contenido público derivado del
     catálogo, no personalizado) — reusa el patrón del `StorefrontCacheInterceptor` de
@@ -330,7 +330,7 @@ language: es
     `in_stock: false`; la respuesta lleva la cabecera de caché acotada y **no**
     `no-store`)
 
-- [ ] T3.3 Throttler nombrado `search` (AC-10)
+- [x] T3.3 Throttler nombrado `search` (AC-10)
   - **Pattern**: espejo de `StorefrontThrottlerGuard`; emite las cabeceras `RateLimit-*` y
     `Retry-After` **antes** de lanzar (si no, el filtro RFC 7807 reconstruye el body y las
     pierde). `@SkipThrottle` cruzado para no consumir los otros cubos — `per
@@ -344,7 +344,7 @@ language: es
     agotarlo, `GET /v1/products/:slug`, `GET /v1/cart` y `POST /v1/auth/login` siguen
     respondiendo **no-429**)
 
-- [ ] T3.4 Errores de dominio de búsqueda
+- [x] T3.4 Errores de dominio de búsqueda
   - **Pattern**: extender `DomainError` en `search/search-errors.ts`, como `auth-errors.ts`
     — no se toca `common/errors/domain-errors.ts` (prefijo `dsm:catalog/`) — `per
     backend-node-standards.md §6`.

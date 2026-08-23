@@ -38,3 +38,26 @@ export class QueryTooLongError extends DomainError {
     );
   }
 }
+
+/**
+ * 503 — la búsqueda no puede responder por un fallo de **infraestructura propia** (Postgres).
+ *
+ * Existe para un solo caso y conviene decir cuál **no** es: **no** hay error de dominio para el
+ * fallo del proveedor de IA. Si Gemini no contesta, la respuesta es un **200 degradado** con
+ * `degraded: true` (AC-4), porque el catálogo sigue siendo buscable por texto y la tienda sigue
+ * vendiendo. Convertir eso en un 5xx haría que un problema de un tercero se vea como una caída
+ * nuestra, y el cliente que ve un error no vuelve a intentar.
+ *
+ * Un fallo de Postgres es distinto: sin base no hay ni resultados ni fallback que ofrecer, y
+ * mentir con un `results: []` haría creer que el catálogo no tiene lo que se buscó.
+ */
+export class SearchUnavailableError extends DomainError {
+  readonly status = 503;
+  readonly type = 'dsm:search/unavailable';
+
+  constructor() {
+    super(
+      'La búsqueda no está disponible en este momento. Podés navegar el catálogo por categorías mientras se restablece.',
+    );
+  }
+}
