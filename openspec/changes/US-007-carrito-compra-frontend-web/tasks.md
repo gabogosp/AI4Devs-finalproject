@@ -155,7 +155,7 @@ language: es
     el 403 se propaga (fail closed); en entorno servidor → **lanza**; los casos existentes
     de `'customer'` y públicos pasan sin editarse)
 
-- [ ] T1.2 `cartService` — repositorio del feature
+- [x] T1.2 `cartService` — repositorio del feature
   - **Pattern**: la lógica de servicio es lo **único** que se escribe a mano (§3.3); envuelve
     las operaciones **generadas** y mapea errores con el `mapProblemToAppError` existente —
     `per frontend-standards.md §11.5 — repositorio por feature` y `§11.3 — mapeo a AppError
@@ -166,6 +166,12 @@ language: es
     Traduce 404 → `notFound`, 409 → `conflict` (preservando `available_quantity` del body),
     403 → `forbidden`, 429 → `rateLimited` con `retryAfterSeconds`. **No** hay ningún
     `fetch(` en `src/features/cart/`.
+  - **Nota de ejecución**: para que el 409 llegue con su `available_quantity`, `errors.ts`
+    ganó **campos opcionales** en la variante `conflict` (`problemType`, `availableQuantity`,
+    `maxItems`). No es un `kind` nuevo (D7 lo prohíbe): el contrato declara esos valores como
+    **extension members RFC 7807 §3.2 de primer nivel** justamente «para que el frontend no
+    tenga que sacarlo del detail con una regex», y el mapper los tiraba. Los dos 409 del
+    carrito (`insufficient-stock` y `too-many-items`) se distinguen por `problemType`.
   - **Verify**: `pnpm --filter @dsm/web test -- cartService` (con los handlers **MSW
     generados** en T0.1: happy path de las 3 operaciones; 409 → `conflict` con
     `available_quantity` accesible; 404 → `notFound`; 429 → `rateLimited` con el

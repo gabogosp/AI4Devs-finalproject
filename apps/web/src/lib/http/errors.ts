@@ -25,7 +25,21 @@ export type AppError =
       fieldErrors: FieldError[];
       problemType?: string;
     }
-  | { kind: 'conflict'; message: string }
+  /**
+   * 409. Lleva los **extension members** RFC 7807 §3.2 que el backend declara
+   * como campos de primer nivel a propósito —`available_quantity` de
+   * `dsm:cart/insufficient-stock` y `max_items` de `dsm:cart/too-many-items`—
+   * para que el frontend no tenga que sacarlos del `detail` con una regex
+   * (US-007 AC-5). `problemType` distingue los dos casos sin adivinar por la
+   * forma del error.
+   */
+  | {
+      kind: 'conflict';
+      message: string;
+      problemType?: string;
+      availableQuantity?: number;
+      maxItems?: number;
+    }
   | { kind: 'unauthorized'; message: string }
   | { kind: 'forbidden'; message: string }
   | { kind: 'notFound'; message: string }
@@ -40,6 +54,10 @@ interface ProblemBody {
   status?: number;
   detail?: string;
   errors?: FieldError[];
+  /** Extension member de `dsm:cart/insufficient-stock` (US-007). */
+  available_quantity?: number;
+  /** Extension member de `dsm:cart/too-many-items` (US-007). */
+  max_items?: number;
 }
 
 /** Mapea el envelope RFC 7807 (`application/problem+json`) a un `AppError` tipado. */
@@ -61,7 +79,15 @@ export function mapProblemToAppError(
         problemType: p.type,
       };
     case 409:
-      return { kind: 'conflict', message };
+      return {
+        kind: 'conflict',
+        message,
+        problemType: p.type,
+        ...(typeof p.available_quantity === 'number'
+          ? { availableQuantity: p.available_quantity }
+          : {}),
+        ...(typeof p.max_items === 'number' ? { maxItems: p.max_items } : {}),
+      };
     case 401:
       return { kind: 'unauthorized', message };
     case 403:
