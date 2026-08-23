@@ -173,14 +173,21 @@ en el design-system desde la US §8.
 **Ninguna bloquea el arranque**: las seis tienen un default implementado en el plan.
 Lo que cambia si el PO decide distinto está dicho en cada fila.
 
-| Id | Pregunta | Default implementado (recomendado) | Si se decide distinto |
+| Id | Pregunta | Decisión / default | Estado |
 |---|---|---|---|
-| **OQ-BE-1** | **El seam con US-008.** Este plan necesita que `POST /v1/checkout` devuelva un `order_token` opaco y que `orders` tenga `access_token_hash`. Es la única obligación que US-009 le impone a una US todavía sin planificar. | US-008 mina el token (256 bit CSPRNG, SHA-256 en base) — mismo patrón que ADR-0011 y que el carrito de US-007 | Si US-008 prefiere exponer el `order_id` UUID, cae AC-9 a «no adivinable por entropía» y hay que agregar una prueba de propiedad (cookie del carrito). Peor: el UUID acabaría en URLs y logs |
-| **OQ-BE-2** | ¿Se permite **reintentar** el pago tras un rechazo? | **Sí**, hasta **5 intentos** por orden; a lo sumo uno `pending` a la vez (índice único parcial) | Con «no» el DER queda 1:1 como está dibujado y se simplifica el modelo, pero un rechazo del banco mata la venta sin recurso |
-| **OQ-BE-3** | Vida de la cookie `dsm_order` (ventana para volver de MercadoPago y ver el resultado). | **2 h** | Más corta rompe al comprador que deja el checkout abierto; más larga alarga la ventana de una cookie que da lectura del estado de una orden |
-| **OQ-BE-4** | ¿La respuesta de `GET /v1/payments/latest` incluye el **total** y el estado de la orden, o sólo el del pago? | Incluye `order_status` + `total_ars_cents` (la página de éxito los necesita y ya son datos del propio comprador) | Sólo pago: la página tendría que pedir la orden a otro endpoint que hoy no existe |
-| **OQ-BE-5** | **Vencimiento de la preferencia** de MercadoPago (`expiration_date_to`). | **24 h** desde la creación | Sin vencimiento, un `init_point` viejo sigue cobrable días después contra una orden que la limpieza de US-010 ya canceló |
-| **OQ-BE-6** | ¿El medio simulado queda habilitado en **staging** (no sólo en local/test)? | **Sí** — es lo que habilita la demo al dueño y el E2E de Playwright contra el ambiente desplegado | Con «no», el E2E de la capa L3 (E2E §19) sólo corre en local y la demo necesita una transacción real en el sandbox |
+| **OQ-BE-1** | **El seam con US-008.** Este plan necesita que `POST /v1/checkout` devuelva un `order_token` opaco y que `orders` tenga `access_token_hash`. Es la única obligación que US-009 le impone a otra US. | **Opción (a), ratificada**: US-008 mina el token (256 bit CSPRNG, SHA-256 en base) — mismo patrón que ADR-0011 y que el carrito de US-007, y el `order_id` UUID **nunca sale a la red**. Se descartó exponer el UUID: terminaría en logs y en el `Referer` que el navegador manda **a MercadoPago** al redirigir. El plan [`US-008-checkout-guest-backend`](../US-008-checkout-guest-backend/design.md) lo entrega con esta forma exacta (su deviación 1 del DER) | `[Resolved: 2026-08-22 — opción (a); implementa US-008 T0.1 + T2.2]` |
+| **OQ-BE-2** | ¿Se permite **reintentar** el pago tras un rechazo? | **Sí**, hasta **5 intentos** por orden; a lo sumo uno `pending` a la vez (índice único parcial) | `[Default implementado]` |
+| **OQ-BE-3** | Vida de la cookie `dsm_order` (ventana para volver de MercadoPago y ver el resultado). | **2 h** | `[Default implementado]` |
+| **OQ-BE-4** | ¿La respuesta de `GET /v1/payments/latest` incluye el **total** y el estado de la orden, o sólo el del pago? | Incluye `order_status` + `total_ars_cents` (la página de éxito los necesita y ya son datos del propio comprador) | `[Default implementado]` |
+| **OQ-BE-5** | **Vencimiento de la preferencia** de MercadoPago (`expiration_date_to`). | **24 h** desde la creación | `[Default implementado]` |
+| **OQ-BE-6** | ¿El medio simulado queda habilitado en **staging** (no sólo en local/test)? | **Sí** — es lo que habilita la demo al dueño y el E2E de Playwright contra el ambiente desplegado | `[Default implementado]` |
+
+> **Nota de alcance derivada de la resolución de US-008**: US-008 también entrega un
+> `order_number` legible en su 201 (su OQ-BE-4, resuelta el 2026-08-22). US-009 **no lo
+> consume** —autoriza con el `order_token` y nada más— pero `GET /v1/payments/latest`
+> podría incluirlo para que la página de resultado muestre «Pedido #1042». No se agrega
+> ahora: ningún AC de US-009 lo pide y el FE puede conservarlo del 201 del checkout.
+> `Deferred: US-011/US-012 lo consumen desde `orders` — owner: BE`.
 
 ## References
 

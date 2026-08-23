@@ -16,15 +16,15 @@ language: es
 > Integration y e2e corren contra el Postgres real de `docker-compose`
 > (`ai4devs-finalproject-postgres-1`, host `:55432`), que debe estar arriba.
 >
-> **Estimación dual**: **9,8 h AI-asistido** / **~19 h tradicional** (28 tasks). La US §7
-> presupuesta `BE-US-009` en 10-16 h: el tradicional excede el techo ~3 h por trabajo
-> que la US da por resuelto al describirlo como «integración con MercadoPago + medio
-> simulado detrás de flag» — la **primera llamada saliente del camino crítico** del
-> proyecto (timeout + reintentos + breaker + adaptador falso, ~3,5 h de las cuales la US
-> no presupuesta ninguna, porque en `apps/api` hoy no existe un solo control de
-> resiliencia del que copiar), y las **dos capas** del flag en vez de un `if`
-> (montaje condicional + fallo de arranque). La integración en sí —preferencia,
-> `init_point`, retorno— son ~4 h.
+> **Estimación dual**: **12,3 h AI-asistido** / **~24 h tradicional** (28 tasks, suma de
+> las fases: 1,5 + 3,0 + 1,5 + 2,0 + 1,5 + 0,6 + 1,2 + 1,0). La US §7 presupuesta
+> `BE-US-009` en 10-16 h: el tradicional excede el techo ~8 h por trabajo que la US da por
+> resuelto al describirlo como «integración con MercadoPago + medio simulado detrás de
+> flag» — la **primera llamada saliente del camino crítico** del proyecto (timeout +
+> reintentos + breaker + adaptador falso, ~3,5 h de las cuales la US no presupuesta
+> ninguna, porque en `apps/api` hoy no existe un solo control de resiliencia del que
+> copiar), y las **dos capas** del flag en vez de un `if` (montaje condicional + fallo de
+> arranque). La integración en sí —preferencia, `init_point`, retorno— son ~4 h.
 
 ## Pre-requisitos
 
@@ -34,8 +34,9 @@ language: es
   (b) columna **`orders.access_token_hash`** (SHA-256 de un token opaco de 256 bit,
   patrón ADR-0011);
   (c) que `POST /v1/checkout` devuelva ese token en claro como `order_token` en su 201.
-  Esto es **OQ-BE-1** y conviene ratificarlo con el Arquitecto **antes** de ejecutar:
-  es una obligación que este plan le impone a una US todavía sin planificar.
+  **OQ-BE-1 está `[Resolved: 2026-08-22 — opción (a)]`**: el Arquitecto/PO ratificó el token
+  opaco hasheado, y el plan de `US-008-checkout-guest-backend` lo entrega con esta forma
+  exacta (su T0.1 + T2.2). Lo que falta es que **el código exista**.
   **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=order-schema` (el spec
   de esquema de US-008 pasa) **y** `node -e "const s=require('fs').readFileSync('packages/db/prisma/schema.prisma','utf8'); if(!/model Order\b/.test(s)||!/access_token_hash/.test(s)) { console.error('FALTA orders o access_token_hash'); process.exit(1) } console.log('seam US-008 presente')"`
 

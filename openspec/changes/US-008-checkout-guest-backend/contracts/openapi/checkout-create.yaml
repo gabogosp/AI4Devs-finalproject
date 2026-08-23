@@ -128,6 +128,7 @@ paths:
               schema: { $ref: '#/components/schemas/CheckoutCreated' }
               example:
                 order_token: 3f9a1c7d5e2b48a0c6d1f8e4b3a29750d4c8e6f1a2b3c4d5e6f708192a3b4c5d
+                order_number: 1042
                 status: pending_payment
                 total_ars_cents: 4560000
                 items_count: 3
@@ -208,7 +209,7 @@ components:
   schemas:
     CheckoutCreated:
       type: object
-      required: [order_token, status, total_ars_cents, items_count]
+      required: [order_token, order_number, status, total_ars_cents, items_count]
       additionalProperties: false
       properties:
         order_token:
@@ -218,6 +219,18 @@ components:
             Token opaco de 256 bits. **Se entrega una sola vez**; en base vive su
             SHA-256. Es la entrada de `POST /v1/payments` (US-009) — el `pattern` es el
             mismo que ese contrato declara.
+        order_number:
+          type: integer
+          minimum: 1000
+          description: |
+            Número **legible** del pedido, de una `SEQUENCE` que arranca en 1000
+            (OQ-BE-4). Es lo que el comprador y el dueño usan para hablar del mismo
+            pedido por teléfono; lo consumen el email de US-011 y el panel de US-012.
+
+            **No autoriza nada** — la autorización es el `order_token`. Que sea
+            enumerable es irrelevante precisamente por eso. El `order_id` UUID sigue sin
+            exponerse.
+          example: 1042
         status:
           type: string
           enum: [pending_payment]

@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — Trabajos de recuperación (admin)
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-010 — los dos trabajos de recuperación, disparables **a mano**.
+
+    ## Por qué existen como endpoints y no sólo como runners
+
+    Los dos corren solos en un runner en proceso (no hay planificador ni cola: Redis no
+    está aprovisionado — ADR-0012 / ADR-0014). Pero el runbook del E2E §18.5 los pide
+    textualmente como **«job/endpoint manual idempotente»**, y con razón: cuando una orden
+    se atasca a las tres de la mañana, el operador necesita un botón, no esperar el
+    próximo tick.
+
+    ## Son idempotentes, y eso no es un detalle
+
+    La reconciliación usa **el mismo `ConfirmOrderService`** que el webhook. No hay una
+    segunda implementación que pueda divergir, y como ese servicio es idempotente por
+    construcción, reconciliar un pago que el webhook ya procesó es un no-op. Dispararlos de
+    más no rompe nada.
+servers:
+  - url: /v1
+security:
+  - adminBearer: []
+tags:
+  - name: admin-jobs
+    description: Trabajos de recuperación del loop de pago (US-010).
+paths:
+  /admin/payments/reconcile:
+    post:
+      operationId: reconcilePayments
+      tags: [admin-jobs]
+      summary: Recuperar pagos cuyo webhook nunca llegó (AC-10)
+      description: |
+        Toma las órdenes en `pending_payment` con un pago `pending` de más de
+        `RECONCILE_MIN_AGE_MS` (5 min), **consulta su estado a la API de MercadoPago** y las
+        procesa por el mismo camino que el webhook.
+
+        Es la respuesta al riesgo que el E2E §22 nombra («webhook de MP
+        perdido/duplicado/tardío») y al síntoma que el runbook §18.5 describe: **el
+        comprador pagó y el dueño no ve el pedido**. Sin esto, ese caso llega como un
+        reclamo en vez de resolverse solo.
+      responses:
+        '200':
+          description: Corrida completa, con el resumen de lo que hizo.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobSummary' }
+              examples:
+                recuperoUno:
+                  summary: Había un webhook perdido
+                  value: { processed: 3, confirmed: 1, cancelled: 0, failed: 0 }
+                nadaQueHacer:
+                  summary: Segunda corrida seguida — idempotente
+                  value: { processed: 0, confirmed: 0, cancelled: 0, failed: 0 }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/orders/cleanup-abandoned:
+    post:
+      operationId: cleanupAbandonedOrders
+      tags: [admin-jobs]
+      summary: Cancelar órdenes pendientes de pago abandonadas (AC-11)
+      description: |
+        Las órdenes en `pending_payment` con más de `ORDER_ABANDON_HOURS` (48 h) pasan a
+        `cancelled` con `cancelled_at`.
+
+        **No toca stock** (nunca se decrementó — ADR-0008) y **no intenta reembolsos** (no
+        hubo pago aprobado). Su único efecto es dejar de contaminar la cola del dueño y la
+        reconciliación con órdenes que nadie va a pagar.
+
+        Las 48 h son deliberadas (OQ-BE-1): cubren a quien deja el checkout abierto y paga
+        al día siguiente. Nota de interacción con US-009: la preferencia de MercadoPago
+        vence a las 24 h, así que entre las 24 y las 48 h la orden vive pero su `init_point`
+        ya no sirve — el comprador tiene que iniciar un intento nuevo, que US-009 permite.
+      responses:
+        '200':
+          description: Corrida completa.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobSummary' }
+              example: { processed: 12, confirmed: 0, cancelled: 12, failed: 0 }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con claim `role=admin` (seam ADR-0009). Sin él, 401; con rol de cliente, 403.
+  schemas:
+    JobSummary:
+      type: object
+      required: [processed, confirmed, cancelled, failed]
+      additionalProperties: false
+      properties:
+        processed:
+          type: integer
+          description: Filas candidatas que el trabajo evaluó.
+        confirmed:
+          type: integer
+          description: Órdenes que pasaron a `new` (sólo la reconciliación).
+        cancelled:
+          type: integer
+          description: Órdenes que pasaron a `cancelled`.
+        failed:
+          type: integer
+          description: |
+            Candidatas que no se pudieron resolver en esta corrida (el proveedor no
+            respondió). Quedan para la próxima: **nada se descarta**.
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }

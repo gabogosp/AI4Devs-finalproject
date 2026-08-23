@@ -64,7 +64,9 @@ exacta que ese contrato pide.
   sobre los seis estados de la FSM del E2E §12, `fulfillment` con `CHECK` en
   `('pickup')` —sucursal única, el checkout confirma el retiro, no elige— y el
   registro de consentimiento. Más `access_token_hash` (UNIQUE), que es cómo un
-  invitado sin sesión puede referirse a su propia orden.
+  invitado sin sesión puede referirse a su propia orden, y **`order_number`** (entero de
+  una `SEQUENCE`), que es cómo el dueño y el comprador hablan del mismo pedido por
+  teléfono (OQ-BE-4).
 - `order_items` — una línea por producto, con `quantity`, la **instantánea del precio**
   y —deviación declarada— el nombre y el SKU del producto al momento de comprar.
 
@@ -72,7 +74,7 @@ exacta que ese contrato pide.
 
 | Endpoint | Qué hace | AC |
 |---|---|---|
-| `POST /v1/checkout` | Valida el carrito de la cookie, valida los datos del comprador, exige el consentimiento, crea la orden `pending_payment` con sus ítems y el snapshot de precios, y devuelve el **`order_token`** con el que US-009 inicia el pago. | AC-1..AC-8 |
+| `POST /v1/checkout` | Valida el carrito de la cookie, valida los datos del comprador, exige el consentimiento, crea la orden `pending_payment` con sus ítems y el snapshot de precios, y devuelve el **`order_token`** (con el que US-009 inicia el pago) y el **`order_number`** legible (para mostrarle al comprador). | AC-1..AC-8 |
 
 **El carrito no viaja en el cuerpo.** El borrador de la API en el readme proponía un
 `cart_id`, pero US-007 decidió lo contrario y con razón: el carrito se identifica por
@@ -161,8 +163,15 @@ resumen de la orden, CTA «Ir al pago») es de la capa FE.
   `Deferred: US-015 — owner: BE`
 - **Borrado / anonimización de la PII del invitado.** US-020 cubre el borrado de
   *cuentas*; un comprador guest no tiene cuenta que borrar. La retención de órdenes a
-  12 meses del PRD §6 y su purga/anonimización no están planificadas en ninguna US.
-  **Es un hueco real, no un diferimiento prolijo** — ver OQ-BE-5.
+  12 meses del PRD §6 y su purga/anonimización **siguen fuera de este change**, pero ya
+  no son un hueco sin dueño: el PO resolvió OQ-BE-5 el 2026-08-22 con **abrir una US de
+  retención antes de salir a producción**. **La US ya existe**:
+  [`US-021-retencion-datos-ordenes`](../../../docs/user-stories/US-021-retencion-datos-ordenes.md),
+  creada y enriquecida a `Ready` el 2026-08-22, con 9 AC y `blocked_by: [US-008]`. Anonimiza
+  y **no borra** (el E2E §8 fija que las órdenes no se borran: historial + métricas de
+  US-016), y cubre tanto el plazo de 12 meses del PRD §6 como el pedido de supresión de un
+  comprador invitado, que no tiene cuenta y por eso queda fuera de US-020.
+  `Deferred: US-021 — owner: BE/FE`
 - **Envío a domicilio, cupones, facturación AFIP** — roadmap (PRD §2.2).
 - **Tests de carga (k6) y E2E cross-service (Playwright)** — de `/plan-qa`.
 
@@ -181,15 +190,16 @@ resumen de la orden, CTA «Ir al pago») es de la capa FE.
 
 ## Preguntas abiertas para el PO / Arquitecto
 
-**Ninguna bloquea el arranque**: las cinco tienen un default implementado.
+**Tres resueltas por el PO el 2026-08-22**; las dos restantes tienen default implementado
+y no bloquean el arranque.
 
-| Id | Pregunta | Default implementado (recomendado) | Si se decide distinto |
+| Id | Pregunta | Decisión / default | Estado |
 |---|---|---|---|
-| **OQ-BE-1** | **Doble submit del checkout.** ¿Qué pasa si el comprador hace dos veces «Ir al pago»? | **Se crean dos órdenes**, ambas inertes (sin stock ni plata retenidos); la abandonada la cancela la limpieza de US-010. Es la opción sin acoplamiento: cualquier forma de reuso obliga a US-008 a saber si US-009 ya creó una preferencia, y ahí se cruzan los dos changes. Deviación de `api-standards.md` §10.1 declarada en `design.md` | Con «una sola orden pendiente por carrito» hace falta un índice único parcial **y** decidir qué pasa cuando el carrito cambió después: si se re-snapshotea el total, MercadoPago puede terminar cobrando un importe distinto al de la orden. Es un bug de plata, por eso no es el default |
-| **OQ-BE-2** | ¿El teléfono es obligatorio? | **Sí** (la US §10 lo pone como default para coordinar el retiro y el contacto por WhatsApp de US-018) | Opcional simplifica el formulario y baja fricción, a cambio de perder el canal de contacto dominante en AR justo en la orden que hay que coordinar |
-| **OQ-BE-3** | ¿Se vacía el carrito al crear la orden? | **No**: sigue intacto. Si el pago falla, el comprador no perdió nada | Vaciarlo acá deja al comprador sin carrito ante un pago rechazado (AC-4 de US-009 dice que la orden queda pendiente y el stock intacto — vaciar el carrito lo contradice en la práctica). Vaciarlo al **confirmar** (US-010) sería lo correcto y no está planificado en ninguna US |
-| **OQ-BE-4** | ¿La orden lleva un **número legible** («Pedido #1042») además del UUID interno? | **No** — ningún AC lo pide (YAGNI) | US-011 (email) y US-012 (panel) probablemente lo quieran para que el dueño y el comprador hablen del mismo pedido por teléfono. Agregarlo después es una migración con `sequence`, barata pero no gratis. **Vale decidirlo ahora** |
-| **OQ-BE-5** | **Retención y borrado de la PII del comprador invitado.** El PRD §6 fija 12 meses y anonimización; ninguna US lo implementa, y US-020 cubre sólo cuentas registradas | Este change **no** implementa purga: guarda la PII y la deja documentada como hueco | Es exposición legal (Ley 25.326), no deuda técnica cosmética. La recomendación es abrir una US de retención antes de salir a producción |
+| **OQ-BE-1** | **Doble submit del checkout.** ¿Qué pasa si el comprador hace dos veces «Ir al pago»? | **Opción (a)**: se crean **dos órdenes**, ambas inertes (sin stock ni plata retenidos); la abandonada la cancela la limpieza de US-010. Es la opción sin acoplamiento — cualquier forma de reuso obligaría a US-008 a saber si US-009 ya creó una preferencia, y si se re-snapshotea el total con la preferencia ya emitida, MercadoPago cobra un importe distinto al de la orden (bug de plata). Deviación de `api-standards.md` §10.1 declarada en `design.md` | `[Resolved: 2026-08-22 — opción (a)]` |
+| **OQ-BE-2** | ¿El teléfono es obligatorio? | **Sí** (la US §10 lo pone como default para coordinar el retiro y el contacto por WhatsApp de US-018) | `[Default implementado]` |
+| **OQ-BE-3** | ¿Se vacía el carrito al crear la orden? | **No**: sigue intacto. Si el pago falla, el comprador no perdió nada | `[Default implementado]` |
+| **OQ-BE-4** | ¿La orden lleva un **número legible** («Pedido #1042») además del UUID interno? | **Opción (a) — sí, ahora.** `orders.order_number` (entero, `SEQUENCE START WITH 1000`), expuesto en el 201 y en el contrato. Se agrega en esta migración porque hacerlo después es un `ALTER` **con backfill sobre órdenes reales**, y hasta entonces el dueño leería UUIDs por teléfono. US-011 (email) y US-012 (panel) lo consumen | `[Resolved: 2026-08-22 — opción (a)]` |
+| **OQ-BE-5** | **Retención y borrado de la PII del comprador invitado.** El PRD §6 fija 12 meses y anonimización; ninguna US lo implementa, y US-020 cubre sólo cuentas registradas | **Opción (a)**: se abre una **US de retención antes de salir a producción**. Este change sigue **sin** implementar purga —no es su alcance— pero el hueco deja de estar sólo documentado y pasa a tener dueño. **La US todavía no existe**: hay que crearla (ver §Out of scope) | `[Resolved: 2026-08-22 — opción (a): US de retención antes de producción]` |
 
 ## References
 

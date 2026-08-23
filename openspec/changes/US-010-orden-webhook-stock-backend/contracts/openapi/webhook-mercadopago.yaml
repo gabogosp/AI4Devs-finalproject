@@ -1,0 +1,161 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /webhooks/mercadopago
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-010 — **el núcleo transaccional del producto**. Es la superficie
+    por la que entra el dinero, y la fila más crítica del threat model del E2E §14.
+
+    ## Confianza cero en el cuerpo
+
+    Del payload se toma **únicamente el id del pago**. Todo lo demás —incluido el estado—
+    se obtiene **re-consultando el pago a la API de MercadoPago** (ADR-0006). Un cuerpo
+    que diga `approved` sin firma válida se rechaza con 401 y **no toca la base**.
+
+    La verificación tiene tres partes y las tres importan: HMAC recalculado y comparado en
+    **tiempo constante**, **ventana de tolerancia** sobre el `ts` (sin ella un webhook
+    legítimo capturado se puede reproducir para siempre), y la **re-consulta**.
+
+    ## Idempotente por la base, no por un `if`
+
+    Dentro de una transacción, `SELECT … FOR UPDATE` sobre la fila del pago, y sólo la
+    transición `pending → approved` hace trabajo. Un duplicado encuentra `approved` y
+    corta; dos duplicados **concurrentes** se serializan en el lock. No hay check-then-act
+    —que es precisamente lo que se rompe en una carrera— y no hace falta una tabla de
+    idempotencia: la fila del pago **es** la clave.
+
+    ## Siempre 200 salvo firma inválida
+
+    MercadoPago reintenta ante cualquier respuesta que no sea 2xx. Devolver 500 por un
+    error nuestro genera una tormenta de reintentos justo cuando el sistema está mal, así
+    que un fallo transitorio propio responde 200 y queda para la **reconciliación**
+    (`POST /v1/admin/payments/reconcile`), que es el mecanismo pensado para eso.
+
+    ## Sin rate-limit y sin CSRF, a propósito
+
+    Limitar por IP la puerta por la que entra el dinero significa **descartar pagos**
+    cuando el proveedor reintenta en ráfaga. La protección es la firma —rechazar cuesta un
+    HMAC— y el hecho de que nada no verificado llega a la base. CSRF no aplica: no hay
+    cookie, la autenticación **es** la firma.
+servers:
+  - url: /v1
+tags:
+  - name: webhooks
+    description: Notificaciones de MercadoPago (US-010).
+paths:
+  /webhooks/mercadopago:
+    post:
+      operationId: handleMercadoPagoWebhook
+      tags: [webhooks]
+      summary: Confirmar la orden y decrementar stock ante un pago aprobado y verificado
+      description: |
+        Camino feliz (AC-1): firma válida → re-consulta → `approved` → una transacción que
+        decrementa stock por ítem (`UPDATE … WHERE stock >= q`, recorriendo los ítems
+        **ordenados por `product_id`** para no generar deadlocks), pasa la orden
+        `pending_payment → new` y, **después del commit**, invoca el puerto de
+        notificaciones (US-011).
+
+        Rama de compensación (AC-4): si algún ítem quedó sin stock entre el carrito y la
+        aprobación, la transacción **revierte**, la orden pasa a `cancelled` y el pago a
+        `refund_pending` — un estado persistido para que el reembolso **no se pierda** si
+        la llamada a MercadoPago falla. El reembolso corre **fuera** de toda transacción.
+
+        El **medio simulado «DSM»** de US-009 recorre este mismo servicio a través del
+        `PaymentConfirmationPort` (AC-9): un solo camino de confirmación, no dos.
+      security: []
+      parameters:
+        - in: header
+          name: x-signature
+          required: true
+          description: |
+            Firma de MercadoPago sobre el manifiesto
+            `id:{data.id};request-id:{x-request-id};ts:{ts};`, con `MP_WEBHOOK_SECRET`.
+            Se compara en tiempo constante y el `ts` debe caer dentro de
+            `MP_WEBHOOK_TOLERANCE_SEC` (300 s).
+          schema: { type: string }
+        - in: header
+          name: x-request-id
+          required: true
+          description: Parte del manifiesto firmado.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: |
+                **Sólo se usa `data.id`.** El resto del cuerpo se ignora a propósito: la
+                verdad del pago sale de la re-consulta a la API de MercadoPago.
+              properties:
+                type: { type: string, example: payment }
+                action: { type: string, example: payment.updated }
+                data:
+                  type: object
+                  properties:
+                    id: { type: string, example: '1234567890' }
+            example:
+              type: payment
+              action: payment.updated
+              data: { id: '1234567890' }
+      responses:
+        '200':
+          description: |
+            **Procesado, o ignorado por idempotencia, o dejado para la reconciliación.**
+            Los tres devuelven 200 porque en los tres casos un reintento de MercadoPago no
+            aportaría nada:
+
+            - `confirmed`: orden `new`, stock decrementado, notificación invocada (AC-1).
+            - `already_processed`: el pago ya estaba resuelto — no-op (AC-5, AC-6).
+            - `rejected`: MP reporta el pago rechazado; la orden **queda**
+              `pending_payment` y el comprador puede reintentar (AC-3).
+            - `cancelled_no_stock`: cobrado y no cumplible → orden `cancelled` y reembolso
+              encolado de forma durable (AC-4).
+            - `deferred`: fallo transitorio nuestro; queda para la reconciliación.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [outcome]
+                additionalProperties: false
+                properties:
+                  outcome:
+                    type: string
+                    enum: [confirmed, already_processed, rejected, cancelled_no_stock, deferred]
+              examples:
+                confirmado: { value: { outcome: confirmed } }
+                duplicado: { value: { outcome: already_processed } }
+                sinStock: { value: { outcome: cancelled_no_stock } }
+        '401':
+          description: |
+            **Firma inválida, ausente, malformada o con `ts` fuera de la ventana** (AC-7).
+            Es el **único** status de error de este endpoint, y el único caso en que
+            MercadoPago debería reintentar cambiando algo.
+
+            No se confía en el contenido, no se consulta el pago (se rechaza **antes** de
+            gastar esa llamada) y no se modifica una sola fila.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:payments/webhook-unverified'
+                title: Webhook no verificable
+                status: 401
+                detail: La firma no pudo verificarse.
+components:
+  schemas:
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

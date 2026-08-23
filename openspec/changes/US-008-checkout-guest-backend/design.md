@@ -119,6 +119,7 @@ modifica.
 | Columna | Tipo | Notas |
 |---|---|---|
 | `id` | uuid PK | `gen_random_uuid()`. **No se expone** a la red |
+| `order_number` | int UNIQUE | **Deviación** ↓ (6). Default desde una `SEQUENCE` que arranca en **1000** |
 | `access_token_hash` | text UNIQUE | **Deviación** ↓ (1) |
 | `customer_id` | uuid NULL FK → `customers` | `ON DELETE SET NULL`. Del DER; **sin escritor** en esta US (US-015) |
 | `buyer_name` | text | PII |
@@ -134,8 +135,9 @@ modifica.
 | `updated_at` | timestamptz | **Deviación** ↓ (4) |
 | `delivered_at` | timestamptz NULL | Del DER; **sin escritor** en esta US (US-012) |
 
-**Índices**: `UNIQUE(access_token_hash)`, `orders(status, created_at)` (nombrado en el
-E2E §8; lo consumen el panel de US-012 y la limpieza de US-010), `orders(customer_id)`.
+**Índices**: `UNIQUE(access_token_hash)`, `UNIQUE(order_number)`,
+`orders(status, created_at)` (nombrado en el E2E §8; lo consumen el panel de US-012 y la
+limpieza de US-010), `orders(customer_id)`.
 
 #### `order_items`
 
@@ -153,7 +155,7 @@ E2E §8; lo consumen el panel de US-012 y la limpieza de US-010), `orders(custom
 **Índices**: `order_items(order_id)`, `UNIQUE(order_id, product_id)` (una línea por
 producto, igual que `cart_items`).
 
-#### Las cinco deviaciones del DER (E2E §8), declaradas
+#### Las seis deviaciones del DER (E2E §8), declaradas
 
 1. **`orders.access_token_hash`** — el DER no modela cómo un invitado se refiere a su
    orden, porque el DER no baja a la superficie HTTP. Sin esta columna, o el UUID sale a
@@ -175,6 +177,19 @@ producto, igual que `cart_items`).
    de confirmación (US-011) y el panel (US-012) mostrarían un nombre que el comprador
    nunca vio. El `RESTRICT` de la FK garantiza que la fila del producto exista, no que su
    nombre sea el de la venta.
+6. **`orders.order_number`** (OQ-BE-4, resuelta el 2026-08-22) — el DER identifica la orden
+   sólo por su UUID, que **no se expone** (deviación 1). Eso deja al comprador y al dueño
+   sin forma de nombrar el mismo pedido: el email de US-011 y el panel de US-012 tendrían
+   que mostrar un UUID, y Pedro leería 36 caracteres hexadecimales por teléfono. Se resuelve
+   con un entero de una `SEQUENCE`. Dos detalles que no son obvios:
+   - **Arranca en 1000**, no en 1. Un «Pedido #3» le informa al comprador que la tienda
+     vendió dos veces en su vida, y el PRD §1.3 trata las señales de confianza como
+     conversión en una tienda sin reputación. Cuesta una cláusula `START WITH`.
+   - **Se decide ahora y no después**: agregarlo más tarde es un `ALTER` con **backfill
+     sobre órdenes reales**, mientras esta migración todavía no corrió en ningún ambiente.
+
+   No es secreto y **no autoriza nada**: la autorización sigue siendo el
+   `access_token_hash`. Que sea enumerable es irrelevante precisamente por eso.
 
 **Lo que NO tienen las tablas, a propósito**: ninguna columna capaz de alojar un PAN,
 CVV, titular o token de tarjeta (AC-7 — ADR-0006 pone el pago íntegramente en el

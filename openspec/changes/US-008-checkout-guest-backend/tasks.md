@@ -16,9 +16,9 @@ language: es
 > Integration y e2e corren contra el Postgres real de `docker-compose`
 > (`ai4devs-finalproject-postgres-1`, host `:55432`), que debe estar arriba.
 >
-> **Estimación dual**: **8,6 h AI-asistido** / **~17 h tradicional** (20 tasks, suma de
-> las fases: 1,8 + 1,4 + 1,8 + 1,2 + 0,8 + 1,0 + 0,6). La US §7 presupuesta `BE-US-008`
-> en 6-10 h: el tradicional excede el techo ~7 h por trabajo que la US da por resuelto al
+> **Estimación dual**: **9,0 h AI-asistido** / **~18 h tradicional** (20 tasks, suma de
+> las fases: 2,2 + 1,4 + 1,8 + 1,2 + 0,8 + 1,0 + 0,6). La US §7 presupuesta `BE-US-008`
+> en 6-10 h: el tradicional excede el techo ~8 h por trabajo que la US da por resuelto al
 > describirlo como «endpoint de checkout que crea la orden» —
 > (a) el esquema son **dos tablas con 9 constraints y 5 deviaciones declaradas del DER**,
 > tres de ellas por exigencia de AC-8 (el DER modela el consentimiento como un booleano y
@@ -61,7 +61,7 @@ language: es
 
 ---
 
-## Fase 0: Esquema y configuración — 1,8 h
+## Fase 0: Esquema y configuración — 2,2 h
 
 - [ ] T0.1 Migración aditiva `orders` + `order_items` (F40 — column-complete)
   - **Pattern**: dos `model` nuevos en `packages/db/prisma/schema.prisma` con
@@ -73,6 +73,7 @@ language: es
     migraciones aditivas, nunca destructivas en un solo deploy`.
     ```prisma
     model Order {
+      order_number          Int      @unique @default(dbgenerated("nextval('orders_order_number_seq')"))
       access_token_hash     String   @unique
       customer_id           String?  @db.Uuid
       customer              Customer? @relation(fields: [customer_id], references: [id], onDelete: SetNull)
@@ -89,7 +90,12 @@ language: es
     }
     ```
     ```sql
-    -- añadido a mano al migration.sql
+    -- añadido a mano al migration.sql, ANTES del CREATE TABLE de orders
+    -- Arranca en 1000: un «Pedido #3» le informa al comprador que la tienda vendió dos
+    -- veces en su vida (PRD §1.3 — las señales de confianza son conversión).
+    CREATE SEQUENCE "orders_order_number_seq" START WITH 1000;
+
+    -- y después del CREATE TABLE:
     ALTER TABLE "orders" ADD CONSTRAINT "orders_status_check" CHECK ("status" IN
       ('pending_payment','new','preparing','ready','delivered','cancelled'));
     ALTER TABLE "orders" ADD CONSTRAINT "orders_fulfillment_check" CHECK ("fulfillment" IN ('pickup'));
@@ -99,26 +105,29 @@ language: es
     ALTER TABLE "order_items" ADD CONSTRAINT "order_items_price_check" CHECK ("unit_price_ars_cents" >= 0);
     ```
   - **Exit criterion**: el esquema materializado tiene **exactamente** las columnas de
-    `design.md` §Persistencia — `orders`: `id`, `access_token_hash`, `customer_id`,
-    `buyer_name`, `buyer_email`, `buyer_phone`, `fulfillment`, `status`,
+    `design.md` §Persistencia — `orders`: `id`, `order_number`, `access_token_hash`,
+    `customer_id`, `buyer_name`, `buyer_email`, `buyer_phone`, `fulfillment`, `status`,
     `total_ars_cents`, `consent_accepted`, `consent_accepted_at`,
-    `consent_terms_version`, `created_at`, `updated_at`, `delivered_at` (**15**);
+    `consent_terms_version`, `created_at`, `updated_at`, `delivered_at` (**16**);
     `order_items`: `id`, `order_id`, `product_id`, `quantity`, `unit_price_ars_cents`,
     `product_name`, `product_sku`, `created_at` (**8**). Ni una más (AC-7). Índices:
-    `UNIQUE(orders.access_token_hash)`, `orders(status, created_at)`,
-    `orders(customer_id)`, `order_items(order_id)`,
-    `UNIQUE(order_items.order_id, product_id)`. Los **6 `CHECK`** de arriba. FKs con la
-    regla exacta: `orders.customer_id → customers` **SET NULL**,
+    `UNIQUE(orders.access_token_hash)`, `UNIQUE(orders.order_number)`,
+    `orders(status, created_at)`, `orders(customer_id)`, `order_items(order_id)`,
+    `UNIQUE(order_items.order_id, product_id)`. Los **6 `CHECK`** de arriba. La
+    **`SEQUENCE`** `orders_order_number_seq` existe y su `start_value` es **1000**. FKs con
+    la regla exacta: `orders.customer_id → customers` **SET NULL**,
     `order_items.order_id → orders` **CASCADE**, `order_items.product_id → products`
     **RESTRICT**. **Ninguna** tabla existente se modifica.
   - **Verify**: `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/api test -- --testPathPattern=order-schema`
     (nuevo `src/checkout/order-schema.spec.ts`, espejo de `cart-schema.spec.ts`: compara
     el conjunto **completo** de columnas por tabla contra la lista literal —falla si
-    falta **o sobra** una—, verifica los 5 índices por nombre en `pg_indexes`, y prueba
+    falta **o sobra** una—, verifica los 6 índices por nombre en `pg_indexes`, y prueba
     el **comportamiento real**: `INSERT` con `status='weird'` **falla**;
     `fulfillment='delivery'` **falla**; `consent_accepted=false` **falla**;
     `total_ars_cents=-1` **falla**; `quantity=0` **falla**; dos líneas del mismo producto
-    en la misma orden → la segunda **falla**; borrar una `order` borra sus `order_items`;
+    en la misma orden → la segunda **falla**; **dos órdenes consecutivas reciben
+    `order_number` 1000 y 1001** —leído de la base, no del código— y un `INSERT` que
+    repita un `order_number` **falla**; borrar una `order` borra sus `order_items`;
     borrar un `product` con línea vendida **falla**; borrar un `customer` deja
     `orders.customer_id` en `NULL` **sin borrar la orden**)
 
@@ -249,10 +258,11 @@ language: es
     `consent_accepted = true`, `consent_accepted_at = now()`,
     `consent_terms_version = LEGAL_TERMS_VERSION`, `fulfillment = 'pickup'`,
     `access_token_hash` de T2.2, y el email **normalizado** con `normalizeEmail` de
-    US-014. Devuelve el `order_token` en claro **una sola vez**. Carrito ausente /
-    vencido / vacío → `CartEmptyError`; carrito con `has_blocking_issues` →
-    `CartNotPurchasableError` con una entrada por línea (slug + motivo). **Ninguna
-    escritura sobre `products` ni sobre `carts`/`cart_items`** en ningún camino.
+    US-014. Devuelve el `order_token` en claro **una sola vez** más el `order_number` que
+    asignó la `SEQUENCE`. Carrito ausente / vencido / vacío → `CartEmptyError`; carrito con
+    `has_blocking_issues` → `CartNotPurchasableError` con una entrada por línea (slug +
+    motivo). **Ninguna escritura sobre `products` ni sobre `carts`/`cart_items`** en ningún
+    camino.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=checkout.service`
     (`checkout.service.spec.ts`, integration contra Postgres real: happy path → orden
     `pending_payment` con el total y las líneas esperadas y el email en minúsculas;
@@ -285,13 +295,15 @@ language: es
     **Cualquier** campo extra → 422; en particular `total_ars_cents`, `items`, `cart_id`
     o `status` inyectados en el cuerpo son rechazados: el total y las líneas salen del
     carrito y del catálogo, nunca del cliente. La respuesta declara `order_token`,
-    `status`, `total_ars_cents` e `items_count` — y **no** el `order_id`.
+    `order_number`, `status`, `total_ars_cents` e `items_count` — y **no** el `order_id` UUID.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-checkout-validation`
     (`e2e-checkout-validation.spec.ts` con supertest sobre la app real: `consent:false`,
     `consent` ausente, email inválido, nombre de 1 carácter y teléfono ausente → **422**
     con `errors[]` por campo; los cuerpos con `total_ars_cents: 1`, `items: []`,
-    `cart_id: '…'` y `status: 'new'` → **422** por `forbidNonWhitelisted`; el 201 no
-    contiene ningún UUID —`expect(JSON.stringify(body)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)`)
+    `cart_id: '…'`, `status: 'new'` y **`order_number: 1`** → **422** por
+    `forbidNonWhitelisted` —el cliente no elige el número de pedido—; el 201 trae
+    `order_number` entero **≥ 1000** y no contiene ningún UUID
+    —`expect(JSON.stringify(body)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)`)
 
 - [ ] T3.2 `CheckoutController` con CSRF y throttler propio
   - **Pattern**: controller fino que delega; **reusa `CartCsrfGuard`** porque acá la
@@ -453,12 +465,14 @@ language: es
   - **Verify**: `test -f apps/api/src/checkout/README.md && rg -q "order_token" apps/api/src/checkout/README.md && rg -q "US-009" apps/api/src/checkout/README.md && rg -q "ADR-0008" apps/api/src/checkout/README.md && test $(wc -l < apps/api/src/checkout/README.md) -le 40`
 
 - [ ] T6.3 Cerrar OQ-BE-1 en el change de US-009
-  - **Exit criterion**: el `proposal.md` de `US-009-pago-mercadopago-backend` marca
-    **OQ-BE-1 como resuelta**, citando este change y la forma entregada
-    (`orders.access_token_hash`, `order_token` hex de 64 en el 201), y su `tasks.md`
-    marca el pre-requisito «US-008 backend» como cumplido. Sin esto, el próximo
-    `/develop-backend US-009` se detiene en un pre-requisito que ya está satisfecho.
-  - **Verify**: `rg -q "OQ-BE-1.*Resolved|Resolved.*OQ-BE-1" openspec/changes/US-009-pago-mercadopago-backend/proposal.md && rg -q "access_token_hash" openspec/changes/US-009-pago-mercadopago-backend/tasks.md`
+  - **Contexto**: la **decisión** ya está ratificada por el Arquitecto/PO el 2026-08-22
+    (token opaco de 256 bits con SHA-256 en base, opción (a)), y el `proposal.md` de US-009
+    ya lo refleja. Lo que esta task cierra es el **hecho**: que el seam existe en el código.
+  - **Exit criterion**: el `tasks.md` de `US-009-pago-mercadopago-backend` tiene su
+    pre-requisito «US-008 backend» marcado `[x]`, y su `Verify` —el que busca
+    `model Order` y `access_token_hash` en `schema.prisma`— **pasa**. Sin esto, el próximo
+    `/develop-backend US-009` se detiene en un pre-requisito ya satisfecho.
+  - **Verify**: `node -e "const s=require('fs').readFileSync('packages/db/prisma/schema.prisma','utf8'); if(!/model Order\b/.test(s)||!/access_token_hash/.test(s)) process.exit(1); console.log('seam presente')" && rg -q "Resolved.*OQ-BE-1|OQ-BE-1.*Resolved" openspec/changes/US-009-pago-mercadopago-backend/proposal.md`
 
 ---
 
@@ -495,4 +509,4 @@ language: es
 | AC-6 no se descuenta stock antes del pago | T2.3, T5.1 |
 | AC-7 no se almacenan datos de tarjeta | T0.1, T3.1, T5.2 |
 | AC-8 el consentimiento queda registrado | T0.1, T2.3, T5.3 |
-| Declaraciones no-AC del design (F51) | T0.2 (config), T1.1/T1.2/T1.3 (capas y wiring), T2.2 (seam de US-009), T3.2 (CSRF + rate-limit), T3.3 (`no-store`), T4.1/T4.2 (observabilidad y PII), T6.1/T6.2/T6.3 (docs y cierre de OQ-BE-1) |
+| Declaraciones no-AC del design (F51) | T0.1 (`order_number` — OQ-BE-4), T0.2 (config), T1.1/T1.2/T1.3 (capas y wiring), T2.2 (seam de US-009), T3.1 (`order_number` en la respuesta), T3.2 (CSRF + rate-limit), T3.3 (`no-store`), T4.1/T4.2 (observabilidad y PII), T6.1/T6.2/T6.3 (docs y cierre de OQ-BE-1 de US-009) |
