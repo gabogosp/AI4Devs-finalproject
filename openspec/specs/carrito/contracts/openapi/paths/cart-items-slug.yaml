@@ -1,0 +1,187 @@
+put:
+  operationId: setCartItem
+  tags: [cart]
+  summary: Fija la cantidad de un producto en el carrito (AC-1, AC-2, AC-5, AC-10)
+  description: |
+    Crea la línea si no existe y actualiza la cantidad si ya estaba. Crea el
+    carrito y emite las cookies cuando todavía no había.
+
+    Orden de validación: producto → stock → carrito. Un rechazo **no escribe
+    nada** — ni la línea, ni el carrito, ni la cookie.
+
+    Un producto en `draft`, `archived` o inexistente devuelve **el mismo 404**
+    (AC-10): distinguirlos convertiría el carrito en un oráculo de
+    enumeración del catálogo oculto.
+
+    **Semántica absoluta**: el cuerpo fija la cantidad, no la suma. Por eso la
+    operación es **naturalmente idempotente** (api-standards §10.5) y no
+    necesita `Idempotency-Key` ni su almacén (OQ-BE-5): un reintento de red
+    nunca compra de más. El precio a pagar es que un doble clic en «Agregar»
+    con el mismo payload deja 1 unidad, no 2 — el FE siempre tiene la
+    cantidad actual porque **las tres respuestas devuelven el carrito
+    completo**.
+
+    **El carrito no reserva ni descuenta stock** (AC-8, ADR-0008): lo lee
+    para no dejar pedir más de lo que hay y lo suelta. El inventario se
+    decrementa sólo al aprobarse el pago (US-010).
+  security: []
+  parameters:
+    - name: slug
+      in: path
+      required: true
+      description: |
+        Identificador **público** del producto (US-002/US-003 no exponen
+        `id`).
+      schema: { type: string }
+    - $ref: '../../openapi.yaml#/components/parameters/CartCsrfToken'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../openapi.yaml#/components/schemas/SetCartItemRequest'
+        examples:
+          dosUnidades:
+            value: { quantity: 2 }
+  responses:
+    '200':
+      description: |
+        Carrito completo recalculado. Emite (o re-emite) las dos cookies con
+        el `Max-Age` derivado de `CART_TTL_DAYS`, deslizando la ventana de
+        retención junto con `carts.expires_at`.
+      headers:
+        Set-Cookie:
+          description: |
+            Dos cookies (security-standards §7.4): `dsm_cart` (`HttpOnly`,
+            `SameSite=Lax`, `Path=/`, `Max-Age = CART_TTL_DAYS × 86400`) con
+            el token opaco, y `dsm_cart_csrf` (**sin** `HttpOnly` — el
+            frontend la lee para armar el header). `Secure` sale de
+            `AUTH_COOKIE_SECURE`. El token **nunca** viaja en el cuerpo.
+          schema: { type: string }
+        Cache-Control:
+          description: Siempre `no-store`.
+          schema: { type: string }
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/CartEnvelope'
+    '403':
+      description: |
+        `dsm:auth/csrf` — falta el double-submit, no coincide con el token
+        presentado, o el `Origin` no está en la allowlist (incluida su
+        ausencia, fail closed).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/Problem'
+    '404':
+      description: |
+        `dsm:catalog/not-found` — slug inexistente **o** producto no
+        publicado (AC-10). Las dos respuestas son idénticas salvo
+        `instance`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/Problem'
+    '409':
+      description: |
+        `dsm:cart/insufficient-stock` (AC-5) con la extensión
+        `available_quantity`, o `dsm:cart/too-many-items` con `max_items`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/Problem'
+          examples:
+            stockInsuficiente:
+              value:
+                type: dsm:cart/insufficient-stock
+                title: Conflict
+                status: 409
+                detail: No hay stock suficiente para la cantidad pedida
+                instance: /v1/cart/items/taco-fischer-sx-8mm
+                available_quantity: 3
+            demasiadasLineas:
+              value:
+                type: dsm:cart/too-many-items
+                title: Conflict
+                status: 409
+                detail: El carrito alcanzó el máximo de productos distintos
+                instance: /v1/cart/items/mecha-widia-8mm
+                max_items: 50
+    '422':
+      description: |
+        `dsm:catalog/http-422` — `quantity` fuera de rango (entero de 1 a
+        `CART_MAX_QTY_PER_LINE`) **o un campo desconocido**: el
+        `ValidationPipe` global corre con `forbidNonWhitelisted`, así que
+        mandar `unit_price_ars_cents` o `cart_id` es un 422, no un campo
+        ignorado.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/Problem'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
+delete:
+  operationId: removeCartItem
+  tags: [cart]
+  summary: Quita una línea del carrito (AC-3)
+  description: |
+    Devuelve el carrito completo recalculado. No crea carrito: sin cookie (o
+    con una cookie huérfana o vencida) devuelve el carrito **vacío** con 200.
+
+    Cuando hay algo que borrar, la operación desliza la ventana de retención
+    (fila + cookie) en la misma transacción que el borrado. Cuando no hay
+    nada que borrar no la desliza: no hubo actividad sobre el carrito.
+
+    **Idempotente**: quitar algo que no está devuelve el carrito igual, con
+    200 y sin error. Un `DELETE` reintentado por la red no puede fallar.
+
+    El producto se resuelve **sin filtrar por estado**: una línea de un
+    producto despublicado (AC-6) tiene que poder sacarse del carrito. Con el
+    filtro de publicados quedaría atrapada — bloqueada e imposible de quitar.
+  security: []
+  parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Identificador público del producto.
+      schema: { type: string }
+    - $ref: '../../openapi.yaml#/components/parameters/CartCsrfToken'
+  responses:
+    '200':
+      description: Carrito recalculado (vacío si no había carrito).
+      headers:
+        Set-Cookie:
+          description: |
+            Se re-emiten `dsm_cart` y `dsm_cart_csrf` con el `Max-Age`
+            derivado de `CART_TTL_DAYS` **si** hubo borrado. El token nunca
+            viaja en el cuerpo.
+          schema: { type: string }
+        Cache-Control:
+          description: Siempre `no-store`.
+          schema: { type: string }
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/CartEnvelope'
+          examples:
+            carritoVacioTrasQuitarLoUltimo:
+              value:
+                cart:
+                  id: 9b2f8c1e-4d5a-4f6b-8c7d-1e2f3a4b5c6d
+                  items: []
+                  item_count: 0
+                  total_quantity: 0
+                  total_ars_cents: 0
+                  has_blocking_issues: false
+                  updated_at: '2026-08-22T12:05:00.000Z'
+    '403':
+      description: |
+        `dsm:auth/csrf` — falta el double-submit, no corresponde al token
+        presentado, o el `Origin` no es de la allowlist (ausencia incluida).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/Problem'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
