@@ -241,7 +241,7 @@ language: es
     `unit_price_ars_cents` de la vista y **no** el `previous_unit_price_ars_cents`
     —caso con `price_changed: true`, que es donde un error de copiado costaría plata)
 
-- [ ] T2.2 `OrderTokenService` — identidad opaca de la orden (**resuelve OQ-BE-1 de US-009**)
+- [x] T2.2 `OrderTokenService` — identidad opaca de la orden (**resuelve OQ-BE-1 de US-009**)
   - **Pattern**: reusar `newToken` / `hashToken` de `auth/tokens/opaque-token.ts` (256
     bits de CSPRNG, SHA-256 en reposo) en vez de duplicar la primitiva — tercera vez que
     el proyecto necesita lo mismo (refresh de ADR-0011, carrito de US-007, ahora la
