@@ -297,7 +297,7 @@
   us-id: US-018
   discipline: frontend-web
   variant: null
-  status: in progress  # 14/14 tasks cerradas 2026-08-22; suite-level verde. Pendiente /commit
+  status: archived  # 27/27 tasks cerradas; merged vía PR #3 (feature-entrega2-GOSP, 2026-08-29); archivado 2026-08-29
   parent-us: docs/user-stories/US-018-contacto-whatsapp.md
   linear-task-id: null
   audit-baseline: null
@@ -315,12 +315,12 @@
   # el gate se conserva y se re-corre al ejecutar: siguen activas US-014 y US-006 en apps/api.
   estimate-hours: 3.2
   assignee: 9a385021
-  branch: null
-  pr-url: null
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-19
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-08-29
+  archive-path: openspec/changes/archive/US-018-contacto-whatsapp-frontend-web
 
 - name: US-006-import-masivo-inventario-frontend-web
   us-id: US-006
@@ -960,7 +960,7 @@
   us-id: US-004
   discipline: frontend-web
   variant: null
-  status: in-progress
+  status: archived  # 29/29 tasks cerradas; merged vía PR #3 (feature-entrega2-GOSP, 2026-08-29); archivado 2026-08-29
   parent-us: docs/user-stories/US-004-busqueda-semantica.md
   assignee: sesion-claude-bce7ffb7
   linear-task-id: null
@@ -1007,6 +1007,12 @@
   # Cobertura: AC-1, AC-3, AC-4, AC-5, AC-7, AC-8 y AC-10. AC-2 es el arnes de relevancia
   # (backend/QA) y AC-6/AC-9 son invariantes del servidor: el frontend renderiza lo que el
   # contrato le da y no puede afirmarlas por su cuenta. Declarado, no omitido.
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
+  created: 2026-08-23
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-08-29
+  archive-path: openspec/changes/archive/US-004-busqueda-semantica-frontend-web
 
 - name: US-004-busqueda-semantica-backend
   us-id: US-004

@@ -1,49 +1,59 @@
-# CAP-2 Búsqueda — Requisitos acumulados
+# Requirements — Búsqueda semántica con IA (CAP-2)
 
-Acumulado de los changes archivados de esta capacidad. Cada requisito es el **estado
-declarado del sistema vivo**, no la intención de un change.
+Acumulado de los ACs entregados por los changes archivados de esta capacidad. Fuente: PRD
+§2.1 fila 2, `docs/user-stories/US-004-busqueda-semantica.md`.
 
-## Desde US-004 backend (archivada 2026-08-29)
+## Funcionales
 
-### Funcionales
+- **AC-1 — Candidatos ordenados por relevancia**: la consulta en lenguaje natural devuelve
+  candidatos ordenados y cada uno enlaza a su ficha (`/productos/{slug}`). — `US-004 FE`
+  (consume el orden que entrega `US-004 BE`, no lo recalcula).
+- **AC-3 — Nunca un «0 resultados» desnudo**: cuando `confidence` es `none`, la pantalla
+  ofrece los rubros de `fallback.suggested_categories` como salida. — `US-004 FE`
+- **AC-4 — Degradado visible, no tratado como falla**: `degraded: true` se muestra con un
+  banner («buscamos por texto»); la búsqueda sigue navegable y los resultados, si los hay, se
+  presentan igual. — `US-004 FE`
+- **AC-5 — Consulta vacía o corta no gasta un request**: se ataja en cliente y en servidor con
+  la misma función de normalización (`queryGuard.ts`); se invita a describir la necesidad. —
+  `US-004 FE`
+- **AC-7 — Sin stock, sin control de compra**: un resultado sin stock aparece marcado con
+  texto y el control de agregar al carrito está **ausente**, no deshabilitado. — `US-004 FE`
+- **AC-10 — 429 explicado**: un rate-limit se comunica con el tiempo de espera, sin perder lo
+  que el cliente escribió. — `US-004 FE`
 
-| # | Requisito | Origen |
-|---|---|---|
-| R-1 | Una consulta en lenguaje natural devuelve candidatos relevantes ordenados por score descendente. | AC-1 |
-| R-2 | El backend entrega un arnés ejecutable (script + gate por exit code + 8 casos semilla + reporte de cobertura de embeddings) para medir relevancia ≥ 70% en el top-5. **El veredicto no está verificado por este change** — depende de que US-005 pueble embeddings; la batería completa (~30 casos) y el gate son de QA. | AC-2 (deferred) |
-| R-3 | Cuando no hay señal sobre el umbral (`SEARCH_MIN_SCORE`), la respuesta trae `fallback.suggested_categories` — nunca un «cero resultados» desnudo. | AC-3 |
-| R-4 | Si el proveedor de IA falla o agota `GEMINI_SEARCH_TIMEOUT_MS` (900 ms), la respuesta degrada a full-text y marca `degraded: true` **con status 200** — el timeout es el disparador de la degradación, no un error a reportar. | AC-4 |
-| R-5 | Una consulta más corta que `SEARCH_MIN_LENGTH` caracteres útiles (tras normalizar) es 422 (`dsm:search/query-too-short`) **sin llamar al proveedor de IA**. | AC-5 |
-| R-6 | Sólo se devuelven productos `status: published`, por ambos caminos (semántico y full-text). | AC-6 |
-| R-7 | Un producto sin stock aparece con `in_stock: false` — no se oculta. | AC-7 |
-| R-8 | `interpreted_as` se deriva de las categorías de los productos que matchearon; el texto de la consulta nunca llega a un modelo generativo. | AC-8 |
-| R-9 | Un producto sin fila en `product_embeddings` no rompe la búsqueda semántica (queda fuera del `JOIN`) y sigue siendo alcanzable por el camino full-text. | AC-9 |
-| R-10 | La superficie `GET /v1/search` tiene throttler propio (`SEARCH_RATE_LIMIT_MAX` por `SEARCH_RATE_LIMIT_TTL_MS` y por IP), cubo independiente de `auth`/`storefront`/`cart`. | AC-10 |
+## No funcionales / negative-space
 
-### Negative-space (lo que NO debe pasar)
+- **AC-8 — Sin inyección de HTML**: el eco de la consulta se renderiza como texto (React
+  escapa por defecto); una consulta con `<img src=x onerror=…>` aparece literal, nunca se
+  monta un nodo. — `US-004 FE`
+- **`score` nunca se muestra**: el contrato trae un número de similaridad pero la UI no lo
+  expone — no comunica nada a quien compra y expondría la mecánica del ranking. — `US-004 FE`
+- **Texto de la consulta fuera de la telemetría**: los cuatro eventos de observabilidad
+  (`search_performed`, `search_result_clicked`, `search_fallback_clicked`,
+  `search_rate_limited`) no llevan el texto ingresado — entrada libre, riesgo de PII
+  (`observability-standards` §9). — `US-004 FE`
+- **`noindex, follow`**: la página de resultados no se indexa (contenido delgado y duplicado
+  que canibalizaría fichas/categorías) pero sus enlaces sí transmiten. — `US-004 FE`
+- **A11y**: cantidad de resultados anunciada en `aria-live="polite"`; foco al encabezado de
+  resultados tras la navegación (no se queda en el input del header); avisos de degradado/baja
+  confianza en texto, no color. — `US-004 FE`
 
-| # | Requisito |
-|---|---|
-| N-1 | El texto de la consulta nunca se concatena en SQL: los dos `$queryRaw` (semántico y full-text) usan parámetros ligados. |
-| N-2 | Ninguna llamada a un modelo generativo ocurre en el camino de búsqueda — sólo embedding + `tsquery` parametrizado. |
-| N-3 | Un producto `draft` o `archived` no aparece ni por vector ni por texto. |
-| N-4 | `fallback.suggested_categories` nunca es una lista vacía cuando el campo está presente. |
-| N-5 | El fallo del proveedor de IA nunca produce un 5xx — sólo Postgres caído produce 503. |
+## Explícitamente fuera de alcance de esta capacidad (por ahora)
 
-### No funcionales
+- **AC-2** (arnés de relevancia ≥70% top-5) — batería de backend/QA (`US-004 BE` / `US-004
+  QA`), no observable desde la UI.
+- **AC-6** (sólo productos `published` aparecen) y **AC-9** (un producto sin embedding no
+  rompe la búsqueda) — invariantes del servidor; el frontend renderiza lo que el contrato le
+  da y no puede afirmarlas por su cuenta.
+- Dropdown de sugerencias en vivo / autocompletado (`Deferred`, OQ-FE-1 — sin endpoint de
+  backend y contradice el rate-limit de cuota).
+- Vista full-screen de búsqueda en mobile (`Deferred`, OQ-FE-3).
+- Chip «sugerido / match alto» (`Deferred` — sin `score` visible sería la misma información
+  sin la métrica; se prefiere que el orden hable).
 
-| # | Requisito | Verificación |
-|---|---|---|
-| NFR-1 | p95 < 1,5 s (PRD §4), **incluido el camino degradado**. | Medido: con el embedder colgado, `GET /v1/search` responde 200 degradado en **1147 ms** (piso de 800 ms probando que el timeout de 900 ms se respeta). |
-| NFR-2 | El presupuesto de RPM del proveedor (free tier, 15 RPM) se reparte explícitamente entre búsqueda y enriquecimiento (`GEMINI_SEARCH_MAX_RPM` + `GEMINI_MAX_RPM` ≤ 15), validado al arranque. | Guard de arranque; hoy **10 / 5** a favor de búsqueda (OQ-BE-1 (b), decisión del PO). |
-| NFR-3 | El contrato publicado lintea limpio (Spectral, `--fail-severity=warn`). | Gate de CI; 0 warnings tras agregar los `operationId` faltantes de US-001. |
-| NFR-4 | Sin regresión sobre lo que el change tocó (esquema de `products`, puerto `AI_EMBEDDER` movido). | 548 tests / 59 suites verdes; suite completa de la API 1407 tests / 141 suites; suite de búsqueda en aislamiento 153 tests / 18 suites. |
+## No funcionales
 
-### Diferidos con dueño
-
-| # | Requisito | Dueño / disparador |
-|---|---|---|
-| D-1 | Verificación real de AC-2 (≥ 70% relevancia top-5) contra un catálogo con embeddings. | US-005 (poblar embeddings) → `/plan-qa US-004` (batería ~30 casos + gate). |
-| D-2 | Calibración de `SEARCH_MIN_SCORE` y `SEARCH_LEXICAL_WEIGHT` con datos reales (el barrido actual es plano: catálogo de seed sin vectores). | Misma batería que D-1. |
-| D-3 | Caché de consultas en Redis (hoy en proceso, `query-vector.cache.ts`). | US-019 T1.3 (provisión de Redis). Señal para migrar: `search.degraded` alto con `search.cache_hit` bajo. |
-| D-4 | Input de búsqueda en el storefront (UI). | `US-004-busqueda-semantica-frontend-web` (en curso). |
+- **Caché**: `revalidate: 60` (mismo `max-age` que declara el contrato) sobre el
+  `CATALOG_TAG` compartido con el resto del catálogo — una invalidación tras alta/import
+  masivo también refresca la búsqueda. Nunca `no-store` (cada tecla llegaría a la cuota del
+  proveedor de IA).
