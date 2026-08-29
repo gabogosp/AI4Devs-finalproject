@@ -22,6 +22,7 @@ const MAX_ITEMS = 50;
 
 const producto = (over: Partial<CartProduct> = {}): CartProduct => ({
   id: 'prod-1',
+  sku: 'SKU-1',
   slug: 'taco-fischer',
   name: 'Taco Fischer',
   image_url: null,

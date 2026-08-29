@@ -217,7 +217,7 @@ language: es
 
 ## Fase 2: Caso de uso — 1,8 h
 
-- [ ] T2.1 `order-draft.ts` — snapshot y total como función **pura**
+- [x] T2.1 `order-draft.ts` — snapshot y total como función **pura**
   - **Pattern**: función pura sin tipos de framework ni acceso a base, igual que
     `cart-view.ts` de US-007, para poder ejercer las reglas que tienen dinero adentro sin
     HTTP ni Postgres — `per backend-node-standards.md §2 — la lógica de dominio no
