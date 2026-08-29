@@ -158,7 +158,7 @@ language: es
 
 ## Fase 1: Errores, persistencia y el seam con el carrito — 1,4 h
 
-- [ ] T1.1 Errores de dominio del checkout
+- [x] T1.1 Errores de dominio del checkout
   - **Pattern**: extender `DomainError` en un archivo propio, como `auth-errors.ts` —
     **no** se toca `common/errors/domain-errors.ts`, cuyos `type` llevan el prefijo
     `dsm:catalog/` — `per backend-node-standards.md §6 — errores de dominio mapeados
