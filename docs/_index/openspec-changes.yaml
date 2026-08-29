@@ -464,7 +464,7 @@
   us-id: US-007
   discipline: backend
   variant: null
-  status: in progress   # 37/37 cerradas 2026-08-23; CI del monorepo verde. Pendiente /commit (PR)
+  status: archived   # 37/37 tasks cerradas 2026-08-23; merged vía PR #3 (feature-entrega2-GOSP, 2026-08-29); archivado 2026-08-29
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
@@ -497,7 +497,7 @@
   estimate-hours: 7.7
   assignee: bce7ffb7
   branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   # DESARROLLO CERRADO 2026-08-22 (/develop-backend): 24/24 tasks en [x] + los 6
   # prerequisitos. Suite-level: apps/api lint + typecheck limpios; test 89/90 suites
   # (937/939 tests) y test:e2e 37/38 con el ÚNICO rojo en
@@ -509,9 +509,9 @@
   # 5 desviaciones AS-BUILT documentadas en tasks.md §Reconciliación AS-BUILT.
   # Estado: In Progress hasta que /commit abra el PR.
   created: 2026-08-20
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-08-29
+  archive-path: openspec/changes/archive/US-007-carrito-compra-backend
 
 - name: US-007-carrito-compra-qa
   us-id: US-007
