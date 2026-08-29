@@ -129,6 +129,25 @@ export const envSchema = z.object({
   CART_WRITE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
 
   /**
+   * US-008 — checkout guest. Defaults seguros; un valor inválido hace FALLAR el
+   * arranque (§7), nunca cae al default en silencio.
+   *
+   * §7.3 — presupuesto del throttler `checkout` por IP: escritura pública que
+   * crea filas con PII, más estricto que el de lectura del carrito.
+   */
+  CHECKOUT_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(600_000), // 10 min
+  CHECKOUT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  /**
+   * Versión de los términos que la orden registra como aceptados (AC-8). Es un
+   * CONTRATO con el frontend, verificado en cada CI por
+   * `apps/web/src/features/legal/versionContract.test.ts` (US-017 T4.3) contra
+   * `LEGAL_TERMS_VERSION` de `apps/web/src/features/legal/content.ts` — el
+   * default de acá **debe** coincidir con el de allá. Cambiar la versión es un
+   * cambio en los dos lados a la vez.
+   */
+  LEGAL_TERMS_VERSION: z.string().min(1, 'requerida').default('2026-06-15'),
+
+  /**
    * US-006 — importación masiva de inventario. Defaults seguros; un valor
    * inválido hace FALLAR el arranque (§7), nunca cae al default en silencio:
    * un cap que se degrada a su default por un typo es un cap que no existe.

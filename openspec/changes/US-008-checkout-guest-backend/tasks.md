@@ -131,7 +131,7 @@ language: es
     borrar un `product` con línea vendida **falla**; borrar un `customer` deja
     `orders.customer_id` en `NULL` **sin borrar la orden**)
 
-- [ ] T0.2 Variables de entorno del checkout validadas por Zod
+- [x] T0.2 Variables de entorno del checkout validadas por Zod
   - **Pattern**: extender `envSchema` en `apps/api/src/config/env.validation.ts` —
     `per backend-node-standards.md §7 — config validada al arranque, fail-fast`.
   - **Exit criterion**: `env.validation.ts` declara con default seguro

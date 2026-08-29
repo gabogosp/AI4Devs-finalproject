@@ -117,6 +117,41 @@ describe('Carrito del invitado (US-007 T0.2) — defaults y fail-fast', () => {
   });
 });
 
+describe('Checkout guest (US-008 T0.2) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin las variables, aplica los 3 defaults seguros literales', () => {
+    const env = validateEnv({ ...base });
+    expect(env.CHECKOUT_RATE_LIMIT_TTL_MS).toBe(600_000);
+    expect(env.CHECKOUT_RATE_LIMIT_MAX).toBe(10);
+    expect(env.LEGAL_TERMS_VERSION).toBe('2026-06-15');
+  });
+
+  it('CHECKOUT_RATE_LIMIT_MAX=-1 hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, CHECKOUT_RATE_LIMIT_MAX: '-1' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('CHECKOUT_RATE_LIMIT_TTL_MS=abc hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, CHECKOUT_RATE_LIMIT_TTL_MS: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('LEGAL_TERMS_VERSION vacío hace fallar el arranque, no cae al default', () => {
+    // Contrato con el frontend (versionContract.test.ts, US-017 T4.3): un
+    // default silencioso ante un valor vacío dejaría la orden registrando
+    // una versión que nadie declaró.
+    expect(() => validateEnv({ ...base, LEGAL_TERMS_VERSION: '' })).toThrow(
+      /fail-fast/,
+    );
+  });
+});
+
 describe('Enriquecimiento IA + embeddings (US-005 T0.3) — defaults y fail-fast', () => {
   const base = {
     DATABASE_URL: 'postgresql://x',
