@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Búsqueda (CAP-2)
+  version: 1.0.0
+  description: >-
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Búsqueda semántica del
+    storefront en lenguaje natural (US-004): kNN sobre pgvector (HNSW) con degradación a
+    full-text cuando el proveedor de IA falla o agota su timeout.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+- url: /v1
+  description: Base URL versionada
+tags:
+- name: search
+  description: Búsqueda semántica del storefront en lenguaje natural (US-004)
+security: []
+components:
+  responses:
+    SearchRateLimited:
+      description: |
+        Throttler `search` excedido (security-standards §7.3, AC-10): `SEARCH_RATE_LIMIT_MAX`
+        por `SEARCH_RATE_LIMIT_TTL_MS` y por IP (20/min por defecto). Más estricto que el del
+        storefront: cada búsqueda no cacheada puede costar una llamada a un tercero. Cubo
+        independiente de `auth`, `storefront` y `cart`.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+        Cache-Control:
+          schema: { type: string }
+          description: 'no-store: un 429 cacheado en el edge convierte el rate-limit en un DoS.'
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    SearchResponse:
+      type: object
+      required: [results, confidence, interpreted_as, degraded, fallback]
+      additionalProperties: false
+      properties:
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+        confidence:
+          type: string
+          enum: [high, low, none]
+          description: |
+            `high` = el top supera `SEARCH_MIN_SCORE`. `low` = hay candidatos por debajo del
+            umbral (el frontend los presenta CON RESERVA, no los esconde). `none` = sin señal.
+            La distinción low/none evita elegir entre mentir o esconder resultados que quizás
+            sirven.
+        interpreted_as:
+          type: string
+          nullable: true
+          description: |
+            «Interpretación visible» del design-system §7.12, DERIVADA de las categorías de
+            los productos que matchearon — no generada por un LLM (OQ-BE-3). Dice dónde miró
+            el sistema; no finge entender. Como el texto del cliente nunca llega a un modelo
+            generativo, AC-8 es estructural.
+          example: 'Buscamos en: Fijaciones, Mechas y brocas'
+        degraded:
+          type: boolean
+          description: |
+            `true` cuando la respuesta salió por full-text porque el proveedor de IA falló o
+            agotó su timeout (AC-4). Viaja en el CUERPO y con 200: el frontend puede avisar
+            «esto es el plan B» sin tratarlo como falla. Con el free tier es un estado común,
+            no excepcional.
+        fallback:
+          nullable: true
+          type: object
+          required: [suggested_categories]
+          additionalProperties: false
+          description: |
+            Salida ofrecida cuando la respuesta no convence (`confidence` low o none). `null`
+            sólo con `confidence: high`.
+          properties:
+            suggested_categories:
+              type: array
+              minItems: 1
+              description: |
+                NUNCA vacío cuando está presente (AC-3): si no hay candidatos, cae a las
+                categorías raíz con más productos publicados. Un «0 resultados» desnudo es un
+                callejón sin salida.
+              items:
+                type: object
+                required: [slug, name]
+                additionalProperties: false
+                properties:
+                  slug:
+                    type: string
+                    description: Con slug y no sólo el nombre — es lo que permite al frontend armar el enlace.
+                  name: { type: string }
+    SearchResult:
+      type: object
+      required: [slug, name, price_ars_cents, in_stock, image_url, score]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          description: |
+            Identificador público del producto: el frontend enlaza a `/productos/{slug}`. El
+            `id` UUID no se expone (convención de US-002/US-003).
+        name: { type: string }
+        price_ars_cents:
+          type: integer
+          description: Centavos ARS con IVA incluido, entero (api-standards.md §5.5).
+        in_stock:
+          type: boolean
+          description: |
+            `in_stock` y no el stock exacto: la cantidad le dice a un competidor cuánto rota
+            cada producto. Un producto agotado APARECE con `false` y no se oculta (AC-7).
+        image_url: { type: string, nullable: true }
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: |
+            En la vía vectorial es `1 - distancia_cosine`. En la léxica es `ts_rank`
+            normalizado al mejor del conjunto, porque las dos escalas no son comparables
+            (medido: un match léxico exacto puntúa ~0,10 contra un umbral de 0,55 calibrado
+            para cosine). En el camino degradado el score es un rango RELATIVO, no una
+            similitud absoluta comparable entre consultas.
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (api-standards.md §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+paths:
+  /search:
+    $ref: ./openapi/paths/search.yaml

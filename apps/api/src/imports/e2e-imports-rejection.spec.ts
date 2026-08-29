@@ -188,8 +188,12 @@ describe('Import — errores parciales y rechazo total (e2e-imports-rejection, A
     // timeout y el dueño no vería progreso, vería un error.
     expect(tardo).toBeLessThan(2_000);
 
+    // Presupuesto de sondeo dimensionado para el runner MÁS LENTO (CI): 800 filas
+    // corren async y con 80×25ms=2s no terminaban en Actions → última muestra 200 y
+    // `toBe(800)` fallaba sólo en CI (mismo caso que e2e-imports-status). El loop corta
+    // apenas el trabajo completa, así que en máquina rápida sigue siendo veloz.
     const muestras: number[] = [];
-    for (let i = 0; i < 80; i += 1) {
+    for (let i = 0; i < 600; i += 1) {
       const { body } = await get(`/v1/admin/imports/${alta.body.id}`);
       muestras.push(body.processed_rows);
       if (body.status === 'completed' || body.status === 'failed') break;
