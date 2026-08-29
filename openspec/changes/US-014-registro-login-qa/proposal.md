@@ -84,9 +84,10 @@ registran como nota de cobertura para que nadie las duplique.
 | Id | Pregunta | Default implementado | Estado |
 |---|---|---|---|
 | OQ-QA-1 | ¿La suite QA usa su propia base de datos? | **No** por ahora: usa la compartida, con prefijo único por corrida en los emails sembrados. Es la causa conocida de la contaminación que ya rompió `TC-204` de US-002 | `[Deferred: base propia para QA — owner: PO/QA, revisar antes de sumar una cuarta suite]` |
-| OQ-QA-2 | ¿El umbral de carga se mide con el rate-limit real o elevado? | **Elevado** (`AUTH_RATE_LIMIT_MAX` alto, como ya hace `qa/scripts/api-up.sh`): con el límite de producción, k6 mide el 429 y no la latencia. El límite se prueba aparte en TC-146 | `[Resolved]` |
+| OQ-QA-2 | ¿El umbral de carga se mide con el rate-limit real o elevado? | **Corregido (2026-08-29)**: la premisa original era falsa — `AUTH_RATE_LIMIT_MAX` no toca las rutas de `customer-auth.controller.ts`, que fijan su propio `@Throttle` por ruta (§7.3, a propósito). No hay "elevado" posible para login/registro: siempre corren al límite de producción. La solución real no es un env var sino que TC-146/TC-160 usen IPs simuladas que nunca se reusan (ver T2.4, T4.1) | `[Resolved — corregido]` |
 | OQ-QA-3 | ¿Se mide el tiempo de respuesta para afirmar anti-enumeración? | **Sí, como banda amplia** (el caso inexistente no puede ser un orden de magnitud más rápido). Un umbral fino sería flaky; sin ninguno, el criterio se afirma a medias | `[Resolved]` |
 | OQ-QA-4 | ¿La recuperación se prueba con la bandeja real? | **No**: con el token que la API expone en test. Verificar la entrega es del PO | `[Deferred — owner: PO]` |
+| OQ-QA-5 | ¿Cuál es el presupuesto de latencia p95 de login (TC-160)? | El qa-plan citó PRD §4 (500ms), pero esa fila dice literalmente *"escritura (carrito/orden)"* — no cubre login. US-014 §9 no fija ningún número para login, sólo NFRs cualitativos. Medido: p95 = 621,93ms, con `bcrypt` cost 12 costando ~250ms **por diseño** (mitigación de fuerza bruta). Sin un budget ratificado no hay umbral que afirmar sin inventarlo | `[Open — owner: PO/Arquitecto: ratificar un budget de login propio, o confirmar que hoy no existe NFR numérico para esta ruta]` |
 
 ## References
 
