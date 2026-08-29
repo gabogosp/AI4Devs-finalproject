@@ -72,11 +72,14 @@ export interface Pagination {
 }
 
 /**
- * Proyección que consume la vista del carrito (US-007). Está declarada una vez
- * para que las dos lecturas —por slug y por id— no puedan divergir en campos.
+ * Proyección que consume la vista del carrito (US-007) y, sobre la misma
+ * lectura, el draft de la orden del checkout (US-008 T2.1 — `sku` es lo que
+ * agrega). Está declarada una vez para que las dos lecturas —por slug y por
+ * id— no puedan divergir en campos.
  */
 const CART_PRODUCT_SELECT = {
   id: true,
+  sku: true,
   slug: true,
   name: true,
   image_url: true,
@@ -87,7 +90,14 @@ const CART_PRODUCT_SELECT = {
 
 export type CartProduct = Pick<
   Product,
-  'id' | 'slug' | 'name' | 'image_url' | 'price_ars_cents' | 'stock' | 'status'
+  | 'id'
+  | 'sku'
+  | 'slug'
+  | 'name'
+  | 'image_url'
+  | 'price_ars_cents'
+  | 'stock'
+  | 'status'
 >;
 
 /** Único punto de acceso al ORM para `products` (§5). Traduce códigos Prisma. */
