@@ -50,6 +50,12 @@ jobs:
       - name: Lint
         run: pnpm -r lint
 
+      # QA-004-CT-1 (qa-plan de US-004): el contrato de /v1/search fue el primero
+      # en materializar este gate, pero el ruleset aplica a TODO openapi.yaml —
+      # no es un check scoped a un endpoint.
+      - name: Contract lint (OpenAPI)
+        run: pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn
+
       - name: Typecheck
         run: pnpm -r typecheck
 
