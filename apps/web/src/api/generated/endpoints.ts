@@ -12,7 +12,10 @@ import type {
   CartRateLimitedResponse,
   Category,
   CategoryTree,
+  CheckoutCreated,
+  CheckoutRateLimitedResponse,
   CreateCategory,
+  CreateCheckoutRequest,
   CreateImportBody,
   CreateProduct,
   Customer,
@@ -1249,6 +1252,65 @@ export const removeCartItem = async (slug: string, options?: Parameters<typeof c
 
 
 
+export type createGuestCheckoutResponse201 = {
+  data: CheckoutCreated
+  status: 201
+}
+
+export type createGuestCheckoutResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type createGuestCheckoutResponse409 = {
+  data: ProblemResponse
+  status: 409
+}
+
+export type createGuestCheckoutResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type createGuestCheckoutResponse429 = {
+  data: CheckoutRateLimitedResponse
+  status: 429
+}
+
+export type createGuestCheckoutResponseSuccess = (createGuestCheckoutResponse201) & {
+  headers: Headers;
+};
+export type createGuestCheckoutResponseError = (createGuestCheckoutResponse403 | createGuestCheckoutResponse409 | createGuestCheckoutResponse422 | createGuestCheckoutResponse429) & {
+  headers: Headers;
+};
+
+export type createGuestCheckoutResponse = (createGuestCheckoutResponseSuccess | createGuestCheckoutResponseError)
+
+export const getCreateGuestCheckoutUrl = () => {
+
+
+
+
+  return `/v1/checkout`
+}
+
+/**
+ * Ruta PÚBLICA SIN auth. El carrito se identifica por la cookie `dsm_cart` (US-007) — NO viaja en el cuerpo ni hay `cart_id`. El cuerpo trae SÓLO los datos del comprador, el consentimiento y el modo de entrega; el total y las líneas salen del carrito y del catálogo leídos DENTRO de la transacción (`ValidationPipe` con `forbidNonWhitelisted`: `total_ars_cents`, `items`, `cart_id`, `status` u `order_number` en el cuerpo → 422). Carrito ausente, vencido o vacío → 409 `dsm:checkout/cart-empty`; alguna línea despublicada o sin stock suficiente → 409 `dsm:checkout/cart-not-purchasable` con `errors[]` por línea (slug + motivo). La orden nace INERTE: no descuenta stock (AC-6, ADR-0008), no cobra y es invisible para el panel del dueño hasta que se apruebe el pago (US-009 → US-010). Ningún campo del request acepta datos de tarjeta y ninguna columna de `orders`/`order_items` puede alojarlos (AC-7) — el pago ocurre íntegramente en el checkout hosted de MercadoPago (ADR-0006). `Cache-Control: no-store` en toda la superficie, incluidos los errores. Sin `Idempotency-Key` (deviación declarada de api-standards §10.1): dos llamadas crean dos órdenes, ambas inertes; la abandonada la cancela la limpieza de US-010.
+ * @summary Crea la orden en pending_payment con snapshot de precios (US-008 AC-1/AC-2)
+ */
+export const createGuestCheckout = async (createCheckoutRequest: CreateCheckoutRequest, options?: Parameters<typeof customFetch>[1]): Promise<createGuestCheckoutResponse> => {
+
+  return customFetch<createGuestCheckoutResponse>(getCreateGuestCheckoutUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createCheckoutRequest)
+  }
+);}
+
+
+
 export type createImportResponse200 = {
   data: ImportCreated
   status: 200
@@ -1673,6 +1735,8 @@ export const getSetCartItemResponseMock = (overrideResponse: Partial<Extract<Car
 
 export const getRemoveCartItemResponseMock = (overrideResponse: Partial<Extract<CartEnvelope, object>> = {}): CartEnvelope => ({cart: {id: faker.helpers.arrayElement([faker.string.uuid(), null]), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), quantity: faker.number.int({min: 1}), unit_price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), subtotal_ars_cents: faker.number.int(), availability: faker.helpers.arrayElement(['available','insufficient_stock','unavailable'] as const), available_quantity: faker.helpers.arrayElement([faker.number.int(), undefined]), max_quantity: faker.number.int(), price_changed: faker.datatype.boolean(), previous_unit_price_ars_cents: faker.helpers.arrayElement([faker.number.int(), undefined])})), item_count: faker.number.int(), total_quantity: faker.number.int(), total_ars_cents: faker.number.int(), has_blocking_issues: faker.datatype.boolean(), updated_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null])}, ...overrideResponse})
 
+export const getCreateGuestCheckoutResponseMock = (overrideResponse: Partial<Extract<CheckoutCreated, object>> = {}): CheckoutCreated => ({order_token: faker.helpers.fromRegExp("^[0-9a-f]{64}$"), order_number: faker.number.int({min: 1000}), status: faker.helpers.arrayElement(['pending_payment'] as const), total_ars_cents: faker.number.int(), items_count: faker.number.int(), ...overrideResponse})
+
 export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
 
 export const getGetImportResponseMock = (overrideResponse: Partial<Extract<ImportJob, object>> = {}): ImportJob => ({id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), filename: faker.string.alpha({length: {min: 10, max: 20}}), source_format: faker.helpers.arrayElement(['csv','xlsx'] as const), total_rows: faker.helpers.arrayElement([faker.number.int(), null]), processed_rows: faker.number.int(), created_count: faker.number.int(), updated_count: faker.number.int(), failed_count: faker.number.int(), categories_created_count: faker.number.int(), error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_message: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), report_truncated: faker.datatype.boolean(), started_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), finished_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', errors: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row_number: faker.number.int(), sku: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), field: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_code: faker.string.alpha({length: {min: 10, max: 20}}), error_message: faker.string.alpha({length: {min: 10, max: 20}})})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
@@ -1944,6 +2008,18 @@ export const getRemoveCartItemMockHandler = (overrideResponse?: CartEnvelope | (
   }, options)
 }
 
+export const getCreateGuestCheckoutMockHandler = (overrideResponse?: CheckoutCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CheckoutCreated> | CheckoutCreated), options?: RequestHandlerOptions) => {
+  return http.post('*/checkout', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCreateGuestCheckoutResponseMock(),
+      { status: 201
+      })
+  }, options)
+}
+
 export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
   return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -2039,6 +2115,7 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getGetCartMockHandler(),
   getSetCartItemMockHandler(),
   getRemoveCartItemMockHandler(),
+  getCreateGuestCheckoutMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),
