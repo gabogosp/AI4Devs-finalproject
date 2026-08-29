@@ -470,7 +470,7 @@ language: es
 
 ## Fase 6: Contratos y documentación — 0,6 h
 
-- [ ] T6.1 OpenAPI publicado del servicio actualizado
+- [x] T6.1 OpenAPI publicado del servicio actualizado
   - **Pattern**: el draft de `contracts/openapi/checkout-create.yaml` de este change se
     integra a `apps/api/docs/api/openapi.yaml` (la copia publicada del servicio); el
     contrato **vivo** de `openspec/specs/checkout/` lo escribe `/archive-change`, no esta
