@@ -14,15 +14,14 @@ Característica: Ficha pública de producto (US-003)
     Entonces ve su nombre y su precio en pesos
     Y ve el indicador de disponibilidad "En stock"
 
-  # Resuelto 2026-08-17: el PO zanjó el conflicto D-2 vs D6 a favor de D6 — el
-  # CTA se PRESENTA pero todavía no es operable, porque un botón activo sin
-  # destino da peor señal que uno visiblemente pendiente (design-system §7.14).
-  # La acción se vuelve operable en US-007, que reemplaza el seam.
+  # US-007 ya conectó el carrito (T3.4): el CTA se presenta y habilita el
+  # flujo de compra, tal como pide el AC-3 de esta US ("esa acción habilita
+  # el flujo de compra, detallado en US-007").
   @happy
   Escenario: H-3 — Un producto con stock presenta la acción de compra
     Cuando un visitante abre la ficha del producto publicado
     Entonces la ficha presenta la acción de agregar al carrito
-    Y esa acción todavía no es operable
+    Y esa acción habilita el flujo de compra
 
   @corner
   Escenario: C-1 — Sin stock: visible pero no comprable
