@@ -6,6 +6,10 @@ discipline: frontend-web
 variant: null
 language: es
 created: 2026-08-19
+archived: true
+archived_at: 2026-08-29
+merged_commit: 9a9fc53ef86bcba180979eccbaba3381facfb6a7
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
 ---
 
 # US-018 Frontend Web — Canal de contacto por WhatsApp
