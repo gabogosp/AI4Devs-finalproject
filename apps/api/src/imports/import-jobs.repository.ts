@@ -188,17 +188,27 @@ export class ImportJobsRepository {
   }
 
   /**
-   * Cierra los trabajos `running` sin latido reciente: quedaron huérfanos porque
-   * el proceso que los ejecutaba se murió (ADR-0012). Sin esto, un redeploy
-   * dejaría un `running` eterno que bloquearía todos los imports siguientes con
-   * un 409 que el dueño no puede resolver.
+   * Cierra los trabajos huérfanos: quedaron `running` sin latido reciente
+   * (el proceso que los ejecutaba se murió, ADR-0012) o quedaron `pending`
+   * desde hace rato porque el proceso murió **entre** `create()` y
+   * `markRunning()` — nunca llegaron a tener latido, así que el criterio de
+   * "running sin latido" nunca los alcanza. Sin las dos ramas, un `pending`
+   * fantasma bloquearía todos los imports siguientes con un 409 que ningún
+   * reinicio de la API puede resolver (defecto encontrado en QA de US-006:
+   * un `pending` huérfano sobrevivió a varios reinicios porque sólo se
+   * reapeaba `running`).
    *
    * @returns cuántos trabajos cerró.
    */
   async reapStale(staleMs: number): Promise<number> {
     const corte = new Date(Date.now() - staleMs);
     const { count } = await this.prisma.importJob.updateMany({
-      where: { status: 'running', heartbeat_at: { lt: corte } },
+      where: {
+        OR: [
+          { status: 'running', heartbeat_at: { lt: corte } },
+          { status: 'pending', created_at: { lt: corte } },
+        ],
+      },
       data: {
         status: 'failed',
         error_code: 'interrupted',

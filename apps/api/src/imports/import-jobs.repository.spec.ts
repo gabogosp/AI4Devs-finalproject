@@ -202,7 +202,7 @@ describe('ImportJobsRepository (integration)', () => {
   });
 
   describe('reapStale', () => {
-    it('cierra sólo el running sin latido reciente y deja los otros intactos', async () => {
+    it('cierra el running sin latido reciente y deja los demás intactos', async () => {
       const viejo = await alta({ filename: 'viejo.csv' });
       await repo.markRunning(viejo.id);
       await prisma.importJob.update({
@@ -216,6 +216,8 @@ describe('ImportJobsRepository (integration)', () => {
       const cerrado = await alta({ filename: 'cerrado.csv' });
       await repo.markCompleted(cerrado.id, CONTADORES);
 
+      const pendienteFresco = await alta({ filename: 'recien-creado.csv' });
+
       const cuantos = await repo.reapStale(2 * 60 * 1000);
 
       expect(cuantos).toBe(1);
@@ -223,6 +225,30 @@ describe('ImportJobsRepository (integration)', () => {
       expect((await repo.findById(viejo.id))!.error_code).toBe('interrupted');
       expect((await repo.findById(fresco.id))!.status).toBe('running');
       expect((await repo.findById(cerrado.id))!.status).toBe('completed');
+      // Un pending recién creado (todavía puede llegar a `markRunning` en
+      // cualquier momento) no es un huérfano: reapearlo cancelaría un import
+      // que está a punto de arrancar.
+      expect((await repo.findById(pendienteFresco.id))!.status).toBe('pending');
+    });
+
+    it('cierra un pending huérfano que nunca llegó a tener latido (murió entre create y markRunning)', async () => {
+      // El caso que reapStale() no cubría (defecto encontrado en QA de
+      // US-006): el proceso muere después de `create()` pero antes de
+      // `markRunning()`, así que el job queda en `pending` para siempre —
+      // `heartbeat_at` nunca se llega a setear, y el criterio de "running sin
+      // latido" no lo alcanza.
+      const huerfano = await alta({ filename: 'huerfano.csv' });
+      await prisma.importJob.update({
+        where: { id: huerfano.id },
+        data: { created_at: new Date(Date.now() - 10 * 60 * 1000) },
+      });
+
+      const cuantos = await repo.reapStale(2 * 60 * 1000);
+
+      expect(cuantos).toBe(1);
+      const cerrado = await repo.findById(huerfano.id);
+      expect(cerrado!.status).toBe('failed');
+      expect(cerrado!.error_code).toBe('interrupted');
     });
 
     it('el motivo del trabajo interrumpido le dice al dueño qué hacer', async () => {
