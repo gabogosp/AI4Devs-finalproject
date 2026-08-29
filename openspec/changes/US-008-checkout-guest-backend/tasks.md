@@ -483,7 +483,7 @@ language: es
     limpio con la config de `.spectral.yaml` del repo.
   - **Verify**: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn` (termina con exit 0)
 
-- [ ] T6.2 README del módulo, con el seam de US-009 explícito
+- [x] T6.2 README del módulo, con el seam de US-009 explícito
   - **Exit criterion**: `apps/api/src/checkout/README.md` explica en ≤ 40 líneas: el
     endpoint y quién lo usa, por qué el carrito viene de la cookie y no del cuerpo, qué
     se congela en el snapshot y por qué, cómo se registra el consentimiento, **el
