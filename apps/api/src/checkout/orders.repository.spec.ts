@@ -1,0 +1,190 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { OrdersRepository } from './orders.repository';
+
+/**
+ * T1.2 — integration contra el Postgres real de docker-compose. Lo que se prueba
+ * acá no es que Prisma funcione, sino las dos propiedades que el diseño le pide
+ * a este repositorio y que un mock no podría demostrar: que `createPendingOrder`
+ * es atómica (una línea inválida no deja una orden huérfana) y que
+ * `findByTokenHash` distingue hash correcto de incorrecto.
+ */
+describe('OrdersRepository (integration)', () => {
+  const prisma = new PrismaService();
+  const repo = new OrdersRepository(prisma);
+
+  let productoA = '';
+  let productoB = '';
+  let productoC = '';
+
+  beforeAll(async () => {
+    await prisma.$connect();
+  });
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+  beforeEach(async () => {
+    await prisma.$executeRawUnsafe(
+      'TRUNCATE TABLE orders, order_items, products, categories RESTART IDENTITY CASCADE',
+    );
+    const cat = await prisma.category.create({
+      data: { name: 'Refrigeración', slug: 'refrigeracion' },
+    });
+    productoA = (
+      await prisma.product.create({
+        data: {
+          sku: 'ORD-REPO-A',
+          slug: 'compresor-embraco',
+          name: 'Compresor Embraco',
+          price_ars_cents: 12_500_000,
+          stock: 3,
+          status: 'published',
+          category_id: cat.id,
+        },
+      })
+    ).id;
+    productoB = (
+      await prisma.product.create({
+        data: {
+          sku: 'ORD-REPO-B',
+          slug: 'gas-r134a',
+          name: 'Gas R134a',
+          price_ars_cents: 850_000,
+          stock: 8,
+          status: 'published',
+          category_id: cat.id,
+        },
+      })
+    ).id;
+    productoC = (
+      await prisma.product.create({
+        data: {
+          sku: 'ORD-REPO-C',
+          slug: 'cable-cobre-3x2',
+          name: 'Cable de cobre 3x2',
+          price_ars_cents: 430_000,
+          stock: 20,
+          status: 'published',
+          category_id: cat.id,
+        },
+      })
+    ).id;
+  });
+
+  function ordenBase(sufijo: string) {
+    return {
+      accessTokenHash: `h-${sufijo}`,
+      buyerName: 'Comprador de Prueba',
+      buyerEmail: `comprador-${sufijo}@test.local`,
+      buyerPhone: '+54 351 555 0000',
+      consentAcceptedAt: new Date(),
+      consentTermsVersion: '2026-06-15',
+    };
+  }
+
+  it('createPendingOrder con 3 líneas: 1 orden + 3 order_items', async () => {
+    const orden = await repo.createPendingOrder({
+      ...ordenBase('happy'),
+      totalArsCents: 12_500_000 + 850_000 * 2 + 430_000 * 3,
+      lines: [
+        {
+          productId: productoA,
+          quantity: 1,
+          unitPriceArsCents: 12_500_000,
+          productName: 'Compresor Embraco',
+          productSku: 'ORD-REPO-A',
+        },
+        {
+          productId: productoB,
+          quantity: 2,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+        {
+          productId: productoC,
+          quantity: 3,
+          unitPriceArsCents: 430_000,
+          productName: 'Cable de cobre 3x2',
+          productSku: 'ORD-REPO-C',
+        },
+      ],
+    });
+
+    expect(orden.status).toBe('pending_payment');
+    expect(orden.items).toHaveLength(3);
+
+    const ordenesEnBase = await prisma.order.count();
+    const itemsEnBase = await prisma.orderItem.count();
+    expect(ordenesEnBase).toBe(1);
+    expect(itemsEnBase).toBe(3);
+  });
+
+  it('atomicidad: una línea con product_id inexistente deja 0 órdenes y 0 líneas', async () => {
+    const productoInexistente = '00000000-0000-0000-0000-000000000000';
+
+    await expect(
+      repo.createPendingOrder({
+        ...ordenBase('atomic'),
+        totalArsCents: 12_500_000 + 850_000,
+        lines: [
+          {
+            productId: productoA,
+            quantity: 1,
+            unitPriceArsCents: 12_500_000,
+            productName: 'Compresor Embraco',
+            productSku: 'ORD-REPO-A',
+          },
+          {
+            productId: productoInexistente,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Fantasma',
+            productSku: 'NO-EXISTE',
+          },
+        ],
+      }),
+    ).rejects.toThrow();
+
+    expect(await prisma.order.count()).toBe(0);
+    expect(await prisma.orderItem.count()).toBe(0);
+  });
+
+  it('findByTokenHash: hash correcto encuentra la orden con sus líneas', async () => {
+    const creada = await repo.createPendingOrder({
+      ...ordenBase('find-ok'),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+
+    const encontrada = await repo.findByTokenHash('h-find-ok');
+
+    expect(encontrada?.id).toBe(creada.id);
+    expect(encontrada?.items).toHaveLength(1);
+  });
+
+  it('findByTokenHash: hash incorrecto devuelve null', async () => {
+    await repo.createPendingOrder({
+      ...ordenBase('find-miss'),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+
+    expect(await repo.findByTokenHash('h-no-existe')).toBeNull();
+  });
+});
