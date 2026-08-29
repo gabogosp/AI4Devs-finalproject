@@ -66,12 +66,21 @@ export function datosDeCuenta(sufijo = ''): Cuenta {
  * default global del throttler, que ninguna ruta de auth de cliente usa—: son
  * presupuestos de producción a propósito (§7.3), así que la única forma de no
  * autobloquearse es que cada cuenta hable desde una IP realmente distinta.
+ *
+ * **`SESSION` desplaza el tercer octeto con un salto al azar por PROCESO.** El
+ * throttler de `register` es 5/hora — una ventana larga a propósito (§7.3) — y
+ * `ip` vuelve a 0 en cada invocación nueva de Playwright (proceso nuevo). Sin
+ * `SESSION`, dos corridas sucesivas de la suite en la misma hora (el caso normal
+ * mientras se desarrolla, no sólo un CI de una sola pasada) reusarían la MISMA
+ * secuencia de IPs y la segunda corrida heredaría el presupuesto ya gastado por
+ * la primera.
  */
+const SESSION = Math.floor(Math.random() * 256);
 const WORKER = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? 0);
 let ip = 0;
 const proximaIp = (): string => {
   ip += 1;
-  return `10.${WORKER & 255}.${(ip >> 8) & 255}.${ip & 255}`;
+  return `10.${WORKER & 255}.${(SESSION ^ ((ip >> 8) & 255)) & 255}.${ip & 255}`;
 };
 
 /** Contexto de API con su propio almacén de cookies, su `Origin` y su IP. */

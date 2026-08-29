@@ -32,8 +32,8 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-146 | T2.4 | AC-10 | seguridad | **verde** |
 | TC-147 | T2.3 | AC-8 | seguridad | **verde** |
 | TC-148 | T2.2 | AC-9 | seguridad | **verde** |
-| TC-150 | T3.1 | AC-1, AC-2 | a11y | por ejecutar |
-| TC-151 | T3.1 | AC-4 | a11y | por ejecutar |
+| TC-150 | T3.1 | AC-1, AC-2 | a11y | **verde** |
+| TC-151 | T3.1 | AC-4 | a11y | **verde** |
 | TC-160 | T4.1 | AC-2 (PRD §4) | carga | por ejecutar |
 | TC-170 | T5.1 | AC-10 | exploratorio | **manual**, charter escrito |
 | TC-171 | T5.1 | AC-4 | exploratorio | **manual**, charter escrito |
@@ -209,7 +209,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Fase 3: Accesibilidad — 1,0 h
 
-- [ ] T3.1 TC-150 + TC-151 — axe AA y teclado en los cuatro formularios (US §9)
+- [x] T3.1 TC-150 + TC-151 — axe AA y teclado en los cuatro formularios (US §9)
   - **Pattern**: `AxeBuilder` con `withTags(['wcag2a','wcag2aa'])`, espejo de
     `qa/e2e/ficha-a11y.spec.ts`; el archivo tiene que terminar en `a11y.spec.ts` o el
     config de e2e lo excluye y el de a11y no lo toma.
@@ -217,6 +217,18 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     confirmación; los cuatro se completan y envían **sólo con teclado**; y cada error de
     validación queda **asociado a su campo** por nombre accesible (un error suelto en la
     página no le dice a un lector de pantalla qué campo corregir, y axe no lo detecta).
+  - **Notas de implementación (2026-08-29)**: `qa/e2e/cuenta-a11y.spec.ts`, 9 escenarios
+    (TC-150a-e, TC-151a-d). Dos hallazgos del harness, no de la app:
+    (1) el `label` real incluye el asterisco de requerido (`"Nombre *"`) — `getByLabel`
+    con `exact:true` nunca matcheaba; se pasó a substring, sin ambigüedad dentro de cada
+    form. (2) las páginas con `<Suspense fallback={null}>` (`/ingresar`,
+    `/recuperar/confirmar`) no tienen contenido interactivo hasta que React hidrata;
+    `page.goto()` solo espera el HTML servido, así que un `Enter` disparado antes de
+    hidratar cae al submit **nativo** del form en vez de al handler — se agregó
+    `page.waitForLoadState('networkidle')` tras cada `goto` en los tests que interactúan
+    (`irYEsperarHidratacion`). El error de validación se localiza por `[id="…"]`, no por
+    `#id`: `useId()` genera ids con `:`, que el parser de selectores CSS no acepta sin
+    escapar. 2 corridas seguidas: 9/9 verde.
   - **Verify**: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-150|TC-151" --reporter=line 2>&1 | grep -qE '^ *[2-9] passed'`
 
 ---
