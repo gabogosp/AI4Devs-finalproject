@@ -257,7 +257,7 @@ language: es
     contrato de US-009—; `hashToken(token)` reproduce el hash emitido; el claro **no**
     aparece en el objeto devuelto por ninguna otra vía)
 
-- [ ] T2.3 `CheckoutService.createOrder` — el caso de uso transaccional
+- [x] T2.3 `CheckoutService.createOrder` — el caso de uso transaccional
   - **Pattern**: resolver el carrito, leer los productos **vigentes**, construir la
     vista, validar, snapshotear e insertar — todo dentro de la transacción, de modo que
     el precio guardado sea el que la transacción leyó — `per backend-node-standards.md §5`
