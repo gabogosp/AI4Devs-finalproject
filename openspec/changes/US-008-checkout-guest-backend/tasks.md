@@ -285,7 +285,7 @@ language: es
 
 ## Fase 3: Superficie HTTP — 1,2 h
 
-- [ ] T3.1 DTOs de entrada y de respuesta
+- [x] T3.1 DTOs de entrada y de respuesta
   - **Pattern**: `class-validator` + el `ValidationPipe` global ya configurado
     (`whitelist`, `forbidNonWhitelisted`, 422) — `per backend-node-standards.md §4 — DTO
     validado en el borde, rechazar campos desconocidos`. Respuesta en `snake_case` y
@@ -314,7 +314,7 @@ language: es
     `order_number` entero **≥ 1000** y no contiene ningún UUID
     —`expect(JSON.stringify(body)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)`)
 
-- [ ] T3.2 `CheckoutController` con CSRF y throttler propio
+- [x] T3.2 `CheckoutController` con CSRF y throttler propio
   - **Pattern**: controller fino que delega; **reusa `CartCsrfGuard`** porque acá la
     escritura se autoriza con la cookie `dsm_cart`, que es credencial **ambiente** —
     `per security-standards.md §7.5 — CSRF obligatorio en toda escritura autenticada por
