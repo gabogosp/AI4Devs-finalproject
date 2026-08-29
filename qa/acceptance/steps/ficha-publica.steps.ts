@@ -101,14 +101,14 @@ Then('la ficha presenta la acción de agregar al carrito', async function (
   ).toBeVisible();
 });
 
-Then('esa acción todavía no es operable', async function (this: CatalogWorld) {
-  // El seam está listo pero sin destino: un botón activo que no hace nada da
-  // peor señal que uno visiblemente pendiente (design-system §7.14).
-  // Cuando US-007 conecte el carrito, este paso se invierte — y que falle
-  // entonces es CORRECTO: avisa que el seam ya tiene destino.
+Then('esa acción habilita el flujo de compra', async function (this: CatalogWorld) {
+  // Invertido tal como preveía el comentario original: US-007 ya conectó el
+  // carrito (T3.4 — "Agregar al carrito" habilitado en la ficha), así que el
+  // seam dejó de estar pendiente. AC-3 de US-003 pide justamente esto: "esa
+  // acción habilita el flujo de compra (detallado en US-007)".
   await expect(
     this.page!.getByRole('button', { name: /Agregar al carrito/i }),
-  ).toBeDisabled();
+  ).toBeEnabled();
 });
 
 Then('no se ofrece la acción de agregar al carrito', async function (

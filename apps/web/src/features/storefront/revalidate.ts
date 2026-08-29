@@ -31,26 +31,35 @@ export async function revalidateProduct(rawSlug: string): Promise<void> {
 }
 
 /**
- * Invalida TODO el catálogo público: navegación, listados y sitemap
+ * Invalida TODO el catálogo público: navegación, listados, fichas y sitemap
  * (AC-8, design.md D2).
  *
  * Sin input → nada que validar; el efecto es idempotente y benigno (purgar de
  * más sólo provoca un re-fetch), a diferencia de `revalidateProduct`, que sí
  * recibe un slug del exterior.
  *
- * Las cuatro purgas cubren cosas distintas y ninguna sobra:
+ * Las cinco purgas cubren cosas distintas y ninguna sobra:
  * - `revalidateTag(CATALOG_TAG)` tira la Data Cache del árbol, los detalles,
  *   los listados y el sitemap, que comparten tag.
  * - `revalidatePath('/categorias/[slug]', 'page')` tira la Full Route Cache de
  *   **todas** las instancias del segmento dinámico — incluidos los 404
  *   cacheados, que es el caso "la categoría recién creada seguía dando 404" y
  *   que ningún tag puede cubrir porque nunca hubo respuesta exitosa.
+ * - `revalidatePath('/productos/[slug]', 'page')` es el mismo argumento que la
+ *   línea de arriba pero para las fichas: tirar sólo el tag no alcanza para
+ *   forzar el re-render de la Full Route Cache de una ficha ya servida
+ *   estáticamente, y un import masivo (US-006) puede tocar cientos de SKUs a
+ *   la vez — no hay slug por slug que invalidar uno por uno. Sin esta línea,
+ *   un ajuste de precios masivo deja las fichas ya cacheadas sirviendo el
+ *   precio viejo hasta el safety-net de 1h (defecto encontrado en el E2E de
+ *   US-006, TC-619).
  * - `revalidatePath('/')` refresca la grilla de rubros de la home.
  * - `revalidatePath('/sitemap.xml')` porque el sitemap es una ruta cacheada más.
  */
 export async function revalidateCatalog(): Promise<void> {
   revalidateTag(CATALOG_TAG);
   revalidatePath('/categorias/[slug]', 'page');
+  revalidatePath('/productos/[slug]', 'page');
   revalidatePath('/');
   revalidatePath('/sitemap.xml');
 }

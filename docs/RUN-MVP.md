@@ -108,11 +108,29 @@ Qué corrige cada variable del script, con el síntoma que produce su ausencia:
 | `AUTH_RATE_LIMIT_MAX` elevado | Cada escenario hace un login admin **real**; con 5 cada 15 minutos, la suite se autobloquea con 429 en el sexto. |
 | `CART_*_RATE_LIMIT_MAX` elevado | El carrito de producción admite 30 escrituras/min/IP: la suite y el k6 lo superan de inmediato. En la carga, además, el p95 medido sería el del throttler. |
 | `AUTH_COOKIE_SECURE=false` | En `http` local una cookie `Secure` no vuelve al cliente, así que cada escritura crearía un carrito nuevo. |
+| `IMPORT_RATE_LIMIT_MAX` elevado | US-006: el import admite 3 POST/hora/IP en producción; 20 de los 24 casos de `@importar` hacen un POST, así que la suite se autoenvenenaría a la cuarta corrida. El límite real igual se prueba — TC-613 lo baja por su propia variable de proceso, sólo para ese escenario. |
 
 Los puertos del cliente QA salen de `qa/support/qa-env.ts` (**una** fuente: API 3000, web
 3200) y la suite **verifica el entorno antes del primer escenario**: si la API no está o no
 admite su `Origin`, falla con un mensaje que dice qué levantar en lugar de dejar que reviente
 más tarde como un problema de dominio.
+
+### US-006 — Importación masiva de inventario
+
+```bash
+QA_API_BASE_URL=http://localhost:3009 pnpm --filter @dsm/qa test:acceptance:import   # 16 casos, API-level
+QA_API_BASE_URL=http://localhost:3009 pnpm --filter @dsm/qa test:throughput:import   # TC-622, sin navegador
+# test:e2e:import y test:a11y:import (TC-617..TC-621) necesitan además el web apuntando
+# a esa misma API — ver el defecto de CORS abierto abajo antes de correrlos.
+```
+
+**Defecto abierto (bloquea TC-617/618/619/620/621 parcial)**: el frontend manda el header
+`idempotency-key` en cada `POST /v1/admin/imports` (`importsService.ts`, `api-standards` §10),
+pero `CORS_ALLOWED_ORIGINS`/`allowedHeaders` de `bootstrap.ts` no lo incluye — el preflight del
+navegador lo rechaza y el import es **inalcanzable desde cualquier browser real**, aunque
+`curl`/Node (sin CORS) funcionen perfecto. Ningún test dev-owned (RTL+MSW, sin CORS real) ni
+`curl` lo detecta — sólo un E2E de navegador contra el stack real. Fix: agregar
+`'Idempotency-Key'` a `allowedHeaders` en `apps/api/src/bootstrap.ts`.
 
 ## Recorrido de demo (lo que se ve)
 

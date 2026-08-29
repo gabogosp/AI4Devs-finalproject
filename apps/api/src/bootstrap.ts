@@ -83,11 +83,17 @@ export function configureApp(app: INestApplication): void {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     // `X-CSRF-Token` (T5.3): sin declararlo, el preflight del panel falla y el
     // logout/refresh se vuelven inalcanzables desde el browser.
+    // `idempotency-key` (US-006, encontrado en QA): el panel la manda en cada
+    // subida de import (`importsService.ts`) y el backend la lee
+    // (`imports.controller.ts`), pero nadie la había sumado acá — el import
+    // era inalcanzable desde cualquier navegador real (curl no hace preflight,
+    // así que el defecto quedó invisible hasta el primer E2E de navegador).
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'traceparent',
       'X-CSRF-Token',
+      'idempotency-key',
     ],
     exposedHeaders: ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset', 'Retry-After'],
     maxAge: 86_400, // ≤ 24 h

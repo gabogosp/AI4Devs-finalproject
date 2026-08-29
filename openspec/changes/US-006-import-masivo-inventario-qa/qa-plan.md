@@ -1,7 +1,13 @@
 # QA Plan — US-006 Importación masiva de inventario
 
 > **Ticket**: US-006 — Importación masiva de inventario (CSV/Excel)
-> **Autor**: qa-engineer (asistido por @gosp) · **Fecha**: 2026-08-23 · **Estado**: Proposed
+> **Autor**: qa-engineer (asistido por @gosp) · **Fecha**: 2026-08-23 · **Estado**: Ejecutado
+> (2026-08-29) — 22/22 automatizados verdes + 2 charters exploratorios redactados. Tres
+> defectos reales encontrados y corregidos en el camino: `reapStale()` no liberaba imports
+> `pending` huérfanos (backend), `allowedHeaders` de CORS no incluía `idempotency-key` —el
+> import era inalcanzable desde cualquier navegador real— (backend), y `revalidateCatalog()`
+> no invalidaba la Full Route Cache de las fichas de producto —un ajuste masivo de precios
+> dejaba las fichas ya cacheadas sirviendo el precio viejo— (frontend). Detalle en `tasks.md`.
 > **Plataformas**: backend (`@dsm/api`) + web (panel admin y storefront)
 > **Tier**: **2 pragmático**, con AC-8 y AC-11 tratadas como **Tier 1** (OQ-QA-1; no hay
 > `service-catalog.yaml` en el repo, así que el supuesto queda declarado acá)

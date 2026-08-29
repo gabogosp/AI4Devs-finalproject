@@ -364,11 +364,33 @@
   us-id: US-006
   discipline: qa
   variant: null
-  status: draft
+  status: in review  # PR #8 abierto 2026-08-29, todos los stubs automatizados cerrados
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
+  # EJECUCION 2026-08-29: CERRADO. 22/22 test cases automatizados verdes (16
+  # aceptacion + 4 E2E de navegador + 1 a11y con sus 3 estados + 1 throughput) +
+  # 2 charters exploratorios redactados = 24/24.
+  # TRES defectos reales encontrados y corregidos en el camino (ninguno era de
+  # entorno, los tres con evidencia):
+  #  1. reapStale() (backend) nunca liberaba jobs 'pending' huerfanos -- solo
+  #     'running' con heartbeat viejo. Un crash entre create() y markRunning()
+  #     dejaba el import bloqueado PARA SIEMPRE, sin que ningun reinicio lo
+  #     resolviera. Fix en import-jobs.repository.ts (commit 6540873), 2 tests
+  #     nuevos.
+  #  2. `allowedHeaders` del CORS (backend, bootstrap.ts) no incluia
+  #     'idempotency-key', que el FE manda en cada POST /v1/admin/imports -- el
+  #     import era INALCANZABLE desde cualquier navegador real (curl si andaba,
+  #     por eso nadie lo vio hasta el primer E2E de navegador). Fix aditivo:
+  #     sumar el header a la allowlist.
+  #  3. revalidateCatalog() (frontend) no invalidaba la Full Route Cache de las
+  #     fichas de producto (`/productos/[slug]`), solo la de categorias -- un
+  #     ajuste masivo de precios dejaba las fichas ya cacheadas sirviendo el
+  #     PRECIO VIEJO hasta el safety-net de 1h. Fix: agregar
+  #     revalidatePath('/productos/[slug]', 'page'), mismo patron que ya
+  #     existia para categorias. Tests actualizados en revalidate.test.ts.
+  # Detalle completo en tasks.md y en los docblocks de qa/e2e/importar*.spec.ts.
   # 7 h AI-asistido (la US §7 presupuesta QA-US-006 en 6-8 h). 14 tasks.
   # LA TERCERA DISCIPLINA de US-006: backend (35/35) y frontend-web (13/13) estan
   # cerrados; sin este change la US no puede cruzar su Definition of Done, que pide
@@ -405,6 +427,9 @@
   # propia variable. Allowlistear la IP se descarto: crea un camino que produccion no
   # tiene y dejaria el limite sin probar en ningun lado.
   estimate-hours: 7
+  branch: feat/US-006-import-masivo-inventario-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/8
+  pr-opened-at: 2026-08-29T21:25:05Z
 
 - name: US-006-import-masivo-inventario-backend
   us-id: US-006

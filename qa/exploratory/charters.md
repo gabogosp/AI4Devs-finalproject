@@ -182,3 +182,65 @@
   así que el resultado de esta sesión es accionable el mismo día.
 - **Salida esperada**: una recomendación con número —confirmar 7, o subir a 14/30—
   registrada en OQ-BE-1 del change de backend, con el fundamento del ciclo observado.
+
+---
+
+# US-006 — Importación masiva de inventario
+
+## TC-623 — Excel del mundo real
+
+- **Misión**: descubrir con qué archivos reales se rompe el parser — el espacio de
+  variantes que produce una planilla exportada por una persona, no por un test.
+- **Áreas**: exports de LibreOffice, Google Sheets y Excel de Windows; números
+  guardados como texto (celda con apóstrofe inicial); celdas con formato de moneda
+  («$ 1.234,56»); filas vacías al final del archivo; archivos con varias hojas
+  (¿cuál lee el parser?); encabezados con espacios extra, mayúsculas o BOM
+  agregado por el editor.
+- **Riesgos**: el separador de miles ambiguo (`1.234`) — el contrato lo **rechaza**
+  a propósito (OQ-BE-2), y es exactamente el formato que exporta Excel en
+  configuración regional es-AR, así que el dueño real va a chocar con esto en la
+  primera semana de uso; una hoja equivocada leída en silencio (el archivo "parece"
+  haberse importado bien, pero fueron los datos de otra pestaña); un número con
+  miles de separador que se lee como si fuera dos columnas por el comillado.
+- **Heurísticas**: "el usuario real no es el test" (usar archivos hechos a mano en
+  cada herramienta, no generados por código); boundary del comillado CSV (comas,
+  comillas y saltos de línea dentro de una celda); explorar por herramienta de
+  origen, no por caso de error abstracto.
+- **Justificación manual**: el espacio de variantes que produce una planilla real
+  no se enumera con generadores deterministas — se explora con archivos de verdad.
+  Los generadores de `import-files.ts` (T1.1) cubren los `error_code` del
+  contrato; este charter cubre lo que el contrato todavía no nombró.
+- **Salida esperada**: lista de variantes reales que rompen el parser, clasificadas
+  en (a) correctamente rechazadas con mensaje claro — no acción, es el diseño
+  funcionando — o (b) aceptadas con datos corruptos o rechazadas con un mensaje que
+  no ayuda al dueño a corregir el archivo — candidato a AC nueva o mejora de copy.
+
+## TC-624 — Ciclo de vida del trabajo
+
+- **Misión**: ejercer el runbook de `apps/api/README.md` §Importación masiva de
+  inventario contra el sistema real, no contra lo que el runbook dice que debería
+  pasar.
+- **Áreas**: matar el proceso de la API a mitad de un import (el job queda
+  `running` → el barrido de arranque (`reapStale`, `import-runner.ts`) lo tiene
+  que marcar `interrupted` al reiniciar); volver a subir el mismo archivo después
+  de la interrupción; segundo import mientras el primero sigue corriendo (`409
+  already-running`); un trabajo de más de 90 días (`purgeOlderThan`, purga en el
+  próximo arranque).
+- **Riesgos**: que el `interrupted` deje el catálogo a medias sin que el mensaje
+  se lo diga al dueño; que el reintento tras una interrupción duplique en vez de
+  reconciliar por SKU; un `pending` que muera **antes** de `markRunning` y quede
+  huérfano para siempre — **este último ya se encontró sin necesidad de charter**:
+  `reapStale()` sólo reapeaba `running`, nunca `pending`, y un huérfano así
+  bloqueaba todos los imports siguientes sin que ningún reinicio lo resolviera
+  (corregido durante esta misma US, ver `import-jobs.repository.ts`). El charter
+  queda para ejercer el resto del ciclo — interrupted en `running`, reintento,
+  concurrencia, purga por retención — que el fix puntual no cubre.
+- **Heurísticas**: "romper a propósito" (matar el proceso en el peor momento
+  posible: a mitad de un lote); seguir el dato (mirar `import_jobs` en cada paso,
+  no sólo la respuesta HTTP); el runbook como hipótesis a falsear, no como verdad.
+- **Justificación manual**: requiere matar procesos y manipular la ventana de
+  retención — no es una condición que un test determinista deba simular con
+  mocks de reloj para un runbook operativo.
+- **Salida esperada**: confirmación de que cada paso del runbook hace lo que dice,
+  o un defecto puntual por paso que no — con el mismo estándar de evidencia que
+  ya se aplicó al hallazgo del `pending` huérfano.

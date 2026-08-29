@@ -26,6 +26,11 @@
 #                          la suite queda bloqueada aunque `AUTH_RATE_LIMIT_MAX` esté alto.
 #                          Mismo mecanismo que usa `apps/api/test/e2e-app.ts` y por el mismo
 #                          motivo.
+#   IMPORT_RATE_LIMIT_MAX  US-006: 20 de los 24 casos de `@importar` hacen un POST; el
+#                          presupuesto de producción (3/hora/IP) autoenvenenaría la suite a
+#                          la cuarta corrida. El límite real IGUAL se prueba — TC-613 lo baja
+#                          por su propia variable de proceso, sólo para ese escenario — así
+#                          que elevarlo acá no deja el límite sin cobertura en ningún lado.
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -59,4 +64,5 @@ exec env \
   CART_RATE_LIMIT_MAX=100000 \
   CART_WRITE_RATE_LIMIT_MAX=100000 \
   STOREFRONT_RATE_LIMIT_MAX=100000 \
+  IMPORT_RATE_LIMIT_MAX=100000 \
   node "$MAIN"

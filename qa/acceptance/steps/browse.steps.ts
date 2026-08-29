@@ -189,9 +189,16 @@ Then(
 );
 
 Then('la grilla no ofrece ninguna acción de compra', PASO, async function (this: CatalogWorld) {
-  // AC-5 por construcción: la card no tiene CTA. Un botón acá sería comprable
-  // desde el listado, que es justo lo que la US prohíbe hasta US-007.
-  await expect(this.page!.getByRole('button', { name: /Agregar|Comprar/i })).toHaveCount(0);
+  // AC-5 es por producto (US-002 AC-5: "un producto sin stock... no ofrece la
+  // acción"), no por grilla entera: desde US-007 T3.5 la grilla SÍ tiene
+  // "Agregar" en las cards con stock (OQ-FE-2 resuelta como «sí»). Lo que
+  // AC-5 prohíbe es que la CARD DE ESTE producto la tenga — el nombre
+  // accesible del botón incluye el producto (`Agregar ${item.name}`)
+  // justamente para poder distinguirlas en una grilla con muchos "Agregar".
+  const { sinStock } = seed(this);
+  await expect(
+    this.page!.getByRole('button', { name: `Agregar ${sinStock.name}`, exact: true }),
+  ).toHaveCount(0);
 });
 
 Then('ve un mensaje de que todavía no hay productos', PASO, async function (this: CatalogWorld) {
