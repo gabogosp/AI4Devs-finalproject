@@ -113,6 +113,14 @@
 
 ## Fase 5: E2E de navegador — 1,5 h
 
+> **Bloqueado por un defecto real, no por la suite**: los 4 escenarios están escritos en
+> `qa/e2e/importar.spec.ts` (`test.fixme`) pero ninguno corre en verde — el frontend manda
+> `idempotency-key` en cada `POST /v1/admin/imports` y `allowedHeaders` de
+> `apps/api/src/bootstrap.ts` no lo incluye, así que el navegador rechaza el preflight y el
+> import es inalcanzable desde cualquier browser real (confirmado con traza de Playwright +
+> preflight CORS manual). Fix: agregar `'Idempotency-Key'` a `allowedHeaders`. Detalle en
+> `docs/RUN-MVP.md` §US-006. Una vez el fix esté, sacar `.fixme` y correr T5.1/T5.2 de nuevo.
+
 - [ ] **T5.1 `qa/e2e/importar.spec.ts` — TC-617 y TC-618.** Login admin por `/admin/acceso`
   (el patrón de `a11y.spec.ts`), archivo real con `setInputFiles`, descarga con
   `page.waitForEvent('download')`.
@@ -132,6 +140,10 @@
 
 ## Fase 6: Accesibilidad — 0,5 h
 
+> **Parcial**: sólo el estado selector corre hoy (verde, sin violaciones). Progreso y
+> resultado están en `test.fixme` por el mismo defecto de CORS que bloquea la Fase 5 — sin
+> un `POST` que salga del navegador, esas dos pantallas nunca se alcanzan.
+
 - [ ] **T6.1 `qa/e2e/importar-a11y.spec.ts` — TC-621.** Axe en los tres estados (selector,
   progreso, resultado con tabla).
   - **Exit criterion**: cero violaciones de WCAG 2.1 AA en los tres estados; además dos
@@ -142,7 +154,7 @@
 
 ## Fase 7: Presupuesto de throughput — 0,5 h
 
-- [ ] **T7.1 `qa/performance/import-throughput.ts` — TC-622.** 5.000 filas, con los tres
+- [x] **T7.1 `qa/performance/import-throughput.ts` — TC-622.** 5.000 filas, con los tres
   presupuestos de `qa-plan.md` §7.
   - **Exit criterion**: mide tiempo hasta `completed` (≤ 180 s), p95 de `GET /v1/categories`
     **mientras** el import corre (≤ 400 ms) y filas escritas al final (= 5.000). Sale con
@@ -152,7 +164,7 @@
 
 ## Fase 8: Exploratorio — 0,25 h
 
-- [ ] **T8.1 Charters TC-623 y TC-624** agregados a `qa/exploratory/charters.md` (se agregan,
+- [x] **T8.1 Charters TC-623 y TC-624** agregados a `qa/exploratory/charters.md` (se agregan,
   no se reescriben los de US-001).
   - **Exit criterion**: los dos charters con misión, áreas, riesgos, heurísticas y
     justificación de por qué son manuales, en el formato de los charters existentes.
@@ -160,7 +172,7 @@
 
 ## Fase 9: Cableado — 0,25 h
 
-- [ ] **T9.1 Scripts de `@dsm/qa` + README de la suite.** `test:acceptance:import`,
+- [x] **T9.1 Scripts de `@dsm/qa` + README de la suite.** `test:acceptance:import`,
   `test:e2e:import`, `test:a11y:import`, `test:throughput:import`, y la sección de US-006 en
   el README de QA con el pre-requisito P2 explicado (el rate-limit).
   - **Exit criterion**: los cuatro scripts corren; el README dice **por qué** hace falta
