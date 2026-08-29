@@ -6,6 +6,14 @@
 # US-021, que habían quedado fuera del `order[]` tras el plan del 2026-06-15 (hallazgo
 # AUDIT-FLOW-003/005 de la auditoría de flujo). Las capas y ciclos de las 19 US previas
 # NO se recalcularon. Para una recomputación completa del DAG: `/plan-build-order`.
+#
+# 2026-08-23 — RECÓMPUTO tras la Entrega 2. Estado real: Entrega 2/MVP construida
+# (US-001..007, 014, 017, 018 code-complete; US-001/003 archivadas). El critical path
+# restante es la cadena transaccional US-008 → US-009 → US-010 y su fan-out. El mapa
+# vigente y los tracks paralelos viven en docs/delivery/build-order.md (fuente autoritativa
+# de este recómputo). El `order[]`/`unblocked_now` de abajo quedó del plan viejo — no
+# refleja lo construido; guiarse por build-order.md.
+critical_path_v2: [US-007, US-008, US-009, US-010, US-012, US-011]  # 2026-08-23; el read-side ya está hecho
 generated: 2026-08-22
 parent-prd: docs/product/prd.md
 cycles_detected: []          # sin ciclos — DAG válido
