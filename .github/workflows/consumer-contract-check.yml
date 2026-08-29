@@ -31,10 +31,16 @@ on:
 jobs:
   consumer-contract:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('package.json') != '' }}
+    # (Se quitó `if: ${{ hashFiles('package.json') != '' }}`: `hashFiles` no es válido
+    # en un `if` a nivel de job → GitHub rechazaba el workflow entero, «workflow file
+    # issue», 0s. Este repo tiene package.json; el paso además es tolerante.)
     steps:
+      # Sin `submodules: recursive`: el submódulo `spekode/` es privado y Actions no
+      # puede clonarlo (fallaba el run entero, 0s, «workflow file issue»). El paso de
+      # abajo ya es tolerante —si el script del kernel no está, emite un ::notice:: y
+      # sigue verde—, así que esta verificación queda como no-op en CI y su protección
+      # real vive en el pre-commit/local.
       - uses: actions/checkout@v4
-        with: { submodules: recursive }   # spekode/ mount carries the script
 
       - name: Every HTTP call goes through the generated client (F48)
         run: |
