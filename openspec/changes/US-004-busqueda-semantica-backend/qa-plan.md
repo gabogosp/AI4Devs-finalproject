@@ -159,15 +159,48 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 
 ### Items closure-grade
 
-- [ ] **QA-004-REL-1**: Batería de ~30 consultas en `qa/relevance/cases.json` (o `scripts/relevance-cases.json`)
+- [x] **QA-004-REL-1**: Batería de ~30 consultas en `qa/relevance/cases.json` (o `scripts/relevance-cases.json`) — verde 2026-08-29 (30 casos, 10/5/5/5/5)
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (relevance harness)
+  gherkin_scenario: "AC-2 — batería de relevancia top-5 ≥70%"
+  ```
+  - **No bloqueado por GEMINI_API_KEY**: escribir la batería es contenido (queries + slugs
+    esperados), no ejecución — se pudo completar sin la credencial. Referencian el catálogo de
+    demo (`packages/db/prisma/seed.ts`) más productos del catálogo enriquecido que ese seed
+    mínimo no trae (`slug_inexistente` esperado hasta que exista un catálogo mayor).
   - Exit criterion: el archivo contiene ≥ 28 consultas con su(s) slug(s) esperado(s), distribuidas en las 5 categorías arriba (coloquial, técnico parcial, gremio, ambiguas, negative-match).
   - Verify: `node -e "const c=require('./qa/relevance/cases.json')||require('./apps/api/scripts/relevance-cases.json'); const n=c.length; if(n<28){process.exit(1)} console.log(n+' cases ok')"`
 
 - [ ] **QA-004-REL-2**: Gate de relevancia ≥ 70% integrado y ejecutable
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (relevance harness)
+  gherkin_scenario: "AC-2 — batería de relevancia top-5 ≥70%"
+  ```
+  - ⚠ **Blocked-on-env (2026-08-29, decisión del usuario)**: sin `GEMINI_API_KEY` no hay
+    embeddings (`embedding_coverage: 0%`), así que la búsqueda corre 100% en full-text (AC-4) y
+    el gate mide el camino equivocado. Corrida real con los 30 casos de QA-004-REL-1 contra el
+    catálogo de demo: **33,3%** de acierto top-5 (contra el objetivo de 70%) — es la falla
+    esperada de una búsqueda léxica en un caso pensado para semántica, no una señal de que el
+    umbral esté mal calibrado. El arnés y la batería están listos; falta re-correr con la
+    credencial real antes de firmar este gate.
   - Exit criterion: `pnpm --filter @dsm/api relevance` ejecuta las ~30 consultas, reporta porcentaje global y sale con código ≠ 0 si < 70%. Con catálogo enriquecido (US-005 completa), el porcentaje **es** ≥ 70%.
   - Verify: `pnpm --filter @dsm/api relevance` (exit 0 = pasa; exit ≠ 0 = no pasa)
 
-- [ ] **QA-004-REL-3**: Reporte de cobertura de embeddings visible
+- [x] **QA-004-REL-3**: Reporte de cobertura de embeddings visible — verde 2026-08-29
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (relevance harness)
+  gherkin_scenario: "AC-2 — batería de relevancia top-5 ≥70%"
+  ```
+  - **No bloqueado por GEMINI_API_KEY**: el reporte de cobertura corre en `--dry-run` sin
+    necesitar el proveedor de IA (mide filas de `product_embeddings`, no llama a Gemini).
+    Corrida real: `embedding_coverage: 0/N productos publicados con vector (0.0%)` — coherente,
+    N fluctuó junto con el catálogo compartido durante esta sesión.
   - Exit criterion: el arnés imprime cuántos productos tienen embedding vs cuántos publicados, para distinguir un 0% por catálogo vacío de un problema de relevancia.
   - Verify: `pnpm --filter @dsm/api relevance -- --dry-run 2>&1 | grep -q "embedding_coverage"`
 
@@ -179,36 +212,78 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 
 > **Decisión de alcance**: QA-002 es cross-cutting sobre `apps/api/docs/api/openapi.yaml`. Se ancla en este plan (US-004) porque `/v1/search` es el primer endpoint que lo materializa como task propia, pero el contrato aplica a **todos** los endpoints. Se planifica un gate Spectral + supertest **general**, no solo de `/v1/search`.
 
-- [ ] **QA-004-CT-1**: Spectral lint del OpenAPI en CI
+- [x] **QA-004-CT-1**: Spectral lint del OpenAPI en CI — verde 2026-08-29 (`.github/workflows/ci.yml`)
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Spectral
+  gherkin_scenario: "AC-1 — contrato de /v1/search (OpenAPI)"
+  ```
   - Exit criterion: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn` corre en el pipeline de CI y **bloquea merge** si falla.
   - Verify: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn` (exit 0)
+  - Wired en `ci.yml` (paso "Contract lint (OpenAPI)", después de "Lint"). Corrida manual: exit 0, "No results with a severity of 'warn' or higher found!".
 
-- [ ] **QA-004-CT-2**: Supertest contract tests para `/v1/search` (response schema vs OpenAPI)
-  - Exit criterion: un spec en `qa/contract/` (o `apps/api/src/search/`) valida que la respuesta 200 de `GET /v1/search?q=taco` matchee el schema declarado en OpenAPI para ese endpoint, y que 422/429 matcheen sus schemas de error.
-  - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=search` (o el comando equivalente, exit 0)
+- [x] **QA-004-CT-2**: Contract test para `/v1/search` (response schema vs OpenAPI) — verde 2026-08-29 (`qa/contract/search.contract.ts`)
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (fetch + OpenAPI shape assertions)
+  gherkin_scenario: "AC-1 — contrato de /v1/search (OpenAPI)"
+  ```
+  - **Nota de tooling (2026-08-29)**: el plan original decía "Supertest", pero `qa/` (Layer 1
+    inline) no tiene jest ni supertest como dependencia — su harness es Playwright/Cucumber/
+    Newman/k6/tsx. Agregar supertest+jest sólo para este check habría sido forkear un segundo
+    harness (regla NEVER del agente qa-developer). Se escribió como script `tsx` con `fetch`
+    global, mismo patrón que `apps/api/scripts/relevance.ts` (QA-004-REL-*): valida contra un
+    servidor HTTP real, no un mock, incluyendo rechazo de campos no declarados
+    (`additionalProperties: false` del spec).
+  - Exit criterion: `qa/contract/search.contract.ts` valida que la respuesta 200 de `GET /v1/search?q=taco fischer` matchee `SearchResponse`/`SearchResult` de OpenAPI (incluidos los 422 de validación), sin campos faltantes ni no declarados.
+  - Verify: `QA_API_BASE_URL=<url del server> pnpm --filter @dsm/qa test:contract` (exit 0)
+  - **Corrida real (worktree QA, servidor en :3002, catálogo compartido de desarrollo)**: 4/4 casos verdes (200 con resultado vía `taco fischer` — fixture estable reusada de los e2e dev-owned de `apps/api/src/search/*.spec.ts`, 200 fallback sin resultados, 422 sin `q`, 422 consulta corta).
 
 ---
 
 ## 6. Performance (k6)
 
-- [ ] **QA-004-PERF-1**: Script k6 para `GET /v1/search` con target p95 < 1,5 s
+- [x] **QA-004-PERF-1**: Script k6 para `GET /v1/search` con target p95 < 1,5 s — escrito y verde 2026-08-29 (`qa/performance/search.js`), **con caveat real, ver abajo**
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: K6
+  gherkin_scenario: "NFR — p95 búsqueda < 1,5s (PRD §4 / E2E §17)"
+  ```
+  - ⚠ **Blocked-on-env, parcial (2026-08-29)**: sin `GEMINI_API_KEY` la búsqueda degrada 100% a
+    full-text (AC-4) — la corrida real dio `p(95)=2.05ms` contra un catálogo de 2 productos, que
+    NO es evidencia de que el camino kNN+embedding real cumpla el presupuesto de 1,5 s: es el p95
+    del camino léxico sobre un catálogo casi vacío. El script y el threshold están listos y
+    corrieron verdes; **falta re-correr con la key real y un catálogo con ≥ el volumen que asuma
+    el E2E §17 antes de firmar este NFR como validado**. Ver también nota del mismo tema en
+    `qa/performance/lib/thresholds.js`.
+  - **Nota de infra (2026-08-29)**: `SEARCH_RATE_LIMIT_MAX` (default 20/60s por IP, AC-10) agota
+    en milisegundos bajo cualquier VU sin pacing — la primera corrida dio 99,98% de fallas por
+    429, no por latencia. La corrida real de este stub subió `SEARCH_RATE_LIMIT_MAX=100000` en el
+    proceso de la API sólo para esta medición (mismo patrón que otros perf gates que aíslan el
+    throttler del número que quieren medir); no toca el default de producción.
   - Exit criterion: `qa/performance/search.js` corre contra la API con embeddings sembrados, ejecutando 10+ VUs durante 30 s con consultas variadas. Threshold: `http_req_duration{endpoint:search} p(95) < 1500`. El script existe con su threshold en `qa/performance/lib/thresholds.js`.
   - Verify: `k6 run --vus 5 --duration 15s qa/performance/search.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"` (el threshold pasa)
 
 - [ ] **QA-004-PERF-3**: La búsqueda mantiene su p95 **mientras corre una corrida de enriquecimiento**
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: K6
+  gherkin_scenario: "NFR — p95 búsqueda bajo enriquecimiento concurrente (derivado de US-005)"
+  ```
   - **Procedencia**: derivado del cierre de US-005 (2026-08-23), acordado con el PO. El
     `proposal.md` de US-005 derivó a `/plan-qa` sus dos piezas QA-owned; la batería de
     relevancia ya vive acá (QA-004-REL-*), y **éste es el hueco que quedaba**. Vive en este plan
     y no en un change de QA propio de US-005 porque el riesgo que mide es de **la búsqueda**:
     sólo existe cuando las dos superficies conviven.
-  - ⚠ **Nota de formato, para quien vaya a ejecutar este plan**: los stubs de este archivo usan
-    el formato liviano (`Exit criterion` + `Verify`), sin los campos
-    `execution_mode` / `test_layer` / `target_tooling` / `gherkin_scenario` que **sí** traen los
-    qa-plans de US-002 y US-007 (20 y 23 stubs). El pre-flight §3 de `/develop-qa` exige esos
-    cuatro campos y **rechaza el plan entero** sin ellos («qa-plan not scaffold-grade»). No es
-    un problema de este stub: es del formato del archivo. Para ejecutarlo hay dos caminos:
-    `/plan-qa US-004` que lo regenere scaffold-grade en un change `-qa`, o escribir el script k6
-    a mano contra este Exit criterion.
+  - **Nota de formato (2026-08-29)**: este stub y el resto del archivo llevaban el formato
+    liviano (`Exit criterion` + `Verify`) sin `execution_mode`/`test_layer`/`target_tooling`/
+    `gherkin_scenario`, lo que hacía que `/develop-qa` rechazara el plan entero («qa-plan not
+    scaffold-grade»). Corregido puntualmente vía `/plan-qa US-004`: se agregó el frontmatter
+    faltante a los 10 stubs de §§4-7 sin regenerar el documento ni renumerar los ids existentes.
   - **Por qué importa**: el enriquecimiento corre **in-process** dentro de `apps/api`
     (ADR-0014, no hay worker). Los tests dev-owned de US-005 prueban que `GET /health` responde
     en < 1 s con 200 productos en vuelo, pero **nadie midió `/v1/search` bajo esa condición**, y
@@ -231,7 +306,13 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
     condición «mientras corre» **no se puede crear**; con `ENRICHMENT_ENABLED=false` tampoco ·
     requiere un catálogo con pendientes (`enrichment_done = false`) para que haya algo que barrer.
 
-- [ ] **QA-004-PERF-2**: Threshold de búsqueda agregado a `thresholds.js`
+- [x] **QA-004-PERF-2**: Threshold de búsqueda agregado a `thresholds.js` — verde 2026-08-29
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: K6
+  gherkin_scenario: "NFR — p95 búsqueda < 1,5s (PRD §4 / E2E §17)"
+  ```
   - Exit criterion: `qa/performance/lib/thresholds.js` exporta `search` con `'http_req_duration{endpoint:search}': ['p(95)<1500']` (atado a E2E §17).
   - Verify: `grep -q "p(95)<1500" qa/performance/lib/thresholds.js`
 
@@ -241,11 +322,34 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 
 > **Nota**: la UI de búsqueda (FE-US-004) puede no existir al momento de ejecutar el plan backend. Los tests E2E de navegador se declaran acá pero su ejecución queda **bloqueada por FE-US-004**.
 
-- [ ] **QA-004-E2E-1**: Spec Playwright — búsqueda desde la UI con resultado
+- [x] **QA-004-E2E-1**: Spec Playwright — búsqueda desde la UI con resultado — verde 2026-08-29 (`qa/e2e/busqueda.spec.ts`, 3/3 corridas)
+  ```yaml
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Playwright
+  gherkin_scenario: "AC-1 — búsqueda en lenguaje natural muestra resultados (cross-stack)"
+  ```
+  - **Nota de fixture (2026-08-29)**: la primera versión buscaba un producto ambiente
+    (`taco-fischer`, reusado de los e2e dev-owned de `apps/api`) y resultó flaky: el catálogo del
+    entorno de QA es compartido entre sesiones/corridas concurrentes que resetean `products` como
+    parte de su propio ciclo — se observó el catálogo cambiar de 6 → 2 → 5 → 2 productos en
+    minutos durante esta misma sesión. Se reescribió para sembrar su propio fixture en
+    `test.beforeAll` vía `qa/support/seed-busqueda.ts` (API real, no INSERT directo, mismo patrón
+    que `seed-categorias.ts`), acotando la ventana de carrera en vez de depender de estado
+    ambiente. 3/3 corridas consecutivas verdes tras el fix.
   - Exit criterion: `qa/e2e/busqueda.spec.ts` navega al storefront, escribe una consulta en la barra de búsqueda, espera resultados y verifica que al menos 1 producto aparece con precio visible.
   - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "busqueda" --reporter=list` (exit 0 cuando FE existe)
 
-- [ ] **QA-004-E2E-2**: Spec Playwright — búsqueda sin resultados muestra fallback a categorías
+- [x] **QA-004-E2E-2**: Spec Playwright — búsqueda sin resultados muestra fallback a categorías — verde 2026-08-29 (`qa/e2e/busqueda.spec.ts`, 3/3 corridas)
+  ```yaml
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Playwright
+  gherkin_scenario: "AC-3 — fallback a categorías (cross-stack)"
+  ```
+  - **Nota de copy (2026-08-29)**: el título real renderizado con `confidence=none` es "Mirá estos
+    rubros" (`SearchResults.tsx`), no "Probá navegando por rubro" (ese es sólo el default del
+    prop `titulo` de `SearchFallback`, que ningún call site real usa).
   - Exit criterion: una búsqueda sin sentido muestra las categorías sugeridas como fallback, no un "0 resultados" desnudo.
   - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "fallback" --reporter=list`
 
