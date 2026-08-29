@@ -43,4 +43,24 @@ export const cart_write = {
   rate_limited: ['count<1'],
 };
 
-export default { list_products, storefront_product, cart_write, MIN_SKUS };
+/**
+ * Login de cuenta de cliente de US-014 (TC-160). Mismo presupuesto que
+ * `cart_write` porque es el MISMO NFR: PRD §4 fija «p95 de escritura
+ * (carrito/orden) < 500 ms» y la US-014 §9 lo repite para login.
+ *
+ * `rate_limited` con `count<1` es la misma guarda de honestidad que
+ * `cart_write`: `/v1/auth/login` tiene su propio `@Throttle` de **10 intentos
+ * / 15 min por IP** en `customer-auth.controller.ts`, fijo — no lee
+ * `AUTH_RATE_LIMIT_MAX` (§7.3, presupuesto de producción a propósito). El
+ * script asigna una IP simulada distinta por VU (`X-Forwarded-For`, requiere
+ * `TRUST_PROXY_HOPS=1` como en el resto de la suite QA) para no chocar contra
+ * ese límite — si aparece un 429 igual, el resultado no se publica.
+ */
+export const auth_login = {
+  'http_req_duration{endpoint:auth_login}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+  rate_limited: ['count<1'],
+};
+
+export default { list_products, storefront_product, cart_write, auth_login, MIN_SKUS };
