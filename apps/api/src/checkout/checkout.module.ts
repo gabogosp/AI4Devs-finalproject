@@ -7,6 +7,7 @@ import { CheckoutService } from './checkout.service';
 import { OrdersRepository } from './orders.repository';
 import { OrderTokenService } from './order-token.service';
 import { CheckoutThrottlerGuard } from './checkout-throttler.guard';
+import { CheckoutEventsService } from '../observability/checkout-events.service';
 
 /**
  * Módulo del checkout guest (US-008), `CheckoutModule` del E2E §6.1 —
@@ -25,6 +26,7 @@ import { CheckoutThrottlerGuard } from './checkout-throttler.guard';
     OrdersRepository,
     OrderTokenService,
     CheckoutThrottlerGuard,
+    CheckoutEventsService,
   ],
 })
 export class CheckoutModule {}

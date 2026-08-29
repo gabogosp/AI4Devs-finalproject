@@ -360,6 +360,19 @@ declaró (`CartTokenService` + `CartsRepository`).** T3.2 reusa el guard tal cua
 primeros. Extensión aditiva del mismo wiring, en el punto donde efectivamente hace
 falta.
 
+**`checkout.rejected_consent` y `checkout.validation_failed` no tienen call-site en
+este change.** Los cinco nombres existen y `CheckoutEventsService` está probado
+(T4.1); `CheckoutService.createOrder` emite los tres que puede ver
+(`order_created`, `rejected_empty_cart`, `rejected_blocking_issues`). Los otros dos
+corresponden a un rechazo del `ValidationPipe` **global** (`consent`/cualquier otro
+campo del DTO) — ese pipe rechaza **antes** de que el controller o el service
+corran, así que no hay forma de emitir desde ahí sin hacer el pipe global
+consciente de la ruta `/v1/checkout`, lo que acoplaría el error-handling de
+**todas** las superficies a una métrica de negocio de una sola. Ningún otro
+`*EventsService` del proyecto (`CartEventsService` incluido) engancha el
+`ValidationPipe` por la misma razón. `Deferred: sin owner — requiere una decisión
+de diseño (pipe por-ruta o interceptor dedicado) que excede el alcance de esta US.`
+
 ## Deployment considerations
 
 **No hace falta `/plan-deployment` por sí solo**, pero sí conviene coordinarlo con US-009,

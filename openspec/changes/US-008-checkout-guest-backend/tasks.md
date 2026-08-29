@@ -354,7 +354,7 @@ language: es
 
 ## Fase 4: Observabilidad y PII — 0,8 h
 
-- [ ] T4.1 `CheckoutEventsService`
+- [x] T4.1 `CheckoutEventsService`
   - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
     `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
     el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese

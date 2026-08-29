@@ -135,7 +135,7 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     });
   });
 
-  it('existen exactamente CINCO throttlers nombrados: uno por superficie, no uno por ruta', () => {
+  it('existen exactamente SEIS throttlers nombrados: uno por superficie, no uno por ruta', () => {
     // El plan de US-014 lo pedía explícito con dos: registrar un throttler por
     // ruta habría sido la salida fácil y habría dejado cada presupuesto sin
     // gobierno central; los límites por ruta van como `@Throttle` sobre el
@@ -156,10 +156,21 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     // handler; el registro global lleva un techo inalcanzable, porque el throttler aplica
     // todos los nombres a toda ruta guardada.
     //
+    // US-008 (T3.2) suma el sexto, `checkout` — mismo criterio que `enrichment`/`search`:
+    // techo inalcanzable en el registro global, presupuesto real (10/10min) en el
+    // `@Throttle` del único handler del checkout.
+    //
     // Se lee la configuración REAL que resolvió el contenedor, no el archivo
     // fuente: lo que gobierna en runtime es esto.
     const opciones = app.get<Array<{ name?: string }>>(getOptionsToken());
     const nombres = opciones.map((o) => o.name).sort();
-    expect(nombres).toEqual(['auth', 'cart', 'enrichment', 'search', 'storefront']);
+    expect(nombres).toEqual([
+      'auth',
+      'cart',
+      'checkout',
+      'enrichment',
+      'search',
+      'storefront',
+    ]);
   });
 });

@@ -6,6 +6,7 @@ import { CartTokenService } from '../cart/cart-token.service';
 import { buildCartView } from '../cart/cart-view';
 import { CartProduct, ProductsRepository } from '../products/products.repository';
 import { FieldError } from '../common/errors/domain-errors';
+import { CheckoutEventsService } from '../observability/checkout-events.service';
 import { CartEmptyError, CartNotPurchasableError } from './checkout-errors';
 import { buildOrderDraft } from './order-draft';
 import { OrderTokenService } from './order-token.service';
@@ -54,6 +55,7 @@ export class CheckoutService {
     private readonly orders: OrdersRepository,
     private readonly orderToken: OrderTokenService,
     private readonly config: ConfigService,
+    private readonly events: CheckoutEventsService,
   ) {}
 
   private get maxQtyPerLine(): number {
@@ -64,9 +66,17 @@ export class CheckoutService {
     return this.config.getOrThrow<string>('LEGAL_TERMS_VERSION');
   }
 
+  /** `traceparent` del cliente, para correlacionar el evento con la request. */
+  private static traceDe(req: Request): string | undefined {
+    const traceparent = req.headers?.traceparent;
+    return typeof traceparent === 'string' ? traceparent : undefined;
+  }
+
   async createOrder(req: Request, input: CreateOrderInput): Promise<CreatedOrder> {
+    const trace = CheckoutService.traceDe(req);
     const session = await this.cartToken.resolve(req);
     if (!session || session.cart.items.length === 0) {
+      this.events.emit('checkout.rejected_empty_cart', null, trace);
       throw new CartEmptyError();
     }
 
@@ -77,8 +87,12 @@ export class CheckoutService {
       maxQtyPerLine: this.maxQtyPerLine,
     });
 
-    if (view.items.length === 0) throw new CartEmptyError();
+    if (view.items.length === 0) {
+      this.events.emit('checkout.rejected_empty_cart', null, trace);
+      throw new CartEmptyError();
+    }
     if (view.has_blocking_issues) {
+      this.events.emit('checkout.rejected_blocking_issues', null, trace);
       const fieldErrors: FieldError[] = view.items
         .filter((item) => item.availability !== 'available')
         .map((item) => ({
@@ -112,6 +126,8 @@ export class CheckoutService {
         productSku: linea.product_sku,
       })),
     });
+
+    this.events.emit('checkout.order_created', orden.id, trace);
 
     return {
       orderToken: token,
