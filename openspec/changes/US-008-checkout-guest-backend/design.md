@@ -337,6 +337,14 @@ proyección `CART_PRODUCT_SELECT`/`CartProduct` existente (§5, único punto de 
 de US-007 tocados de forma aditiva (`cart.service.spec.ts` con un default de `sku` en su
 factory), sin cambiar su comportamiento ni sus aserciones.
 
+**`OrderTokenService` no llama a `newToken()` para el claro.** `newToken()`
+(`auth/tokens/opaque-token.ts`) codifica en base64url; el contrato ya escrito de
+`POST /v1/payments` (US-009) declara `order_token` con `pattern: '^[0-9a-f]{64}$'` — hex.
+Cambiar la codificación de `newToken()` afectaría refresh/reset/carrito, que no lo piden.
+T2.2 genera los mismos 32 bytes de CSPRNG y los codifica en hex localmente, reusando
+`hashToken` (agnóstico al formato del claro que recibe) para el hash — la primitiva
+compartida se reusa donde el formato coincide, no donde no.
+
 ## Deployment considerations
 
 **No hace falta `/plan-deployment` por sí solo**, pero sí conviene coordinarlo con US-009,
