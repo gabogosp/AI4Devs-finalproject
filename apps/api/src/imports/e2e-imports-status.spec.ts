@@ -238,8 +238,13 @@ describe('GET /v1/admin/imports/{id} (e2e-imports-status, AC-5/AC-7)', () => {
     const alta = await post(csv(lineas));
     expect(alta.status).toBe(202);
 
+    // El presupuesto de sondeo debe cubrir el peor caso del runner MÁS LENTO (CI):
+    // el import de 900 filas corre async y con 60×25ms=1,5s no terminaba en Actions
+    // → la última muestra quedaba en 600 y `toBe(900)` fallaba sólo en CI. El loop
+    // corta apenas el trabajo completa, así que en una máquina rápida sigue siendo veloz;
+    // el tope alto sólo evita salir ANTES de que el import termine.
     const muestras: number[] = [];
-    for (let i = 0; i < 60; i += 1) {
+    for (let i = 0; i < 600; i += 1) {
       const { body } = await get(`/v1/admin/imports/${alta.body.id}`);
       muestras.push(body.processed_rows);
       if (body.status === 'completed' || body.status === 'failed') break;
