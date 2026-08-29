@@ -9,8 +9,13 @@ name: qa-cross-stack
 # autorada. La suite se construye por fases (T1.3 → T2.x → T3.1 → T4.x → T5.2) y
 # un workflow que invoca artefactos inexistentes rompería TODO PR mientras tanto.
 # Cada gate se activa solo en cuanto sus archivos aterrizan — sin tocar el YAML.
+# qa-cross-stack es una suite pesada de integración (stack completo + Newman + Cucumber +
+# Playwright + k6 + seed de 5.000 SKUs) y necesita secretos (GEMINI/MP) que no viven en CI.
+# NO corre en cada pull_request —generaba rojos y mails en todos los PRs sin señal útil—:
+# el gate por-PR es `ci.yml` (lint + typecheck + test + build). Ésta corre nightly, en
+# release tags, y a demanda.
 on:
-  pull_request:
+  workflow_dispatch:
   schedule:
     - cron: '0 4 * * *' # nightly
   push:
@@ -57,7 +62,9 @@ jobs:
       - name: Build + arranque de la API
         run: |
           pnpm --filter @dsm/api build
-          (pnpm --filter @dsm/api start &)
+          # `nest start` busca dist/main; el build de nest queda anidado en
+          # dist/apps/api/src/main.js → se arranca el entry real directamente.
+          (node apps/api/dist/apps/api/src/main.js &)
           npx wait-on -t 120000 http://localhost:3000/health
 
       # El fixture de auth es la base de todas las suites: si el login real no
