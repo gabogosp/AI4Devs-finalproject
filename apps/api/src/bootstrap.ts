@@ -43,9 +43,11 @@ export function configureApp(app: INestApplication): void {
     }),
   );
 
-  // §7.1 — las respuestas autenticadas de `/v1/admin` y **toda** la superficie del
-  // carrito (`/v1/cart`, US-007) NO se cachean, incluidos sus errores. Seteo único
-  // en el borde.
+  // §7.1 — las respuestas autenticadas de `/v1/admin`, **toda** la superficie del
+  // carrito (`/v1/cart`, US-007) y del checkout (`/v1/checkout`, US-008) NO se
+  // cachean, incluidos sus errores. Seteo único en el borde. El checkout responde
+  // un `order_token` de acceso y el total de una compra — un CDN compartido no
+  // puede servírselo a nadie más.
   //
   // Va en el middleware y NO en un interceptor a propósito: el interceptor sólo
   // corre en 2xx, y acá el header tiene que cubrir también los 4xx/429. Un 429 del
@@ -61,7 +63,11 @@ export function configureApp(app: INestApplication): void {
   // que sólo corre en respuestas 2xx del controller público.
   app.use((req: { path?: string; url?: string }, res: { setHeader: (k: string, v: string) => void }, next: () => void) => {
     const path = req.path ?? req.url ?? '';
-    if (path.startsWith('/v1/admin') || path.startsWith('/v1/cart')) {
+    if (
+      path.startsWith('/v1/admin') ||
+      path.startsWith('/v1/cart') ||
+      path.startsWith('/v1/checkout')
+    ) {
       res.setHeader('Cache-Control', 'no-store');
     }
     next();

@@ -336,7 +336,7 @@ language: es
     `Retry-After` numérico > 0; tras agotarlo, `POST /v1/auth/login`, `GET /v1/cart` y
     `GET /v1/products/:slug` siguen respondiendo **no-429**)
 
-- [ ] T3.3 `Cache-Control: no-store` en toda la superficie `/v1/checkout`
+- [x] T3.3 `Cache-Control: no-store` en toda la superficie `/v1/checkout`
   - **Pattern**: extender la condición del middleware de `bootstrap.ts` que hoy mira
     `/v1/admin` (y `/v1/cart` desde US-007). Va en el borde, **antes** del routing, para
     que cubra también 403, 409, 422 y 429 — `per security-standards.md §7.1`.
