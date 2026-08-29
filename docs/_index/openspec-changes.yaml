@@ -744,7 +744,7 @@
   us-id: US-008
   discipline: backend
   variant: null
-  status: in progress   # T0.1 cerrada 2026-08-29 (/develop-backend)
+  status: in review   # 20/20 tasks cerradas 2026-08-29, PR abierto (/commit)
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null
@@ -810,9 +810,10 @@
   # PII antes de producción; ESA US TODAVÍA NO EXISTE (candidata US-021), este change sigue
   # sin implementar purga. OQ-BE-2 y OQ-BE-3 quedan con default.
   estimate-hours: 9.0
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: feat/US-008-checkout-guest-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/6
+  pr-opened-at: 2026-08-29
   created: 2026-08-22
   completed-at: null
   archived-at: null
