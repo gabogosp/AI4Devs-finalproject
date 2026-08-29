@@ -390,7 +390,7 @@ language: es
     línea logueada tiene **exactamente** las claves `event`, `entity_id`, `trace_id`
     —comparación de conjunto de claves, falla si aparece una sexta)
 
-- [ ] T4.2 La PII del comprador no sale por ningún canal
+- [x] T4.2 La PII del comprador no sale por ningún canal
   - **Pattern**: la PII vive en las columnas de `orders` y en el DTO de entrada, y en
     ningún otro lado. Los errores de validación nombran el **campo**, nunca el **valor**
     — `per observability-standards.md §9 — redacción de PII en logs` y `per
