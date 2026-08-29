@@ -417,7 +417,7 @@ language: es
 > la orden sea confiable. Que sean verdaderas hoy no alcanza; tienen que quedar
 > protegidas contra la próxima edición.
 
-- [ ] T5.1 AC-6 — el checkout no toca el stock (ADR-0008)
+- [x] T5.1 AC-6 — el checkout no toca el stock (ADR-0008)
   - **Exit criterion**: en un recorrido completo (crear orden con 3 líneas, incluido un
     producto con `stock` exactamente igual a la cantidad pedida), el `products.stock` de
     cada ítem leído **directamente de Postgres** es idéntico antes y después. Y: no existe

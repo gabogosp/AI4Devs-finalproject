@@ -373,6 +373,14 @@ consciente de la ruta `/v1/checkout`, lo que acoplaría el error-handling de
 `ValidationPipe` por la misma razón. `Deferred: sin owner — requiere una decisión
 de diseño (pipe por-ruta o interceptor dedicado) que excede el alcance de esta US.`
 
+**El guard de T5.1 no invoca `rg` por `execSync`.** El `rg` del Verify es una función
+de shell del entorno interactivo (delega en el binario embebido de Claude Code), no
+un ejecutable instalado en el sistema — un `execSync('rg …')` fallaría "command not
+found" en CI/producción, y un `catch` que lo tragara sería un verde falso (exactamente
+la trampa F49). `ac6-stock-untouched.spec.ts` reimplementa el mismo chequeo en Node
+puro (recorre los `.ts` no-spec de `checkout/`, filtra comentarios, busca `stock` +
+`update|decrement|set` en la misma línea).
+
 ## Deployment considerations
 
 **No hace falta `/plan-deployment` por sí solo**, pero sí conviene coordinarlo con US-009,
