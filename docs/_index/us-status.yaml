@@ -237,7 +237,7 @@
   #      (dueño + asesoría legal) porque el PO descartó el automático (OQ-FE-17 (a)).
 - id: US-018
   slug: contacto-whatsapp
-  status: In Progress
+  status: Done
   priority: Medium
   prd-capacity: 12
   disciplines: [FE]
@@ -246,6 +246,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-19        # first plan invocation (frontend-web-developer)
+  done-at: 2026-08-29               # US-018-contacto-whatsapp-frontend-web archived; único discipline change de esta US
   blocked_by: [US-001]
 - id: US-019
   slug: provision-plataforma-cloud
