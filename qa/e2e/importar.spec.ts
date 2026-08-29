@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { csvMixto, csvFilas } from '../support/import-files';
 import { sembrarProductoPublicado, categoriaPorNombre } from '../support/seed-import';
 import { adminAuth } from '../support/admin-auth';
+import { esperarTrabajo } from '../support/import-client';
 
 /**
  * TC-617..TC-620 — las cuatro costuras que un proceso aparte no puede ver
@@ -166,6 +167,7 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
       .setInputFiles({ name: 'grande.csv', mimeType: 'text/csv', buffer });
     await page.getByRole('button', { name: 'Importar catálogo' }).click();
     await page.waitForURL(/\/admin\/importar\/[a-f0-9-]+$/);
+    const jobId = page.url().match(/\/admin\/importar\/([a-f0-9-]+)$/)![1];
 
     // Todavía corriendo (5.000 filas no terminan en el instante del click).
     await expect(page.getByRole('heading', { name: 'Importando el catálogo' })).toBeVisible();
@@ -189,5 +191,12 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
       page.getByRole('alert').filter({ hasText: 'no existe o ya se purgó' }),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Importar un archivo' })).toBeVisible();
+
+    // Sólo hay UN import vigente a la vez (409 si hay otro corriendo): el de
+    // este test sigue corriendo en el servidor aunque el navegador ya haya
+    // navegado a otra pantalla. Sin esperar su cierre acá, el próximo test
+    // que suba un archivo (en este o en otro spec) puede chocar con éste.
+    const token = await adminAuth();
+    await esperarTrabajo(token, jobId, { timeoutMs: 30_000 });
   });
 });
