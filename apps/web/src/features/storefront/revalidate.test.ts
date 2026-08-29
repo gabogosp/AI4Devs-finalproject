@@ -71,6 +71,16 @@ describe('revalidateCatalog', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/categorias/[slug]', 'page');
   });
 
+  it('purga TODAS las instancias del segmento de producto, no una ficha suelta', async () => {
+    await revalidateCatalog();
+
+    // Mismo argumento que la de categoría: un import masivo (US-006) puede
+    // tocar cientos de SKUs a la vez, así que no hay slug por slug que purgar
+    // — y sólo el tag no alcanza para forzar el re-render de una ficha ya
+    // servida estáticamente (TC-619 del E2E de US-006 lo encontró en rojo).
+    expect(revalidatePath).toHaveBeenCalledWith('/productos/[slug]', 'page');
+  });
+
   it('purga también la home y el sitemap (dependen del árbol)', async () => {
     await revalidateCatalog();
 
@@ -78,10 +88,10 @@ describe('revalidateCatalog', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/sitemap.xml');
   });
 
-  it('ejecuta exactamente las cuatro purgas — falla si alguna se quita', async () => {
+  it('ejecuta exactamente las cinco purgas — falla si alguna se quita', async () => {
     await revalidateCatalog();
 
-    expect(revalidatePath).toHaveBeenCalledTimes(3);
+    expect(revalidatePath).toHaveBeenCalledTimes(4);
     expect(revalidateTag).toHaveBeenCalledTimes(1);
   });
 });
