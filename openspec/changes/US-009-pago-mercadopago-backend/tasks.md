@@ -28,7 +28,7 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-008 backend archivado — BLOQUEANTE DURO.** Este change **lee** `orders` y
+- [x] **US-008 backend archivado — BLOQUEANTE DURO.** Este change **lee** `orders` y
   `order_items` y **no** los crea. Necesita, del contrato de US-008:
   (a) tablas `orders` (con `status`, `total_ars_cents`) y `order_items`;
   (b) columna **`orders.access_token_hash`** (SHA-256 de un token opaco de 256 bit,
@@ -39,6 +39,11 @@ language: es
   exacta (su T0.1 + T2.2). Lo que falta es que **el código exista**.
   **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=order-schema` (el spec
   de esquema de US-008 pasa) **y** `node -e "const s=require('fs').readFileSync('packages/db/prisma/schema.prisma','utf8'); if(!/model Order\b/.test(s)||!/access_token_hash/.test(s)) { console.error('FALTA orders o access_token_hash'); process.exit(1) } console.log('seam US-008 presente')"`
+  **Cerrado por US-008 T6.3 (2026-08-29)**: el seam (`model Order` + `access_token_hash`
+  + `order_token` en el 201) existe en el código y ambos comandos de Verify pasan. El
+  change `US-008-checkout-guest-backend` todavía **no está archivado** (sigue con sus
+  20 tasks cerradas pendiente de PR/merge) — este `[x]` desbloquea `/develop-backend
+  US-009` sobre el pre-requisito de código, no certifica el archive.
 
 - [ ] **US-007 backend con su módulo de carrito en el working tree.** No hay dependencia
   de código, pero la orden que este change cobra nace de un carrito: sin US-007

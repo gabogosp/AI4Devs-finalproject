@@ -82,7 +82,8 @@ describe('Cache-Control del checkout (e2e-checkout-cache)', () => {
 
   it('422 (consent ausente) lleva no-store', async () => {
     const cliente = await clienteConCarrito();
-    const { consent, ...sinConsent } = buyerValido();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
+    const { consent: _consent, ...sinConsent } = buyerValido();
     const res = await cliente.post(sinConsent);
     expect(res.status).toBe(422);
     expect(res.headers['cache-control']).toBe('no-store');

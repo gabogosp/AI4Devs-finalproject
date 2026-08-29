@@ -139,7 +139,8 @@ describe('PII del checkout (e2e-checkout-pii)', () => {
 
   it('consentimiento ausente (422): ningún centinela', async () => {
     const cliente = await clienteConCarrito('gas-r134a');
-    const { consent, ...sinConsent } = buyerCentinela();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
+    const { consent: _consent, ...sinConsent } = buyerCentinela();
     const res = await cliente.post(sinConsent);
     expect(res.status).toBe(422);
 
