@@ -39,7 +39,9 @@ test.describe('Recuperación de contraseña contra la API real', () => {
     await anon.dispose();
     expect(pedido.status).toBeLessThan(400);
 
-    expect(await confirmar(await tokenDeResetDesde(marca), NUEVA)).toBeLessThan(400);
+    expect(
+      await confirmar(await tokenDeResetDesde(marca, cuenta.id!), NUEVA),
+    ).toBeLessThan(400);
 
     // Entra con la nueva...
     const conNueva = await login(cuenta, NUEVA);
@@ -63,7 +65,7 @@ test.describe('Recuperación de contraseña contra la API real', () => {
     await pedirReset(anon, cuenta.email);
     await anon.dispose();
 
-    const token = await tokenDeResetDesde(marca);
+    const token = await tokenDeResetDesde(marca, cuenta.id!);
     expect(await confirmar(token, NUEVA)).toBeLessThan(400);
 
     // Segundo uso del MISMO enlace: uso único (AC-7).

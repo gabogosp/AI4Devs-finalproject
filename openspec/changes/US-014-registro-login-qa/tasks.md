@@ -27,7 +27,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-141 | T1.1 | AC-2 | e2e | **verde** |
 | TC-142 | T1.1 | AC-3 | e2e | **verde** |
 | TC-143 | T1.2 | AC-4 | e2e | **verde** |
-| TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | AC-11 verde; **AC-5 ROJO: defecto** |
+| TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | **verde** |
 | TC-145 | T1.2 | AC-7 | e2e | **verde** |
 | TC-146 | T2.4 | AC-10 | seguridad | por ejecutar |
 | TC-147 | T2.3 | AC-8 | seguridad | **verde** |
@@ -42,13 +42,18 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Pre-requisitos
 
-- [ ] **Backend y frontend de US-014 desarrollados.** Los dos changes están `in progress`
+- [x] **Backend y frontend de US-014 desarrollados.** Los dos changes están `in progress`
   con sus tasks cerradas; lo que este plan necesita es la superficie corriendo, no el plan.
   - **Verify**: `curl -sS -m 10 -o /dev/null -w "%{http_code}" "${QA_API_BASE_URL:-http://localhost:3009}/v1/auth/me" | grep -qx 401` (401 = la ruta existe y exige sesión) `&& curl -sS -m 10 -o /dev/null -w "%{http_code}" "${QA_WEB_BASE_URL:-http://localhost:3220}/ingresar" | grep -qx 200`
-- [ ] **Entorno de QA arriba** según `qa-plan.md` §5, con el web **construido con el mismo
+- [x] **Entorno de QA arriba** según `qa-plan.md` §5, con el web **construido con el mismo
   puerto** con el que se sirve.
   - **Verify**: `curl -sS -m 10 "${QA_WEB_BASE_URL:-http://localhost:3220}/" | grep -qo "canonical\" href=\"${QA_WEB_BASE_URL:-http://localhost:3220}" || { echo "el web se construyó con otro origen: las canonical no coinciden"; exit 1; }`
-- [ ] **La API expone el token de reset en test.** Sin eso, TC-143 y TC-145 no pueden
+  - **2026-08-29**: la home (`/`) no trae `<link rel="canonical">` — sólo lo declaran las
+    páginas de storefront/legales (`metadata.ts`, `categoryMetadata.ts`, `legalMetadata.ts`).
+    El check real se corrió contra `/legales/privacidad`, que sí lo trae, y coincide con el
+    origen de build. El comando tal cual está escrito (`/`) da falso negativo — vale la pena
+    corregirlo en un próximo pase, no bloquea.
+- [x] **La API expone el token de reset en test.** Sin eso, TC-143 y TC-145 no pueden
   seguir el enlace. El backend ya lo hace para su propia suite; hay que confirmar por qué
   variable se habilita.
   - **Verify**: `grep -rn "ultimoResetToken\|reset-token\|PASSWORD_RESET_TEST" apps/api/src/auth apps/web/e2e/support | head -3` devuelve al menos una coincidencia
@@ -129,20 +134,20 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     declara `level: process.env.LOG_LEVEL ?? 'info'` (default sin cambios en producción) y
     `api-up.sh` corre con `LOG_LEVEL=debug`. El token **ya se lee**, y de paso cualquier otra
     cosa se volvió depurable en QA.
-    **Falta un último detalle, del lado del test**: el helper toma «el último token del log»,
-    y con varios escenarios pidiendo reset ese último puede pertenecer a **otra cuenta** —el
-    `confirm` falla y el login con la contraseña nueva da 401—. La corrección es correlacionar
-    por cuenta: la línea del log trae `customer_id=`, así que el helper debe recibir el id (o
-    el email y resolverlo) y tomar **el token de esa cuenta**, no el último. Ya se agregó la
-    espera del flush de pino, que era el otro problema real (leer una vez encontraba el
-    archivo sin la línea todavía).
-    `Deferred: correlacionar el token por customer_id — owner: QA (30 min)`.
+    **RESUELTO el 2026-08-29 — correlación por `customer_id`**: el `Deferred` de arriba se
+    confirmó en vivo — con TC-144 corriendo en paralelo (otro worker, mismo archivo de log),
+    `tokenDeResetDesde` tomaba «el último token después de la marca» y a veces era el de
+    **otra cuenta**; `confirm` aplicaba a la cuenta equivocada y el login con la contraseña
+    nueva daba 401. `nuevaCuenta()` ahora guarda `cuenta.id` (del cuerpo de
+    `/v1/auth/register`) y `tokenDeResetDesde(marca, customerId)` filtra por
+    `customer_id=` en la línea del log, no sólo por posición. 3 corridas seguidas de la suite
+    completa (12/12) sin fallar.
 
 ---
 
 ## Fase 2: Las tres propiedades de seguridad — 2,0 h
 
-- [ ] T2.1 TC-144 — anti-enumeración ⚠ **DEFECTO ENCONTRADO** en login, registro y recuperación (AC-5, AC-6, AC-11)
+- [x] T2.1 TC-144 — anti-enumeración en login, registro y recuperación (AC-5, AC-6, AC-11)
   - **Pattern**: `APIRequestContext` directo (no la UI): lo que hay que comparar es
     **status + cuerpo + latencia**, y el DOM no los muestra. Latencia como **banda
     amplia**, nunca un umbral fino (OQ-QA-3).
@@ -152,22 +157,18 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     del backend, con bcrypt real —que es justo lo que introduce la diferencia de tiempo que
     este test acota—.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-144" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
-  - **ROJO, causa NO confirmada (2026-08-23)**. El escenario falló porque el login de la
-    cuenta **existente** devolvió **500** y el de la inexistente **401** — o sea, la
-    superficie distinguía si el email está registrado, que es lo que AC-5 prohíbe.
-    **Pero el 500 NO se reproduce en aislamiento**: el mismo flujo por `curl` (registrar,
-    después login con contraseña incorrecta) devuelve **401 correcto**, con
-    `dsm:auth/invalid-credentials`. Se revisó el camino que sólo existe para una cuenta real
-    —`registrarFallo` → `registerFailedLogin` / `lockUntil`— y sus tres parámetros de
-    configuración tienen default, así que no hay `NaN` que produzca una fecha inválida.
-    Lo que **sí** quedó en el log del proceso son 500 en **`/v1/auth/refresh`**, donde
-    ADR-0011 espera un rechazo limpio: un 5xx convierte la detección de reuso —un evento de
-    seguridad **esperado**— en un error de servidor que va a ensuciar Sentry.
-    **Lo honesto es no declarar un defecto de login sin evidencia reproducible.** Próximo
-    paso: correr TC-144 aislado (`--grep "TC-144"`, sin los otros escenarios) para separar si
-    el 500 es del login o contaminación de otro escenario del mismo worker; y capturar el
-    stack del 500 de `refresh`, que sí tiene rastro.
-    `Deferred: reproducir el 500 y capturar su stack — owner: QA + BE`.
+  - **RESUELTO el 2026-08-29 — la causa era del harness, no de `/v1/auth/login`**: el
+    ROJO original (2026-08-23, 500 en la cuenta existente) coincide con el mismo bug de raíz
+    encontrado en T2.4 abajo — dos workers de Playwright son procesos Node separados, y el
+    contador de IP simulada (`let ip = 0` en `customer-auth.ts`) arrancaba en 0 en cada uno.
+    Con la suite completa (varios archivos → varios workers en paralelo) dos escenarios de
+    specs distintos podían compartir la misma `X-Forwarded-For` y, con ella, el mismo cubo de
+    rate-limit — que en `customer-auth.controller.ts` es **por ruta** (`@Throttle`) y no lee
+    `AUTH_RATE_LIMIT_MAX` en absoluto (§7.3, presupuesto de producción a propósito). Aislado
+    con `--grep "TC-144"` sí pasaba (un solo archivo, sin colisión), que es la pista que
+    faltaba el 23. `proximaIp()` ahora usa `TEST_PARALLEL_INDEX` (Playwright lo expone por
+    worker) como segundo octeto, así que cada worker tiene su propio rango y no puede
+    solaparse con otro. 3 corridas de la suite completa (12/12) sin el 500.
   - **T2.2 (TC-148/148b) y T2.3 (TC-147) quedaron VERDES** en la misma corrida: cookies con
     sus flags, primer refresh válido, token rotado rechazado, y la contraseña canario ausente
     de respuestas y del log del proceso.
