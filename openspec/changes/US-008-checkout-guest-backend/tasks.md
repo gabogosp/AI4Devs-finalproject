@@ -440,7 +440,7 @@ language: es
     de la lista negra sobre los dos conjuntos; se prueba a sí mismo con un caso negativo
     —una columna sembrada `card_last4` en una tabla temporal **sí** dispara el fallo)
 
-- [ ] T5.3 AC-8 — el consentimiento es trazable y no se puede eludir
+- [x] T5.3 AC-8 — el consentimiento es trazable y no se puede eludir
   - **Exit criterion**: la orden creada tiene `consent_accepted = true`,
     `consent_accepted_at` dentro de los 5 s del request y `consent_terms_version` igual a
     `LEGAL_TERMS_VERSION`. Y —la parte que hace la garantía **estructural**— un `INSERT`
