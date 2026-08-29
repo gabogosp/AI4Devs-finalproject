@@ -29,7 +29,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-143 | T1.2 | AC-4 | e2e | **verde** |
 | TC-144 | T2.1 | AC-5, AC-6, AC-11 | seguridad | **verde** |
 | TC-145 | T1.2 | AC-7 | e2e | **verde** |
-| TC-146 | T2.4 | AC-10 | seguridad | por ejecutar |
+| TC-146 | T2.4 | AC-10 | seguridad | **verde** |
 | TC-147 | T2.3 | AC-8 | seguridad | **verde** |
 | TC-148 | T2.2 | AC-9 | seguridad | **verde** |
 | TC-150 | T3.1 | AC-1, AC-2 | a11y | por ejecutar |
@@ -191,13 +191,19 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     que la búsqueda no dé falsos negativos.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-147" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
 
-- [ ] T2.4 TC-146 — límite de intentos con el rate-limit REAL (AC-10)
-  - **Pattern**: proceso de API **aparte**, con `AUTH_RATE_LIMIT_MAX` en su valor de
-    producción; el resto de la suite corre con el elevado o se autobloquea.
+- [x] T2.4 TC-146 — límite de intentos con el rate-limit REAL (AC-10)
+  - **Pattern REVISADO (2026-08-29)**: el plan original suponía un proceso de API aparte
+    con `AUTH_RATE_LIMIT_MAX` en valor de producción, asumiendo que el elevado del resto de
+    la suite lo evadía. Investigando T2.1 se confirmó que **no hace falta**: las rutas de
+    `customer-auth.controller.ts` llevan `@Throttle({ auth: { limit: …, ttl: … } })` **por
+    ruta**, que ignora `AUTH_RATE_LIMIT_MAX` en cualquier valor — login siempre corre a
+    10/15min, el de producción (§7.3, presupuesto a propósito). La suite entera, con el
+    `AUTH_RATE_LIMIT_MAX` "elevado" de `api-up.sh`, YA está contra el límite real para estas
+    rutas. Un solo proceso alcanza.
   - **Exit criterion**: superado el límite desde la misma IP, las solicitudes siguientes
     son **429** y la respuesta trae `Retry-After`; el escenario **no** depende de ningún
     header de fuerza (que es como lo simula el stub del FE) sino del límite real.
-  - **Verify**: `QA_API_PORT=3011 AUTH_RATE_LIMIT_MAX=5 pnpm --filter @dsm/qa test:e2e -- --grep "TC-146" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
+  - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-146" --reporter=line 2>&1 | grep -qE '^ *1 passed'`
 
 ---
 
