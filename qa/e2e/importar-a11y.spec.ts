@@ -1,6 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { csvFilas } from '../support/import-files';
+import { csvFilas, csvMixto } from '../support/import-files';
+
+function sufijo(): string {
+  return `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+}
 
 /**
  * TC-621 — accesibilidad de las tres pantallas del import (WCAG 2.1 AA).
@@ -10,13 +14,10 @@ import { csvFilas } from '../support/import-files';
  * `aria-valuenow`/indeterminada + región viva, y la tabla de rechazos con
  * encabezados y paginación.
  *
- * **Progreso y resultado están bloqueadas hoy** por un defecto real (no de
- * este test): el frontend manda `idempotency-key` en cada `POST
- * /v1/admin/imports` y el CORS del backend no lo permite en `allowedHeaders`
- * (`bootstrap.ts`) — el navegador rechaza el preflight y ningún import
- * completa desde un browser real (ver `docs/RUN-MVP.md` §US-006). Sólo
- * `TC-621a` (selector, sin submit) corre hoy; `TC-621b`/`TC-621c` quedan
- * escritas y `test.fixme` hasta que el fix de CORS esté.
+ * **Progreso y resultado estuvieron bloqueadas** por el mismo defecto real de
+ * CORS que TC-617..TC-620 (`idempotency-key` faltante en `allowedHeaders` de
+ * `bootstrap.ts` — ver `docs/RUN-MVP.md` §US-006), ya corregido. Las tres
+ * corren hoy.
  */
 
 const BOOTSTRAP = process.env.ADMIN_BOOTSTRAP_TOKEN || 'qa-bootstrap';
@@ -47,12 +48,9 @@ test('TC-621a — selector: input de archivo con su etiqueta, sin violaciones', 
   await auditarWcagAA(page, 'selector');
 });
 
-test.fixme(
+test(
   'TC-621b — progreso: barra + región viva anuncian el avance, sin violaciones',
   async ({ page }) => {
-    // Bloqueado por el defecto de CORS de idempotency-key (ver docstring del
-    // archivo): el POST nunca sale del navegador, así que la pantalla nunca
-    // llega a "Importando el catálogo".
     await login(page);
     await page.goto('/admin/importar');
     await page
@@ -63,16 +61,31 @@ test.fixme(
     await expect(page.getByRole('progressbar')).toBeVisible();
     await expect(page.getByRole('status')).toBeVisible();
     await auditarWcagAA(page, 'progreso');
+
+    // Sólo hay UN import vigente a la vez (409 si hay otro corriendo): sin
+    // esperar el cierre acá, TC-621c (el próximo test) puede chocar con este
+    // import de 5.000 filas todavía corriendo y nunca llegar a la pantalla
+    // de resultado.
+    await expect(
+      page.getByRole('heading', { name: 'Importación terminada' }),
+    ).toBeVisible({ timeout: 30_000 });
   },
 );
 
-test.fixme(
+test(
   'TC-621c — resultado: tabla de rechazos y foco en el encabezado, sin violaciones',
   async ({ page }) => {
-    // Bloqueado por el mismo defecto: sin POST exitoso no hay pantalla de
-    // resultado que auditar.
     await login(page);
     await page.goto('/admin/importar');
+    const { buffer } = csvMixto(sufijo());
+    await page
+      .locator('#archivo-import')
+      .setInputFiles({ name: 'con-rechazos.csv', mimeType: 'text/csv', buffer });
+    await page.getByRole('button', { name: 'Importar catálogo' }).click();
+    await page.waitForURL(/\/admin\/importar\/[a-f0-9-]+$/);
+    await expect(
+      page.getByRole('heading', { name: 'Importación terminada' }),
+    ).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByRole('heading', { name: 'Importación terminada' }),
     ).toBeFocused();

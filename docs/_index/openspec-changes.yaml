@@ -369,18 +369,28 @@
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  # EJECUCION 2026-08-29: 20/24 test cases verdes (16 aceptacion + throughput +
-  # a11y-selector). 4 bloqueados (E2E TC-617..620) por un DEFECTO REAL confirmado
-  # con evidencia: el frontend manda `idempotency-key` en cada POST
-  # /v1/admin/imports y `allowedHeaders` del CORS del backend (bootstrap.ts) no lo
-  # incluye -- el navegador rechaza el preflight, el import es inalcanzable desde
-  # cualquier browser real. Fix: agregar 'Idempotency-Key' a allowedHeaders. Detalle
-  # en docs/RUN-MVP.md SS US-006 y en el docblock de qa/e2e/importar.spec.ts.
-  # De paso se encontro y arreglo un defecto real de backend (no de esta suite):
-  # reapStale() nunca liberaba jobs 'pending' huerfanos (solo 'running' con
-  # heartbeat viejo), asi que un crash entre create() y markRunning() dejaba el
-  # import bloqueado para siempre. Fix en import-jobs.repository.ts (commit
-  # 6540873), con 2 tests nuevos.
+  # EJECUCION 2026-08-29: CERRADO. 22/22 test cases automatizados verdes (16
+  # aceptacion + 4 E2E de navegador + 1 a11y con sus 3 estados + 1 throughput) +
+  # 2 charters exploratorios redactados = 24/24.
+  # TRES defectos reales encontrados y corregidos en el camino (ninguno era de
+  # entorno, los tres con evidencia):
+  #  1. reapStale() (backend) nunca liberaba jobs 'pending' huerfanos -- solo
+  #     'running' con heartbeat viejo. Un crash entre create() y markRunning()
+  #     dejaba el import bloqueado PARA SIEMPRE, sin que ningun reinicio lo
+  #     resolviera. Fix en import-jobs.repository.ts (commit 6540873), 2 tests
+  #     nuevos.
+  #  2. `allowedHeaders` del CORS (backend, bootstrap.ts) no incluia
+  #     'idempotency-key', que el FE manda en cada POST /v1/admin/imports -- el
+  #     import era INALCANZABLE desde cualquier navegador real (curl si andaba,
+  #     por eso nadie lo vio hasta el primer E2E de navegador). Fix aditivo:
+  #     sumar el header a la allowlist.
+  #  3. revalidateCatalog() (frontend) no invalidaba la Full Route Cache de las
+  #     fichas de producto (`/productos/[slug]`), solo la de categorias -- un
+  #     ajuste masivo de precios dejaba las fichas ya cacheadas sirviendo el
+  #     PRECIO VIEJO hasta el safety-net de 1h. Fix: agregar
+  #     revalidatePath('/productos/[slug]', 'page'), mismo patron que ya
+  #     existia para categorias. Tests actualizados en revalidate.test.ts.
+  # Detalle completo en tasks.md y en los docblocks de qa/e2e/importar*.spec.ts.
   # 7 h AI-asistido (la US §7 presupuesta QA-US-006 en 6-8 h). 14 tasks.
   # LA TERCERA DISCIPLINA de US-006: backend (35/35) y frontend-web (13/13) estan
   # cerrados; sin este change la US no puede cruzar su Definition of Done, que pide

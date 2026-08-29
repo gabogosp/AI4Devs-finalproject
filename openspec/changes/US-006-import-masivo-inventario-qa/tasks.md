@@ -121,7 +121,7 @@
 > preflight CORS manual). Fix: agregar `'Idempotency-Key'` a `allowedHeaders`. Detalle en
 > `docs/RUN-MVP.md` §US-006. Una vez el fix esté, sacar `.fixme` y correr T5.1/T5.2 de nuevo.
 
-- [ ] **T5.1 `qa/e2e/importar.spec.ts` — TC-617 y TC-618.** Login admin por `/admin/acceso`
+- [x] **T5.1 `qa/e2e/importar.spec.ts` — TC-617 y TC-618.** Login admin por `/admin/acceso`
   (el patrón de `a11y.spec.ts`), archivo real con `setInputFiles`, descarga con
   `page.waitForEvent('download')`.
   - **Exit criterion**: TC-617 verifica los cinco contadores y el aviso de borrador con su
@@ -129,7 +129,7 @@
     y que el contenido descargado trae la fila rechazada. Ningún `waitForTimeout` en el
     archivo.
   - **Verify**: `cd qa && npx playwright test -c e2e/playwright.config.ts importar.spec.ts -g "TC-617|TC-618"`
-- [ ] **T5.2 TC-619 (la costura de revalidación) y TC-620 (deep-link).**
+- [x] **T5.2 TC-619 (la costura de revalidación) y TC-620 (deep-link).**
   - **Exit criterion**: TC-619 lee la ficha pública con `request.get()` —contexto de red
     aparte, sobre el **HTML servido**, como `pdp-ssr-seo.spec.ts`— **después** de que el
     trabajo pasa a `completed`, y afirma el precio nuevo; si `revalidateCatalogSafely()` se
@@ -144,7 +144,7 @@
 > resultado están en `test.fixme` por el mismo defecto de CORS que bloquea la Fase 5 — sin
 > un `POST` que salga del navegador, esas dos pantallas nunca se alcanzan.
 
-- [ ] **T6.1 `qa/e2e/importar-a11y.spec.ts` — TC-621.** Axe en los tres estados (selector,
+- [x] **T6.1 `qa/e2e/importar-a11y.spec.ts` — TC-621.** Axe en los tres estados (selector,
   progreso, resultado con tabla).
   - **Exit criterion**: cero violaciones de WCAG 2.1 AA en los tres estados; además dos
     afirmaciones que axe no hace: el avance anunciado en una región viva y el foco en el
@@ -182,22 +182,31 @@
 
 ## Verification (suite-level)
 
-- [ ] Los 16 casos de aceptación verdes: `pnpm --filter @dsm/qa test:acceptance -- --tags "@importar"`
-- [ ] Los 4 de navegador verdes: `cd qa && npx playwright test -c e2e/playwright.config.ts importar.spec.ts`
-- [ ] a11y verde: `cd qa && npx playwright test -c e2e/playwright.a11y.config.ts importar-a11y.spec.ts`
-- [ ] Throughput dentro del presupuesto: `cd qa && npx tsx performance/import-throughput.ts`
-- [ ] **No regresión de las suites hermanas** (el import escribe en las mismas tablas que
+- [x] Los 16 casos de aceptación verdes: `pnpm --filter @dsm/qa test:acceptance -- --tags "@importar"`
+- [x] Los 4 de navegador verdes: `cd qa && npx playwright test -c e2e/playwright.config.ts importar.spec.ts`
+- [x] a11y verde: `cd qa && npx playwright test -c e2e/playwright.a11y.config.ts importar-a11y.spec.ts`
+- [x] Throughput dentro del presupuesto: `cd qa && npx tsx performance/import-throughput.ts`
+- [x] **No regresión de las suites hermanas** (el import escribe en las mismas tablas que
       US-001/002/003): `pnpm --filter @dsm/qa test:acceptance` **completo**
-- [ ] **Sin esperas por tiempo en la suite nueva** (`playwright-stability`):
+- [x] **Sin esperas por tiempo en la suite nueva** (`playwright-stability`):
       `! grep -rnE "waitForTimeout|setTimeout\(" qa/acceptance/steps/importar.steps.ts qa/e2e/importar.spec.ts qa/e2e/importar-a11y.spec.ts qa/support/import-client.ts`
-- [ ] **Sin fixtures binarios agregados** (OQ-QA-5):
+- [x] **Sin fixtures binarios agregados** (OQ-QA-5):
       `! git status --porcelain qa/ | grep -E "\.(xlsx|xls|csv)$"`
-- [ ] **Sin escritura directa a la base desde la suite** (los datos entran por la API):
+- [x] **Sin escritura directa a la base desde la suite** (los datos entran por la API):
       `! grep -rn "@prisma/client" qa/support/import-files.ts qa/support/import-client.ts qa/support/seed-import.ts qa/acceptance/steps/importar.steps.ts`
-- [ ] **Las 11 AC con al menos un caso** — la matriz de `qa-plan.md` §3 resuelve: todo id
+- [x] **Las 11 AC con al menos un caso** — la matriz de `qa-plan.md` §3 resuelve: todo id
       citado está definido (F47)
-- [ ] Lint + typecheck del paquete: `pnpm --filter @dsm/qa typecheck`
-- [ ] CI del monorepo verde: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
+- [ ] Lint + typecheck del paquete: no existe script `typecheck` en `qa/package.json`;
+  `npx tsc --noEmit` sobre `qa/` no tiene errores en ningún archivo nuevo de esta US
+  (`import-files.ts`, `import-client.ts`, `seed-import.ts`, `importar.steps.ts`,
+  `importar.spec.ts`, `importar-a11y.spec.ts`, `import-throughput.ts`), pero el paquete
+  completo sí tiene errores preexistentes y ajenos a esta US en `carrito.steps.ts`,
+  `catalogo.steps.ts` y `performance/seed-load*.ts` (no tocados acá) — queda sin marcar
+  a propósito, es deuda de otra US, no de ésta.
+- [ ] CI del monorepo verde: no corrido acá (alcance de este change es `qa/` + los dos
+  fixes puntuales de backend/frontend; correr `pnpm -r` completo no es necesario para
+  cerrar esta US y colisionaría con el trabajo en curso de otras sesiones sobre el mismo
+  monorepo).
 
 ## Fuera de alcance (declarado, no olvidado)
 

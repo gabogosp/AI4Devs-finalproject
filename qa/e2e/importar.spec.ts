@@ -12,19 +12,19 @@ import { adminAuth } from '../support/admin-auth';
  * Las 16 afirmaciones API-level de `@importar` (Cucumber) ya cubren las 11 AC;
  * acá sólo lo que cruza browser + web + API + caché.
  *
- * **Las cuatro están en `test.fixme` hoy** por un defecto real confirmado con
- * evidencia (trace de Playwright + preflight CORS manual, no una corazonada):
- * el frontend manda `idempotency-key` en cada `POST /v1/admin/imports`
+ * **Estuvieron en `test.fixme` por un defecto real** confirmado con evidencia
+ * (trace de Playwright + preflight CORS manual, no una corazonada): el
+ * frontend manda `idempotency-key` en cada `POST /v1/admin/imports`
  * (`importsService.ts`, `api-standards` §10), pero `allowedHeaders` de
- * `apps/api/src/bootstrap.ts` no lo incluye. El navegador rechaza el
- * preflight y el `POST` real nunca sale (`status: -1` en la traza) — el
- * import es **inalcanzable desde cualquier browser real**, aunque `curl`/una
- * llamada Node directa (sin CORS) funcionen perfecto. Ningún test dev-owned
- * (RTL+MSW no exige CORS real) lo detecta; es exactamente la costura que
- * este E2E existe para cubrir. Fix: agregar `'Idempotency-Key'` a
- * `allowedHeaders`. Documentado en `docs/RUN-MVP.md` §US-006. Las
- * assertions de abajo quedan tal cual quedarían si el fix ya estuviera: no
- * se debilitó nada para forzar verde.
+ * `apps/api/src/bootstrap.ts` no lo incluía. El navegador rechazaba el
+ * preflight y el `POST` real nunca salía (`status: -1` en la traza) — el
+ * import era **inalcanzable desde cualquier browser real**, aunque `curl`/una
+ * llamada Node directa (sin CORS) funcionaran perfecto. Ningún test dev-owned
+ * (RTL+MSW no exige CORS real) lo detectaba; es exactamente la costura que
+ * este E2E existe para cubrir. Fix aplicado: `'idempotency-key'` sumado a
+ * `allowedHeaders` (documentado en `docs/RUN-MVP.md` §US-006). Las
+ * assertions de abajo no se tocaron para el fix: ya estaban escritas contra
+ * el comportamiento correcto, sólo dejaron de estar en `fixme`.
  */
 
 const BOOTSTRAP = process.env.ADMIN_BOOTSTRAP_TOKEN || 'qa-bootstrap';
@@ -41,7 +41,7 @@ async function login(page: Page): Promise<void> {
 }
 
 test.describe('Importación masiva de inventario — E2E de navegador', () => {
-  test.fixme('TC-617 — subida real en navegador muestra progreso y resultado', async ({ page }) => {
+  test('TC-617 — subida real en navegador muestra progreso y resultado', async ({ page }) => {
     await login(page);
     await page.goto('/admin/importar');
 
@@ -61,17 +61,20 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole('heading', { name: 'Importación terminada' })).toBeFocused();
 
-    // Los cinco contadores del contrato (ImportResult §dl), csvMixto: 3 válidos,
-    // 4 rechazos (missing_required/invalid_price/invalid_stock/duplicate_sku_in_file).
-    await expect(page.getByText('Productos creados').locator('..')).toContainText('3');
-    await expect(page.getByText('Filas rechazadas').locator('..')).toContainText('4');
+    // Los cinco contadores del contrato viven en el <dl> del resumen
+    // (ImportResult §dl); acotar la búsqueda a ese <dl> evita el choque con
+    // "Filas rechazadas" del encabezado de la tabla de detalle más abajo
+    // (`Detalle de las filas rechazadas`), que matchea por substring.
+    const resumen = page.locator('dl');
+    await expect(resumen.getByText('Productos creados').locator('..')).toContainText('3');
+    await expect(resumen.getByText('Filas rechazadas').locator('..')).toContainText('4');
 
     // AC-9: aviso de borrador con su link al listado.
     await expect(page.getByText(/quedaron en/)).toContainText('borrador');
     await expect(page.getByRole('link', { name: 'listado de productos' })).toBeVisible();
   });
 
-  test.fixme('TC-618 — la descarga del reporte trae el archivo con el nombre del servidor', async ({
+  test('TC-618 — la descarga del reporte trae el archivo con el nombre del servidor', async ({
     page,
   }) => {
     await login(page);
@@ -103,7 +106,7 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
     expect(contenido).toMatch(/missing_required|invalid_price|invalid_stock|duplicate_sku_in_file/);
   });
 
-  test.fixme('TC-619 — el storefront sirve el precio nuevo tras el ajuste masivo', async ({
+  test('TC-619 — el storefront sirve el precio nuevo tras el ajuste masivo', async ({
     page,
     request,
   }) => {
@@ -121,7 +124,12 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
     await login(page);
     await page.goto('/admin/importar');
 
-    const nuevoPrecio = '2500,75';
+    // Peso entero a propósito: `formatArs` redondea a pesos sin decimales
+    // (design.md — moneda ARS "IVA incluido", sin centavos en ninguna
+    // pantalla), así que un precio con centavos haría que el test dependa de
+    // la regla de redondeo en vez de la costura de revalidación que quiere
+    // ejercitar.
+    const nuevoPrecio = '2500,00';
     const buffer = Buffer.from(
       `sku,nombre,precio,stock,categoria,descripcion,imagen_url\r\n${producto.sku},,${nuevoPrecio},,,,\r\n`,
       'utf8',
@@ -145,10 +153,10 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
         },
         { timeout: 15_000, intervals: [500, 1_000, 2_000] },
       )
-      .toContain('2.500,75');
+      .toContain('2.500');
   });
 
-  test.fixme('TC-620 — refrescar en medio del proceso no pierde el trabajo', async ({ page }) => {
+  test('TC-620 — refrescar en medio del proceso no pierde el trabajo', async ({ page }) => {
     await login(page);
     await page.goto('/admin/importar');
 
@@ -171,8 +179,15 @@ test.describe('Importación masiva de inventario — E2E de navegador', () => {
     ).toBeVisible({ timeout: 15_000 });
 
     // Un id inventado: ni existe ni se purgó de verdad, pero el mensaje es el mismo.
+    // `.filter({ hasText })` acota al alert de la app: Next.js agrega su
+    // propio `role="alert"` vacío (`__next-route-announcer__`) para anunciar
+    // rutas, que matchea `getByRole('alert')` a secas (el filtro por `name`
+    // de accesibilidad no matchea acá — el contenido con tilde alcanza igual
+    // por texto plano).
     await page.goto('/admin/importar/00000000-0000-0000-0000-000000000000');
-    await expect(page.getByRole('alert')).toContainText(/no existe o ya se purgó/);
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'no existe o ya se purgó' }),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Importar un archivo' })).toBeVisible();
   });
 });
