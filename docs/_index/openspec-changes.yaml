@@ -364,11 +364,23 @@
   us-id: US-006
   discipline: qa
   variant: null
-  status: draft
+  status: in-progress
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
+  # EJECUCION 2026-08-29: 20/24 test cases verdes (16 aceptacion + throughput +
+  # a11y-selector). 4 bloqueados (E2E TC-617..620) por un DEFECTO REAL confirmado
+  # con evidencia: el frontend manda `idempotency-key` en cada POST
+  # /v1/admin/imports y `allowedHeaders` del CORS del backend (bootstrap.ts) no lo
+  # incluye -- el navegador rechaza el preflight, el import es inalcanzable desde
+  # cualquier browser real. Fix: agregar 'Idempotency-Key' a allowedHeaders. Detalle
+  # en docs/RUN-MVP.md SS US-006 y en el docblock de qa/e2e/importar.spec.ts.
+  # De paso se encontro y arreglo un defecto real de backend (no de esta suite):
+  # reapStale() nunca liberaba jobs 'pending' huerfanos (solo 'running' con
+  # heartbeat viejo), asi que un crash entre create() y markRunning() dejaba el
+  # import bloqueado para siempre. Fix en import-jobs.repository.ts (commit
+  # 6540873), con 2 tests nuevos.
   # 7 h AI-asistido (la US §7 presupuesta QA-US-006 en 6-8 h). 14 tasks.
   # LA TERCERA DISCIPLINA de US-006: backend (35/35) y frontend-web (13/13) estan
   # cerrados; sin este change la US no puede cruzar su Definition of Done, que pide
