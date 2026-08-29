@@ -428,7 +428,7 @@ language: es
     reserva accidental se notaría) **y**
     `rg "stock" apps/api/src/checkout --glob '!**/*.spec.ts' | rg -v "^\S+:\s*(//|\*)" | rg "update|decrement|set" || true` sin resultados de escritura
 
-- [ ] T5.2 AC-7 — imposibilidad estructural de custodiar datos de tarjeta
+- [x] T5.2 AC-7 — imposibilidad estructural de custodiar datos de tarjeta
   - **Exit criterion**: un test recorre (a) las columnas reales de `orders` y
     `order_items` en Postgres y (b) los campos de **todos** los DTO del módulo, y falla si
     aparece cualquiera de
