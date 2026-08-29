@@ -1407,10 +1407,16 @@
   # 4 preguntas abiertas, ninguna bloquea: la que conviene decidir antes de sumar otra
   # suite en paralelo es OQ-QA-1 (base de datos propia para QA) — es la causa conocida de
   # la contaminación que ya rompe TC-204 de US-002.
+  # 2026-08-29: cerradas T2.1/T2.4/T3.1 (13 e2e + 9 a11y verdes). T4.1 (carga) queda
+  # scaffoldeada pero abierta — el umbral de 500ms citaba PRD §4 "escritura carrito/orden",
+  # que no cubre login; no hay NFR numérico ratificado para esa ruta (OQ-QA-5, medido
+  # p95=621,93ms con bcrypt cost 12 costando ~250ms por diseño). PR abierto igual, con el
+  # gap documentado en el test plan — decisión del PO.
   estimate-hours: 6.5
   assignee: sin-asignar
-  branch: null
-  pr-url: null
+  branch: feat/US-014-registro-login-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/5
+  pr-opened-at: 2026-08-29
   created: 2026-08-23
   completed-at: null
   archived-at: null
