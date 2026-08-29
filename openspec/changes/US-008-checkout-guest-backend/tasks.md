@@ -174,7 +174,7 @@ language: es
     `cart-not-purchasable` trae `errors[]` con `field` = slug, y ninguno contiene
     `Error:` ni `at ` (stack); los casos existentes del filtro siguen verdes)
 
-- [ ] T1.2 `OrdersRepository` — único punto de ORM de `orders` + `order_items`
+- [x] T1.2 `OrdersRepository` — único punto de ORM de `orders` + `order_items`
   - **Pattern**: repositorio que envuelve Prisma y expone la creación como **una
     transacción**; el service no ve el cliente — `per backend-node-standards.md §5 — el
     repositorio envuelve el ORM; `$transaction` para el caso de uso multi-escritura`.
