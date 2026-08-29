@@ -453,7 +453,7 @@ language: es
     `orders_consent_check`; y un `UPDATE` que intente poner `false` en una orden existente
     también rechaza)
 
-- [ ] T5.4 AC-2 — cambiar el precio del catálogo no altera una venta pasada
+- [x] T5.4 AC-2 — cambiar el precio del catálogo no altera una venta pasada
   - **Exit criterion**: creada una orden, se cambia `products.price_ars_cents` del ítem
     (y su `name`), y la orden sigue devolviendo el precio, el nombre y el total del
     momento de la compra. Es el invariante que US-001 fijó en su AC-10, verificado del
