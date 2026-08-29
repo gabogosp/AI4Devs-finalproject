@@ -160,14 +160,32 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 ### Items closure-grade
 
 - [ ] **QA-004-REL-1**: Batería de ~30 consultas en `qa/relevance/cases.json` (o `scripts/relevance-cases.json`)
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (relevance harness)
+  gherkin_scenario: "AC-2 — batería de relevancia top-5 ≥70%"
+  ```
   - Exit criterion: el archivo contiene ≥ 28 consultas con su(s) slug(s) esperado(s), distribuidas en las 5 categorías arriba (coloquial, técnico parcial, gremio, ambiguas, negative-match).
   - Verify: `node -e "const c=require('./qa/relevance/cases.json')||require('./apps/api/scripts/relevance-cases.json'); const n=c.length; if(n<28){process.exit(1)} console.log(n+' cases ok')"`
 
 - [ ] **QA-004-REL-2**: Gate de relevancia ≥ 70% integrado y ejecutable
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (relevance harness)
+  gherkin_scenario: "AC-2 — batería de relevancia top-5 ≥70%"
+  ```
   - Exit criterion: `pnpm --filter @dsm/api relevance` ejecuta las ~30 consultas, reporta porcentaje global y sale con código ≠ 0 si < 70%. Con catálogo enriquecido (US-005 completa), el porcentaje **es** ≥ 70%.
   - Verify: `pnpm --filter @dsm/api relevance` (exit 0 = pasa; exit ≠ 0 = no pasa)
 
 - [ ] **QA-004-REL-3**: Reporte de cobertura de embeddings visible
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Node script (relevance harness)
+  gherkin_scenario: "AC-2 — batería de relevancia top-5 ≥70%"
+  ```
   - Exit criterion: el arnés imprime cuántos productos tienen embedding vs cuántos publicados, para distinguir un 0% por catálogo vacío de un problema de relevancia.
   - Verify: `pnpm --filter @dsm/api relevance -- --dry-run 2>&1 | grep -q "embedding_coverage"`
 
@@ -180,10 +198,22 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 > **Decisión de alcance**: QA-002 es cross-cutting sobre `apps/api/docs/api/openapi.yaml`. Se ancla en este plan (US-004) porque `/v1/search` es el primer endpoint que lo materializa como task propia, pero el contrato aplica a **todos** los endpoints. Se planifica un gate Spectral + supertest **general**, no solo de `/v1/search`.
 
 - [ ] **QA-004-CT-1**: Spectral lint del OpenAPI en CI
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Spectral
+  gherkin_scenario: "AC-1 — contrato de /v1/search (OpenAPI)"
+  ```
   - Exit criterion: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn` corre en el pipeline de CI y **bloquea merge** si falla.
   - Verify: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn` (exit 0)
 
 - [ ] **QA-004-CT-2**: Supertest contract tests para `/v1/search` (response schema vs OpenAPI)
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: Supertest
+  gherkin_scenario: "AC-1 — contrato de /v1/search (OpenAPI)"
+  ```
   - Exit criterion: un spec en `qa/contract/` (o `apps/api/src/search/`) valida que la respuesta 200 de `GET /v1/search?q=taco` matchee el schema declarado en OpenAPI para ese endpoint, y que 422/429 matcheen sus schemas de error.
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=search` (o el comando equivalente, exit 0)
 
@@ -192,23 +222,32 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 ## 6. Performance (k6)
 
 - [ ] **QA-004-PERF-1**: Script k6 para `GET /v1/search` con target p95 < 1,5 s
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: K6
+  gherkin_scenario: "NFR — p95 búsqueda < 1,5s (PRD §4 / E2E §17)"
+  ```
   - Exit criterion: `qa/performance/search.js` corre contra la API con embeddings sembrados, ejecutando 10+ VUs durante 30 s con consultas variadas. Threshold: `http_req_duration{endpoint:search} p(95) < 1500`. El script existe con su threshold en `qa/performance/lib/thresholds.js`.
   - Verify: `k6 run --vus 5 --duration 15s qa/performance/search.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"` (el threshold pasa)
 
 - [ ] **QA-004-PERF-3**: La búsqueda mantiene su p95 **mientras corre una corrida de enriquecimiento**
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: K6
+  gherkin_scenario: "NFR — p95 búsqueda bajo enriquecimiento concurrente (derivado de US-005)"
+  ```
   - **Procedencia**: derivado del cierre de US-005 (2026-08-23), acordado con el PO. El
     `proposal.md` de US-005 derivó a `/plan-qa` sus dos piezas QA-owned; la batería de
     relevancia ya vive acá (QA-004-REL-*), y **éste es el hueco que quedaba**. Vive en este plan
     y no en un change de QA propio de US-005 porque el riesgo que mide es de **la búsqueda**:
     sólo existe cuando las dos superficies conviven.
-  - ⚠ **Nota de formato, para quien vaya a ejecutar este plan**: los stubs de este archivo usan
-    el formato liviano (`Exit criterion` + `Verify`), sin los campos
-    `execution_mode` / `test_layer` / `target_tooling` / `gherkin_scenario` que **sí** traen los
-    qa-plans de US-002 y US-007 (20 y 23 stubs). El pre-flight §3 de `/develop-qa` exige esos
-    cuatro campos y **rechaza el plan entero** sin ellos («qa-plan not scaffold-grade»). No es
-    un problema de este stub: es del formato del archivo. Para ejecutarlo hay dos caminos:
-    `/plan-qa US-004` que lo regenere scaffold-grade en un change `-qa`, o escribir el script k6
-    a mano contra este Exit criterion.
+  - **Nota de formato (2026-08-29)**: este stub y el resto del archivo llevaban el formato
+    liviano (`Exit criterion` + `Verify`) sin `execution_mode`/`test_layer`/`target_tooling`/
+    `gherkin_scenario`, lo que hacía que `/develop-qa` rechazara el plan entero («qa-plan not
+    scaffold-grade»). Corregido puntualmente vía `/plan-qa US-004`: se agregó el frontmatter
+    faltante a los 10 stubs de §§4-7 sin regenerar el documento ni renumerar los ids existentes.
   - **Por qué importa**: el enriquecimiento corre **in-process** dentro de `apps/api`
     (ADR-0014, no hay worker). Los tests dev-owned de US-005 prueban que `GET /health` responde
     en < 1 s con 200 productos en vuelo, pero **nadie midió `/v1/search` bajo esa condición**, y
@@ -232,6 +271,12 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
     requiere un catálogo con pendientes (`enrichment_done = false`) para que haya algo que barrer.
 
 - [ ] **QA-004-PERF-2**: Threshold de búsqueda agregado a `thresholds.js`
+  ```yaml
+  execution_mode: automated
+  test_layer: 1
+  target_tooling: K6
+  gherkin_scenario: "NFR — p95 búsqueda < 1,5s (PRD §4 / E2E §17)"
+  ```
   - Exit criterion: `qa/performance/lib/thresholds.js` exporta `search` con `'http_req_duration{endpoint:search}': ['p(95)<1500']` (atado a E2E §17).
   - Verify: `grep -q "p(95)<1500" qa/performance/lib/thresholds.js`
 
@@ -242,10 +287,22 @@ Característica: Búsqueda semántica en lenguaje natural (US-004)
 > **Nota**: la UI de búsqueda (FE-US-004) puede no existir al momento de ejecutar el plan backend. Los tests E2E de navegador se declaran acá pero su ejecución queda **bloqueada por FE-US-004**.
 
 - [ ] **QA-004-E2E-1**: Spec Playwright — búsqueda desde la UI con resultado
+  ```yaml
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Playwright
+  gherkin_scenario: "AC-1 — búsqueda en lenguaje natural muestra resultados (cross-stack)"
+  ```
   - Exit criterion: `qa/e2e/busqueda.spec.ts` navega al storefront, escribe una consulta en la barra de búsqueda, espera resultados y verifica que al menos 1 producto aparece con precio visible.
   - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "busqueda" --reporter=list` (exit 0 cuando FE existe)
 
 - [ ] **QA-004-E2E-2**: Spec Playwright — búsqueda sin resultados muestra fallback a categorías
+  ```yaml
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Playwright
+  gherkin_scenario: "AC-3 — fallback a categorías (cross-stack)"
+  ```
   - Exit criterion: una búsqueda sin sentido muestra las categorías sugeridas como fallback, no un "0 resultados" desnudo.
   - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "fallback" --reporter=list`
 

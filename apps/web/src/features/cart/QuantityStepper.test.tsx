@@ -12,11 +12,17 @@ import { DEBOUNCE_MS, QuantityStepper } from './QuantityStepper';
  * (verificado: con el set completo y con `toFake` acotado, los 5 casos que
  * dependían del reloj timeouteaban a 5 s cada uno).
  *
- * En su lugar la ventana del debounce se **inyecta** corta y se espera con
- * `waitFor`. Es determinista —no depende de cuánto tarda la máquina— y prueba lo
- * mismo: que N clics producen UNA llamada con el valor final.
+ * En su lugar la ventana del debounce se **inyecta** y se espera con `waitFor`.
+ * Es determinista —no depende de cuánto tarda la máquina— y prueba lo mismo: que
+ * N clics producen UNA llamada con el valor final.
+ *
+ * La ventana debe ser **más larga que el intervalo real entre clics de userEvent**
+ * en el runner más lento (CI): con 20 ms el debounce disparaba ENTRE clics en CI y
+ * el test "cinco clics → una llamada" flakeaba (pasaba local, fallaba en Actions).
+ * 250 ms da margen holgado sin alargar sensiblemente la suite (waitFor resuelve al
+ * cerrarse la ventana tras el último clic).
  */
-const VENTANA = 20;
+const VENTANA = 250;
 
 function setup(props: Partial<Parameters<typeof QuantityStepper>[0]> = {}) {
   const onChange = vi.fn();
