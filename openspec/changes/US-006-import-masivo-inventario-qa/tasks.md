@@ -21,24 +21,24 @@
 
 ## Pre-requisitos
 
-- [ ] **P1 — El stack arriba con la config de QA.** API en `:3000` y web en `:3100`.
+- [x] **P1 — El stack arriba con la config de QA.** API en `:3000` y web en `:3100`.
   - **Verify**: `curl -sf http://localhost:3000/health && curl -sf http://localhost:3100/admin/acceso -o /dev/null`
-- [ ] **P2 — `IMPORT_RATE_LIMIT_PER_HOUR` elevado en el entorno de QA.** 20 de los 24 casos
+- [x] **P2 — `IMPORT_RATE_LIMIT_PER_HOUR` elevado en el entorno de QA.** 20 de los 24 casos
   hacen un `POST`; con el cap productivo en 3/hora la suite se autoenvenena a la cuarta
   corrida (`design.md` §5). El límite **igual se prueba**, en TC-613, que lo baja por su
   propia variable.
   - **Verify**: `grep -q "IMPORT_RATE_LIMIT_PER_HOUR" apps/api/.env* || echo "FALTA: la suite fallará con 429 dispersos"`
-- [ ] **P3 — `exceljs@4.4.0` disponible en `@dsm/qa`.** La **misma** versión que el parser del
+- [x] **P3 — `exceljs@4.4.0` disponible en `@dsm/qa`.** La **misma** versión que el parser del
   API: si el escritor se adelanta al lector, el test empieza a probar el escritor.
   - **Verify**: `cd qa && node -e "import('exceljs').then(m=>console.log('exceljs ok'))"`
-- [ ] **P4 — Baseline verde antes de agregar nada.** Las suites que el import puede romper
+- [x] **P4 — Baseline verde antes de agregar nada.** Las suites que el import puede romper
   tienen que estar verdes **antes**, para que un rojo posterior sea atribuible.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance` (US-001/002/003/007) y
     `pnpm --filter @dsm/api test -- --testPathPattern=imports`
 
 ## Fase 1: Soporte — 1,5 h
 
-- [ ] **T1.1 `qa/support/import-files.ts`** — los nueve generadores de `design.md` §2, todos
+- [x] **T1.1 `qa/support/import-files.ts`** — los nueve generadores de `design.md` §2, todos
   devolviendo `Buffer`. Sin fixtures binarios en git: el xlsx se fabrica con `exceljs`, el
   CSV de 4 MiB se genera en memoria y el Latin-1 se produce con `Buffer.from(texto, 'latin1')`.
   - **Exit criterion**: `csvValido`, `csvMixto`, `csvSinColumna`, `csvSoloPrecios`,
@@ -48,7 +48,7 @@
     `invalid_price`, `invalid_stock` y `duplicate_sku_in_file`, que son los cuatro que un
     archivo puede disparar sin tocar la base.
   - **Verify**: `cd qa && npx tsx -e "import('./support/import-files.ts').then(async m=>{const a=await m.xlsxValido();console.log('xlsx bytes',a.length, 'csv filas', m.csvFilas(5001).toString().split('\n').length)})"`
-- [ ] **T1.2 `qa/support/import-client.ts`** — `subirImport`, `esperarTrabajo`, `bajarReporte`.
+- [x] **T1.2 `qa/support/import-client.ts`** — `subirImport`, `esperarTrabajo`, `bajarReporte`.
   `esperarTrabajo` es la assertion de espera de toda la suite: `expect.poll` por condición
   (`status ∈ {completed, failed}`), timeout **por tamaño** (5 s para 3 filas, 90 s para
   5.000) y mensaje de fallo que incluye `status` y `error_code`. Nunca `setTimeout`.
@@ -56,7 +56,7 @@
     arma con `FormData` + `Blob` del runtime (no a mano); `bajarReporte` devuelve el texto
     **y** el `content-disposition`, porque TC-607 asserta el nombre.
   - **Verify**: `! grep -nE "waitForTimeout|setTimeout" qa/support/import-client.ts && echo OK`
-- [ ] **T1.3 `qa/support/seed-import.ts`** — productos y categorías previas **por API** con
+- [x] **T1.3 `qa/support/seed-import.ts`** — productos y categorías previas **por API** con
   `apiCall()` (nunca por SQL: saltearía las reglas de negocio y los tests pasarían contra
   estados que la app no puede producir). Prefijo `QA6-{corrida}` para no colisionar.
   - **Exit criterion**: sin `@prisma/client` importado; expone `sembrarProductoPublicado`
@@ -66,7 +66,7 @@
 
 ## Fase 2: Aceptación — happy path — 1 h
 
-- [ ] **T2.1 `importar.feature` + los cinco escenarios happy** (TC-601..TC-605) con
+- [x] **T2.1 `importar.feature` + los cinco escenarios happy** (TC-601..TC-605) con
   `# language: es` y el tag `@importar`.
   - **Exit criterion**: los cinco escenarios de `qa-plan.md` §4.1 textuales; ningún paso
     menciona tablas, endpoints ni códigos HTTP (`bdd-scenario-quality`: sin filtración de
@@ -75,7 +75,7 @@
     happy); TC-605 afirma que el producto al que sólo le movieron el precio **sigue**
     enriquecido.
   - **Verify**: `cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "@importar and @happy" --dry-run`
-- [ ] **T2.2 `importar.steps.ts` — steps del happy path.** Mundo compartido (`world.ts`) para
+- [x] **T2.2 `importar.steps.ts` — steps del happy path.** Mundo compartido (`world.ts`) para
   el token admin y el id del trabajo.
   - **Exit criterion**: los 5 casos verdes contra la API real; TC-604 asserta **monotonía** de
     `processed_rows` (nunca el valor exacto en vuelo: es una carrera perdida contra el runner)
@@ -84,11 +84,11 @@
 
 ## Fase 3: Aceptación — corner cases — 1 h
 
-- [ ] **T3.1 Los seis escenarios corner** (TC-606..TC-611) en el `.feature`.
+- [x] **T3.1 Los seis escenarios corner** (TC-606..TC-611) en el `.feature`.
   - **Exit criterion**: los seis de §4.2 textuales; TC-609/TC-610/TC-611 afirman **el
     catálogo intacto** con un conteo antes/después, no sólo el status del rechazo.
   - **Verify**: `cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "@importar and @corner" --dry-run`
-- [ ] **T3.2 Steps de los corner cases.**
+- [x] **T3.2 Steps de los corner cases.**
   - **Exit criterion**: los 6 verdes; el rechazo por fila se asserta con `error_code` **y**
     número de fila contra el catálogo cerrado de 10 códigos del contrato (una assertion
     «hubo un error» es un test que no distingue un `invalid_price` de un `write_failed`);
@@ -97,13 +97,13 @@
 
 ## Fase 4: Aceptación — negative space — 1 h
 
-- [ ] **T4.1 Los cinco escenarios negative** (TC-612..TC-616) en el `.feature`.
+- [x] **T4.1 Los cinco escenarios negative** (TC-612..TC-616) en el `.feature`.
   - **Exit criterion**: los cinco de §4.3 textuales; TC-614 con las **tres** afirmaciones
     (401 sin sesión, 403 con sesión de cliente, y **ningún trabajo creado** en ninguno de los
     dos intentos — un 403 que igual persiste el trabajo no protegió nada); TC-616 verifica la
     ausencia en el **catálogo público**, no sólo el campo `status`.
   - **Verify**: `cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "@importar and @negative" --dry-run`
-- [ ] **T4.2 Steps del negative space**, incluido el token de cliente (`customer-auth.ts`) y
+- [x] **T4.2 Steps del negative space**, incluido el token de cliente (`customer-auth.ts`) y
   la baja temporal del rate-limit para TC-613.
   - **Exit criterion**: los 5 verdes; TC-612 afirma que con 5.001 filas **no se escribió
     ninguna** (el rechazo es previo al procesamiento: si fuera posterior, el límite no
