@@ -432,7 +432,12 @@ Then('ninguna fila rechazada dejó un producto a medio crear', PASO, async funct
   const lista = await this.admin.get('/v1/admin/products?limit=200');
   const data = (await lista.json()).data as Array<{ sku: string }>;
   for (const e of job.errors) {
-    if (e.sku) {
+    // duplicate_sku_in_file es la excepción a propósito: su sku es el MISMO
+    // que el de la fila válida gemela que sí se importó (csvMixto lo arma
+    // así), así que ESE producto existiendo es lo correcto, no una fila a
+    // medio crear. Lo que "atómica" prohíbe acá es un SEGUNDO producto con
+    // ese sku — comprobado aparte por la idempotencia (TC-615).
+    if (e.sku && e.error_code !== 'duplicate_sku_in_file') {
       assert.ok(!data.some((p) => p.sku === e.sku), `la fila rechazada de sku=${e.sku} sí creó un producto`);
     }
   }
@@ -525,7 +530,13 @@ Then('el catálogo queda exactamente como estaba', PASO, async function (this: C
 });
 
 Given('un archivo que no es ni CSV ni Excel', PASO, async function (this: CatalogWorld) {
-  estado(this).buffer = Buffer.from('%PDF-1.4 esto no es un csv ni un xlsx', 'utf8');
+  // Tiene que ser binario de verdad: la detección de formato es por contenido
+  // (`detect-format.ts` §6.4, no por extensión ni Content-Type), y decide por
+  // bytes de control — un string ASCII que sólo "parece" un PDF decodifica
+  // como UTF-8 válido y el sistema lo trata (correctamente) como CSV. La
+  // cabecera PNG real (`89 50 4e 47 00 1a 0a`) tiene el NUL que lo vuelve
+  // indecodificable como texto.
+  estado(this).buffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x1a, 0x0a]);
   estado(this).contadorAntes = await contarProductos(this.token);
 });
 
