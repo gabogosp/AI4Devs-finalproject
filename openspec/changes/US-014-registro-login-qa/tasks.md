@@ -299,8 +299,10 @@ sys.exit(0 if not faltan and len(tcs)>=13 else 1)"`
 
 ## Verification (suite-level)
 
-- [ ] Suite QA de cuentas verde: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-140|TC-141|TC-142|TC-143|TC-144|TC-145|TC-146|TC-147|TC-148" --reporter=line`
-- [ ] a11y verde: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-150|TC-151" --reporter=line`
+- [x] Suite QA de cuentas verde: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-140|TC-141|TC-142|TC-143|TC-144|TC-145|TC-146|TC-147|TC-148" --reporter=line`
+  — 13/13 (incluye TC-140b/142b/145b/148b), 2 corridas seguidas sin flaky (2026-08-29).
+- [x] a11y verde: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-150|TC-151" --reporter=line`
+  — 9/9, 2 corridas seguidas sin flaky (2026-08-29).
 - [ ] Carga dentro del presupuesto: `pnpm --filter @dsm/qa test:load:auth`
 - [ ] **Sin regresión en las suites QA ya existentes**:
       `pnpm --filter @dsm/qa test:e2e -- --grep "TC-(2|3|7)[0-9]{2}" --reporter=line`
