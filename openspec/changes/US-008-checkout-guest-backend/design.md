@@ -327,6 +327,16 @@ migración de un `ALTER`.
 como componente separado, y además `cart/` ya tiene 888 líneas. Módulo propio, con
 `CartModule` exportando lo que el checkout consume.
 
+**`CartProduct` suma `sku` vs una segunda lectura de productos en el checkout.**
+`CartView.items` trae el precio vigente y el nombre, pero no `product_id` ni `sku`:
+`cart.dto.ts` los excluye a propósito de la vista pública (identificadores internos no
+salen a la red). `order-draft.ts` (T2.1) los necesita para las líneas de la orden. La
+alternativa era una query de productos propia del checkout; se prefirió sumar `sku` a la
+proyección `CART_PRODUCT_SELECT`/`CartProduct` existente (§5, único punto de ORM de
+`products`) — el carrito ignora el campo nuevo, el checkout lo consume. Costo: dos specs
+de US-007 tocados de forma aditiva (`cart.service.spec.ts` con un default de `sku` en su
+factory), sin cambiar su comportamiento ni sus aserciones.
+
 ## Deployment considerations
 
 **No hace falta `/plan-deployment` por sí solo**, pero sí conviene coordinarlo con US-009,
