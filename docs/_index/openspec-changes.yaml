@@ -812,7 +812,10 @@
   estimate-hours: 9.0
   assignee: claude-code
   branch: feat/US-008-checkout-guest-backend
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/6
+  # PR #6 cerrado sin merge 2026-08-29 (decisión del PO: un único PR de integración vía
+  # feature-entrega2-GOSP, para no correr qa-cross-stack en cada push). Reemplazado por
+  # #11 tras rebasear sobre main post-#7/#8 (CI/CD verde + US-006 QA).
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/11
   pr-opened-at: 2026-08-29
   created: 2026-08-22
   completed-at: null
