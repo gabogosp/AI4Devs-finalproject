@@ -1014,7 +1014,7 @@
   variant: null
   # `completed` es el valor del enum del schema. (Otras entradas usan `in progress` con espacio,
   # que NO está en el enum: deriva preexistente, no se toca desde acá.)
-  status: completed
+  status: archived
   parent-us: docs/user-stories/US-004-busqueda-semantica.md
   linear-task-id: null
   audit-baseline: null
@@ -1083,8 +1083,8 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
   completed-at: 2026-08-23  # 24/24 tasks + 9 gates; AS-BUILT en tasks.md
-  archived-at: null
-  archive-path: null
+  archived-at: 2026-08-29  # PR #3 mergeado a main 2026-08-29T17:24:45Z (commit 9a9fc53)
+  archive-path: openspec/changes/archive/US-004-busqueda-semantica-backend
 
 # qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 webhook + E2E loop completo)
   # AS-BUILT (2026-08-23): 24/24 tasks y los 9 gates suite-level en verde. Suite completa de
