@@ -1,0 +1,2 @@
+# Ruleset de lint de contratos OpenAPI (T8.1). Base recomendada de OpenAPI.
+extends: ["spectral:oas"]

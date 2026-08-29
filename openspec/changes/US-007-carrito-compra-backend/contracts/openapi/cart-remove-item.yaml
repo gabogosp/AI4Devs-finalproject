@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — DELETE /cart/items/{slug}
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-007 (carrito de compra del invitado). Al archivar el
+    change, estos 3 endpoints forman la capacidad nueva `openspec/specs/carrito/`.
+
+    **Idempotente**: quitar algo que no está devuelve el carrito igual, con 200 y
+    sin error. Un `DELETE` reintentado por la red no puede fallar.
+
+    El producto se resuelve **sin filtrar por estado**: una línea de un producto
+    despublicado (AC-6) tiene que poder sacarse del carrito. Con el filtro de
+    publicados quedaría atrapada — bloqueada e imposible de quitar.
+servers:
+  - url: /v1
+tags:
+  - name: cart
+    description: Carrito de compra del invitado (US-007). Superficie pública.
+paths:
+  /cart/items/{slug}:
+    delete:
+      operationId: removeCartItem
+      tags: [cart]
+      summary: Quita una línea del carrito (AC-3)
+      description: |
+        Devuelve el carrito completo recalculado. No crea carrito: sin cookie (o con
+        una cookie huérfana o vencida) devuelve el carrito **vacío** con 200.
+
+        Cuando hay algo que borrar, la operación desliza la ventana de retención
+        (fila + cookie) en la misma transacción que el borrado. Cuando no hay nada
+        que borrar no la desliza: no hubo actividad sobre el carrito.
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Identificador público del producto.
+          schema: { type: string }
+        - name: X-CSRF-Token
+          in: header
+          required: false
+          description: |
+            Double-submit firmado (security-standards §7.5): el valor de la cookie
+            `dsm_cart_csrf`. Obligatorio cuando la petición trae la cookie
+            `dsm_cart`; se exige junto con un `Origin` de la allowlist, cuya
+            ausencia también se rechaza con 403.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Carrito recalculado (vacío si no había carrito).
+          headers:
+            Set-Cookie:
+              description: |
+                Se re-emiten `dsm_cart` y `dsm_cart_csrf` con el `Max-Age` derivado
+                de `CART_TTL_DAYS` **si** hubo borrado. El token nunca viaja en el
+                cuerpo.
+              schema: { type: string }
+            Cache-Control:
+              description: Siempre `no-store`.
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartEnvelope'
+              examples:
+                carritoVacioTrasQuitarLoUltimo:
+                  value:
+                    cart:
+                      id: 9b2f8c1e-4d5a-4f6b-8c7d-1e2f3a4b5c6d
+                      items: []
+                      item_count: 0
+                      total_quantity: 0
+                      total_ars_cents: 0
+                      has_blocking_issues: false
+                      updated_at: '2026-08-22T12:05:00.000Z'
+        '403':
+          description: |
+            `dsm:auth/csrf` — falta el double-submit, no corresponde al token
+            presentado, o el `Origin` no es de la allowlist (ausencia incluida).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  responses:
+    RateLimited:
+      description: |
+        Presupuesto de escritura del throttler `cart` excedido
+        (`CART_WRITE_RATE_LIMIT_MAX` por minuto y por IP, §7.3).
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+        Cache-Control:
+          description: '`no-store` también acá.'
+          schema: { type: string }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    CartEnvelope:
+      type: object
+      required: [cart]
+      properties:
+        cart:
+          $ref: '#/components/schemas/Cart'
+    Cart:
+      type: object
+      required:
+        - id
+        - items
+        - item_count
+        - total_quantity
+        - total_ars_cents
+        - has_blocking_issues
+        - updated_at
+      properties:
+        id:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        item_count: { type: integer }
+        total_quantity: { type: integer }
+        total_ars_cents:
+          type: integer
+          description: Suma de las líneas `available` solamente (OQ-BE-4).
+        has_blocking_issues: { type: boolean }
+        updated_at:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+    CartItem:
+      type: object
+      required:
+        - slug
+        - name
+        - image_url
+        - quantity
+        - unit_price_ars_cents
+        - currency
+        - subtotal_ars_cents
+        - availability
+        - max_quantity
+        - price_changed
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        image_url:
+          oneOf:
+            - type: string
+            - type: 'null'
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        currency:
+          type: string
+          enum: [ARS]
+        subtotal_ars_cents: { type: integer }
+        availability:
+          type: string
+          enum: [available, insufficient_stock, unavailable]
+        available_quantity: { type: integer }
+        max_quantity: { type: integer }
+        price_changed: { type: boolean }
+        previous_unit_price_ars_cents: { type: integer }
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            Catálogo **cerrado** de esta operación: `dsm:auth/csrf` y
+            `dsm:catalog/http-429`. Quitar algo inexistente **no** es un error.
+          examples: ['dsm:auth/csrf']
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene el token del carrito ni su hash.'
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }

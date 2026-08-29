@@ -78,4 +78,14 @@ Las US de la misma capa **no dependen entre sí** → se pueden encarar en paral
 
 ## Qué está desbloqueado ahora
 
-Solo **US-001** (no tiene dependencias). El resto se desbloquea a medida que sus `blocked_by` pasan a `Done`. Recalcular esta vista cuando avancen los estados.
+*(Actualizado 2026-08-09)* **US-001** (en curso: BE + FE + QA + bootstrap-local cerrados) y **US-019**
+(provisión de la nube — sin dependencias de US, *gated* sólo en cuentas/billing externos).
+
+**Re-alcance de la infra**: la provisión cloud salió de US-001 a **US-019**. `railway-baseline` §0 la
+define como pista paralela fuera del camino crítico, pero al vivir bajo US-001 impedía que ésta
+pasara a `Done` y mantenía bloqueadas a las 17 US que dependen de ella. Con el split, US-001 cierra
+con la pista local y el DAG se libera; la nube se agenda por su cuenta cuando resuelvan las
+dependencias externas. (Workaround del gap F53: el framework no tiene status `deferred`.)
+
+El resto se desbloquea a medida que sus `blocked_by` pasan a `Done`. Recalcular esta vista cuando
+avancen los estados.

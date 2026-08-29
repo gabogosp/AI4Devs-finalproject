@@ -4,7 +4,7 @@ id: US-017
 slug: paginas-legales-consentimiento
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: S
 story_points_traditional: 3
@@ -12,8 +12,9 @@ story_points_ai_assisted: 1
 estimation_basis: "FE páginas de contenido SSR + footer legal (Cohn 2005 §8, 3-5) + BE servir contenido + versionado de términos aceptados (Cohn 2005 §8, 3), tomado el dominante × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-08-22
 ready-at: 2026-06-15
+in-progress-at: 2026-08-22
 authored-by: Gabriel Suarez
 disciplines: [FE, BE, QA]
 linear-issue-id: null
@@ -120,13 +121,43 @@ And ese registro permite saber qué versión consintió cada comprador
 
 | Disciplina | Task id | Estimado (h) | Owner | Estado |
 |---|---|---|---|---|
-| FE | FE-US-017 | 4-6h | TBD | Todo |
-| BE | BE-US-017 | 3-5h | TBD | Todo |
-| QA | QA-US-017 | 3-4h | TBD | Todo |
+| FE | FE-US-017 | 4-6h | AI-assisted | **Done** (2026-08-23) |
+| BE | ~~BE-US-017~~ | ~~3-5h~~ | — | **Absorbida por US-008** (OQ-FE-18 (a)) |
+| QA | QA-US-017 | 3-4h | AI-assisted | **Automatización Done** dentro del change de FE; queda la verificación manual del DoD |
 
 - FE: páginas SSR de política de privacidad y términos (indexables) + enlaces en el footer (y referencia desde el checkout de US-008).
-- BE: servir el contenido legal + versionado de términos (que la orden pueda registrar la versión aceptada).
+- BE: ~~servir el contenido legal + versionado de términos~~.
 - QA: automatización de AC (páginas públicas/indexables, enlaces en footer y checkout, versión registrada).
+
+> **Resolución de OQ-FE-18 (2026-08-23) — `BE-US-017` no tiene trabajo propio.** Las dos mitades
+> que la §7 le asignaba desaparecieron por decisiones de diseño ya tomadas, no por recorte:
+>
+> - **Servir el contenido legal** → no hay nada que servir. El `design.md` de US-017 fija el
+>   contenido como **módulo tipado en el frontend** (D1) y la versión **en el código** (D5,
+>   ratificada como OQ-FE-16 (b)), en línea con el E2E §3 que ya definía estas páginas como
+>   estáticas SSR. Un endpoint para dos documentos que cambian una vez por año le agregaría una
+>   dependencia de red a una página cuya razón de ser es estar disponible siempre — y el guard
+>   `noBackendNoTracking.test.tsx` lo prohíbe explícitamente. Si algún día el negocio necesita
+>   editar los textos sin deploy, ese es el disparador para reabrir esto con un CR del E2E.
+> - **Versionado de términos** → se lo quedó **US-008 backend**: `LEGAL_TERMS_VERSION` +
+>   `orders.consent_terms_version` + su `CHECK`. No es una cesión de este documento: los propios
+>   **AC-4 y AC-8** dicen «mecanismo de captura en US-008». El frontend **verifica** ese contrato
+>   en `versionContract.test.ts` —falla si las versiones divergen o si el backend no la declara—
+>   en vez de construirlo.
+>
+> Se descartó dejar la task abierta «por si aparece algo»: sería una task fantasma que nadie
+> cierra y que aparece en cada auditoría de flujo como disciplina sin cobertura.
+
+> **Sobre `QA-US-017`: la automatización existe, no lleva change propio.** Es la convención del
+> repo —15 de 20 US con `QA` en `disciplines` no tienen change `-qa`; US-004/005/008/009/010
+> llevan su `qa-plan.md` dentro del change de backend—. Acá vive dentro del change de FE:
+> **T5.1** (8 casos E2E sobre el HTML servido: 200, sin login, sin cookies, enlazadas, en el
+> sitemap, y el panel sin enlazarlas), **T3.2** (16 casos de a11y con axe), **T4.3** (contrato de
+> versión con el backend) y **T4.2** (15 casos del guard sin red ni telemetría). La trazabilidad
+> AC→task, que es lo que un `qa-deliverable.md` aportaría, está en la matriz del `tasks.md`.
+> Lo que **no** cubre ninguna disciplina de esta US es el enlace y el checkbox **en el checkout**
+> (AC-4) y la versión registrada en la orden end-to-end: los dos son de US-008, cuyo `qa-plan.md`
+> ya existe. Lo que queda de QA es la parte **manual** del DoD.
 
 > Las tasks code-generating (FE/BE) abren su openspec change en `openspec/changes/US-017-paginas-legales-consentimiento-{discipline}/`. La task QA vive en `tasks/US-017/qa-deliverable.md`.
 

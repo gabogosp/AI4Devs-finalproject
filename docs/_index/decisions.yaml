@@ -1,68 +1,125 @@
 # Materialized index of Architecture Decision Records (ADRs).
 # Materialized index (read-only for consumers).
 # Source of truth is the markdown under docs/architecture/decisions/; this is the projection.
-decisions:
-  - id: ADR-0001
-    title: Adopt Railway + Neon + Cloudflare R2 as the platform
-    status: Accepted
-    path: docs/architecture/decisions/0001-platform-railway-neon-r2.md
-    affects: [INFRA, dsm-ferreteria]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0002
-    title: PostgreSQL + pgvector as the single datastore for transactional data and product embeddings
-    status: Accepted
-    path: docs/architecture/decisions/0002-postgresql-pgvector-single-datastore.md
-    affects: [search, catalog, enrichment, import, data-platform]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0003
-    title: Adopt Google Gemini as the AI provider (embeddings + description enrichment)
-    status: Accepted
-    path: docs/architecture/decisions/0003-google-gemini-ai-provider.md
-    affects: [search, enrichment, semantic-search, pgvector, ai-worker]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0004
-    title: Use Redis + BullMQ for asynchronous background processing
-    status: Accepted
-    path: docs/architecture/decisions/0004-redis-bullmq-async-processing.md
-    affects: [worker, api, redis]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0005
-    title: First-party JWT authentication in the NestJS backend
-    status: Accepted
-    path: docs/architecture/decisions/0005-own-jwt-authentication.md
-    affects: [auth, backend-nestjs, customer, admin]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0006
-    title: Use MercadoPago Checkout Pro (hosted) for guest payments
-    status: Accepted
-    path: docs/architecture/decisions/0006-mercadopago-hosted-checkout.md
-    affects: [payments, checkout, cart]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0007
-    title: Build the backend as a modular monolith in NestJS
-    status: Accepted
-    path: docs/architecture/decisions/0007-modular-monolith-nestjs.md
-    affects: [backend, catalog, search, enrichment, cart, checkout, payments, orders, stock, auth, import, metrics, notifications, worker]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
-  - id: ADR-0008
-    title: Decrement inventory only on approved payment, via an atomic conditional UPDATE
-    status: Accepted
-    path: docs/architecture/decisions/0008-stock-decrement-on-payment.md
-    affects: [inventory, checkout, payments, stock]
-    triggered-by: "E2E §20"
-    supersedes: null
-    superseded-by: null
+- id: ADR-0001
+  title: Adopt Railway + Neon + Cloudflare R2 as the platform
+  status: Accepted
+  path: docs/architecture/decisions/0001-platform-railway-neon-r2.md
+  affects: [INFRA, dsm-ferreteria]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0002
+  title: PostgreSQL + pgvector as the single datastore for transactional data and product embeddings
+  status: Accepted
+  path: docs/architecture/decisions/0002-postgresql-pgvector-single-datastore.md
+  affects: [search, catalog, enrichment, import, data-platform]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0003
+  title: Adopt Google Gemini as the AI provider (embeddings + description enrichment)
+  status: Accepted
+  path: docs/architecture/decisions/0003-google-gemini-ai-provider.md
+  affects: [search, enrichment, semantic-search, pgvector, ai-worker]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0004
+  title: Use Redis + BullMQ for asynchronous background processing
+  status: Accepted
+  path: docs/architecture/decisions/0004-redis-bullmq-async-processing.md
+  affects: [worker, api, redis]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+  # AUDIT-DOC-003 / DOC-010 (2026-08-23) — ENMENDADA DE HECHO por ADR-0012 y ADR-0014, y el
+  # mismo patrón se aplicó en dos cargas más SIN ADR propio (caché de vectores de US-004 §D6;
+  # runners de notificaciones/reconciliación/limpieza de US-010 §D7-D8). Sigue `Accepted`
+  # porque la decisión de destino no cambió: cuando US-019 T1.3 provisione Redis, los cuatro
+  # ejecutores en proceso se cambian por procesadores BullMQ sobre el mismo estado durable.
+  # NO se agrega un campo `amended-by`: el schema (decisions.schema.yaml) sólo modela
+  # supersedes/superseded-by. GAP DEL SCHEMA anotado — enmendar no es superseder, y este
+  # proyecto ya tiene dos casos.
+- id: ADR-0005
+  title: First-party JWT authentication in the NestJS backend
+  status: Accepted
+  path: docs/architecture/decisions/0005-own-jwt-authentication.md
+  affects: [auth, backend-nestjs, customer, admin]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0006
+  title: Use MercadoPago Checkout Pro (hosted) for guest payments
+  status: Accepted
+  path: docs/architecture/decisions/0006-mercadopago-hosted-checkout.md
+  affects: [payments, checkout, cart]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0007
+  title: Build the backend as a modular monolith in NestJS
+  status: Accepted
+  path: docs/architecture/decisions/0007-modular-monolith-nestjs.md
+  affects: [backend, catalog, search, enrichment, cart, checkout, payments, orders, stock, auth, import, metrics, notifications, worker]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0008
+  title: Decrement inventory only on approved payment, via an atomic conditional UPDATE
+  status: Accepted
+  path: docs/architecture/decisions/0008-stock-decrement-on-payment.md
+  affects: [inventory, checkout, payments, stock]
+  triggered-by: "E2E §20"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0009
+  title: Phased admin-authentication seam — ships in US-001, hardened in US-014
+  status: Accepted
+  path: docs/architecture/decisions/0009-admin-auth-seam-us001.md
+  affects: [auth, admin, backend-nestjs, catalog]
+  triggered-by: manual
+  supersedes: null
+  superseded-by: null
+- id: ADR-0010
+  title: "URL namespace — el storefront público se queda con la raíz; el panel vive bajo /admin/*"
+  status: Accepted
+  path: docs/architecture/decisions/0010-url-namespace-storefront-vs-admin.md
+  affects: [frontend-web, storefront, admin, seo]
+  triggered-by: "US-003 FE — colisión de rutas entre panel y storefront"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0011
+  title: Server-side refresh-token store with rotation and reuse detection
+  status: Accepted
+  path: docs/architecture/decisions/0011-server-side-refresh-token-store.md
+  affects: [auth, backend-nestjs, security, customers]
+  triggered-by: "US-014 AC-3 + security-standards §3.3"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0012
+  title: In-process executor for bulk catalog import, with an asynchronous contract from day one
+  status: Accepted
+  path: docs/architecture/decisions/0012-in-process-import-executor.md
+  affects: [backend-nestjs, catalogo, import, async-processing]
+  triggered-by: "US-006 — Redis sin aprovisionar (US-019 pendiente) y apps/worker vacío"
+  supersedes: null
+  superseded-by: null
+  # Enmienda ADR-0004 para la 1ª carga (import masivo). Ver la nota en ADR-0004.
+- id: ADR-0013
+  title: The browser talks only to the site origin for the session surface
+  status: Accepted
+  path: docs/architecture/decisions/0013-same-origin-session-surface.md
+  affects: [frontend-web, auth, security, deployment]
+  triggered-by: "US-014 FE OQ-FE-1 — up.railway.app está en la PSL: la cookie del API no vuelve"
+  supersedes: null
+  superseded-by: null
+- id: ADR-0014
+  title: In-process executor for AI enrichment and embedding generation
+  status: Accepted
+  path: docs/architecture/decisions/0014-in-process-enrichment-executor.md
+  affects: [backend-nestjs, enrichment, semantic-search, async-processing]
+  triggered-by: "US-005 — Redis sin aprovisionar (US-019 T1.3 abierta) y apps/worker vacío; revisa la suposición de ADR-0012 de que el enriquecimiento esperaría la cola"
+  supersedes: null
+  superseded-by: null
+  # Enmienda ADR-0004 para la 2ª carga (enriquecimiento + embeddings). Ver la nota en ADR-0004.

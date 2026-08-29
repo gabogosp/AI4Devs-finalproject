@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /auth/me
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-014 (registro, login y sesión). Al archivar el change,
+    estos 7 endpoints forman la capacidad nueva `openspec/specs/cuentas/`.
+
+    **Ningún token de sesión viaja en el cuerpo** (AC-9): el access, el refresh y
+    el valor de CSRF se emiten **sólo** como `Set-Cookie`. Un cuerpo con el token
+    sería legible por cualquier script inyectado y anularía el `HttpOnly`.
+servers:
+  - url: /v1
+tags:
+  - name: customer-auth
+    description: Registro, sesión y recuperación de contraseña del cliente (US-014).
+paths:
+  /auth/me:
+    get:
+      operationId: getCurrentCustomer
+      tags: [customer-auth]
+      summary: Cliente de la sesión en curso
+      description: |
+        Lee el access de la cookie `dsm_access`, **no** del header
+        `Authorization`: aceptar el header permitiría a un XSS usar un token
+        robado y anularía el `HttpOnly`. Un token con `role=admin` **no** abre
+        esta ruta.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+components:
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: |
+        Presupuesto de la superficie de auth excedido (security-standards §7.3).
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            URI del catálogo cerrado `dsm:auth/*`. Los valores posibles en esta
+            superficie son exactamente: `dsm:auth/invalid-credentials`,
+            `dsm:auth/unauthenticated`, `dsm:auth/invalid-refresh`,
+            `dsm:auth/csrf`, `dsm:auth/registration-failed`,
+            `dsm:auth/invalid-reset-token` y `dsm:catalog/validation` (422).
+          examples: ['dsm:auth/invalid-credentials']
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: |
+            **Nunca** contiene el email consultado, la contraseña, el hash ni un
+            token. Los mensajes de credenciales inválidas son idénticos para
+            contraseña incorrecta, cuenta inexistente y cuenta bloqueada.
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+    Customer:
+      type: object
+      description: |
+        Vista pública del cliente. **Exactamente** estos cinco campos: nunca
+        `password_hash`, `role`, `failed_login_attempts`, `lockout_count`,
+        `locked_until` ni `deleted_at`.
+      required: [id, email, name, phone, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        phone:
+          type: [string, 'null']
+        created_at: { type: string, format: date-time }
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: |
+        Access token de vida corta. `HttpOnly`, así que ningún script del cliente
+        puede leerlo — y por eso la API no lo acepta por header `Authorization`.

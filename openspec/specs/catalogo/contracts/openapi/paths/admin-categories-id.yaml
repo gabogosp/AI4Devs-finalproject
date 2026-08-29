@@ -1,0 +1,26 @@
+patch:
+  tags:
+  - admin-categories
+  summary: Editar categoría (AC-1)
+  description: Actualiza el nombre/parent de una categoría.
+  parameters:
+  - $ref: '../../openapi.yaml#/components/parameters/Id'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../openapi.yaml#/components/schemas/UpdateCategory'
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/Category'
+    '401':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '403':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '404':
+      $ref: '../../openapi.yaml#/components/responses/Problem'

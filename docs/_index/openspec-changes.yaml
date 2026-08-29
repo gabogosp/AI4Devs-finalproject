@@ -1,0 +1,1392 @@
+# DESVIACIONES DECLARADAS DEL SCHEMA (2026-08-23) — leer antes de "corregir" datos de acá.
+#
+# `openspec-changes.schema.yaml` modela SÓLO changes derivados de una User Story, mientras el
+# skill `openspec-workflow` §«Audit-driven changes» y el comando /plan-from-audit PRESCRIBEN
+# changes con prefijo AUDIT-{target}-{NNN}-{slug}. El schema contradice al skill, y este repo
+# tiene 9 changes audit-derived. Las dos desviaciones son deliberadas:
+#
+#   1. `name` con prefijo AUDIT- (el pattern del schema exige ^US-[0-9]{3,}-…). Es el naming
+#      que el skill prescribe. Inventar un US-NNN sería peor: crearía una US fantasma en la
+#      trazabilidad PRD→US que el flow-auditor verifica.
+#   2. `discipline: docs` en 4 changes (el enum no lo tiene). El ejecutor es `doc-updater`, que
+#      existe como agente pero no tiene entrada en el enum. Marcarlos `backend` mentiría sobre
+#      quién los ejecuta.
+#
+# Lo que NO se desvía: el `name` de cada entrada coincide EXACTO con el nombre de la carpeta, y
+# la carpeta sí termina en su token de disciplina (…-docs, …-qa, …-backend, …-frontend-web).
+#
+# POR QUÉ ESTÁ ACÁ y no donde el skill dice: el skill prescribe openspec/config.yaml
+# (conventions.deviations) y ahí también está, pero ese archivo — igual que AGENTS.md y
+# docs/audits/ — está en .gitignore por el blindaje del entregable (para no fingerprint-ear el
+# framework). Ninguno sobrevive a un clon. Este índice sí se versiona, así que es el único
+# lugar durable para dejarlo dicho.
+#
+# Desaparece cuando el kernel agregue `docs` al enum y admita el prefijo AUDIT- en `name`.
+#
+# Gap adicional detectado: el `status` del schema es `in-progress` (con guion) y este repo usa
+# `in progress` (con espacio) en 11 entradas — la normalización de AUDIT-FLOW-007 fue hacia el
+# valor equivocado. No se toca ahora: cambiarlo son 11 ediciones y ningún consumidor lo valida.
+
+# Materialized index of OpenSpec changes.
+# Source of truth: openspec/changes/*/proposal.md frontmatter.
+# Owned per-entry by the planning agent that creates the change; status transitions
+# are touched by /develop-*, /commit, /archive-change.
+#
+# Greenfield bootstrap split (railway-baseline §0): US-001 legitimately has TWO
+# infrastructure changes, distinguished by `variant` (bootstrap-local | platform-cloud)
+# per openspec-changes.schema.yaml (F39). The discipline stays the trailing folder token.
+#
+# Rama de integración (desviación consciente, per schema `branch` — F42): el framework
+# modela 1 change = 1 rama = 1 PR. Este repo integra el trabajo de US-001 (backend +
+# frontend-web) en `feature-entrega2-GOSP` por la cadencia de entregas del máster, así que
+# NO existe una rama feat/ por change. El schema es explícito: no registrar una rama nominal
+# que no existe — queda `branch: null` y la verdad la carga `pr-url` cuando se abra el PR.
+
+# `assignee` — quien EJECUTA el change (convencion adoptada 2026-08-19, gap F60).
+# Existe porque el canal de mensajes entre sesiones demostro ser incompleto: ni
+# `ListAgents` ni los transcripts listan a todos los actores, y ninguna de las dos
+# fuentes se anuncia como parcial. Con este campo, "quien tiene esta task" se
+# responde leyendo el repo.
+# Valor = id corto de la sesion, SOLO cuando ella lo confirmo de forma directa.
+# `sin-identificar` cuando no hay confirmacion — distinto de `null`, que significa
+# "nadie escribio el campo". Una correlacion plausible NO alcanza: va en comentario.
+# `sin-asignar` cuando el change esta PLANIFICADO pero nadie lo ejecuta todavia
+# (0 tasks cerradas). Es distinto de `sin-identificar`: ahi hay alguien trabajando
+# y no sabemos quien; aca no hay nadie.
+#
+# OBLIGATORIO AL CREAR LA ENTRADA (ratificado por el PO 2026-08-23). La convencion
+# ya se degrado una vez: se poblaron los 12 changes que existian el 2026-08-19 y
+# los 6 creados despues nacieron con `null`, asi que cuando aparecio un defecto
+# bloqueante no supimos a quien reportarlo. Un campo que se puebla una vez y no se
+# mantiene miente mas rapido de lo que informa. Todo `/plan-*-ticket` debe escribir
+# `assignee` en la entrada nueva: la sesion que planifica pone su id si ademas va a
+# ejecutar, y `sin-asignar` si no. Nunca `null`.
+#
+# La verificacion automatica de esto vive en el comando del framework
+# (`spekode/`, submodulo del repo privado ai-specs), que es COMPARTIDO por todos
+# los proyectos cliente: cambiarlo es un commit en ese otro repo y afecta a todos.
+# Queda planteado al PO, no aplicado unilateralmente desde aca.
+
+- name: US-001-admin-catalogo-productos-bootstrap-local-infrastructure
+  us-id: US-001
+  discipline: infrastructure
+  variant: bootstrap-local
+  status: archived
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 10
+  assignee: sin-identificar  # historico (jul-2026), sin rastro
+  branch: feat/US-001-admin-catalogo-productos-bootstrap-local-infrastructure
+  pr-url: null  # PR #2 cerrado; modelo de rama de integración (sin PR por-cambio) — ships vía feature-entrega2-GOSP → main
+  created: 2026-07-11
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-bootstrap-local-infrastructure
+
+- name: US-019-provision-plataforma-cloud-infrastructure
+  us-id: US-019
+  discipline: infrastructure
+  variant: platform-cloud
+  status: in progress
+  parent-us: docs/user-stories/US-019-provision-plataforma-cloud.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 8
+  assignee: f6678579
+  branch: null
+  pr-url: null
+  created: 2026-07-11
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-001-admin-catalogo-productos-backend
+  us-id: US-001
+  discipline: backend
+  variant: null
+  status: archived
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  assignee: sin-identificar  # historico (jul-2026), sin rastro
+  branch: null
+  pr-url: null
+  created: 2026-07-18
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-backend
+
+- name: US-001-admin-catalogo-productos-frontend-web
+  us-id: US-001
+  discipline: frontend-web
+  variant: null
+  status: archived
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 7
+  assignee: sin-identificar  # historico (jul-2026), sin rastro
+  branch: null
+  pr-url: null
+  created: 2026-07-18
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-frontend-web
+
+- name: US-003-ficha-producto-pdp-backend
+  us-id: US-003
+  discipline: backend
+  variant: null
+  status: archived
+  parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  assignee: bce7ffb7
+  branch: null
+  pr-url: null
+  created: 2026-08-15
+  completed-at: null
+  archived-at: null
+  archive-path: null
+  archive-path: openspec/changes/archive/US-003-ficha-producto-pdp-backend
+
+- name: US-003-ficha-producto-pdp-frontend-web
+  us-id: US-003
+  discipline: frontend-web
+  variant: null
+  status: archived  # 19/19 tasks cerradas 2026-08-17; suite-level verde. Pendiente /commit (PR)
+  parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Plan REGENERADO 2026-08-17 (respaldo: openspec/changes/_backups/2026-08-17-1-US-003-ficha-producto-pdp-frontend-web).
+  # 7 → 9 h: +1.25 h Fase 0 (namespace de rutas OQ-FE-6 — panel a /admin/* + ADR-0010) y +0.75 h por
+  # desdoblar el E2E en smoke SSR/404 (stub de contrato) y circuito de invalidación AC-9.
+  # De las 9 h, 1.25 h ya están ejecutadas y commiteadas → restan ~7.75 h.
+  estimate-hours: 9
+  assignee: 9a385021
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+  archive-path: openspec/changes/archive/US-003-ficha-producto-pdp-frontend-web
+
+- name: US-002-storefront-navegacion-categorias-backend
+  us-id: US-002
+  discipline: backend
+  variant: null
+  status: in progress
+  parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 9
+  assignee: bce7ffb7
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-001-admin-catalogo-productos-qa
+  us-id: US-001
+  discipline: qa
+  variant: null
+  status: archived
+  parent-us: docs/user-stories/US-001-admin-catalogo-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  assignee: sin-identificar  # historico (jul-2026), sin rastro
+  branch: null
+  pr-url: null
+  created: 2026-07-25
+  completed-at: 2026-08-09
+  archived-at: 2026-08-09
+  archive-path: openspec/changes/archive/US-001-admin-catalogo-productos-qa
+- name: US-003-ficha-producto-pdp-qa
+  us-id: US-003
+  discipline: qa
+  variant: null
+  status: archived
+  parent-us: docs/user-stories/US-003-ficha-producto-pdp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  assignee: sin-identificar  # candidata 21b4e556 (corto 08-18 21:02, junto al commit de la suite) — correlacion, no confirmacion
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+- name: US-014-registro-login-backend
+  us-id: US-014
+  discipline: backend
+  variant: null
+  status: in progress
+  parent-us: docs/user-stories/US-014-registro-login.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 15 h tradicional / 7,5 h AI-asistido (US §7 estima BE-US-014 en 12-16 h).
+  # El peso está en la superficie de credenciales, no en el CRUD de la cuenta.
+  estimate-hours: 15
+  assignee: sin-identificar  # plan escrito por bce7ffb7; lo ejecuta una sesion abierta por el PO (candidata c767d410, sin confirmar)
+  branch: null
+  pr-url: null
+  created: 2026-08-17
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-002-storefront-navegacion-categorias-qa
+  us-id: US-002
+  discipline: qa
+  variant: null
+  status: in progress
+  parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 7
+  assignee: sin-identificar  # idem US-003 qa
+  branch: null
+  pr-url: null
+  created: 2026-08-16
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-002-storefront-navegacion-categorias-frontend-web
+  us-id: US-002
+  discipline: frontend-web
+  variant: null
+  status: in progress
+  parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,5 h AI-asistido / ~19 h tradicional (20 tasks). US §7 presupuesta FE-US-002 en 12-16 h:
+  # el tradicional excede el techo ~3 h por trabajo que la US no contemplaba — sitemap/robots
+  # (diferido formalmente desde US-003), el circuito de invalidación del catálogo (la caché por
+  # tag nació en US-003) y la extensión del stub de contrato para E2E server-side.
+  estimate-hours: 10.5
+  assignee: f6678579
+  branch: null
+  pr-url: null
+  created: 2026-08-17
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-018-contacto-whatsapp-frontend-web
+  us-id: US-018
+  discipline: frontend-web
+  variant: null
+  status: in progress  # 14/14 tasks cerradas 2026-08-22; suite-level verde. Pendiente /commit
+  parent-us: docs/user-stories/US-018-contacto-whatsapp.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 3,2 h AI-asistido / ~5,5 h tradicional (11 tasks + 3 pre-requisitos). US §7 presupuesta
+  # FE-US-018 en 2-4 h tradicional: se excede ~1,5 h porque AC-1 exige un FOOTER que no existe
+  # en la app (design-system §7.10 le da contenido propio) y AC-5 obliga a extraer la
+  # composición del enlace que US-003 dejó inline en la ficha (refactor + re-verificación de
+  # superficie entregada). En sentido contrario, AC-2 y AC-3 ya están construidos por US-003 y
+  # no cuestan nada — sin eso el plan rondaría las 8 h. Si OQ-FE-12 y OQ-FE-13 se ratifican
+  # como "(a) no hacer nada", caen T5.1/T5.2 y el total baja a 2,7 h / ~4,7 h.
+  # SECUENCIA: P1 bloquea hasta que US-002-frontend-web cierre y `apps/web` quede limpio
+  # (comparten working tree, el layout (storefront) y el README). La ventana se cerró durante
+  # el planning — al cerrar, US-002 FE sin tasks abiertas y apps/web limpio (9da1e86) — pero
+  # el gate se conserva y se re-corre al ejecutar: siguen activas US-014 y US-006 en apps/api.
+  estimate-hours: 3.2
+  assignee: 9a385021
+  branch: null
+  pr-url: null
+  created: 2026-08-19
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-006-import-masivo-inventario-frontend-web
+  us-id: US-006
+  discipline: frontend-web
+  variant: null
+  status: completed   # 2026-08-23: 13/13 tasks; 100 archivos / 648 tests verdes en @dsm/web
+  parent-us: docs/user-stories/US-006-import-masivo-inventario.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # DECISIONES DEL PO 2026-08-23 (las cinco de UX, cerradas ANTES de escribir el plan):
+  # OQ-FE-1 (a) página propia /admin/importar con entrada desde el listado · OQ-FE-2 (a) barra
+  # indeterminada mientras `total_rows` es null y determinada después (el contrato no da el total
+  # hasta que termina la lectura) · OQ-FE-3 (a) el id del trabajo va en la URL + sessionStorage,
+  # porque el backend NO tiene listado de imports y perder el id es perder de vista un trabajo que
+  # sigue corriendo · OQ-FE-4 (a) ante el 409 un aviso sin link, que es el costo visible de haber
+  # diferido GET /v1/admin/imports a US-016 · OQ-FE-5 (a) tabla de rechazos en pantalla Y descarga
+  # del CSV.
+  #
+  # 4,6 h AI-asistido / ~9 h tradicional (13 tasks + 4 pre-requisitos). La US §7 presupuesta
+  # FE-US-006 en 8-12 h tradicional: entra en el rango porque el contrato ya está publicado, las
+  # tres operaciones YA existen en el cliente generado (verificado al planificar) y se reusan
+  # patrones establecidos — productsService, AsyncState, TanStack Table y, sobre todo,
+  # revalidateCatalogSafely(), que ya existe y es la mitad de la costura que el backend declaró y
+  # no puede hacer. Lo que no estaba presupuestado y sí se paga: el deep-link + el respaldo del id
+  # (OQ-FE-3), que existen SÓLO porque el listado de imports quedó diferido.
+  #
+  # DEPENDENCIA CRÍTICA declarada: sin la llamada a revalidateCatalogSafely() al completarse el
+  # trabajo, el storefront sirve precios viejos después de un ajuste masivo de precios — el peor
+  # final de AC-4, con el import perfecto y el cliente viendo el precio anterior.
+  estimate-hours: 4.6
+  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-006-import-masivo-inventario-qa
+  us-id: US-006
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-006-import-masivo-inventario.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 7 h AI-asistido (la US §7 presupuesta QA-US-006 en 6-8 h). 14 tasks.
+  # LA TERCERA DISCIPLINA de US-006: backend (35/35) y frontend-web (13/13) estan
+  # cerrados; sin este change la US no puede cruzar su Definition of Done, que pide
+  # AC verificados por QA y regresion verde.
+  # Suite L3 cross-stack: 16 escenarios de aceptacion API-level (5 happy + 6 corner +
+  # 5 negative-space), 4 E2E de navegador, 1 de a11y, 1 de throughput y 2 charters
+  # => 24 test cases (TC-601..TC-624). Los 24 son EJECUTABLES HOY: no hay nada
+  # bloqueado por otra disciplina, a diferencia de lo que paso en US-007.
+  # LAS TRES COSAS QUE NINGUNA SUITE ACTUAL PUEDE VER, y que justifican el change:
+  #  1. el multipart REAL de un navegador (en jsdom el cuerpo de un FormData no se
+  #     puede leer: limite declarado en el plan del FE). Es la costura donde el
+  #     content-type forzado por el mutator ya rompio este flujo una vez.
+  #  2. la descarga del CSV como descarga de verdad (el Bearer vive en memoria, asi
+  #     que el reporte se materializa desde un Blob; jsdom solo puede espiar eso).
+  #  3. que el storefront SIRVA el precio nuevo tras un ajuste masivo (handoff OQ-10):
+  #     el test del FE prueba que se LLAMA a revalidateCatalogSafely; que el HTML
+  #     servido cambie cruza browser, web, API y cache, y es plata (TC-619).
+  # DECISIONES DEL PO 2026-08-23, cerradas ANTES de escribir el plan:
+  # OQ-QA-1 Tier 2 pragmatico con AC-8 (autorizacion) y AC-11 (limites/anti-DoS) como
+  # Tier 1 -- el riesgo alto esta concentrado ahi, no repartido en las 11 AC ·
+  # OQ-QA-2 AC-3 se cubre solo en su costura observable (los SKUs quedan pendientes de
+  # enriquecimiento), porque US-005 no tiene GEMINI_API_KEY cargada: cobertura parcial
+  # DECLARADA, no escondida · OQ-QA-3 sin k6 -- la concurrencia de usuarios no es el
+  # riesgo (un unico dueno) y el rate-limit de 3/hora/IP haria que el test mida el
+  # rate-limit; en su lugar, presupuesto de throughput sobre 5.000 filas y p95 de un
+  # GET publico MIENTRAS el import corre, porque el runner vive dentro del proceso del
+  # API (ADR-0012) · OQ-QA-4 a11y si, regresion visual no (no hay baseline del panel:
+  # abrirla es deuda sin dueno) · OQ-QA-5 generadores deterministas, NADA binario en
+  # git -- ni el Excel: exceljs@4.4.0 ya esta en el workspace y la suite del API
+  # fabrica su xlsx con la misma libreria que lo lee.
+  # RIESGO OPERATIVO ADMINISTRADO: 20 de los 24 casos hacen un POST y el cap productivo
+  # es 3/hora/IP, asi que la suite se autoenvenenaria a la cuarta corrida. Se eleva por
+  # entorno (pre-requisito P2) y el limite se prueba en TC-613, que lo baja por su
+  # propia variable. Allowlistear la IP se descarto: crea un camino que produccion no
+  # tiene y dejaria el limite sin probar en ningun lado.
+  estimate-hours: 7
+
+- name: US-006-import-masivo-inventario-backend
+  us-id: US-006
+  discipline: backend
+  variant: null
+  status: completed   # 2026-08-23: 35/35 tasks. Antes `in progress` (normalizado el 2026-08-22 por
+                      # AUDIT-FLOW-008, que lo habia llevado de `in-progress` a `in progress`)
+  parent-us: docs/user-stories/US-006-import-masivo-inventario.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 9,5 h AI-asistido / ~19 h tradicional (26 tasks). US §7 presupuesta BE-US-006 en 12-16 h:
+  # el tradicional excede el techo ~3 h por trabajo que la US daba por resuelto con BullMQ —
+  # el modelo de trabajo en Postgres (2 tablas), el runner por lotes, el heartbeat/reaper y
+  # los dos endpoints de lectura de progreso y reporte. Con la cola aprovisionada ese trabajo
+  # lo habría aportado la infraestructura.
+  # Preguntas abiertas resueltas por el PO el 2026-08-20 — sin bloqueo de arranque: el plan se
+  # ejecuta completo desde T0.1. Modo de ejecución = contrato asíncrono + ejecutor in-process
+  # (ADR-0012 enmendando ADR-0004). Límites = 5.000 filas / 4 MiB (el PO eligió el tope
+  # ajustado sobre el holgado que proponía el diseño): queda SIN MARGEN sobre el catálogo
+  # objetivo del E2E §21, con gatillo de revisión declarado en design.md §NFRs cuantificados.
+  estimate-hours: 9.5
+  assignee: bce7ffb7
+  branch: null
+  pr-url: null
+  created: 2026-08-19
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-007-carrito-compra-backend
+  us-id: US-007
+  discipline: backend
+  variant: null
+  status: in progress   # 37/37 cerradas 2026-08-23; CI del monorepo verde. Pendiente /commit (PR)
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # COLISION DE SESIONES (2026-08-20): una sesion paralela ya habia commiteado un plan
+  # para este mismo change (157/376/237 lineas) y su entrada stub en este indice
+  # (status Draft, estimate 7, sin campos de fecha). Al planificar de nuevo se
+  # sobrescribio. El plan anterior esta INTACTO en git (commit cf1f011, "docs(openspec):
+  # US-007 backend — plan del carrito guest (18 tasks, 7 h)") y respaldado en
+  # openspec/changes/_backups/2026-08-20-US-007-carrito-compra-backend/. Los dos planes
+  # convergen en lo esencial (token opaco hasheado, expires_at agregado al DER, creacion
+  # perezosa, precios vigentes, AC-8 como invariante probada, purga oportunista); el
+  # plan vigente agrega los controles §7 que faltaban (CSRF sobre cookie — §7.5 es
+  # Mandatory —, Cache-Control: no-store, DELETE en la allowlist de metodos CORS sin el
+  # cual el preflight del DELETE fallaba) y cambia la semantica de escritura a PUT
+  # absoluto (idempotente por §10.5, sin Idempotency-Key). Decision de cual queda: del PO.
+  # 7,7 h AI-asistido / ~15 h tradicional (24 tasks). US §7 presupuesta BE-US-007 en
+  # 6-10 h: el tradicional excede el techo ~5 h por trabajo que la US da por resuelto al
+  # describirla como "carrito CRUD con persistencia + chequeo de stock" — la identidad
+  # del invitado (token opaco + cookie propia + CSRF sin `jti`, que el mecanismo de
+  # US-014 no cubre) y los controles §7 de la PRIMERA superficie pública de escritura
+  # del proyecto (tercer throttler nombrado + no-store también en 4xx/429 + PUT/DELETE
+  # en CORS + extracción de verifyRequestOrigin). El CRUD en sí son ~3 h.
+  # Sin ADR nuevo: ADR-0008 gobierna stock (el carrito no reserva ni descuenta) y el
+  # DER del E2E §8 ya declara CARTS/CART_ITEMS. Las dos desviaciones del DER
+  # (session_token → session_token_hash; expires_at/updated_at) se declaran en design.md.
+  # 6 preguntas abiertas para el PO, NINGUNA bloquea el arranque: todas tienen default
+  # implementado (retención 30 d, max_quantity sólo en el carrito, fusión diferida por
+  # la US §4, total sin líneas bloqueadas, PUT absoluto idempotente, purga oportunista).
+  estimate-hours: 7.7
+  assignee: bce7ffb7
+  branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
+  pr-url: null
+  # DESARROLLO CERRADO 2026-08-22 (/develop-backend): 24/24 tasks en [x] + los 6
+  # prerequisitos. Suite-level: apps/api lint + typecheck limpios; test 89/90 suites
+  # (937/939 tests) y test:e2e 37/38 con el ÚNICO rojo en
+  # src/common/e2e-security-edge.spec.ts (2 tests de preflight del surface admin),
+  # reproducido idéntico en un worktree sobre 16fabe0 ⇒ PREEXISTENTE, no regresión de
+  # US-007. Los 4 yaml OpenAPI sin errores de spectral. `pnpm -r lint` y `pnpm -r test`
+  # quedan rojos por trabajo de otras disciplinas en vuelo en la misma rama (US-014
+  # frontend-web commit de15d10; US-006 e2e-imports-upload), no por este change.
+  # 5 desviaciones AS-BUILT documentadas en tasks.md §Reconciliación AS-BUILT.
+  # Estado: In Progress hasta que /commit abra el PR.
+  created: 2026-08-20
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-007-carrito-compra-qa
+  us-id: US-007
+  discipline: qa
+  variant: null
+  # 22/22 tasks cerradas el 2026-08-23, desbloqueadas al cerrar el FE. 7 E2E de
+  # navegador + 3 de a11y verdes contra el stack real (API :3009 + web :3220).
+  # Dos fragilidades PREEXISTENTES de la suite de US-002 quedan diferidas en su
+  # tasks.md (TC-204 por datos de otras sesiones, TC-208 por un assert que colisiona
+  # con el teléfono del footer) y una interferencia entre specs del propio carrito.
+  status: in progress  # 15/22 cerradas 2026-08-23 (Fases 1-3, 6, 7 + 3 gates); 4-5 bloqueadas por el FE
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 4 h AI-asistido / ~8-10 h tradicional. La US §7 presupuesta QA-US-007 en 4-6 h.
+  # Suite L3 cross-stack del carrito: 12 escenarios de aceptacion API-level
+  # (4 happy + 3 corner + 2 negative-space + 3 cross-feature), 6 E2E de navegador,
+  # 2 de a11y, 1 de carga y 2 charters => 23 test cases.
+  # ASIMETRIA QUE ORDENA EL PLAN: el backend esta 36/37 con contrato publicado; el FE
+  # (US-007-carrito-compra-frontend-web) se planifico el mismo 2026-08-22 en una sesion
+  # paralela y esta SIN DESARROLLAR (0 tasks cerradas). 14 test cases son ejecutables
+  # hoy a nivel API; 9 quedan BLOQUEADOS por la UI y declarados como tales.
+  # Sin duplicacion con el plan de FE: ese change cubre a11y a nivel COMPONENTE
+  # (axe(container) + aria-live, dev-owned); TC-730/TC-731 corren sobre la pagina
+  # servida en un browser real (alcanzabilidad por Tab en toda la pagina).
+  # Los 10 AC tienen >=1 escenario ejecutable hoy; la unica cobertura parcial
+  # declarada es la segunda mitad de AC-6 ("no permite avanzar al pago"), que
+  # ejecuta el checkout de US-008.
+  # STUB RECHAZADO A PROPOSITO: no se emite k6 sobre GET /v1/cart — el PRD §4 acota
+  # sus 300 ms a "catalogo/ficha" y el design.md del backend marca el valor del
+  # carrito como [propuesto — confirma Arquitecto]. El de escritura si se emite:
+  # p95 < 500 ms sale del PRD §4 ("escritura (carrito/orden)") + US §9.
+  # 4 preguntas abiertas para el PO/Arquitecto (OQ-QA-1..4), NINGUNA bloquea la
+  # planificacion; OQ-QA-2 (30 escrituras/min/IP hacen imposible medir el NFR desde
+  # un generador) bloquea la CORRIDA de carga hasta que se decida.
+  estimate-hours: 4
+  assignee: 9a385021
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-014-registro-login-frontend-web
+  us-id: US-014
+  discipline: frontend-web
+  variant: null
+  status: in progress  # 33/33 cerradas 2026-08-22; suite-level verde. Pendiente /commit (PR)
+  parent-us: docs/user-stories/US-014-registro-login.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,1 h AI-asistido / ~20 h tradicional (22 tasks + 2 pre-requisitos). US §7 presupuesta
+  # FE-US-014 en 8-12 h tradicional: se excede ~8 h con causa nombrada en tasks.md §"Por qué el
+  # plan excede el presupuesto". La US pricing-eó "formularios de auth" (Fases 3-4, ~8 h trad,
+  # entra cómodo) y se escribió ANTES de que el backend eligiera cookies HttpOnly + refresh
+  # rotado. Lo no presupuestado: (1) topología same-origin — `up.railway.app` está en la Public
+  # Suffix List, así que web y API son SITIOS DISTINTOS y las cookies SameSite=Lax nunca
+  # viajarían (en local funciona, en producción no: defecto invisible hasta el despliegue);
+  # (2) dos modelos de auth conviviendo en el único choke point de red (F48); (3) refresh
+  # single-flight cross-tab — sin coalescing, la rotación single-use de ADR-0011 hace que el
+  # propio FE desloguee al usuario legítimo; (4) superficie /v1/auth/* en el stub E2E con
+  # Set-Cookie real; (5) las cuatro garantías de la Fase 4 (AC-5/AC-8/AC-9 son propiedades de
+  # SEGURIDAD: verdaderas hoy no alcanza, tienen que quedar protegidas).
+  # BLOQUEANTES al cerrar el planning (ambos en rojo, a propósito):
+  #   P1 — US-018 FE tiene 8 tasks abiertas Y apps/web dejó de estar limpio DURANTE este
+  #        planning: otra sesión modificó src/lib/http/{client,errors}.ts sin commitear, que son
+  #        exactamente los archivos de la Fase 0. Demostración en vivo de por qué P1 existe.
+  #   P2 — OQ-FE-1 (topología de cookies) sin ratificar; gobierna la Fase 0 entera.
+  # Efecto colateral favorable de ese cambio ajeno: AppError ya tiene kind 'rateLimited' con
+  # retryAfterSeconds, así que AC-10 se resuelve consumiéndolo y el deferral queda cancelado.
+  # ADR-0013 propuesto en T0.3 (condicionado a que OQ-FE-1 se ratifique como opción (a)).
+  estimate-hours: 10.1
+  assignee: bce7ffb7  # 9a385021 escribió el plan; bce7ffb7 lo ejecutó 33/33 — la convención dice quien EJECUTA
+  branch: null
+  pr-url: null
+  created: 2026-08-20
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+# qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + E2E pago simulado)
+- name: US-009-pago-mercadopago-backend
+  us-id: US-009
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-009-pago-mercadopago.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 12,3 h AI-asistido / ~24 h tradicional (28 tasks, suma de las 8 fases). US §7
+  # presupuesta BE-US-009 en 10-16 h: excede el techo ~8 h por trabajo que la US da por resuelto
+  # al describirlo como «integración con MercadoPago + medio simulado detrás de flag» —
+  # la PRIMERA llamada saliente del camino crítico del proyecto (timeout + reintentos +
+  # backoff con jitter + circuit breaker + adaptador falso, ~3,5 h de las cuales la US
+  # no presupuesta ninguna, porque en apps/api hoy no existe un solo control de
+  # resiliencia del que copiar: el único adaptador externo, ResendMailer de US-014, corre
+  # fuera del camino de respuesta), y las DOS capas del flag del simulado en vez de un
+  # `if` en el handler (montaje condicional del controller + fallo de arranque en
+  # producción). La integración en sí —preferencia, init_point, retorno— son ~4 h.
+  #
+  # BLOQUEANTE: US-008 backend tiene que estar CONSTRUIDO. Este change lee
+  # `orders`/`order_items` y no los crea. El seam que necesita —`orders.access_token_hash`
+  # + `order_token` opaco en el 201 de POST /v1/checkout— quedó RATIFICADO por el PO el
+  # 2026-08-22 (OQ-BE-1 opción (a): token de 256 bits con SHA-256 en base, el order_id UUID
+  # nunca sale a la red) y el plan US-008-checkout-guest-backend lo entrega con esa forma
+  # exacta (su T0.1 + T2.2). Falta que el CÓDIGO exista: hasta entonces el pre-requisito de
+  # este change sigue en rojo. Orden no negociable: US-008 → US-009.
+  #
+  # ALCANCE: la tabla `payments` es de este change; `orders`/`order_items` son de US-008;
+  # el webhook, la confirmación de la orden y el decremento de stock son de US-010
+  # (ADR-0008). Se deja el seam `PaymentConfirmationPort` con un adaptador no-op, así que
+  # al cerrar este change un pago aprobado NO confirma la orden — estado intermedio
+  # declarado en tasks.md §Pre-requisitos y en el runbook (T7.2).
+  #
+  # DEVIACIONES DECLARADAS en design.md: 3 columnas sobre el DER del E2E §8
+  # (preference_id, init_point, updated_at) + cardinalidad ORDERS→PAYMENTS de 0..1 a
+  # 0..N con a lo sumo un `pending` (índice único parcial, OQ-BE-2) + presupuesto p95 de
+  # POST /v1/payments a 2 s en vez de los 500 ms de escritura del E2E §17 (contiene una
+  # llamada a un tercero; la parte propia sí cumple ≤ 120 ms) + idempotencia natural en
+  # vez de la máquina de Idempotency-Key de api-standards §10.1 (§10.5 en espíritu).
+  # Sin ADR nuevo: ADR-0006 gobierna el proveedor y el simulado, ADR-0008 el stock.
+  #
+  # 6 preguntas abiertas para el PO/Arquitecto, NINGUNA bloquea el arranque: todas
+  # tienen default implementado (seam US-008, 5 reintentos por orden, cookie 2 h,
+  # /latest devuelve order_status + total, preferencia a 24 h, simulado on en staging).
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment US-009 — 6 gatillos (secreto MP_ACCESS_TOKEN,
+  # feature flag con gate de release por ADR-0006, migración dependiente de US-008,
+  # superficie pública con dinero, dependencia externa nueva en el camino crítico, URL
+  # pública HTTPS del webhook que consume US-010).
+  # CORRECCIÓN 2026-08-22: la entrada declaraba 9.8 h, pero las ocho fases de tasks.md
+  # suman 12,3 h. El 9.8 era un número escrito antes de desglosar las fases. Vale el 12.3.
+  estimate-hours: 12.3
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+# ── AVISO DE TOMA (2026-08-22 23:40) ─────────────────────────────────────────
+# US-005 la toma la sesion que ejecuta /develop-backend. Decision del PO.
+#
+# Al escribir esto habia trabajo SIN COMMITEAR de otra sesion sobre este change:
+# packages/db/prisma/schema.prisma con +45 lineas de US-005 (description_enriched,
+# description_curated, source_hash y las columnas de estado del enriquecimiento).
+# Ese trabajo NO se toco ni se descarto.
+#
+# A la sesion que lo tenia en vuelo: por favor NO sigas con US-005. Si el schema
+# que tenes sin commitear es bueno, commitealo y avisá — se toma como punto de
+# partida en vez de rehacerlo. Si lo abandonas, decilo tambien: sin esa señal la
+# unica salida segura es descartarlo, y seria trabajo tirado.
+#
+# Motivo del aviso por archivo y no por mensaje directo: no existe canal entre
+# sesiones (gap F60 del tracker). El PO es el unico canal, y este comentario es
+# el respaldo por si el mensaje no llega.
+# ─────────────────────────────────────────────────────────────────────────────
+- name: US-005-enriquecimiento-ia-embeddings-backend
+  us-id: US-005
+  discipline: backend
+  variant: null
+  # `completed` es el valor del enum del schema (draft|ready|approved|in-progress|completed|
+  # archived). Nota: otras 12 entradas de este archivo usan `in progress` con espacio, que NO
+  # está en el enum — deriva preexistente, no se toca acá para no pisar trabajo ajeno.
+  status: completed
+  parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 13,4 h AI-asistido / ~26 h tradicional (28 tasks). US §7 presupuesta BE-US-005 en 16-24 h:
+  # el tradicional excede el techo ~2 h por trabajo que la US daba por
+  # resuelto con BullMQ — el ejecutor, el claim por lease, el backoff durable, el limitador de
+  # RPM y el cooldown. Con la cola aprovisionada ese trabajo lo habría aportado la
+  # infraestructura. Se suma la costura de curación de AC-7 (PATCH admin), que US-001 nunca
+  # construyó y sin la cual el AC no es verificable de punta a punta.
+  #
+  # DECISIÓN DE ARQUITECTURA tomada durante el planning (2026-08-22, opción (a) del Arquitecto):
+  # ejecutor IN-PROCESS en apps/api con contrato durable en Postgres, porque REDIS_URL no está
+  # aprovisionado (US-019 T1.3 abierta) y apps/worker es un README. Eso CONTRADICE una
+  # suposición declarada de ADR-0012 ("US-005 consumes that marker once the queue exists"), así
+  # que el plan abre ADR-0014 en T0.1 — número 0014 y no 0013 porque el 0013 lo reclama
+  # (condicionalmente) el plan FE de US-014.
+  #
+  # SECUENCIA: comparte lane C con US-006 (import). El puerto EnrichmentQueue lo define este
+  # change en src/enrichment/ports/; si /develop-backend US-006 lo creó antes en
+  # src/imports/enrichment/, T3.5 lo mueve. T0.2 toca packages/db/prisma/schema.prisma, que es
+  # superficie compartida con US-006/US-007: el pre-requisito exige working tree limpio ahí.
+  #
+  # 5 preguntas abiertas para el PO, NINGUNA bloquea el arranque: todas con default
+  # implementado (texto fuente del embedding, ventana de la corrida inicial ≈5,5 h —que es la
+  # Q-4 abierta del E2E §23—, no exponer el texto enriquecido en la ficha, defaults del HNSW,
+  # 5 intentos antes de abandonar).
+  estimate-hours: 13.4
+  assignee: develop-backend  # ejecutado por /develop-backend en la sesión del 2026-08-23
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
+  created: 2026-08-22
+  completed-at: 2026-08-23  # 28/28 tasks cerradas con su Verify; AS-BUILT en tasks.md
+  archived-at: null
+  archive-path: null
+  # AS-BUILT (2026-08-23): las 28 tasks cerraron con su `Verify` en verde. Suite completa de
+  # apps/api en 1246 tests / 123 suites; `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test`
+  # en 0. Cuatro hallazgos que la ejecución destapó y que el plan no anticipaba:
+  #   1. Las primitivas de T1.3 (backoff + limitador de RPM) quedaron SIN CABLEAR al adapter
+  #      hasta T6.3. Sin tope de RPM, la primera corrida real habría cobrado 429 en masa
+  #      contra el free tier de 15 RPM.
+  #   2. `hashSourceText` se calculaba sobre el texto DERIVADO, así que en un producto ya
+  #      enriquecido un cambio de `description_raw` era invisible y el vector describía el
+  #      texto viejo para siempre. Se separó `buildChangeKey` (input) de `buildSourceText`
+  #      (lo que se embeddea).
+  #   3. `ConfigService.get()` lee `process.env` primero, donde todo valor es string:
+  #      `get<number>()` devolvía un string y el tope de concurrencia no existía en la
+  #      práctica (concatenación en vez de suma). Todas las lecturas numéricas del módulo
+  #      pasan por `configNumber()`, con un guard estático.
+  #   4. El runner reportaba `disabled` mirando sólo el flag; sin `GEMINI_API_KEY` arrancaba
+  #      corridas contra el adapter deshabilitado y ensuciaba productos sanos con rastro
+  #      durable de fallo. La disponibilidad ahora la declara el PUERTO.
+  # SIN EJERCITAR: ninguna llamada real al proveedor. Por decisión del PO no se cargó
+  # `GEMINI_API_KEY`, así que todo el pipeline se verificó con el fake determinista por DI.
+  # La calidad del texto de Gemini y el comportamiento del adapter HTTP contra la API real
+  # quedan sin evidencia; es el gate de la primera corrida (runbook §3.6).
+
+# qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 p95<500ms + E2E)
+- name: US-008-checkout-guest-backend
+  us-id: US-008
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-008-checkout-guest.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 9,0 h AI-asistido / ~18 h tradicional (20 tasks). US §7 presupuesta BE-US-008 en
+  # 6-10 h: el tradicional excede el techo ~8 h por trabajo que la US da por resuelto al
+  # describirlo como «endpoint de checkout que crea la orden» — (a) el esquema son DOS
+  # tablas con 9 constraints y 5 deviaciones declaradas del DER, tres de ellas por
+  # exigencia de AC-8 (el DER modela el consentimiento como un booleano y el AC pide
+  # marca temporal y trazabilidad legal); (b) es la PRIMERA PII EN REPOSO del proyecto,
+  # lo que convierte §9 de observability-standards en una fase propia con guardián
+  # automático en vez de una nota al pie; (c) el seam con el carrito exige tocar el
+  # wiring de CartModule, que hoy sólo exporta CartEventsService. El caso de uso en sí
+  # —validar, snapshotear, insertar— son ~4 h.
+  #
+  # DESBLOQUEA A US-009: este plan RESUELVE OQ-BE-1 del change de pagos entregando
+  # `orders.access_token_hash` + el `order_token` (hex de 64) en el 201 de POST
+  # /v1/checkout, con la forma exacta que su contrato declara. Al cerrar T0.1 + T2.3,
+  # US-009-pago-mercadopago-backend queda ejecutable; T6.3 cierra formalmente la OQ en
+  # el proposal de ese change. Orden de despliegue no negociable: US-008 → US-009.
+  #
+  # ALCANCE: `orders` + `order_items` son de este change; `payments` es de US-009; la
+  # confirmación, el decremento de stock y la limpieza de órdenes abandonadas son de
+  # US-010 (ADR-0008). La orden nace INERTE: no retiene stock, no mueve plata y es
+  # invisible para el panel del dueño (pending_payment). `delivered_at` y `customer_id`
+  # se crean por el DER y quedan SIN ESCRITOR (US-012 y US-015).
+  #
+  # DEVIACIONES DECLARADAS en design.md: 5 columnas sobre el DER del E2E §8 —
+  # access_token_hash (el seam de US-009), consent_accepted_at + consent_terms_version
+  # (AC-8 pide marca temporal y trazabilidad legal; el DER sólo tiene el booleano),
+  # orders.updated_at, y order_items.product_name + product_sku (la orden es un registro
+  # comercial: renombrar un producto no puede reescribir el email de US-011 ni el panel
+  # de US-012) — más CHECK (consent_accepted = true), que hace estructuralmente imposible
+  # una orden sin consentimiento, y la ausencia de Idempotency-Key (deviación de
+  # api-standards §10.1: el recurso creado es inerte, el riesgo que §10 protege es el
+  # doble cobro y acá no hay cobro; cualquier forma de reuso acoplaría este change con el
+  # de pagos en ambos sentidos). Sin ADR nuevo: ADR-0008 gobierna el stock, ADR-0006 la
+  # ausencia de datos de tarjeta.
+  #
+  # 5 preguntas abiertas, NINGUNA bloquea el arranque (todas con default implementado).
+  # Las dos que conviene decidir ANTES de ejecutar:
+  #   OQ-BE-4 — ¿número legible de pedido? Hoy no (YAGNI, ningún AC lo pide), pero
+  #             US-011 (email) y US-012 (panel) casi seguro lo van a querer para que el
+  #             dueño y el comprador hablen del mismo pedido por teléfono; agregarlo
+  #             después es una migración con sequence.
+  #   OQ-BE-5 — retención/borrado de la PII del comprador INVITADO. El PRD §6 fija 12
+  #             meses + anonimización y NINGUNA US lo implementa (US-020 cubre sólo
+  #             cuentas registradas). Es exposición legal (Ley 25.326), no deuda técnica
+  #             cosmética: la recomendación es abrir una US de retención antes de
+  #             producción.
+  #
+  # DEPLOYMENT: no requiere /plan-deployment propio (migración aditiva, sin secretos
+  # nuevos, sin feature flag), pero SÍ conviene coordinarlo con el de US-009 — este
+  # change cambia el perfil de riesgo del proyecto al introducir PII en reposo, y su
+  # migración es la que habilita la de `payments`.
+  # DECISIONES DEL PO (2026-08-22): OQ-BE-1 opción (a) — doble submit crea DOS órdenes
+  # inertes, sin acoplar con US-009. OQ-BE-4 opción (a) — se agrega `orders.order_number`
+  # (int UNIQUE, SEQUENCE START WITH 1000) AHORA: después sería un ALTER con backfill sobre
+  # órdenes reales, y arrancar en 1000 evita que un «Pedido #3» le informe al comprador que
+  # la tienda vendió dos veces (PRD §1.3 — confianza = conversión). Va en el 201 y en el
+  # contrato; NO autoriza nada (eso es el order_token). Efecto: T0.1 pasa de 15 a 16
+  # columnas y Fase 0 de 1,8 a 2,2 h. OQ-BE-5 opción (a) — se abre una US de retención de
+  # PII antes de producción; ESA US TODAVÍA NO EXISTE (candidata US-021), este change sigue
+  # sin implementar purga. OQ-BE-2 y OQ-BE-3 quedan con default.
+  estimate-hours: 9.0
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-017-paginas-legales-consentimiento-frontend-web
+  us-id: US-017
+  discipline: frontend-web
+  variant: null
+  status: implemented
+  parent-us: docs/user-stories/US-017-paginas-legales-consentimiento.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # DECISIONES DEL PO 2026-08-22: OQ-FE-15 (a) rutas /legales/privacidad + /legales/terminos ·
+  # OQ-FE-16 (b) chequeo de deriva de la versión, implementado como TEST de la suite
+  # (versionContract.test.ts) en vez de script de deploy — corre en cada CI y no depende de
+  # US-019 · OQ-FE-17 (a) SIN gate automático del texto provisional.
+  # OQ-FE-18 RESUELTA 2026-08-23 → (a) BE-US-017 absorbida por US-008: sin contenido que servir
+  # (design D1/D5 lo dejan como módulo tipado en el FE) y el versionado ya es de US-008. `BE`
+  # sacado de `disciplines` en us-status.yaml; el detalle en la §7 de la US.
+  #
+  # 3,9 h AI-asistido / ~6,5 h tradicional (12 tasks + 4 pre-requisitos). La US §7 presupuesta
+  # FE-US-017 en 4-6 h tradicional: se excede ~0,5-2,5 h con causa. Las páginas en sí son ~2 h (el
+  # footer YA existe — US-018 dejó el hueco con un comentario `Deferred: US-017` — y no hay
+  # consumo de API ni estados asíncronos). El resto es lo que convierte los AC en propiedades
+  # verificadas: test de contrato de la versión contra LEGAL_TERMS_VERSION del backend (AC-8 es
+  # una igualdad entre dos sistemas), guard de no-dependencia/no-tracking (AC-7 + US §9) y fuente
+  # única de rutas para el checkout de US-008.
+  #
+  # RIESGO RESIDUAL ACEPTADO (OQ-FE-17 (a)): no hay script que impida publicar el texto
+  # provisional. Cayó la task del gate (era T4.1) y con ella el campo `status` del módulo de
+  # contenido (sin lector sería dato muerto). La barrera es humana: el DoD de la US ("texto legal
+  # final provisto y revisado") + el checklist de despliegue de US-019 + los marcadores
+  # [PENDIENTE: …] que se LEEN en la página. Si alguien despliega antes del texto final, el sitio
+  # publica legales incompletos: incumplimiento con apariencia de cumplimiento.
+  #
+  # CRUCE DE DISCIPLINA declarado: esta US agrega UNA línea a apps/api/.env.example
+  # (LEGAL_TERMS_VERSION=2026-06-15 + comentario a US-008), porque un contrato con un solo
+  # extremo declarado no se puede verificar. Aditiva, sin código. Si el Arquitecto lo veta, T4.3
+  # queda Gated hasta que US-008 la agregue y AC-8 se queda sin verificación en el medio.
+  #
+  # ALCANCE: entrega las dos páginas SSR (/legales/privacidad, /legales/terminos), el contenido
+  # como módulo tipado con versión, los enlaces del footer y el sitemap. NO entrega el checkbox de
+  # consentimiento del checkout (US-008, que todavía no tiene plan de FE): lo que entrega para él
+  # es la fuente única LEGAL_ROUTES + CONSENT_COPY, para que no nazca con el `href="#"` que hoy
+  # tiene el copy del design-system §10.2.
+  #
+  # Sin ADR nuevo (verificado contra los 14 vigentes) y sin delta de contrato de API: no consume
+  # API, así que el gate frontend-codegen-fresh no aplica. El contenido vive en el repo porque el
+  # E2E §3 (capacidad 10) declara "páginas estáticas SSR", no un endpoint.
+  #
+  # DEPLOYMENT: SÍ conviene /plan-deployment — no por riesgo técnico (cero migración, cero
+  # secretos) sino porque (a) es un GATE LEGAL: US-008/US-009 no pueden desplegarse antes que
+  # esto; (b) con OQ-FE-17 (a) el checklist de despliegue es el ÚNICO lugar donde puede vivir la
+  # verificación del texto final; y (c) check-whatsapp-configured.mjs (US-018) sigue esperando
+  # enganche en el mismo job.
+  estimate-hours: 3.9
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-007-carrito-compra-frontend-web
+  us-id: US-007
+  discipline: frontend-web
+  variant: null
+  # 25/25 tasks cerradas el 2026-08-23. Suite: 86 archivos / 516 tests unitarios +
+  # 12 E2E dev-owned; typecheck, lint y codegen sin drift. Queda UN gate y es humano:
+  # recorrer el carrito en `dev` sin errores de consola (se registra en el PR).
+  # Pendiente PR — este repo integra en feature-entrega2-GOSP (ver cabecera).
+  status: in progress
+  parent-us: docs/user-stories/US-007-carrito-compra.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,4 h AI-asistido / ~20 h tradicional (24 tasks). US §7 presupuesta FE-US-007 en
+  # 8-12 h: el tradicional excede el techo ~8 h por trabajo que la US da por resuelto al
+  # describirlo como «vista de carrito con stepper y persistencia» —
+  # (a) TOPOLOGÍA DE COOKIES: ADR-0013 existe porque up.railway.app está en la Public
+  #     Suffix List y hoy el rewrite same-origin cubre SÓLO /v1/auth/*. El propio ADR
+  #     cierra diciendo «Inherited by: US-007 (cart, if it moves to a cookie-authenticated
+  #     surface)» — y lo es (dsm_cart httpOnly + dsm_cart_csrf legible). Sin extender el
+  #     rewrite el carrito funciona en local y ESTÁ ROTO EN PRODUCCIÓN, con el peor perfil
+  #     de defecto: invisible hasta el deploy. De ahí el E2E contra la app construida
+  #     (T5.1), espejo de auth-topology.spec.ts.
+  # (b) SEGUNDO SUJETO DE CSRF: csrf.ts es «el único lector de document.cookie de la app»
+  #     con la cookie hardcodeada a dsm_csrf (US-014). El invitado tiene carrito sin tener
+  #     sesión, así que los dos sujetos coexisten. Se parametriza el sujeto, NO se duplica
+  #     el parser, y el default preserva el comportamiento de US-014 (sus specs corren sin
+  #     editarse o el refactor está mal).
+  # (c) EL CARRITO NO PUEDE RENDERIZARSE EN SERVIDOR: client.ts LANZA si una llamada con
+  #     sesión sale del servidor, y ese guard es load-bearing (evita que un dato
+  #     personalizado entre a la Data Cache de Next y se le sirva a otra persona — US-014
+  #     design.md D3). Consecuencia: /carrito es Client Component + noindex, y el badge del
+  #     top-nav es una ISLA CLIENTE dentro de un layout que sigue siendo Server Component
+  #     (CategoryNav lo necesita para el SEO de US-002).
+  # (d) TRES SUPERFICIES YA ENTREGADAS que hay que modificar sin romperlas: el layout del
+  #     storefront (US-002/US-018), ProductPurchase (US-003, que hoy renderiza el botón
+  #     disabled como señal de roadmap) y ProductCard (US-002).
+  # La vista en sí —lista, stepper, totales, vacío— son ~5 h.
+  #
+  # ÚNICA EXCEPCIÓN al «tests existentes sin editar»: ProductPurchase.test.tsx se reescribe
+  # (T3.4). Asserta que el botón está disabled — es un test de un cartel de roadmap que este
+  # change apaga. Está nombrada en el plan, no es un descuido.
+  #
+  # ALCANCE: el CTA «Ir al pago» queda DESHABILITADO con el motivo a la vista hasta que
+  # US-008 FE construya /checkout (Deferred: US-008 — owner: FE). El resto del carrito es
+  # plenamente funcional. El buscador del top-nav sigue Deferred: US-004.
+  #
+  # CONTRATO: cero DTOs/Zod/MSW escritos a mano — frontend-standards §3.1/§3.2 es Mandatory
+  # y orval ya está configurado con el mutator customFetch. Los tres endpoints del carrito
+  # YA están publicados en apps/api/docs/api/openapi.yaml (el backend cerró 24/24), así que
+  # T0.1 es regenerar, no esperar. El gate frontend-codegen-fresh custodia el drift y T0.2
+  # comprueba que el gate MUERDE (introduce drift a propósito y verifica que falla).
+  #
+  # Sin ADR nuevo: ADR-0013 gobierna la topología, ADR-0008 el que la UI no prometa stock.
+  #
+  # 5 preguntas abiertas, NINGUNA bloquea el arranque (todas con default implementado).
+  # OQ-FE-2 RESUELTA por el PO el 2026-08-22, opción (a): SÍ va «Agregar» en la card del
+  # listado (cantidad 1, sin stepper). T3.5 queda en el plan; el riesgo de tocar ProductCard
+  # de US-002 se acota exigiendo que sus specs corran sin editarse.
+  # Las otras cuatro: stepper pesimista con debounce 400 ms (OQ-FE-1), la UI no auto-ajusta
+  # cantidades de líneas bloqueadas (OQ-FE-3), el badge cuenta unidades (OQ-FE-4), y
+  # /carrito no funciona sin JS (OQ-FE-5 — soportarlo exigiría relajar el guard de D3).
+  #
+  # DEPLOYMENT: no requiere /plan-deployment propio (sin secretos, sin migraciones, sin
+  # flag), pero API_INTERNAL_ORIGIN pasa a gobernar DOS superficies same-origin en vez de
+  # una: un deploy sin ella rompe login Y carrito. Ya falla ruidoso al arrancar; conviene
+  # que quede dicho en el plan de despliegue de US-008/US-009.
+  estimate-hours: 10.4
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+# qa-plan.md agregado 2026-08-23 por /plan-qa (batería relevancia QA-001 + contract QA-002 + k6 + BDD + E2E)
+- name: US-004-busqueda-semantica-frontend-web
+  us-id: US-004
+  discipline: frontend-web
+  variant: null
+  status: in-progress
+  parent-us: docs/user-stories/US-004-busqueda-semantica.md
+  assignee: sesion-claude-bce7ffb7
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 6
+  # 6 h AI-asistido / 12-18 h tradicional (14 tasks + 4 pre-requisitos). La US §7 presupuesta
+  # FE-US-004 en 8-12 h y el readme §6 ticket 2 en 12-18 h: el AI-asistido entra comodo.
+  # (Historico, ya resuelto) EL DIFERENCIADOR NO TENIA PANTALLA: el backend estaba construido
+  # (contrato publicado en apps/api/docs/api/openapi.yaml) y el layout del storefront llevaba el
+  # comentario "El buscador del top-nav sigue siendo Deferred: US-004". Ese comentario ya no
+  # existe: T3.2 monta el SearchBar en el layout. Se conserva la nota porque explica por que este
+  # change era critico, pero su tiempo verbal ya no describe el arbol. Sin este change la capacidad #2 del
+  # PRD no existe para el cliente.
+  # NO ES "poner un input": el design-system §7.12 lo llama componente estrella porque son CINCO
+  # estados observables --con senal, con reserva, sin senal, degradado y consulta corta-- y cada
+  # uno tiene que transmitir honestidad sobre lo que la IA entendio.
+  # DISCREPANCIA DE CONTRATO ANOTADA: el search.yaml del change de backend esta 1.0.0-draft y
+  # DIFIERE del canonico en dos puntos (el canonico ACOTA EN SILENCIO un limit fuera de rango en
+  # vez de responder 422, y image_url es requerido-nullable en SearchResult). Este plan usa el
+  # canonico, que es lo que el server implementa y lo que consume orval.
+  # DECISIONES DEL PO 2026-08-23, cerradas ANTES de escribir el plan:
+  # OQ-FE-1 SIN dropdown de sugerencias en vivo -- el backend no tiene endpoint de autocompletado
+  # y un dropdown por tecleo contradice el rate-limit que existe PRECISAMENTE porque cada busqueda
+  # no cacheada cuesta una llamada al proveedor. Desviacion declarada del design-system §7.12 ·
+  # OQ-FE-2 /buscar renderizada en SERVIDOR (funciona sin JS, compartible por URL) pero con
+  # robots noindex,follow: indexarla generaria paginas delgadas que canibalizan fichas y
+  # categorias, que son los activos indexables · OQ-FE-3 sin vista full-screen en mobile: el
+  # submit ya navega a una pagina propia y el overlay agrega una maquina de foco que hay que
+  # testear. Desviacion declarada · OQ-FE-4 "Agregar al carrito" SI en los resultados, reusando
+  # AddToCartButton (AC-7 ya prohibe el control sin stock) · OQ-FE-5 cuatro eventos SIN el texto
+  # de la consulta nunca: es entrada libre y un volcado de queries termina siendo un log con
+  # nombres y telefonos que alguien pego en el input. Medir QUE se busca lo hace el backend, que
+  # ya tiene el texto y su propia retencion.
+  # DOS DECISIONES TECNICAS QUE NO SON OBVIAS: (a) el UNICO loading.tsx de todo (storefront) va
+  # en buscar/ -- el resto no tiene por F59 (la boundary de Suspense compromete el status 200 y
+  # vuelve imposible un 404 real), pero /buscar nunca llama a notFound() y §10.1 pide skeleton,
+  # asi que aca el beneficio es gratis y la objecion no aplica · (b) el servicio reusa el
+  # CATALOG_TAG que ya existe en vez de inventar uno propio: asi una invalidacion del catalogo
+  # --la que dispara el panel tras un alta o un import masivo-- tambien refresca la busqueda.
+  # SearchResultCard es propio y NO reusa ProductCard: ProductCard exige StorefrontProductListItem
+  # con `currency`, un campo que SearchResult no trae, y fabricarlo seria inventar datos del
+  # contrato (§3.1). Se reusan las piezas (ProductImage, formatArs, AddToCartButton).
+  # Cobertura: AC-1, AC-3, AC-4, AC-5, AC-7, AC-8 y AC-10. AC-2 es el arnes de relevancia
+  # (backend/QA) y AC-6/AC-9 son invariantes del servidor: el frontend renderiza lo que el
+  # contrato le da y no puede afirmarlas por su cuenta. Declarado, no omitido.
+
+- name: US-004-busqueda-semantica-backend
+  us-id: US-004
+  discipline: backend
+  variant: null
+  # `completed` es el valor del enum del schema. (Otras entradas usan `in progress` con espacio,
+  # que NO está en el enum: deriva preexistente, no se toca desde acá.)
+  status: completed
+  parent-us: docs/user-stories/US-004-busqueda-semantica.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 10,4 h AI-asistido / ~20 h tradicional (23 tasks, suma de las 8 fases). US §7
+  # presupuesta BE-US-004 en 12-16 h: el AI-asistido entra cómodo; el tradicional excede el
+  # techo ~4 h por dos cosas que la US menciona al pasar y son trabajo real —
+  # (a) EL FULL-TEXT NO EXISTE: AC-4 exige degradar a búsqueda por texto y no hay una sola
+  #     columna tsvector ni un índice GIN en todo el esquema. Este change es dueño de esa
+  #     migración (columna GENERATED ALWAYS AS ... STORED con configuración 'spanish' sobre
+  #     name + description_enriched + sku, más índice GIN). Generada y no por trigger: una
+  #     columna generada no puede quedar desincronizada.
+  # (b) EL CACHÉ DE REDIS NO SE PUEDE CONSTRUIR: la US §9 y el E2E §17 piden «cache de
+  #     consultas frecuentes (Redis)» y Redis no está aprovisionado (ADR-0012 y ADR-0014 ya
+  #     enmendaron ADR-0004 dos veces por lo mismo; US-019 T1.3 sigue abierta). Tercera vez
+  #     que el proyecto paga este desvío: caché en proceso con el seam intacto. Se cachea EL
+  #     VECTOR y no los resultados, para que un cambio de precio/stock se vea en la
+  #     siguiente búsqueda en vez de esperar el TTL.
+  # El kNN en sí, con el HNSW que US-005 ya creó, son ~2 h.
+  #
+  # ⚠ BLOQUEANTE DE VIABILIDAD — OQ-BE-1: EL TECHO DE 15 RPM.
+  # US-005 implementa el limitador del proveedor como SERIALIZADOR DE INTERVALO MÍNIMO
+  # (60_000 / GEMINI_MAX_RPM). Con el default de 15 RPM del free tier eso es UNA LLAMADA CADA
+  # 4 SEGUNDOS —casi 3× el presupuesto TOTAL de la búsqueda (p95 < 1,5 s, PRD §4)— y, peor,
+  # 15 BÚSQUEDAS POR MINUTO PARA TODO EL SITIO, contra los ~50 concurrentes en pico que
+  # dimensiona el E2E §17. La suposición §21 del E2E («Gemini tiene cuota/rate-limit
+  # suficiente») NO CUBRÍA EL CAMINO INTERACTIVO y este plan la invalida.
+  # Este diseño hace el techo configurable y visible (limitador + timeout propios para
+  # búsqueda, reusando el puerto AI_EMBEDDER pero NO la política de tasa), pero repartir 15
+  # RPM entre dos consumidores no arregla la aritmética. La decisión —tier pago vs aceptar el
+  # techo— es de producto y tiene costo. Recomendación: (a) tier pago + presupuesto propio.
+  #
+  # SEAM CON US-005: se REUSA el puerto AI_EMBEDDER (no se duplica el cliente de Gemini, ni
+  # la redacción de la API key, ni el parseo). T1.1 lo MUEVE de src/enrichment/ports/ a
+  # src/ai/ports/ porque con dos consumidores su dueño natural deja de ser enrichment — el
+  # mismo criterio que US-005 dejó escrito para EnrichmentQueue. Los specs de US-005 tienen
+  # que pasar SIN EDITARSE. US-005 va 1/28 tasks: su migración de product_embeddings + HNSW
+  # ya está aplicada (pero SIN COMMITEAR), el resto está en vuelo.
+  #
+  # AC-2 (relevancia ≥ 70%) NO QUEDA VERIFICADO por este change: no se puede medir hasta que
+  # US-005 pueble embeddings. Se entrega el ARNÉS ejecutable (script + gate por exit code +
+  # 8 casos semilla + reporte de cobertura de embeddings, para que un 0% por catálogo vacío
+  # no se lea como problema de relevancia). La batería completa de ~30 y el gate son de QA
+  # (US §7, E2E §19). Deferred: /plan-qa US-004 — owner: QA.
+  #
+  # DECISIONES QUE VALE MIRAR: interpreted_as se DERIVA de las categorías que matchearon en
+  # vez de generarse con el LLM (OQ-BE-3) — ahorra latencia y, sobre todo, hace que NINGÚN
+  # texto del usuario llegue a un modelo generativo, volviendo AC-8 estructural en vez de una
+  # promesa con filtros. El fallo del proveedor es un 200 DEGRADADO y no un 5xx (AC-4): un
+  # buscador que devuelve 5xx en una ráfaga le enseña a Google a sacar URLs del índice, la
+  # lección que US-003 ya pagó con el 429. El blend léxico queda detrás de
+  # SEARCH_LEXICAL_WEIGHT=0 para que la batería lo calibre en vez de que este plan lo adivine.
+  #
+  # Deviación del DER (E2E §8): products.search_document (tsvector). Es una columna derivada
+  # que exige AC-4, no un dato nuevo; el DER no baja a la estrategia de consulta.
+  # Sin ADR nuevo: ADR-0002 fija pgvector+HNSW, ADR-0003 el proveedor, ADR-0012/0014 el
+  # patrón en proceso.
+  #
+  # DEPLOYMENT: coordinar con el plan de US-005, no uno propio. Sin secreto nuevo (reusa
+  # GEMINI_API_KEY) pero 13 variables nuevas. El ALTER TABLE ... ADD COLUMN ... GENERATED
+  # reescribe products (instantáneo con ~5.000 filas, pero conviene decirlo). Si se queda en
+  # free tier, el despliegue debería documentar el techo de 15 RPM como limitación conocida.
+  estimate-hours: 10.4
+  assignee: develop-backend  # ejecutado por /develop-backend en la sesión del 2026-08-23  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
+  created: 2026-08-22
+  completed-at: 2026-08-23  # 24/24 tasks + 9 gates; AS-BUILT en tasks.md
+  archived-at: null
+  archive-path: null
+
+# qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + k6 webhook + E2E loop completo)
+  # AS-BUILT (2026-08-23): 24/24 tasks y los 9 gates suite-level en verde. Suite completa de
+  # apps/api en 1407 tests / 141 suites; typecheck, lint y build en 0; Spectral en 0 warnings.
+  # Tres hallazgos que la ejecución destapó, los tres silenciosos:
+  #   1. `ts_rank` y la similitud cosine NO son comparables (medido: match léxico exacto ~0,10
+  #      contra un umbral de 0,55 calibrado para cosine). El camino degradado nunca podía
+  #      reportar confianza alta y `SEARCH_LEXICAL_WEIGHT` no habría hecho nada perceptible.
+  #      Lo encontró el arnés de relevancia; `fullText` ahora normaliza al mejor del conjunto.
+  #   2. El fallback no era accionable: devolvía nombres de categoría sin `slug`, así que el
+  #      frontend no podía armar el enlace y el «callejón sin salida» de AC-3 volvía con mejor
+  #      redacción. Lo encontró la integración del contrato publicado.
+  #   3. El `EXPLAIN` de la query kNN completa no prueba el uso del índice a escala de test: con
+  #      pocas filas el planner elige un sort por COSTO. Se reemplazó por el EXPLAIN del
+  #      ordenamiento aislado + un guard sobre la fuente de que ordena por la distancia cruda.
+  # DESVIACIONES: `GET /v1/search` en vez del `POST` ilustrativo de la Entrega 1 (una búsqueda es
+  # una lectura: enlazable y cacheable); `GEMINI_MAX_RPM` bajó de 15 a 5 porque la suma con
+  # `GEMINI_SEARCH_MAX_RPM` se valida contra los 15 del free tier.
+  # SIN VERIFICAR — AC-2 (≥70% de relevancia): se entrega el ARNÉS, no el número. Medido hoy:
+  # cobertura de embeddings 0/4 publicados, los 8 casos corriendo DEGRADADOS y 33,3% de acierto,
+  # que son los dos casos léxicos. Los 4 casos semánticos fallan porque no hay un solo vector en
+  # el catálogo. Secuencia para cerrarlo: clave → enriquecimiento (runbook §3.6) → catálogo con
+  # sustancia → recalibrar §D5 → batería de ~30 de /plan-qa US-004.
+
+- name: US-010-orden-webhook-stock-backend
+  us-id: US-010
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-010-orden-webhook-stock.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 13,6 h AI-asistido / ~26 h tradicional (26 tasks, suma de las 9 fases). US §7 presupuesta
+  # BE-US-010 en 16-24 h —es la task mas grande del proyecto y la US ya lo sabia—; el
+  # tradicional excede el techo ~2 h por tres cosas que la US menciona en una linea cada una:
+  # (a) «se disparan las notificaciones» (AC-2) NO TIENE COLA: Redis sigue sin aprovisionar,
+  #     cuarta instancia del desvio de ADR-0012/0014 (las otras tres: import US-006,
+  #     enriquecimiento US-005, cache de busqueda US-004). Hace falta NotificationPort +
+  #     adaptador de log; US-011 pone la implementacion real.
+  # (b) «corre la reconciliacion» (AC-10) y «corre el job de limpieza» (AC-11) NO TIENEN
+  #     PLANIFICADOR: no hay @nestjs/schedule ni nada de scheduling en apps/api. Dos runners
+  #     en proceso + dos endpoints admin — que es literalmente lo que el runbook del E2E
+  #     §18.5 pide («job/endpoint manual idempotente»).
+  # (c) el REEMBOLSO DURABLE de AC-4 necesita un estado persistido (payments.status gana
+  #     `refund_pending`) y un runner de reintentos: perder un reembolso en memoria es perder
+  #     plata de un cliente.
+  # La transaccion del camino feliz son ~1,5 h. El resto es condicion adversa, que es donde
+  # esta el valor: SIETE de los once AC son negative space.
+  #
+  # DECISIONES QUE VALE MIRAR:
+  # - IDEMPOTENCIA POR LA BASE, NO POR UN `if`: SELECT ... FOR UPDATE sobre la fila del pago
+  #   dentro de la transaccion, y solo la transicion pending → approved hace trabajo. Un
+  #   check-then-act se rompe con dos webhooks concurrentes, que es exactamente lo que hace un
+  #   proveedor que reintenta. T6.1 lo prueba con 10 requests en Promise.all — un
+  #   check-then-act NO pasaria ese test.
+  # - ITEMS ORDENADOS POR product_id en el decremento: sin eso, dos ordenes que comparten
+  #   productos A y B en orden inverso se abrazan en un deadlock. Falla solo bajo concurrencia,
+  #   en produccion, y en los logs se ve como un error de Postgres sin relacion con el negocio.
+  # - EL WEBHOOK NO LLEVA THROTTLER, a proposito: limitar por IP la puerta por la que entra el
+  #   dinero significa DESCARTAR PAGOS cuando el proveedor reintenta en rafaga. La proteccion
+  #   es la firma (rechazar cuesta un HMAC) y que nada no verificado toca la base.
+  # - SIEMPRE 200 SALVO FIRMA INVALIDA: MP reintenta ante cualquier no-2xx, asi que un 500 por
+  #   un bug nuestro desata una tormenta justo cuando el sistema esta mal. Un fallo transitorio
+  #   queda para la reconciliacion, que es el mecanismo pensado para eso.
+  # - LA VERIFICACION DE FIRMA TIENE VENTANA DE ts (5 min): sin ella, un webhook legitimo
+  #   capturado se puede reproducir para siempre porque la firma sigue siendo valida.
+  #
+  # SEAMS: extiende el MercadoPagoClient de US-009 con getPayment (la re-consulta de AC-7) y
+  # refund (AC-4) sobre el adaptador que ya tiene timeout/reintentos/breaker — NO se crea un
+  # segundo cliente HTTP, y con eso US-013 encuentra la capacidad de reembolso ya construida y
+  # probada. Y T2.4 reemplaza NoopPaymentConfirmation por ConfirmOrderService: es el punto de
+  # extension que US-009 diseño, y lo que vuelve AC-9 estructural (el medio simulado confirma
+  # de verdad sin que su codigo cambie — un solo camino, no dos).
+  #
+  # DEVIACIONES DECLARADAS del DER (E2E §8): payments.status gana `refund_pending` en su CHECK;
+  # orders gana confirmed_at y cancelled_at (la FSM §12 tiene seis estados y el DER solo modela
+  # delivered_at — sin confirmed_at no hay insumo para US-016). Todas aditivas.
+  # Sin ADR nuevo: ADR-0008 gobierna el decremento, ADR-0006 el webhook verificado.
+  #
+  # ORDEN DE DESPLIEGUE NO NEGOCIABLE: US-008 → US-009 → US-010. Secreto nuevo:
+  # MP_WEBHOOK_SECRET (el arranque falla en produccion sin el). Este change es el que CONTESTA
+  # la URL publica del webhook que INFRA-US-009 provisiona: mal configurada, los pagos se
+  # cobran y las ordenes no se confirman, y el defecto se ve como «vendi y no me aparecio el
+  # pedido». Se recomienda /plan-deployment CONJUNTO para US-008 + US-009 + US-010.
+  # OJO con el rollback: revertir con pagos ya aprobados en MP deja ordenes cobradas sin
+  # confirmar — la reconciliacion las recupera al volver a desplegar, es su escenario.
+  #
+  # 5 preguntas abiertas, ninguna bloquea el arranque. La que conviene cerrar antes: OQ-BE-1
+  # (plazo de abandono, 48 h) porque interactua con el vencimiento de 24 h de la preferencia
+  # de MercadoPago que fijo US-009.
+  estimate-hours: 13.6
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  branch: null
+  pr-url: null
+  created: 2026-08-22
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-dsm-web-007-endurecimiento-panel-backend
+  us-id: null
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-web/2026-08-22/audit.md
+  audit-derived: true
+  # 1,8 h AI / ~3,5 h tradicional (6 tasks). FASE EXPAND de la migracion del panel a cookie
+  # httpOnly (AUDIT-DSM-WEB-007). Es chico porque la mitad ya existe: setSessionCookies emite
+  # las tres cookies desde US-014 y el seed crea la cuenta admin. Falta que AdminGuard las lea
+  # (hoy solo Bearer) y que el camino de bootstrapToken las emita (hoy solo el de credenciales).
+  # ADITIVO A PROPOSITO: al terminar, el guard acepta cookie O Bearer y el panel sigue
+  # funcionando sin cambiar una linea. Expand-and-contract sobre el borde de autenticacion, que
+  # es el unico lugar donde un despliegue a medias no puede dejar al dueno afuera de su tienda.
+  # Precedencia: la COOKIE gana sobre el header (es la que un script inyectado no puede leer).
+  # ORDEN OBLIGATORIO: antes que el change de frontend.
+  estimate-hours: 1.8
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-dsm-web-007-endurecimiento-panel-frontend-web
+  us-id: null
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-web/2026-08-22/audit.md
+  audit-derived: true
+  # 2,7 h AI / ~5,5 h tradicional (7 tasks). FASE DE MIGRACION: saca el JWT de sessionStorage,
+  # elimina authToken.ts, y el cliente pasa de Authorization a credentials:'include' + CSRF.
+  # EL GATE REAL NO ES OBVIO: el rewrite same-origin de ADR-0013 cubre /v1/auth/* y /v1/cart/*
+  # pero NO /v1/admin/*. Sin extenderlo la migracion funciona perfecto en local y EL PANEL QUEDA
+  # INACCESIBLE EN PRODUCCION (up.railway.app esta en la Public Suffix List, asi que la cookie
+  # del API nunca vuelve al host del sitio). De ahi que T3.1 sea un E2E contra la app CONSTRUIDA
+  # asertando sobre context.cookies(), calcado de auth-topology.spec.ts.
+  # El CSRF entra en la MISMA task que apaga el header: una ventana con cookie ambiente y sin
+  # double-submit seria estrictamente peor que el estado actual.
+  # isAuthenticated() pasa a ser OPTIMISTA reaccionando al 401 (design.md D3): con la cookie
+  # httpOnly el frontend no puede saber si hay sesion leyendola, y el mecanismo de reaccion ya
+  # existe (AppError kind:'unauthorized').
+  # DEFERRED tras este change: sacar el { token } del cuerpo y quitar la aceptacion de Bearer
+  # (fase de contraccion, solo segura una vez demostrado que nadie lo lee).
+  estimate-hours: 2.7
+  assignee: null
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+# ── AUDIT-DERIVED CHANGES (2026-08-23) ─────────────────────────────────────
+# Created by /plan-from-audit (batch remediation of 51 open findings).
+# 7 changes temáticos agrupados por disciplina homogénea.
+
+- name: AUDIT-DOC-001-docs-obligatorios-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  audit-derived: true
+  estimate-hours: 12
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-FLOW-004-coherencia-indices-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/flow/2026-08-22-flow-audit.md
+  audit-derived: true
+  estimate-hours: 6
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-PLAN-003-deuda-planes-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  audit-derived: true
+  estimate-hours: 4
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-E2E-002-profundidad-e2e-docs
+  us-id: null
+  discipline: docs
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  audit-derived: true
+  estimate-hours: 6
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-QA-003-salud-suite-qa
+  us-id: null
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  audit-derived: true
+  estimate-hours: 20
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-dsm-api-001-deuda-codigo-backend
+  us-id: null
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-api/2026-08-22/audit.md
+  audit-derived: true
+  estimate-hours: 14
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: AUDIT-DSM-WEB-001-deuda-frontend-frontend-web
+  us-id: null
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: null
+  linear-task-id: null
+  audit-baseline: docs/audits/dsm-web/2026-08-22/audit.md
+  audit-derived: true
+  estimate-hours: 14
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null
+- name: US-014-registro-login-qa
+  us-id: US-014
+  discipline: qa
+  variant: null
+  # 3/12 tasks el 2026-08-23 (T0.1, T0.2, T1.1): 5 escenarios verdes contra la API real.
+  # El PRIMER escenario cazó un defecto de PRODUCCIÓN: el registro devolvía 500 en el
+  # artefacto construido porque breached-passwords.txt no se copiaba a dist/ (fix e327332).
+  # T1.2 en adelante BLOQUEADO por entorno: api-up.sh promete elevar AUTH_RATE_LIMIT_MAX y
+  # no surte efecto, así que el registro da 429 y toda la suite empieza registrando.
+  status: in progress
+  parent-us: docs/user-stories/US-014-registro-login.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # 6,5 h AI-asistido / ~12 h tradicional (12 tasks + 14 casos, 12 automatizados y 2
+  # charters manuales). US §7 presupuesta QA-US-014 en 8 h: el tradicional excede ~4 h
+  # porque la US contaba "tests de los formularios y del flujo" y el grueso del trabajo
+  # es infraestructura de QA que no existe para la cuenta del CLIENTE (el harness sólo
+  # tiene helpers de admin) más tres AC que son PROPIEDADES DE SEGURIDAD y no features:
+  # anti-enumeración medida sobre status+cuerpo+latencia, rotación del refresh probada
+  # consumiéndolo dos veces, y la no-filtración de la contraseña verificada también
+  # sobre el stdout del proceso de la API.
+  #
+  # MODO A: los changes de BE y FE ya existen, así que este es el hermano de QA para los
+  # escenarios cross-discipline (el precedente es US-007-carrito-compra-qa).
+  #
+  # LO QUE NO DUPLICA: US-014 tiene la suite dev-owned más densa del repo (8 e2e-nest de
+  # auth + 3 E2E de navegador del FE). Ninguno se repite: la capa nueva se define por
+  # correr contra la API REAL y no contra api-stub.mjs, donde bcrypt es una comparación
+  # de strings, el rate-limit se dispara con un header y la rotación vive en un Map.
+  #
+  # 4 preguntas abiertas, ninguna bloquea: la que conviene decidir antes de sumar otra
+  # suite en paralelo es OQ-QA-1 (base de datos propia para QA) — es la causa conocida de
+  # la contaminación que ya rompe TC-204 de US-002.
+  estimate-hours: 6.5
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-08-23
+  completed-at: null
+  archived-at: null
+  archive-path: null

@@ -1,0 +1,55 @@
+get:
+  operationId: storefrontGetProduct
+  tags:
+  - storefront-products
+  summary: Ficha pública de un producto publicado, por su slug (US-003 AC-1/AC-2)
+  description: |
+    Lectura PÚBLICA (sin auth). Devuelve el producto sólo si está `published`:
+    `draft`, `archived` e inexistente dan el **mismo** 404, para que la respuesta
+    no revele que un SKU existe pero está oculto (AC-7/AC-8).
+
+    El identificador público es el **slug**, no el SKU (decisión D-1). Lo deriva
+    el servidor a partir del nombre y nunca se acepta del cliente: si se aceptara,
+    dos productos podrían reclamar la misma URL y la ficha canónica dependería del
+    orden de alta.
+  security: []
+  parameters:
+  - name: slug
+    in: path
+    required: true
+    description: URL amigable del producto (kebab-case, derivada del nombre).
+    schema:
+      type: string
+      pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+  responses:
+    '200':
+      description: Ficha del producto publicado (campos SEO-relevantes).
+      headers:
+        Cache-Control:
+          description: |
+            Caché acotada para CDN (AC-9). El límite es deliberado: una caché
+            larga mostraría un precio desactualizado, y en una ferretería eso es
+            una promesa que el mostrador no puede cumplir.
+          schema:
+            type: string
+            example: 'public, max-age=60, stale-while-revalidate=30'
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/StorefrontProduct'
+          example:
+            slug: heladera-no-frost-300l
+            sku: REF-001
+            name: Heladera No-Frost 300L
+            description: Heladera con freezer superior, bajo consumo.
+            price_ars_cents: 100000
+            currency: ARS
+            image_url: https://cdn.dsm.example.com/ref-001.jpg
+            in_stock: true
+            category:
+              name: Refrigeración
+              slug: refrigeracion
+    '404':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

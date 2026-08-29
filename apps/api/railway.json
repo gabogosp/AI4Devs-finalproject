@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pnpm --filter @dsm/db generate && pnpm --filter @dsm/api build"
+  },
+  "deploy": {
+    "startCommand": "pnpm --filter @dsm/api start",
+    "healthcheckPath": "/health",
+    "restartPolicyType": "ON_FAILURE"
+  }
+}

@@ -1,0 +1,265 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /checkout
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-008 (checkout del invitado). Al archivar el change, este
+    endpoint forma la capacidad nueva `openspec/specs/checkout/`.
+
+    ## El carrito no viaja en el cuerpo
+
+    Se identifica por la cookie `dsm_cart` que emitió US-007. El cuerpo trae **sólo**
+    los datos del comprador, el consentimiento y el modo de entrega. Sin `cart_id` en
+    la URL ni en el cuerpo: la superficie no tiene un identificador que enumerar y no
+    depende de un chequeo de propiedad que alguien pueda olvidar.
+
+    ## El cliente no propone precios
+
+    El total y las líneas salen del carrito y del catálogo leídos **dentro de la
+    transacción**. El `ValidationPipe` global corre con `forbidNonWhitelisted`, así que
+    un cuerpo con `total_ars_cents`, `items` o `status` devuelve 422.
+
+    ## La orden nace inerte
+
+    `status: pending_payment`. **No retiene stock** (AC-6, ADR-0008), no mueve plata y
+    es invisible para el panel del dueño (US-012). Se vuelve real cuando el pago se
+    aprueba y se confirma (US-009 → US-010).
+
+    ## Sin datos de tarjeta
+
+    Ningún campo del request los acepta y ninguna columna de `orders`/`order_items`
+    puede alojarlos (AC-7): el pago ocurre íntegramente en el checkout hosted de
+    MercadoPago (ADR-0006). Fuera de alcance PCI-DSS.
+servers:
+  - url: /v1
+tags:
+  - name: checkout
+    description: Creación de la orden del invitado (US-008).
+paths:
+  /checkout:
+    post:
+      operationId: createGuestCheckout
+      tags: [checkout]
+      summary: Crear la orden en pending_payment con snapshot de precios (AC-1, AC-2)
+      description: |
+        Valida el carrito de la cookie, valida los datos del comprador, exige el
+        consentimiento y crea la orden con sus ítems en una sola transacción.
+
+        Devuelve el **`order_token`**: el identificador opaco con el que un invitado sin
+        sesión se refiere a su orden. Es lo que consume `POST /v1/payments` (US-009). Se
+        entrega **una sola vez**; en base sólo vive su SHA-256
+        (`orders.access_token_hash`), así que una fuga de base no entrega órdenes
+        consultables — misma disciplina que ADR-0011 y que el token del carrito.
+
+        El `order_id` UUID **no se expone**, siguiendo la convención que fijaron los DTO
+        públicos de US-002/US-003.
+
+        **Doble submit**: dos llamadas crean **dos órdenes**, ambas inertes. La
+        abandonada la cancela la limpieza de US-010. No hay `Idempotency-Key`: la
+        deviación de `api-standards.md` §10.1 está razonada en `design.md`
+        §Approach — el riesgo que §10 protege es el doble cobro, y acá no hay cobro.
+      security: []
+      parameters:
+        - in: header
+          name: X-CSRF-Token
+          required: true
+          description: |
+            Double-submit del carrito (`security-standards.md` §7.5). La escritura se
+            autoriza con la cookie `dsm_cart`, que es credencial **ambiente**, así que
+            CSRF es *Mandatory*. El valor es el de la cookie legible `dsm_cart_csrf`
+            que emitió US-007.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [buyer, consent, fulfillment]
+              additionalProperties: false
+              properties:
+                buyer:
+                  type: object
+                  required: [name, email, phone]
+                  additionalProperties: false
+                  description: |
+                    PII mínima (PRD §6): nombre para identificar el retiro, email para
+                    la confirmación de US-011, teléfono para coordinar el retiro y el
+                    contacto por WhatsApp de US-018.
+                  properties:
+                    name: { type: string, minLength: 2, maxLength: 120 }
+                    email:
+                      type: string
+                      format: email
+                      description: Se normaliza (trim + NFKC + lowercase) antes de persistir.
+                    phone:
+                      type: string
+                      pattern: '^\+?[0-9 ()-]{8,20}$'
+                      example: '+54 9 11 5555 5555'
+                consent:
+                  type: boolean
+                  const: true
+                  description: |
+                    Aceptación de la política de privacidad y los términos (Ley 25.326,
+                    PRD §2.1 cap. 10). **Obligatoria**: `false` o ausente → 422 (AC-4).
+                    Queda registrada con marca temporal y versión de los textos (AC-8),
+                    y un `CHECK` de la base impide que exista una orden sin ella.
+                fulfillment:
+                  type: string
+                  enum: [pickup]
+                  description: |
+                    Sucursal única (Córdoba y Pueyrredón): el checkout **confirma** el
+                    retiro, no ofrece elección. El envío a domicilio es roadmap
+                    (PRD §2.2).
+      responses:
+        '201':
+          description: Orden creada en `pending_payment`.
+          headers:
+            Cache-Control:
+              description: |
+                Siempre `no-store` en toda la superficie `/v1/checkout` (§7.1): la
+                respuesta lleva un token de acceso a la orden y el total de una compra.
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CheckoutCreated' }
+              example:
+                order_token: 3f9a1c7d5e2b48a0c6d1f8e4b3a29750d4c8e6f1a2b3c4d5e6f708192a3b4c5d
+                order_number: 1042
+                status: pending_payment
+                total_ars_cents: 4560000
+                items_count: 3
+        '403':
+          description: |
+            CSRF: `X-CSRF-Token` ausente o incorrecto, u `Origin`/`Referer` fuera de la
+            allowlist (§7.5).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: |
+            El carrito no se puede convertir en orden (AC-5). Dos causas distinguibles
+            —el comprador necesita saber cuál—:
+
+            - `cart-empty`: sin cookie de carrito, carrito vencido o sin líneas. **Sin
+              cookie se responde esto y no un 404**: la misma indistinguibilidad que
+              US-007 fijó para `GET /v1/cart`.
+            - `cart-not-purchasable`: alguna línea despublicada, archivada o sin stock
+              suficiente. `errors[]` trae el **slug** y el motivo por línea.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                carritoVacio:
+                  value:
+                    type: 'dsm:checkout/cart-empty'
+                    title: Carrito vacío
+                    status: 409
+                    detail: No hay productos en el carrito.
+                lineaBloqueada:
+                  value:
+                    type: 'dsm:checkout/cart-not-purchasable'
+                    title: El carrito tiene productos no disponibles
+                    status: 409
+                    detail: Revisá el carrito antes de continuar.
+                    errors:
+                      - field: taco-fischer-sx-8mm-x50
+                        message: 'stock insuficiente: quedan 2 unidades'
+                      - field: mecha-widia-8mm
+                        message: el producto ya no está publicado
+        '422':
+          description: |
+            Datos del comprador inválidos (AC-3), consentimiento no aceptado (AC-4),
+            `fulfillment` fuera del enum, o **cualquier campo desconocido**
+            (`forbidNonWhitelisted`) — incluido un intento de proponer
+            `total_ars_cents`, `items`, `cart_id` o `status`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:checkout/validation'
+                title: Datos inválidos
+                status: 422
+                errors:
+                  - field: buyer.email
+                    message: debe ser un email válido
+                  - field: consent
+                    message: tenés que aceptar los términos para continuar
+        '429':
+          description: |
+            Throttler `checkout` excedido (§7.3): `CHECKOUT_RATE_LIMIT_MAX` por
+            `CHECKOUT_RATE_LIMIT_TTL_MS` por IP. Cubo independiente de `auth`,
+            `storefront` y `cart`.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+            RateLimit-Limit:
+              schema: { type: integer }
+            RateLimit-Remaining:
+              schema: { type: integer }
+            RateLimit-Reset:
+              schema: { type: integer }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    CheckoutCreated:
+      type: object
+      required: [order_token, order_number, status, total_ars_cents, items_count]
+      additionalProperties: false
+      properties:
+        order_token:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: |
+            Token opaco de 256 bits. **Se entrega una sola vez**; en base vive su
+            SHA-256. Es la entrada de `POST /v1/payments` (US-009) — el `pattern` es el
+            mismo que ese contrato declara.
+        order_number:
+          type: integer
+          minimum: 1000
+          description: |
+            Número **legible** del pedido, de una `SEQUENCE` que arranca en 1000
+            (OQ-BE-4). Es lo que el comprador y el dueño usan para hablar del mismo
+            pedido por teléfono; lo consumen el email de US-011 y el panel de US-012.
+
+            **No autoriza nada** — la autorización es el `order_token`. Que sea
+            enumerable es irrelevante precisamente por eso. El `order_id` UUID sigue sin
+            exponerse.
+          example: 1042
+        status:
+          type: string
+          enum: [pending_payment]
+          description: |
+            Primer estado de la FSM del E2E §12. La orden es inerte hasta que el pago se
+            apruebe y US-010 la confirme.
+        total_ars_cents:
+          type: integer
+          description: |
+            Total en **centavos ARS** (`api-standards.md` §5.5), IVA incluido
+            (PRD §11). Es la suma exacta de los subtotales del **snapshot**, no del
+            carrito: la orden queda aritméticamente cerrada sobre sus propias líneas.
+          example: 4560000
+        items_count:
+          type: integer
+          description: Líneas distintas de la orden.
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }

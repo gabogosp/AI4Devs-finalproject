@@ -1,0 +1,1731 @@
+openapi: 3.0.3
+info:
+  title: DSM — API de administración del catálogo (US-001)
+  version: 1.0.0
+  description: >-
+    Panel del dueño: categorías y productos, máquina de estado y RBAC admin.
+    Errores en envelope RFC 7807 (`application/problem+json`, `type` `dsm:catalog/*`).
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-auth
+    description: Seam de login admin (AC-8, ADR-0009)
+  - name: admin-categories
+    description: Gestión de categorías (AC-1)
+  - name: admin-products
+    description: Gestión de productos (AC-2..AC-9)
+  - name: storefront-products
+    description: Superficie pública de lectura del storefront (ficha de producto, US-003)
+  - name: storefront-categories
+    description: Superficie pública de navegación por categorías (US-002)
+  - name: customer-auth
+    description: >-
+      Registro, sesión y recuperación de contraseña del cliente (US-014). Ningún
+      token de sesión viaja en el cuerpo: se emiten sólo como cookies.
+  - name: cart
+    description: >-
+      Carrito de compra del invitado (US-007). Superficie PÚBLICA y la primera de
+      escritura sin autenticación. La identidad es la cookie `dsm_cart` (token
+      opaco, guardado hasheado): no viaja en ningún cuerpo ni en ninguna URL. No
+      reserva ni descuenta stock (AC-8, ADR-0008).
+  - name: admin-imports
+    description: >-
+      Importación masiva del catálogo desde CSV/XLSX (US-006). Sólo admin. El POST
+      responde 202 y el trabajo corre en segundo plano (ADR-0012); el progreso se
+      consulta por GET. Límites vigentes: 5.000 filas, 4 MiB de archivo, 32 MiB
+      descomprimidos y 3 imports por hora por IP.
+  - name: admin-enrichment
+    description: >-
+      Enriquecimiento IA de descripciones y generación de embeddings (US-005).
+      Sólo admin. El POST responde 202 y la corrida sigue en segundo plano con el
+      ejecutor in-process (ADR-0014); la cobertura se consulta por GET. Es la única
+      superficie donde un request de más cuesta plata (llamadas pagas al proveedor
+      de IA), así que tiene su propio presupuesto de 6 por minuto por IP. Sin
+      GEMINI_API_KEY el estado es `disabled` y no se generan vectores.
+  - name: search
+    description: >-
+      Búsqueda semántica en lenguaje natural (US-004) — el diferenciador del
+      producto. Superficie PÚBLICA. Consume los vectores que genera el
+      enriquecimiento (US-005) y DEGRADA a full-text cuando el proveedor de IA no
+      responde: en ese caso la respuesta sigue siendo 200 con `degraded: true`, no
+      un error. Presupuesto propio de 20 req/min por IP, más estricto que el del
+      storefront porque cada consulta puede costar una llamada paga a un tercero.
+  - name: health
+    description: Liveness / readiness
+security:
+  - adminBearer: []
+paths:
+  /auth/register:
+    post:
+      tags: [customer-auth]
+      operationId: registerCustomer
+      summary: Alta de cliente con sesión activa inmediata (AC-1)
+      description: >-
+        Sin verificación de email intermedia: la cuenta queda usable en el acto.
+        Un email ya registrado devuelve 409 con un mensaje que NO confirma que la
+        dirección exista (AC-6). Enviar `role`, `id` o `password_hash` devuelve
+        422: no se ignoran.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Cliente creado y sesión abierta.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookies' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerEnvelope' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/login:
+    post:
+      tags: [customer-auth]
+      operationId: loginCustomer
+      summary: Login por credenciales (AC-2)
+      description: >-
+        Contraseña incorrecta, cuenta inexistente y cuenta bloqueada devuelven
+        respuestas idénticas y con latencias del mismo orden (AC-5).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Sesión abierta.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookies' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerEnvelope' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/refresh:
+    post:
+      tags: [customer-auth]
+      operationId: refreshSession
+      summary: Rota el refresh y renueva la sesión (ADR-0011)
+      description: >-
+        El refresh es de un solo uso. Presentar uno ya rotado se trata como robo:
+        revoca la familia entera y devuelve el MISMO 401 que un token inexistente
+        — distinguirlos le confirmaría al atacante que su réplica llegó. No exige
+        access válido: ya venció, que es el motivo de llamar a esta ruta.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Sesión renovada.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookies' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CustomerEnvelope' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/logout:
+    post:
+      tags: [customer-auth]
+      operationId: logoutCustomer
+      summary: Cierra la sesión y revoca la familia de refresh (AC-3)
+      description: >-
+        Revocación inmediata del refresh. Cierra la familia del dispositivo
+        actual; las otras sesiones del cliente siguen vivas. Límite declarado: el
+        access ya emitido sigue siendo válido hasta que vence (≤
+        AUTH_ACCESS_TTL_MIN), consecuencia aceptada de un access stateless.
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204':
+          description: >-
+            Sesión cerrada. Emite las tres cookies vencidas con el MISMO Path de
+            emisión — dsm_refresh con Path=/v1/auth, porque con otro path el
+            navegador la conservaría.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookies' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/me:
+    get:
+      tags: [customer-auth]
+      operationId: getCurrentCustomer
+      summary: Cliente de la sesión en curso
+      description: >-
+        Lee el access de la cookie dsm_access, no del header Authorization. Un
+        token con role=admin NO abre esta ruta.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Customer' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/password-reset/request:
+    post:
+      tags: [customer-auth]
+      operationId: requestPasswordReset
+      summary: Solicita el enlace de recuperación (AC-11)
+      description: >-
+        SIEMPRE 202, con cuerpo y cabeceras idénticos exista o no la cuenta —
+        incluido el Content-Length. Tampoco cambia si se superó el límite por
+        cuenta ni si el proveedor de email falla: cualquier diferencia observable
+        convertiría la ruta en un verificador de direcciones registradas.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetRequest' }
+      responses:
+        '202': { description: Pedido aceptado. No informa si se envió algo. }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [customer-auth]
+      operationId: confirmPasswordReset
+      summary: Fija la contraseña nueva con el token del email (AC-4, AC-7)
+      description: >-
+        Completar el reset revoca TODAS las sesiones de la cuenta (§3.7), borra
+        los demás tokens pendientes y levanta el bloqueo por intentos fallidos. NO
+        emite sesión: devolver una dejaría viva justo la del que completó el
+        flujo, y puede haberlo completado el atacante. Token inexistente, vencido
+        o ya usado devuelven el mismo 400.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResetConfirm' }
+      responses:
+        '200': { description: 'Contraseña cambiada. Sin Set-Cookie: no se abre sesión.' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: >-
+            La contraseña nueva viola la política. NO consume el token: un error
+            de tipeo no debe obligar a pedir otro email.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /admin/auth/login:
+    post:
+      operationId: adminLogin
+      tags: [admin-auth]
+      summary: Login admin — bootstrap token o credenciales (AC-8, US-014 T8.1)
+      description: >-
+        Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo
+        `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo
+        sería circular.
+
+
+        US-014 agregó el login por `{email, password}` contra una cuenta con
+        `role='admin'`, preservando la ruta, el transporte y la forma de la
+        respuesta `{ token }` — el panel de US-001 no requirió cambios. El camino
+        `{bootstrapToken}` sigue disponible detrás de `ADMIN_AUTH_ENABLED` como
+        salida de emergencia. Con credenciales, la respuesta además emite las
+        cookies de sesión. Las credenciales de una cuenta que existe pero NO es
+        admin devuelven el mismo 401 que una contraseña incorrecta.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminLogin' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminLoginResponse' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: >-
+            Rate limit de la superficie de auth excedido (security-standards §7.3).
+            Incluye `Retry-After` y las cabeceras `RateLimit-*` (api-standards §12).
+          headers:
+            Retry-After: { schema: { type: integer }, description: Segundos hasta reintentar }
+            RateLimit-Limit: { schema: { type: integer } }
+            RateLimit-Remaining: { schema: { type: integer } }
+            RateLimit-Reset: { schema: { type: integer } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [admin-categories]
+      summary: Crear categoría (AC-1)
+      description: Crea una categoría; el slug se deriva del nombre (único).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategory' }
+      responses:
+        '201': { description: Creada, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      operationId: listCategories
+      tags: [admin-categories]
+      summary: Listar categorías (AC-1)
+      description: Devuelve todas las categorías.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Category' } } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+  /admin/categories/{id}:
+    patch:
+      operationId: updateCategory
+      tags: [admin-categories]
+      summary: Editar categoría (AC-1)
+      description: Actualiza el nombre/parent de una categoría.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCategory' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /admin/products:
+    post:
+      operationId: createProduct
+      tags: [admin-products]
+      summary: Crear producto en draft (AC-2, AC-5, AC-9)
+      description: Alta en estado draft; SKU único; validación por campo (422).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProduct' }
+      responses:
+        '201': { description: Creado, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+    get:
+      operationId: listProducts
+      tags: [admin-products]
+      summary: Listar productos (paginado, NFR)
+      description: Listado paginado del panel (limit/offset).
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ProductList' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+  /admin/products/{id}:
+    get:
+      operationId: getProduct
+      tags: [admin-products]
+      summary: Obtener producto (AC-3)
+      description: Devuelve un producto por id.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+    patch:
+      operationId: updateProduct
+      tags: [admin-products]
+      summary: Editar o cambiar estado (AC-3, AC-4, AC-6, AC-7)
+      description: >-
+        Sin `status`: edita campos (AC-3). Con `status`: transición de estado
+        (publicar/archivar/despublicar); publicar incompleto → 422 y permanece draft.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProduct' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /products/{slug}:
+    get:
+      operationId: storefrontGetProduct
+      tags: [storefront-products]
+      summary: Ficha pública de producto publicado (US-003 AC-1/AC-2)
+      description: >-
+        Ruta PÚBLICA `GET /v1/products/{slug}` SIN auth (la primera del servicio).
+        Devuelve un producto sólo si está `published`; draft/archived/inexistente →
+        404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `slug`
+        (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el `slug` lo
+        deriva el servidor del `name`, nunca se acepta del cliente). Rate-limit por IP
+        (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: 'URL amigable del producto (kebab-case, derivada del nombre).'
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+      responses:
+        '200':
+          description: Ficha del producto publicado (campos SEO-relevantes)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30 (AC-9)'
+          content: { application/json: { schema: { $ref: '#/components/schemas/StorefrontProduct' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: Rate limit por IP excedido (§7.3). Incluye Retry-After y RateLimit-*.
+          headers:
+            Retry-After: { schema: { type: integer } }
+            RateLimit-Limit: { schema: { type: integer } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /categories:
+    get:
+      operationId: storefrontListCategories
+      tags: [storefront-categories]
+      summary: Árbol público de categorías de dos niveles (US-002 AC-1)
+      description: >-
+        Ruta PÚBLICA SIN auth. Rubros (sin padre) con sus subrubros directos,
+        ambos ordenados por nombre. TTL propio de 300s (decisión D5) porque el
+        árbol cambia poco. No emite `category.viewed` (sólo el detalle, D4).
+      security: []
+      responses:
+        '200':
+          description: Árbol de navegación
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=300, stale-while-revalidate=60 (D5)'
+          content: { application/json: { schema: { $ref: '#/components/schemas/CategoryTree' } } }
+        '429': { $ref: '#/components/responses/Problem' }
+  /categories/{slug}:
+    get:
+      operationId: storefrontGetCategory
+      tags: [storefront-categories]
+      summary: Detalle público de una categoría (US-002 AC-1/AC-2/AC-9)
+      description: >-
+        Ruta PÚBLICA SIN auth. Trae `parent` para el breadcrumb y `children`
+        para los subrubros. Slug inexistente → 404 (nunca un 200 vacío, que
+        sería una página fantasma indexable). Único endpoint que emite el evento
+        `category.viewed` (D4, insumo del panel US-016).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+      responses:
+        '200':
+          description: Categoría con su padre y sus subrubros
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30'
+          content: { application/json: { schema: { $ref: '#/components/schemas/StorefrontCategory' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+  /categories/{slug}/products:
+    get:
+      operationId: storefrontListCategoryProducts
+      tags: [storefront-categories]
+      summary: Listado paginado de productos publicados de una categoría (US-002 AC-3)
+      description: >-
+        Ruta PÚBLICA SIN auth. Sólo `published` (AC-8: draft/archived nunca
+        aparecen, ni en `data` ni en `total`). Un RUBRO agrega los productos de
+        sus subrubros directos; un SUBRUBRO lista sólo los propios (decisión
+        D1). Paginación offset con `total` (D3), `limit` 1..100 default 20 — el
+        catálogo completo nunca se transfiere de una (AC-7). Orden estable
+        `name ASC, id ASC`. Categoría existente sin publicados → 200 con `data`
+        vacía (AC-6); categoría inexistente → 404 (AC-9).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Página de productos publicados (puede ser vacía)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30'
+          content: { application/json: { schema: { $ref: '#/components/schemas/StorefrontProductPage' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+  /cart:
+    get:
+      operationId: getCart
+      tags: [cart]
+      summary: Carrito del invitado con precios vigentes y disponibilidad (US-007 AC-4/AC-6/AC-7/AC-9)
+      description: >-
+        Ruta PÚBLICA SIN auth. Operación **segura**: no crea carrito, no emite
+        cookie y no desliza la ventana de retención. Sin cookie `dsm_cart`, con una
+        cookie huérfana o con la fila vencida devuelve el carrito VACÍO con 200
+        (AC-7) — `id: null`, `items: []`, contadores en 0 y `updated_at: null`; la
+        fila vencida se purga en el acto. Cada lectura recalcula precio y
+        disponibilidad contra `products` (AC-6/AC-9), así que una línea
+        despublicada o sin stock suficiente aparece marcada y fuera del total, no
+        borrada. `Cache-Control: no-store` en toda la superficie.
+      security: []
+      responses:
+        '200':
+          description: Carrito del invitado (vacío si no hay cookie)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'Siempre no-store (§7.1): sin esto AC-9 se cae en el edge.'
+          content: { application/json: { schema: { $ref: '#/components/schemas/CartEnvelope' } } }
+        '429': { $ref: '#/components/responses/CartRateLimited' }
+  /cart/items/{slug}:
+    put:
+      operationId: setCartItem
+      tags: [cart]
+      summary: Fija la cantidad ABSOLUTA de un producto en el carrito (AC-1/AC-2/AC-5/AC-10)
+      description: >-
+        Ruta PÚBLICA SIN auth. El cuerpo fija la cantidad, no la suma: la operación
+        es naturalmente idempotente (api-standards §10.5) y por eso no hay
+        `Idempotency-Key`. Crea la línea si no existe, y crea el carrito + emite las
+        cookies si no había. Orden de validación producto → stock → carrito, así que
+        un rechazo NO escribe nada. `quantity` mayor al stock → 409
+        `dsm:cart/insufficient-stock` con `available_quantity` (AC-5); el stock NO
+        se reserva ni se descuenta (AC-8). Un producto `draft`, `archived` o
+        inexistente devuelve el MISMO 404 (AC-10). Superar `CART_MAX_ITEMS` líneas
+        → 409 `dsm:cart/too-many-items` con `max_items`.
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: 'Identificador público del producto (US-002/US-003 no exponen id).'
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        - $ref: '#/components/parameters/CartCsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetCartItemRequest' }
+      responses:
+        '200':
+          description: Carrito completo recalculado
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/CartCookies' }
+            Cache-Control:
+              schema: { type: string }
+              description: 'Siempre no-store.'
+          content: { application/json: { schema: { $ref: '#/components/schemas/CartEnvelope' } } }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/CartRateLimited' }
+    delete:
+      operationId: removeCartItem
+      tags: [cart]
+      summary: Quita una línea del carrito (AC-3)
+      description: >-
+        Ruta PÚBLICA SIN auth. Idempotente: quitar algo que no está devuelve el
+        carrito igual con 200 y sin error. El producto se resuelve SIN filtrar por
+        estado, para que una línea despublicada (AC-6) se pueda sacar. No crea
+        carrito: sin cookie devuelve el vacío.
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        - $ref: '#/components/parameters/CartCsrfToken'
+      responses:
+        '200':
+          description: Carrito recalculado (vacío si no había carrito)
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/CartCookies' }
+            Cache-Control:
+              schema: { type: string }
+              description: 'Siempre no-store.'
+          content: { application/json: { schema: { $ref: '#/components/schemas/CartEnvelope' } } }
+        '403': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/CartRateLimited' }
+  /admin/imports:
+    post:
+      operationId: createImport
+      tags: [admin-imports]
+      summary: Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
+      description: >-
+        Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo
+        `file`. El formato se decide por CONTENIDO (magic bytes), no por la
+        extensión ni por el Content-Type. El archivo se valida ANTES de crear el
+        trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos
+        devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1:
+        requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales
+        `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO
+        tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías
+        en una actualización: vacío significa "no cambiar ese campo" (así funciona
+        el archivo de ajuste de precios). En una fila de alta, una celda requerida
+        vacía la rechaza con missing_required. El precio va en
+        ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un
+        import vigente a la vez (409); un reintento con la misma `Idempotency-Key`
+        devuelve 200 con el mismo trabajo.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: 'Clave de reintento (api-standards §10): la réplica devuelve 200 con el mismo id.'
+          schema: { type: string, maxLength: 255 }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'CSV o XLSX. Máximo 4 MiB (IMPORT_MAX_FILE_BYTES) y 5.000 filas (IMPORT_MAX_ROWS).'
+      responses:
+        '202':
+          description: Trabajo creado y encolado (todavía sin procesar)
+          headers:
+            Location:
+              schema: { type: string }
+              description: URL del estado del trabajo.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ImportCreated' } } }
+        '200':
+          description: Réplica de una Idempotency-Key ya usada (no se creó otro trabajo)
+          headers:
+            Location:
+              schema: { type: string }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ImportCreated' } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '413': { $ref: '#/components/responses/Problem' }
+        '415': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/ImportRateLimited' }
+  /admin/imports/{id}:
+    get:
+      operationId: getImport
+      tags: [admin-imports]
+      summary: Estado, progreso y filas rechazadas del trabajo (AC-5, AC-7)
+      description: >-
+        El progreso del panel es `processed_rows / total_rows`, y `total_rows` es
+        null hasta que termina la lectura. `error_code` es el fallo GLOBAL del
+        trabajo (`interrupted`, `missing-columns`, …), no los errores por fila.
+        Este GET no consume el presupuesto del POST: el panel hace polling.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - name: limit
+          in: query
+          description: 'Filas rechazadas por página. Default 50, máximo 200.'
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ImportJob' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /admin/imports/{id}/report:
+    get:
+      operationId: getImportReport
+      tags: [admin-imports]
+      summary: CSV descargable de las filas rechazadas (AC-5)
+      description: >-
+        Todas las filas rechazadas persistidas (hasta IMPORT_MAX_REPORT_ROWS =
+        1.000), sin paginar. Las celdas van neutralizadas contra inyección de
+        fórmulas (security-standards §6.3): el destino es una planilla. Un trabajo
+        sin errores devuelve sólo el encabezado, no 404. Si el reporte está
+        recortado, la última línea lo declara.
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200':
+          description: 'CSV UTF-8 con encabezado fila,sku,campo,codigo,motivo'
+          headers:
+            Content-Disposition:
+              schema: { type: string }
+              description: 'Siempre attachment con nombre generado por el servidor: import-{id}-errores.csv'
+          content:
+            text/csv:
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /admin/enrichment/status:
+    get:
+      operationId: getEnrichmentStatus
+      tags: [admin-enrichment]
+      summary: Cobertura de embeddings y estado del ejecutor (AC-3)
+      description: >-
+        Responde la pregunta que decide si la tienda puede vender por búsqueda:
+        cuántos productos del catálogo son buscables. Sin esto, un catálogo con 3 de
+        800 productos vectorizados se ve idéntico a uno completo hasta que un cliente
+        busca y no encuentra nada. `runner_state` distingue cuatro situaciones que se
+        resuelven distinto: `idle` (listo), `running` (un POST daría 409), `cooldown`
+        (breaker abierto tras fallos consecutivos del proveedor — es el diagnóstico de
+        "Gemini caído" del runbook) y `disabled` (sin GEMINI_API_KEY o con
+        ENRICHMENT_ENABLED=false: el catálogo sigue navegable pero NO se generan
+        vectores). NO consume el presupuesto del POST: el panel lo consulta en loop
+        mientras una corrida avanza. No devuelve la clave del proveedor ni su URL;
+        `last_error_code` es un type del catálogo dsm:enrichment/* (AC-9).
+      responses:
+        '200':
+          description: Cobertura y estado actuales.
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'no-store: el estado de un ejecutor no se cachea.'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentStatus' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+
+  /admin/enrichment/runs:
+    post:
+      operationId: startEnrichmentRun
+      tags: [admin-enrichment]
+      summary: Disparar una corrida de enriquecimiento (AC-1, AC-5)
+      description: >-
+        Arranca una corrida sobre todo lo pendiente, o sobre un subconjunto con
+        `product_ids`. Responde 202 de inmediato: una corrida sobre miles de productos
+        no cabe en el tiempo de un request (api-standards §10) y el progreso se
+        consulta en GET /admin/enrichment/status. `force: true` devuelve a la cola los
+        productos ABANDONADOS (los que agotaron ENRICHMENT_MAX_ATTEMPTS) y es explícito
+        a propósito: si fuera automático, el tope de intentos no serviría para nada. Un
+        campo desconocido en el cuerpo es 422 y no un valor ignorado, porque
+        {"forced": true} es un typo plausible de force y aceptarlo en silencio haría
+        una corrida que el dueño cree que rehabilita abandonados y no lo hace. El
+        trabajo pendiente es durable en products.enrichment_done: no hay tabla de
+        corridas y el `run_id` es sólo correlación para los logs.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StartEnrichmentRun' }
+      responses:
+        '202':
+          description: Corrida aceptada y arrancada (no terminada).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnrichmentRunAccepted' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409':
+          description: >-
+            dsm:enrichment/run-in-progress (ya hay una corrida) o
+            dsm:enrichment/cooldown (breaker abierto tras fallos consecutivos del
+            proveedor). Son types distintos porque se resuelven distinto: en el segundo
+            no hay progreso que esperar, hay un problema con el proveedor. Las dos
+            llevan `runner_state` como extension member de RFC 7807 §3.2.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/EnrichmentRateLimited' }
+        '503':
+          description: >-
+            dsm:enrichment/disabled — no hay proveedor configurado (GEMINI_API_KEY
+            ausente) o ENRICHMENT_ENABLED=false. No es "ocupado": no hay con qué
+            trabajar, y por eso es 5xx y no 409.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /search:
+    get:
+      operationId: searchProducts
+      tags: [search]
+      summary: Buscar productos en lenguaje natural (AC-1, AC-2)
+      description: >-
+        Embebe la consulta del cliente y hace kNN sobre pgvector (índice HNSW), con
+        `SET LOCAL hnsw.ef_search` por consulta. Si el proveedor de IA falla o agota
+        GEMINI_SEARCH_TIMEOUT_MS (900 ms), la respuesta sale por full-text
+        (`websearch_to_tsquery` en español) y marca `degraded: true` con status 200:
+        el timeout ES el disparador de la degradación, no un error a reportar (AC-4).
+        La consulta se normaliza (trim + minúsculas + colapso de espacios) antes de
+        embeberse y de usarse como clave del caché de vectores, así que dos clientes
+        que escriben lo mismo con otra capitalización no pagan dos llamadas. Menos de
+        SEARCH_MIN_LENGTH caracteres ÚTILES es 422 SIN llamar al proveedor (AC-5).
+        Sólo devuelve productos publicados (AC-6); los sin stock aparecen con
+        in_stock:false y NO se ocultan (AC-7); un producto sin embedding no rompe la
+        búsqueda y sigue siendo alcanzable por texto (AC-9). El texto del cliente
+        NUNCA llega a un modelo generativo —la interpretación se arma con las
+        categorías del catálogo—, así que la protección de AC-8 es estructural.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: >-
+            Consulta en lenguaje natural. Se mide su longitud ÚTIL (la del texto
+            normalizado), así que llenar de espacios no evade el mínimo.
+          example: algo para colgar un cuadro en pared dura
+          schema: { type: string, minLength: 1, maxLength: 200 }
+        - name: limit
+          in: query
+          required: false
+          description: 'Tamaño del top-N. Un pedido mayor al tope se acota en silencio.'
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: >-
+            Resultados rankeados. TAMBIÉN es 200 sin resultados (con `fallback`) y
+            cuando la respuesta viene degradada: la búsqueda no interrumpe la
+            navegación.
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: >-
+                Caché acotada (max-age=60, stale-while-revalidate=30), NO no-store:
+                es contenido público derivado del catálogo. Con no-store cada tecleo
+                llegaría al origen y a la cuota del proveedor.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+              examples:
+                conResultados:
+                  summary: Confianza alta — el camino semántico funcionando
+                  value:
+                    results:
+                      - slug: taco-fischer-sx-8mm-x50
+                        name: Taco Fischer SX 8mm (x50)
+                        price_ars_cents: 320000
+                        in_stock: true
+                        image_url: null
+                        score: 0.89
+                      - slug: mecha-widia-8mm
+                        name: Mecha widia 8mm para hormigón
+                        price_ars_cents: 540000
+                        in_stock: true
+                        image_url: null
+                        score: 0.81
+                    confidence: high
+                    interpreted_as: 'Buscamos en: Fijaciones, Mechas y brocas'
+                    degraded: false
+                    fallback: null
+                bajaConfianza:
+                  summary: >-
+                    Hay candidatos pero ninguno convence: se devuelven IGUAL, con
+                    fallback, para que el frontend avise en vez de esconderlos
+                  value:
+                    results:
+                      - slug: cinta-aisladora-negra
+                        name: Cinta aisladora negra
+                        price_ars_cents: 45000
+                        in_stock: true
+                        image_url: null
+                        score: 0.41
+                    confidence: low
+                    interpreted_as: 'Buscamos en: Electricidad'
+                    degraded: false
+                    fallback:
+                      suggested_categories:
+                        - { slug: electricidad, name: Electricidad }
+                        - { slug: ferreteria, name: Ferretería }
+                sinResultados:
+                  summary: Nunca un «0 resultados» desnudo (AC-3)
+                  value:
+                    results: []
+                    confidence: none
+                    interpreted_as: null
+                    degraded: false
+                    fallback:
+                      suggested_categories:
+                        - { slug: ferreteria, name: Ferretería }
+                        - { slug: refrigeracion, name: Refrigeración }
+                degradado:
+                  summary: >-
+                    El proveedor de IA no respondió: full-text con degraded true y
+                    status 200 (AC-4)
+                  value:
+                    results:
+                      - slug: taladro-percutor-650w
+                        name: Taladro percutor 650W
+                        price_ars_cents: 4500000
+                        in_stock: false
+                        image_url: null
+                        score: 1
+                    confidence: high
+                    interpreted_as: 'Buscamos en: Ferretería'
+                    degraded: true
+                    fallback: null
+        '422':
+          description: >-
+            dsm:search/query-too-short (consulta más corta que SEARCH_MIN_LENGTH
+            caracteres útiles — AC-5, sin llamar al proveedor),
+            dsm:search/query-too-long, o dsm:catalog/validation por un query param
+            desconocido (whitelist).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/SearchRateLimited'
+        '503':
+          description: >-
+            dsm:search/unavailable — la BASE no responde. Es el ÚNICO 5xx de esta
+            superficie: el fallo del proveedor de IA es un 200 degradado, no un
+            error (AC-4).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con claim role=admin (seam ADR-0009)
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: >-
+        Access token de cliente, corto y HttpOnly (US-014). La API NO lo acepta
+        por header `Authorization`: aceptarlo permitiría a un XSS usar un token
+        robado y anularía la protección de HttpOnly.
+  headers:
+    SessionCookies:
+      description: >-
+        Tres cookies (security-standards §7.4): dsm_access (HttpOnly,
+        SameSite=Lax, Path=/), dsm_refresh (HttpOnly, SameSite=Lax,
+        Path=/v1/auth) y dsm_csrf (SIN HttpOnly — el frontend la lee para armar
+        el header X-CSRF-Token). Secure sale de AUTH_COOKIE_SECURE.
+      schema: { type: string }
+    CartCookies:
+      description: >-
+        Dos cookies del carrito del invitado (§7.4): dsm_cart (HttpOnly,
+        SameSite=Lax, Path=/, Max-Age = CART_TTL_DAYS × 86400) con el token opaco, y
+        dsm_cart_csrf (SIN HttpOnly — el frontend la lee para armar X-CSRF-Token),
+        que es HMAC(JWT_SECRET, token). Secure sale de AUTH_COOKIE_SECURE. El token
+        NUNCA viaja en el cuerpo, y la cookie y la fila `carts.expires_at` vencen
+        juntas porque derivan del mismo CART_TTL_DAYS.
+      schema: { type: string }
+  parameters:
+    CartCsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: false
+      description: >-
+        Double-submit firmado del carrito (§7.5): el valor de la cookie
+        dsm_cart_csrf. Se exige junto con un Origin de la allowlist, cuya ausencia
+        también se rechaza con 403. Es obligatorio CUANDO la petición trae la cookie
+        dsm_cart; la primera escritura de un cliente nuevo no la trae y pasa, porque
+        todavía no hay carrito que secuestrar.
+      schema: { type: string }
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: >-
+        Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige
+        además de un Origin de la allowlist; la ausencia de Origin se rechaza.
+      schema: { type: string }
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    RateLimited:
+      description: >-
+        Presupuesto de la superficie de auth excedido (§7.3). Incluye Retry-After
+        y las cabeceras RateLimit-* (api-standards §12).
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    CartRateLimited:
+      description: >-
+        Presupuesto del throttler `cart` excedido (§7.3): CART_RATE_LIMIT_MAX
+        lecturas y CART_WRITE_RATE_LIMIT_MAX escrituras por minuto y por IP,
+        contadas por endpoint. Incluye Retry-After y las cabeceras RateLimit-*
+        (api-standards §12) y `Cache-Control: no-store` — un 429 cacheado en el edge
+        convertiría el rate-limit en un DoS.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+        Cache-Control: { schema: { type: string } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    SearchRateLimited:
+      description: >-
+        Throttler `search` excedido (§7.3, AC-10): SEARCH_RATE_LIMIT_MAX por
+        SEARCH_RATE_LIMIT_TTL_MS y por IP (20 por minuto). Es más estricto que el del
+        storefront porque acá cada request puede costar plata en un tercero, no sólo
+        CPU. Agotar este cubo NO bloquea catálogo, carrito ni login: son cubos
+        independientes.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+        Cache-Control:
+          schema: { type: string }
+          description: 'no-store: un 429 cacheado en el edge convierte el rate-limit en un DoS.'
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    EnrichmentRateLimited:
+      description: >-
+        Presupuesto del throttler `enrichment` excedido (§7.3):
+        ENRICHMENT_RATE_LIMIT_MAX por ENRICHMENT_RATE_LIMIT_TTL_MS y por IP (6 por
+        minuto). Es la única superficie donde un request de más cuesta plata, así que
+        el presupuesto es deliberadamente chico y tiene su propio cubo: compartir el de
+        `auth` haría que unas cuantas corridas dejen al dueño sin poder entrar al panel.
+        El GET de estado NO lo consume.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ImportRateLimited:
+      description: >-
+        Presupuesto de la superficie de import excedido (§7.3): IMPORT_RATE_LIMIT_MAX
+        = 3 imports por hora y por IP, sobre el throttler `auth`. Los GET de estado
+        y de reporte NO consumen este presupuesto. Incluye Retry-After y las
+        cabeceras RateLimit-* (api-standards §12).
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Problem:
+      description: Error RFC 7807
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    SearchResponse:
+      type: object
+      required: [results, confidence, interpreted_as, degraded, fallback]
+      additionalProperties: false
+      properties:
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+        confidence:
+          type: string
+          enum: [high, low, none]
+          description: >-
+            high = el top supera SEARCH_MIN_SCORE. low = hay candidatos por debajo
+            del umbral (el frontend los presenta CON RESERVA, no los esconde). none =
+            sin señal. La distinción low/none es lo que permite ser honesto en vez de
+            elegir entre mentir o esconder resultados que quizás sirven.
+        interpreted_as:
+          type: string
+          nullable: true
+          description: >-
+            «Interpretación visible» del design-system §7.12, DERIVADA de las
+            categorías de los productos que matchearon — no generada por un LLM
+            (OQ-BE-3). Dice dónde miró el sistema; no finge entender. Como el texto
+            del cliente nunca llega a un modelo generativo, AC-8 es estructural.
+          example: 'Buscamos en: Fijaciones, Mechas y brocas'
+        degraded:
+          type: boolean
+          description: >-
+            true cuando la respuesta salió por full-text porque el proveedor de IA
+            falló o agotó su timeout (AC-4). Viaja en el CUERPO y con 200: el
+            frontend tiene que poder avisar «esto es el plan B» sin tratarlo como
+            falla. Con el free tier es un estado común, no excepcional.
+        fallback:
+          nullable: true
+          type: object
+          required: [suggested_categories]
+          additionalProperties: false
+          description: >-
+            Salida ofrecida cuando la respuesta no convence (confidence low o none).
+            null sólo con confidence high.
+          properties:
+            suggested_categories:
+              type: array
+              minItems: 1
+              description: >-
+                NUNCA vacío cuando está presente (AC-3): si no hay candidatos, cae a
+                las categorías raíz con más productos publicados. Un «0 resultados»
+                desnudo es un callejón sin salida y el cliente que lo ve se va.
+              items:
+                type: object
+                required: [slug, name]
+                additionalProperties: false
+                properties:
+                  slug:
+                    type: string
+                    description: >-
+                      Con slug y no sólo el nombre: es lo que permite al frontend
+                      armar el enlace. Sin él la salida sería un callejón mejor
+                      redactado.
+                  name: { type: string }
+    SearchResult:
+      type: object
+      required: [slug, name, price_ars_cents, in_stock, image_url, score]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          description: >-
+            Identificador público del producto: el frontend enlaza a
+            /productos/{slug}. El id UUID NO se expone (convención de US-002/US-003).
+        name: { type: string }
+        price_ars_cents:
+          type: integer
+          description: Centavos ARS con IVA incluido, entero (§5.5).
+        in_stock:
+          type: boolean
+          description: >-
+            in_stock y no el stock exacto: la cantidad le dice a un competidor cuánto
+            rota cada producto. Un producto agotado APARECE con false y no se oculta
+            (AC-7): que exista y esté agotado es información útil.
+        image_url: { type: string, nullable: true }
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: >-
+            En la vía vectorial es 1 - distancia_cosine. En la léxica es ts_rank
+            NORMALIZADO al mejor del conjunto, porque las dos escalas no son
+            comparables (medido: un match léxico exacto puntúa ~0,10 contra un umbral
+            de 0,55 calibrado para cosine). Consecuencia: en el camino degradado el
+            score es un rango RELATIVO, no una similitud absoluta comparable entre
+            consultas.
+    EnrichmentStatus:
+      type: object
+      required: [runner_state, coverage, models, last_error_code, last_run_at]
+      additionalProperties: false
+      properties:
+        runner_state: { type: string, enum: [idle, running, cooldown, disabled] }
+        coverage: { $ref: '#/components/schemas/EnrichmentCoverage' }
+        models:
+          type: object
+          required: [enrich, embed]
+          additionalProperties: false
+          description: >-
+            Los NOMBRES de los modelos, nunca la clave. El panel los necesita para
+            interpretar la cobertura tras un cambio de modelo: los vectores viejos
+            siguen existiendo con su model_version y hay que regenerarlos (AC-8).
+          properties:
+            enrich: { type: string }
+            embed: { type: string }
+        last_error_code:
+          type: string
+          nullable: true
+          description: >-
+            Último type del catálogo dsm:enrichment/*, NO el mensaje del proveedor: un
+            mensaje crudo puede traer la URL con la clave o el texto del producto (AC-9).
+        last_run_at:
+          type: string
+          nullable: true
+          format: date-time
+          description: >-
+            Fin de la última corrida DE ESTE PROCESO. null si no corrió ninguna desde el
+            arranque: el estado del ejecutor es en memoria (ADR-0014) y lo durable es
+            products.enrichment_done, así que un reinicio no pierde trabajo.
+    EnrichmentCoverage:
+      type: object
+      required: [total, enriched, embedded, pending, abandoned, coverage_ratio]
+      additionalProperties: false
+      description: >-
+        pending + abandoned + hechos = total. Se separan porque se resuelven distinto:
+        `pending` se resuelve esperando la próxima corrida y `abandoned` NO se resuelve
+        solo — necesita un POST /runs con force: true.
+      properties:
+        total: { type: integer, description: 'Productos del catálogo, en cualquier estado.' }
+        enriched: { type: integer, description: 'Con description_enriched escrita (por la IA o curada por el dueño).' }
+        embedded:
+          type: integer
+          description: >-
+            Con fila en product_embeddings. ESTE es el que decide si la búsqueda
+            semántica funciona.
+        pending: { type: integer, description: 'Elegibles para la próxima corrida.' }
+        abandoned:
+          type: integer
+          description: >-
+            Agotaron ENRICHMENT_MAX_ATTEMPTS. Siguen visibles en la tienda con su
+            description_raw (AC-5): el catálogo pierde calidad de búsqueda, no productos.
+        coverage_ratio:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: >-
+            embedded / total, o 0 con catálogo vacío. El KPI de AC-3 (>= 0,9) se mide
+            acá, sobre el catálogo real y después de una corrida: no es una propiedad del
+            código.
+    StartEnrichmentRun:
+      type: object
+      additionalProperties: false
+      description: 'Todos los campos son opcionales; el cuerpo vacío es el pedido normal.'
+      properties:
+        force:
+          type: boolean
+          default: false
+          description: >-
+            Rehabilita los productos abandonados antes de barrer (attempts a 0, espera y
+            error_code limpios).
+        product_ids:
+          type: array
+          maxItems: 500
+          items: { type: string, format: uuid }
+          description: >-
+            Acota la corrida. Un array VACÍO significa "ninguno", no "todos":
+            interpretarlo como el catálogo entero sería la peor lectura de un pedido
+            acotado. El tope de 500 existe porque cada id es una llamada paga.
+    EnrichmentRunAccepted:
+      type: object
+      required: [run_id, accepted]
+      additionalProperties: false
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          description: >-
+            Identificador de CORRELACIÓN para los logs. No hay GET /runs/{id}: el estado
+            se consulta en /admin/enrichment/status, porque una tabla de corridas sería
+            estado duplicado que puede desincronizarse del catálogo.
+        accepted: { type: boolean, enum: [true] }
+    Customer:
+      type: object
+      description: >-
+        Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca
+        password_hash, role, failed_login_attempts, lockout_count, locked_until
+        ni deleted_at.
+      required: [id, email, name, phone, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        phone: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    CustomerEnvelope:
+      type: object
+      required: [customer]
+      properties:
+        customer: { $ref: '#/components/schemas/Customer' }
+    RegisterRequest:
+      type: object
+      required: [email, name, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        password:
+          type: string
+          description: >-
+            Mínimo 8 caracteres, máximo 72 BYTES (límite de bcrypt: se rechaza,
+            no se trunca) y fuera del corpus de filtradas. Sin reglas de
+            composición.
+        phone: { type: string, maxLength: 40, nullable: true }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    ResetRequest:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+    ResetConfirm:
+      type: object
+      required: [token, password]
+      additionalProperties: false
+      properties:
+        token: { type: string }
+        password: { type: string }
+    AdminLogin:
+      type: object
+      description: >-
+        Dos formas admitidas y ninguna más: `{bootstrapToken}` (camino interino de
+        US-001) o `{email, password}` (US-014). La validación es condicional sobre
+        el mismo objeto para no cambiar la ruta ni la forma de la respuesta.
+      properties:
+        bootstrapToken: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+      oneOf:
+        - required: [bootstrapToken]
+        - required: [email, password]
+    AdminLoginResponse:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, description: JWT con claim role=admin }
+    CreateCategory:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        parent_id: { type: string, format: uuid, nullable: true }
+    UpdateCategory:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        parent_id: { type: string, format: uuid, nullable: true }
+    Category:
+      type: object
+      required: [id, slug, name, parent_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        parent_id: { type: string, format: uuid, nullable: true }
+        created_at: { type: string, format: date-time }
+    CreateProduct:
+      type: object
+      required: [sku, name, price_ars_cents, category_id]
+      properties:
+        sku: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer, minimum: 1, description: Centavos ARS (IVA incluido) }
+        stock: { type: integer, minimum: 0, default: 0 }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+    UpdateProduct:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer, minimum: 1 }
+        stock: { type: integer, minimum: 0 }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+        status: { type: string, enum: [draft, published, archived] }
+    Product:
+      type: object
+      required:
+        [
+          id,
+          sku,
+          slug,
+          name,
+          description_raw,
+          price_ars_cents,
+          stock,
+          status,
+          category_id,
+          image_url,
+          created_at,
+          updated_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string }
+        slug:
+          type: string
+          description: 'URL amigable de la ficha pública; el panel la usa para invalidar la caché del storefront tras mutar (product:{slug}).'
+        name: { type: string }
+        description_raw: { type: string, nullable: true }
+        price_ars_cents: { type: integer }
+        stock: { type: integer }
+        status: { type: string, enum: [draft, published, archived] }
+        category_id: { type: string, format: uuid }
+        image_url: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CategoryRef:
+      type: object
+      required: [slug, name]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+    CategoryTreeNode:
+      type: object
+      description: 'Rubro con sus subrubros; sin `parent` (la jerarquía la da el anidamiento).'
+      required: [slug, name, children]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    CategoryTree:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryTreeNode' }
+    StorefrontCategory:
+      type: object
+      description: 'Categoría pública (US-002): sin id, parent_id ni timestamps.'
+      required: [slug, name, parent, children]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        parent:
+          type: object
+          nullable: true
+          description: 'Rubro padre para el breadcrumb; null si ya es raíz.'
+          required: [slug, name]
+          properties:
+            slug: { type: string }
+            name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    StorefrontProductListItem:
+      type: object
+      description: 'Item de grilla (US-002): sin id, stock numérico, status ni timestamps.'
+      required: [slug, name, price_ars_cents, currency, image_url, in_stock]
+      properties:
+        slug:
+          type: string
+          description: 'Enlaza a la ficha `/v1/products/{slug}`.'
+        name: { type: string }
+        price_ars_cents: { type: integer }
+        currency: { type: string, enum: [ARS] }
+        image_url: { type: string, nullable: true }
+        in_stock: { type: boolean }
+    StorefrontProductPage:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/StorefrontProductListItem' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total:
+              type: integer
+              description: 'Publicados que matchean el filtro, no los de la página.'
+    StorefrontProduct:
+      type: object
+      description: 'Ficha pública (US-003): sólo campos SEO; sin id/stock/status/timestamps.'
+      required: [slug, sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
+      properties:
+        slug:
+          type: string
+          description: 'URL amigable canónica de la ficha (AC-1).'
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+          description: 'description_raw; US-005 antepondrá la enriquecida.'
+        price_ars_cents:
+          type: integer
+          description: 'Centavos ARS, IVA incluido (AC-9).'
+        currency:
+          type: string
+          enum: [ARS]
+        image_url:
+          type: string
+          nullable: true
+        in_stock:
+          type: boolean
+          description: 'Derivado de stock mayor a 0 (AC-3/AC-4); sin exponer el nivel.'
+        category:
+          type: object
+          required: [name, slug]
+          properties:
+            name:
+              type: string
+            slug:
+              type: string
+    ProductList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    SetCartItemRequest:
+      type: object
+      description: >-
+        Entrada de PUT /cart/items/{slug} — UN SOLO campo a propósito. No hay
+        unit_price_ars_cents, product_id ni cart_id: todo importe se deriva
+        server-side del precio vigente y el carrito se identifica por la cookie.
+        Con forbidNonWhitelisted, mandar un campo desconocido es 422 (no se ignora).
+      required: [quantity]
+      additionalProperties: false
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+          description: >-
+            Cantidad ABSOLUTA de unidades del producto en el carrito. El tope es
+            CART_MAX_QTY_PER_LINE (99 por defecto, cota anti-DoS §7.3). No se acepta
+            0: cantidad 0 no es una línea, es un DELETE.
+    CartItem:
+      type: object
+      description: >-
+        Línea del carrito (US-007). Sin product_id, cart_id, status ni stock crudo:
+        el identificador público es el slug y el inventario se comunica como
+        availability + max_quantity (OQ-BE-2).
+      required:
+        - slug
+        - name
+        - image_url
+        - quantity
+        - unit_price_ars_cents
+        - currency
+        - subtotal_ars_cents
+        - availability
+        - max_quantity
+        - price_changed
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        image_url:
+          type: string
+          nullable: true
+        quantity: { type: integer, minimum: 1 }
+        unit_price_ars_cents:
+          type: integer
+          description: 'Precio VIGENTE en centavos ARS (AC-9), no la instantánea guardada.'
+        currency: { type: string, enum: [ARS] }
+        subtotal_ars_cents:
+          type: integer
+          description: >-
+            unit_price_ars_cents × quantity. Se calcula también en las líneas
+            bloqueadas, aunque no entren en el total.
+        availability:
+          type: string
+          enum: [available, insufficient_stock, unavailable]
+          description: >-
+            available: publicado con stock ≥ cantidad. insufficient_stock: publicado
+            con stock < cantidad (AC-6). unavailable: draft o archived (AC-6). La
+            línea nunca se borra sola.
+        available_quantity:
+          type: integer
+          description: 'Presente sólo cuando la línea pide más de lo que hay (OQ-BE-2).'
+        max_quantity:
+          type: integer
+          description: 'min(stock, CART_MAX_QTY_PER_LINE) — techo del stepper.'
+        price_changed:
+          type: boolean
+          description: >-
+            true si el precio vigente difiere de la instantánea del último toque: el
+            cambio se muestra, no se aplica en silencio.
+        previous_unit_price_ars_cents:
+          type: integer
+          description: 'Presente sólo si price_changed es true.'
+    Cart:
+      type: object
+      required:
+        - id
+        - items
+        - item_count
+        - total_quantity
+        - total_ars_cents
+        - has_blocking_issues
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            null cuando todavía no hay carrito (AC-7). Conocerlo NO da acceso: el
+            acceso es la cookie dsm_cart, y no hay ninguna ruta que acepte un id de
+            carrito.
+        items: { type: array, items: { $ref: '#/components/schemas/CartItem' } }
+        item_count: { type: integer, description: 'Líneas distintas (no unidades).' }
+        total_quantity: { type: integer, description: 'Unidades, incluidas las bloqueadas.' }
+        total_ars_cents:
+          type: integer
+          description: >-
+            Suma de los subtotales de las líneas `available` SOLAMENTE (OQ-BE-4): un
+            total que incluyera lo no comprable es un número que el checkout va a
+            desmentir.
+        has_blocking_issues:
+          type: boolean
+          description: >-
+            true si alguna línea no es available. Es la señal con la que US-008
+            impide avanzar al pago.
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    CartEnvelope:
+      type: object
+      required: [cart]
+      properties:
+        cart: { $ref: '#/components/schemas/Cart' }
+    Problem:
+      type: object
+      description: RFC 7807
+      required: [type, title, status, detail, instance]
+      properties:
+        type: { type: string, example: 'dsm:catalog/conflict' }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        available_quantity:
+          type: integer
+          description: >-
+            Extension member RFC 7807 §3.2 de `dsm:cart/insufficient-stock`
+            (US-007 AC-5): unidades realmente disponibles. Va como campo de primer
+            nivel para que el frontend no tenga que sacarlo del detail con una regex.
+        max_items:
+          type: integer
+          description: >-
+            Extension member de `dsm:cart/too-many-items`: tope de líneas distintas
+            por carrito (CART_MAX_ITEMS).
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field: { type: string }
+              message: { type: string }
+    ImportCreated:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [pending, running, completed, failed] }
+    ImportJob:
+      type: object
+      description: >-
+        Estado del trabajo. NO incluye `idempotency_key` (credencial de reintento
+        del cliente) ni `heartbeat_at` (plumbing del reaper) ni
+        `created_by_subject`.
+      required:
+        [id, status, filename, source_format, total_rows, processed_rows,
+         created_count, updated_count, failed_count, categories_created_count,
+         error_code, error_message, report_truncated, started_at, finished_at,
+         created_at, errors, pagination]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [pending, running, completed, failed] }
+        filename: { type: string, description: 'Metadata del archivo subido; nunca se usó como ruta.' }
+        source_format: { type: string, enum: [csv, xlsx] }
+        total_rows:
+          type: integer
+          nullable: true
+          description: 'null hasta que termina la lectura del archivo.'
+        processed_rows: { type: integer }
+        created_count: { type: integer }
+        updated_count: { type: integer }
+        failed_count:
+          type: integer
+          description: 'Total REAL de filas rechazadas, aun con el reporte recortado.'
+        categories_created_count: { type: integer }
+        error_code:
+          type: string
+          nullable: true
+          description: >-
+            Fallo global: `interrupted` (el proceso se reinició y el reaper lo
+            cerró), `missing-columns`, `row-limit-exceeded`, `unsupported-format`,
+            `invalid-encoding` o `internal`. null si los fallos fueron por fila.
+        error_message: { type: string, nullable: true }
+        report_truncated:
+          type: boolean
+          description: 'true si se dejaron de persistir filas al llegar a IMPORT_MAX_REPORT_ROWS.'
+        started_at: { type: string, format: date-time, nullable: true }
+        finished_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ImportRowError' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          description: '`total` son las filas rechazadas PERSISTIDAS (≤ failed_count).'
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    ImportRowError:
+      type: object
+      required: [row_number, sku, field, error_code, error_message]
+      properties:
+        row_number:
+          type: integer
+          description: '1-based sobre las filas de datos (el encabezado no cuenta).'
+        sku: { type: string, nullable: true }
+        field: { type: string, nullable: true, example: 'precio' }
+        error_code:
+          type: string
+          description: >-
+            Catálogo cerrado por fila: missing_required, invalid_sku,
+            invalid_text, invalid_price, invalid_stock, invalid_category,
+            invalid_image_url, duplicate_sku_in_file, slug_conflict, write_failed.
+            invalid_text cubre nombre y descripcion; missing_required sólo aplica
+            al sku o a una fila de ALTA con celdas requeridas vacías (en un update,
+            una celda vacía significa "no cambiar ese campo").
+          example: 'invalid_price'
+        error_message: { type: string }

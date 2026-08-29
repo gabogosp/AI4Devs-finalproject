@@ -1,0 +1,15 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testRegex": "src/.*e2e-.*\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.json" }]
+  },
+  "moduleNameMapper": {
+    "^@dsm/db$": "<rootDir>/../../packages/db/index.ts"
+  },
+  "setupFiles": ["<rootDir>/test/jest.setup.js"],
+  "testEnvironment": "node",
+  "testTimeout": 30000,
+  "maxWorkers": 1
+}

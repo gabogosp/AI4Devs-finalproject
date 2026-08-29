@@ -4,7 +4,7 @@ id: US-004
 slug: busqueda-semantica
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: M
 story_points_traditional: 8
@@ -12,8 +12,9 @@ story_points_ai_assisted: 4
 estimation_basis: "BE búsqueda vectorial (embed consulta + kNN pgvector + umbral + fallback + degradación full-text) (Cohn 2005 §9, 8) + FE SearchBar + resultados (Cohn 2005 §8, 5), tomado el dominante × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-08-22
 ready-at: 2026-06-15
+in-progress-at: 2026-08-22
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null

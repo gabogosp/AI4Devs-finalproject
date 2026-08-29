@@ -1,0 +1,157 @@
+openapi: 3.0.3
+info:
+  title: "storefront-list-category-products — Listado público por categoría"
+  version: "v1"
+  description: |
+    Endpoint PÚBLICO (sin auth) del listado paginado de productos publicados de
+    una categoría (US-002 AC-3/AC-5/AC-6/AC-7/AC-8).
+
+    Reglas que el contrato codifica:
+    - Sólo `published`: borradores y archivados nunca aparecen, ni en `data` ni
+      en `total` (AC-8).
+    - Un **rubro** agrega los productos de sus subrubros directos; un
+      **subrubro** lista sólo los propios (decisión D1).
+    - Paginación **offset** con `total` (decisión D3), `limit` 1..100 default 20:
+      el catálogo completo nunca se transfiere de una (AC-7).
+    - Categoría inexistente → 404, no un 200 vacío (AC-9). Categoría existente
+      sin publicados → 200 con `data: []` y `total: 0` (AC-6).
+servers:
+  - url: https://api.dsm.example.com
+    description: PROD (Railway, single-region US-East per ADR-0001)
+  - url: http://localhost:3000
+    description: LOCAL
+
+tags:
+  - name: storefront-categories
+    description: Superficie pública de navegación por categorías.
+
+paths:
+  /v1/categories/{slug}/products:
+    get:
+      operationId: storefrontListCategoryProducts
+      tags: [storefront-categories]
+      summary: Listar los productos publicados de una categoría
+      description: |
+        Orden estable `name ASC, id ASC`: dos páginas consecutivas son disjuntas
+        y su unión cubre el conjunto. No emite `category.viewed` — paginar no es
+        una vista nueva (decisión D4).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: URL amigable de la categoría (kebab-case).
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        - name: limit
+          in: query
+          required: false
+          description: Tamaño de página (AC-7 — tope duro de 100).
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          required: false
+          description: Desplazamiento desde el inicio del conjunto ordenado.
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: traceparent
+          in: header
+          required: false
+          description: Contexto de traza W3C para correlacionar logs.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Página de productos publicados (puede ser vacía, AC-6).
+          headers:
+            Cache-Control:
+              description: Default del storefront (D5).
+              schema:
+                { type: string, example: "public, max-age=60, stale-while-revalidate=30" }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StorefrontProductPage' }
+              example:
+                data:
+                  - slug: "compresor-1-4-hp"
+                    name: "Compresor 1/4 HP"
+                    price_ars_cents: 8500000
+                    currency: "ARS"
+                    image_url: "https://cdn.dsm.example.com/compresor.jpg"
+                    in_stock: true
+                pagination: { limit: 20, offset: 0, total: 1 }
+        '404': { $ref: '#/components/responses/CategoryNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+components:
+  schemas:
+    StorefrontProductListItem:
+      type: object
+      description: 'Item de grilla: sin id, stock numérico, status ni timestamps.'
+      required: [slug, name, price_ars_cents, currency, image_url, in_stock]
+      properties:
+        slug:
+          type: string
+          description: Identificador público; enlaza a la ficha `/v1/products/{slug}`.
+        name: { type: string }
+        price_ars_cents:
+          type: integer
+          description: Precio en centavos de ARS, IVA incluido (AC-3).
+        currency: { type: string, enum: [ARS] }
+        image_url:
+          type: string
+          nullable: true
+          description: null → placeholder en el FE (AC-3).
+        in_stock:
+          type: boolean
+          description: '`stock > 0` (AC-5); sin exponer el nivel de inventario.'
+    Pagination:
+      type: object
+      required: [limit, offset, total]
+      properties:
+        limit: { type: integer }
+        offset: { type: integer }
+        total:
+          type: integer
+          description: Conteo de publicados que matchean el filtro, no de la página.
+    StorefrontProductPage:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/StorefrontProductListItem' }
+        pagination: { $ref: '#/components/schemas/Pagination' }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+  responses:
+    CategoryNotFound:
+      description: La categoría no existe (AC-9) — nunca un 200 con lista vacía.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            { type: "dsm:catalog/not-found", title: "Not Found", status: 404, detail: "Categoría no encontrada" }
+    ValidationFailed:
+      description: Query inválido (limit fuera de 1..100, offset negativo).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            { type: "dsm:catalog/validation", title: "Unprocessable Entity", status: 422 }
+    TooManyRequests:
+      description: Rate-limit por IP excedido (§7.3). Trae Retry-After y RateLimit-*.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example: { type: "dsm:catalog/http-429", title: "Too Many Requests", status: 429 }

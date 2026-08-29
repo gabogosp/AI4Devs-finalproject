@@ -4,7 +4,7 @@ id: US-018
 slug: contacto-whatsapp
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: XS
 story_points_traditional: 2
@@ -12,8 +12,9 @@ story_points_ai_assisted: 1
 estimation_basis: "FE integración de enlace simple (wa.me) en header/footer + ficha (Cohn 2005 §8 trivial, 2-3) × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-08-22
 ready-at: 2026-06-15
+in-progress-at: 2026-08-19
 authored-by: Gabriel Suarez
 disciplines: [FE]
 linear-issue-id: null

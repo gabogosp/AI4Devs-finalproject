@@ -4,7 +4,7 @@ id: US-008
 slug: checkout-guest
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: M
 story_points_traditional: 8
@@ -12,8 +12,9 @@ story_points_ai_assisted: 4
 estimation_basis: "BE crear orden pendiente con snapshot de precios + validación + consentimiento (Cohn 2005 §8, 5) + FE formulario de checkout multi-campo + consent + retiro (Cohn 2005 §8, 5), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-08-22
 ready-at: 2026-06-15
+in-progress-at: 2026-08-22
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
@@ -136,6 +137,26 @@ And ese registro queda disponible para trazabilidad legal
 - QA: automatización de AC (datos válidos/inválidos, consentimiento obligatorio, carrito inválido, no-descuento de stock, registro de consentimiento).
 
 > Las tasks code-generating (BE/FE) abren su openspec change en `openspec/changes/US-008-checkout-guest-{discipline}/`. La task QA vive en `tasks/US-008/qa-deliverable.md`.
+
+> **Para `FE-US-008`: el consentimiento tiene su seam YA CONSTRUIDO — no lo escribas a mano.**
+> US-017 dejó, y su suite lo custodia:
+>
+> | Qué necesitás | De dónde sale | Qué pasa si lo escribís a mano |
+> |---|---|---|
+> | Las rutas legales | `LEGAL_ROUTES` en `apps/web/src/features/legal/routes.ts` | `routes.test.ts` **falla**: hay un guard que recorre `apps/web/src` y `apps/web/app` y rechaza el literal `'/legales/` fuera de ese módulo |
+> | El copy del consentimiento y sus dos enlaces | `CONSENT_COPY`, en el mismo archivo | Se duplica el copy del `design-system.md` §10.2 y divergen al primer cambio |
+> | La versión de los términos | `LEGAL_TERMS_VERSION` en `apps/web/src/features/legal/content.ts` | `versionContract.test.ts` **falla** si no coincide con el default del backend |
+>
+> `CONSENT_COPY` existe **exactamente** para ser consumida acá: se construyó en US-017 T0.2 como
+> seam de esta US, con sus `href` reales en vez de los dos `(#)` que tenía el copy del
+> design-system. La mitad frontend de **US-017 AC-4** (que el checkbox enlace a las dos páginas)
+> se verifica en este change, no en US-017: allá no se podía escribir porque el formulario no
+> existía. El escenario está redactado como **`SC-008-X3`** en
+> `openspec/changes/US-008-checkout-guest-backend/qa-plan.md`.
+>
+> Y el **versionado de los términos es de esta US**, no de US-017: `BE-US-017` quedó absorbida
+> acá (OQ-FE-18 (a), 2026-08-23). `LEGAL_TERMS_VERSION` es un **contrato con el frontend
+> verificado en cada CI** — cambiar la versión es un cambio en los dos lados a la vez.
 
 ## 8. Diseño
 

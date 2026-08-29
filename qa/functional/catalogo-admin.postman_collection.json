@@ -1,0 +1,365 @@
+{
+  "info": {
+    "name": "US-001 catálogo admin — RBAC + contrato (Newman)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const secret = pm.variables.get('jwtSecret');",
+          "function b64url(wa){ return CryptoJS.enc.Base64.stringify(wa).replace(/=+$/,'').replace(/\\+/g,'-').replace(/\\//g,'_'); }",
+          "const enc = (s) => b64url(CryptoJS.enc.Utf8.parse(s));",
+          "const now = Math.floor(Date.now()/1000);",
+          "const h = enc(JSON.stringify({alg:'HS256',typ:'JWT'}));",
+          "const p = enc(JSON.stringify({role:'customer',sub:'c1',iat:now,exp:now+3600}));",
+          "const sig = b64url(CryptoJS.HmacSHA256(h + '.' + p, secret));",
+          "pm.variables.set('customerToken', h + '.' + p + '.' + sig);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "RBAC 401 (sin sesión admin)",
+      "item": [
+        {
+          "name": "401 sin token: POST /v1/admin/categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/categories"
+          }
+        },
+        {
+          "name": "401 sin token: GET /v1/admin/categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/categories"
+          }
+        },
+        {
+          "name": "401 sin token: PATCH /v1/admin/categories/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/categories/00000000-0000-0000-0000-000000000001"
+          }
+        },
+        {
+          "name": "401 sin token: POST /v1/admin/products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/products"
+          }
+        },
+        {
+          "name": "401 sin token: GET /v1/admin/products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/products"
+          }
+        },
+        {
+          "name": "401 sin token: GET /v1/admin/products/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/products/00000000-0000-0000-0000-000000000001"
+          }
+        },
+        {
+          "name": "401 sin token: PATCH /v1/admin/products/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 401); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/v1/admin/products/00000000-0000-0000-0000-000000000001"
+          }
+        }
+      ]
+    },
+    {
+      "name": "RBAC 403 (rol no-admin)",
+      "item": [
+        {
+          "name": "403 no-admin: POST /v1/admin/categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/categories"
+          }
+        },
+        {
+          "name": "403 no-admin: GET /v1/admin/categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/categories"
+          }
+        },
+        {
+          "name": "403 no-admin: PATCH /v1/admin/categories/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/categories/00000000-0000-0000-0000-000000000001"
+          }
+        },
+        {
+          "name": "403 no-admin: POST /v1/admin/products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/products"
+          }
+        },
+        {
+          "name": "403 no-admin: GET /v1/admin/products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/products"
+          }
+        },
+        {
+          "name": "403 no-admin: GET /v1/admin/products/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/products/00000000-0000-0000-0000-000000000001"
+          }
+        },
+        {
+          "name": "403 no-admin: PATCH /v1/admin/products/{id}",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('RFC 7807 envelope', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status', 403); pm.expect(b).to.have.property('type'); });",
+                  "pm.test('no filtra internals (prisma/SQL/stack)', () => { const t = pm.response.text(); pm.expect(t).to.not.match(/prisma|SELECT |INSERT |PrismaClient|at Object\\.|\\/Users\\//i); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{customerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/v1/admin/products/00000000-0000-0000-0000-000000000001"
+          }
+        }
+      ]
+    }
+  ]
+}

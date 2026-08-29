@@ -1,0 +1,227 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /admin/imports
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-006 (importación masiva de inventario). Al archivar el
+    change, los tres endpoints extienden la capacidad **existente**
+    `openspec/specs/catalogo/` — el import es catálogo, no una capacidad nueva.
+
+    **El request no procesa el archivo** (AC-7): valida, crea el trabajo y
+    responde `202`. El progreso se consulta con `GET /admin/imports/{id}`.
+
+    **Límites vigentes** (decisión del PO, OQ-BE-3): **5.000 filas**, **4 MiB** de
+    archivo, **32 MiB** descomprimidos y **3 imports por hora por IP**. Están acá
+    con número porque un consumidor que no sabe el tope no puede decidir si
+    partir el archivo ni cuándo reintentar. El tope de filas **coincide con el
+    catálogo objetivo**, así que un catálogo mayor obliga a partir el archivo.
+servers:
+  - url: /v1
+tags:
+  - name: admin-imports
+    description: Importación masiva del catálogo (US-006). Sólo admin.
+paths:
+  /admin/imports:
+    post:
+      operationId: createImport
+      tags: [admin-imports]
+      summary: Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
+      description: |
+        Recibe un CSV o XLSX y crea un trabajo asíncrono. El formato se decide por
+        **contenido** (magic bytes), no por la extensión ni por el `Content-Type`:
+        los dos los elige quien sube el archivo.
+
+        El archivo se valida **antes** de crear el trabajo (AC-6): formato,
+        codificación, encabezados requeridos y tope de filas. Si falla cualquiera
+        de esos controles, la respuesta es 4xx y **no se crea ni el trabajo ni un
+        solo producto**.
+
+        Sólo puede haber **un** import vigente: un segundo `POST` mientras hay uno
+        `pending` o `running` devuelve `409`. La excepción es un reintento con la
+        misma `Idempotency-Key`, que devuelve `200` con el trabajo original —un
+        panel que no recibió la respuesta no puede terminar viendo un error por un
+        import que sí arrancó.
+      security:
+        - adminBearer: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          description: |
+            Clave de reintento (`api-standards §10`). Con la misma clave, la
+            respuesta es `200` y el mismo `id`: no se crea un segundo trabajo.
+          schema: { type: string, maxLength: 255 }
+      requestBody:
+        required: true
+        description: |
+          `multipart/form-data` con **un** único campo `file`. Máximo **4 MiB**
+          (`IMPORT_MAX_FILE_BYTES`) y **5.000 filas de datos**
+          (`IMPORT_MAX_ROWS`); un XLSX que declare más de **32 MiB**
+          descomprimidos (`IMPORT_MAX_UNCOMPRESSED_BYTES`) se rechaza antes de
+          descomprimirlo.
+
+          Esquema de columnas v1 (fijo): requeridas `sku`, `nombre`, `precio`,
+          `stock`, `categoria`; opcionales `descripcion`, `imagen_url`.
+
+          El **encabezado** tiene que declarar las cinco requeridas, pero sus
+          **celdas** pueden ir vacías en una actualización: vacío significa "no
+          cambiar ese campo" (decisión del PO del 2026-08-22, OQ-8), y es lo que
+          permite el archivo de ajuste de precios sin repetir el stock ni la
+          categoría. En una fila de **alta**, una celda requerida vacía rechaza esa
+          fila con `missing_required`. El
+          encabezado se reconoce normalizado (`Descripción` = `DESCRIPCION` =
+          `descripcion`) y las columnas desconocidas se ignoran. El precio va en
+          ARS con IVA incluido, con `,` o `.` como separador decimal y hasta 2
+          decimales; **el separador de miles se rechaza** (`1.234` es ambiguo).
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              additionalProperties: false
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV (UTF-8) o XLSX del catálogo.
+      responses:
+        '202':
+          description: |
+            Trabajo creado y encolado. **No** procesado todavía: el estado arranca
+            en `pending` y el progreso se consulta por `GET`.
+          headers:
+            Location:
+              description: URL del estado del trabajo recién creado.
+              schema: { type: string, examples: ['/v1/admin/imports/2f1c…'] }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportCreated' }
+        '200':
+          description: |
+            Reintento con una `Idempotency-Key` ya usada: se devuelve el trabajo
+            original **sin** crear otro.
+          headers:
+            Location:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ImportCreated' }
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '409':
+          description: |
+            `dsm:import/already-running` — ya hay un import `pending` o `running`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '413':
+          description: |
+            `dsm:import/file-too-large` — el archivo supera los **4 MiB** de
+            `IMPORT_MAX_FILE_BYTES`. El corte se aplica antes de terminar de
+            bufferizar el cuerpo.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '415':
+          description: |
+            `dsm:import/unsupported-format` — el contenido no es un CSV de texto
+            ni un XLSX, o el XLSX declara más de **32 MiB** descomprimidos.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422':
+          description: |
+            Alguno de estos tres, con impacto **cero** en el catálogo:
+            `dsm:import/missing-columns` (faltan encabezados requeridos; `errors[]`
+            los enumera con el nombre del archivo, nunca con el de la base),
+            `dsm:import/row-limit-exceeded` (más de **5.000** filas de datos) o
+            `dsm:import/invalid-encoding` (el texto no está en UTF-8). También
+            `dsm:catalog/validation` si falta la parte `file`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: |
+        Presupuesto de la superficie de import excedido: **3 imports por hora por
+        IP** (`IMPORT_RATE_LIMIT_MAX` / `IMPORT_RATE_LIMIT_TTL_MS`,
+        `security-standards §7.3`). Los `GET` de estado **no** consumen este
+        presupuesto.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    ImportCreated:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+          description: Al crear es `pending`; en una réplica puede ser cualquiera.
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            Catálogo **cerrado** de esta superficie:
+            `dsm:import/unsupported-format` (415),
+            `dsm:import/file-too-large` (413),
+            `dsm:import/missing-columns` (422),
+            `dsm:import/row-limit-exceeded` (422),
+            `dsm:import/invalid-encoding` (422),
+            `dsm:import/already-running` (409),
+            `dsm:import/not-found` (404),
+            más `dsm:catalog/validation` (422) para la parte `file` ausente y
+            `dsm:catalog/http-401` / `dsm:catalog/http-403` de la frontera admin.
+          examples: ['dsm:import/missing-columns']
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: |
+            **Nunca** nombra tablas ni columnas de la base: habla en el idioma del
+            archivo del dueño (`precio`, no `price_ars_cents`).
+        instance: { type: string }
+        errors:
+          type: array
+          description: Columnas requeridas ausentes, una por elemento.
+          items:
+            type: object
+            properties:
+              field: { type: string, examples: ['precio'] }
+              message: { type: string }

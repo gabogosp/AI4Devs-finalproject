@@ -5,7 +5,22 @@
 > **Decision-makers**: Gabriel Suarez (Arquitecto)
 > **Supersedes**: —
 > **Superseded by**: —
-> **Related**: ADR-0001 (Railway as deployment platform), ADR-0003 (Gemini for AI jobs), ADR-0007 (worker is part of the modular monolith deployment)
+> **Amended by**: ADR-0012 (bulk import runs in-process until Redis is provisioned; the async contract and the durable job state are built now, the executor is swapped later) · **ADR-0014** (AI enrichment + embeddings, same pattern, second workload)
+>
+> ⚠ **Esta decisión está enmendada de hecho por CUATRO cargas de trabajo, no una.** Redis
+> sigue sin aprovisionar (US-019 T1.3, gated en cuentas externas), así que el patrón
+> «contrato asíncrono + estado durable ahora, ejecutor en proceso, swap a BullMQ después»
+> se aplicó en: **import masivo** (ADR-0012), **enriquecimiento + embeddings** (ADR-0014),
+> el **caché de vectores de consulta** de la búsqueda (plan de US-004 §D6) y los
+> **runners de notificaciones, reconciliación y limpieza** del webhook de pago (plan de
+> US-010 §D7/§D8). Las dos últimas no llevan ADR propio a propósito: no introducen una
+> decisión nueva, aplican esta enmienda. Quien lea este ADR aislado **no** debe asumir que
+> hay una cola corriendo.
+>
+> **Cuándo deja de estar enmendada**: cuando US-019 T1.3 provisione el add-on de Redis. Ahí
+> los cuatro ejecutores se cambian por procesadores BullMQ leyendo el mismo estado durable,
+> que es exactamente para lo que se diseñaron.
+> **Related**: ADR-0001 (Railway as deployment platform), ADR-0003 (Gemini for AI jobs), ADR-0007 (worker is part of the modular monolith deployment), ADR-0012 (in-process import executor — amends this decision for the first workload named below), ADR-0014 (in-process enrichment executor — second workload)
 
 ## Context
 

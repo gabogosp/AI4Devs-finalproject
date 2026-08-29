@@ -1,0 +1,32 @@
+{
+  "name": "@dsm/qa",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "US-001 — Suite cross-stack owned-by-QA (Layer 3): acceptance/E2E/functional/load/a11y",
+  "dependencies": {
+    "@prisma/client": "5.22.0"
+  },
+  "scripts": {
+    "test:acceptance": "env NODE_OPTIONS=\"--import tsx\" cucumber-js --config acceptance/cucumber.mjs",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "test:a11y": "playwright test -c e2e/playwright.a11y.config.ts",
+    "test:functional": "newman run functional/catalogo-admin.postman_collection.json --env-var baseUrl=${QA_API_BASE_URL:-http://localhost:3000} --env-var jwtSecret=${JWT_SECRET:-dev-secret}",
+    "test:load": "k6 run performance/baseline.js",
+    "test:load:cart": "k6 run --vus 2 --duration 20s performance/cart-write.js",
+    "seed:load": "tsx performance/seed-load-data.ts",
+    "api:up": "bash scripts/api-up.sh"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.1",
+    "@cucumber/cucumber": "11.2.0",
+    "@dsm/db": "workspace:*",
+    "@playwright/test": "1.49.1",
+    "@types/jsonwebtoken": "9.0.7",
+    "@types/node": "22.10.2",
+    "jsonwebtoken": "9.0.2",
+    "newman": "6.2.1",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2"
+  }
+}

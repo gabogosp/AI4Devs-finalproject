@@ -1,0 +1,280 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /search
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-004 — **búsqueda semántica en lenguaje natural**, el
+    diferenciador del producto (PRD §1.1) y portador del único KPI numérico del proyecto:
+    relevancia ≥ 70% en el top-5 (PRD §1.4).
+
+    ## Dos caminos, un contrato
+
+    - **Semántico (primario)**: el texto se convierte en un embedding
+      (`text-embedding-004`, ADR-0003) y se busca por kNN sobre `product_embeddings` con
+      índice HNSW (ADR-0002).
+    - **Full-text (degradación)**: si el proveedor de IA falla o agota su timeout, la
+      misma llamada responde por `tsvector` sobre el catálogo y marca `degraded: true`
+      **con status 200** (AC-4). Un fallo del proveedor **no es un 5xx**: la navegación no
+      se rompe, y un buscador que devuelve 5xx en una ráfaga le enseña a Google a sacar
+      URLs del índice.
+
+    ## Nunca un «cero resultados» desnudo
+
+    Cuando no hay señal sobre el umbral, la respuesta trae
+    `fallback.suggested_categories` (AC-3, design-system §10.1, PRD §3.2). El campo
+    `confidence` le dice al frontend con cuánta convicción presentar los resultados.
+
+    ## La consulta no ejecuta nada (AC-8)
+
+    El texto del usuario **sólo** produce un embedding y un `tsquery` parametrizado. **No
+    existe ninguna llamada a un modelo generativo en este camino** — ni para «interpretar»
+    la consulta: `interpreted_as` se deriva de las categorías que matchearon. La inmunidad
+    a prompt injection es estructural, no una promesa defendida con filtros.
+
+    ## Rate-limit que protege plata, no CPU
+
+    Cada búsqueda no cacheada cuesta una llamada a un tercero. El throttler `search` es
+    más estricto que el del storefront por eso.
+servers:
+  - url: /v1
+tags:
+  - name: search
+    description: Búsqueda semántica del storefront (US-004).
+paths:
+  /search:
+    get:
+      operationId: searchProducts
+      tags: [search]
+      summary: Buscar productos describiendo la necesidad en lenguaje natural (AC-1)
+      security: []
+      parameters:
+        - in: query
+          name: q
+          required: true
+          description: |
+            Consulta en lenguaje natural. Se normaliza (trim + minúsculas + colapso de
+            espacios) antes de embeberse y de usarse como clave de caché.
+
+            Menos de `SEARCH_MIN_LENGTH` caracteres útiles → **422 sin llamar al
+            proveedor** (AC-5): una consulta corta no gasta un centavo.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 200
+          example: algo para colgar un cuadro en pared dura
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        '200':
+          description: |
+            Resultados rankeados. **También es 200 cuando no hay resultados** (con
+            `fallback`) y **cuando el proveedor de IA falló** (con `degraded: true`).
+          headers:
+            Cache-Control:
+              description: |
+                Caché acotada: el resultado es contenido público derivado del catálogo, no
+                un dato personalizado. Reusa el patrón del `StorefrontCacheInterceptor` de
+                US-003.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SearchResponse' }
+              examples:
+                conResultados:
+                  summary: Señal clara (AC-1)
+                  value:
+                    interpreted_as: 'Buscamos en: Fijaciones, Mechas y brocas'
+                    confidence: high
+                    degraded: false
+                    results:
+                      - slug: taco-fischer-sx-8mm-x50
+                        name: Taco Fischer SX 8mm (x50)
+                        price_ars_cents: 320000
+                        in_stock: true
+                        image_url: https://cdn.example.com/taco-fischer.webp
+                        score: 0.89
+                      - slug: mecha-widia-8mm-hormigon
+                        name: Mecha widia 8mm para hormigón
+                        price_ars_cents: 540000
+                        in_stock: false
+                        image_url: null
+                        score: 0.81
+                    fallback: null
+                bajaConfianza:
+                  summary: Hay candidatos pero el top no llega al umbral (AC-3)
+                  value:
+                    interpreted_as: 'Buscamos en: Fijaciones'
+                    confidence: low
+                    degraded: false
+                    results:
+                      - slug: tornillo-autoperforante-8x1
+                        name: Tornillo autoperforante 8x1"
+                        price_ars_cents: 45000
+                        in_stock: true
+                        image_url: null
+                        score: 0.42
+                    fallback:
+                      suggested_categories:
+                        - { slug: fijaciones, name: Fijaciones }
+                        - { slug: mechas-y-brocas, name: Mechas y brocas }
+                sinResultados:
+                  summary: Sin señal — nunca un cero desnudo (AC-3)
+                  value:
+                    interpreted_as: null
+                    confidence: none
+                    degraded: false
+                    results: []
+                    fallback:
+                      suggested_categories:
+                        - { slug: fijaciones, name: Fijaciones }
+                        - { slug: plomeria, name: Plomería }
+                degradado:
+                  summary: El proveedor de IA no respondió — se buscó por texto (AC-4)
+                  value:
+                    interpreted_as: null
+                    confidence: low
+                    degraded: true
+                    results:
+                      - slug: taco-fischer-sx-8mm-x50
+                        name: Taco Fischer SX 8mm (x50)
+                        price_ars_cents: 320000
+                        in_stock: true
+                        image_url: null
+                        score: 0.31
+                    fallback:
+                      suggested_categories:
+                        - { slug: fijaciones, name: Fijaciones }
+        '422':
+          description: |
+            Consulta vacía, más corta que `SEARCH_MIN_LENGTH` (AC-5), más larga que el
+            tope, `limit` fuera de rango, o **cualquier query param desconocido**
+            (whitelist). En ninguno de estos casos se llama al proveedor.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                muyCorta:
+                  value:
+                    type: 'dsm:search/query-too-short'
+                    title: Consulta demasiado corta
+                    status: 422
+                    detail: Contanos con más detalle qué estás buscando.
+                muyLarga:
+                  value:
+                    type: 'dsm:search/query-too-long'
+                    title: Consulta demasiado larga
+                    status: 422
+        '429':
+          description: |
+            Throttler `search` excedido (AC-10, `security-standards.md` §7.3). Más
+            estricto que el del storefront: cada búsqueda no cacheada cuesta una llamada
+            a un tercero. Cubo independiente de `auth`, `storefront` y `cart`.
+          headers:
+            Retry-After: { schema: { type: integer } }
+            RateLimit-Limit: { schema: { type: integer } }
+            RateLimit-Remaining: { schema: { type: integer } }
+            RateLimit-Reset: { schema: { type: integer } }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '503':
+          description: |
+            La base de datos no está disponible. **Es el único 5xx de este endpoint**: el
+            fallo del proveedor de IA se resuelve degradando con 200 (AC-4), no fallando.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    SearchResponse:
+      type: object
+      required: [confidence, degraded, results, fallback]
+      additionalProperties: false
+      properties:
+        interpreted_as:
+          type: [string, 'null']
+          description: |
+            «Interpretación visible» del design-system §7.12, **derivada de las categorías
+            de los productos que matchearon** — no generada por un LLM (OQ-BE-3). Dice
+            dónde miró el sistema; no finge entender. `null` cuando no hay candidatos o
+            cuando la respuesta viene degradada.
+          example: 'Buscamos en: Fijaciones, Mechas y brocas'
+        confidence:
+          type: string
+          enum: [high, low, none]
+          description: |
+            `high` = el top supera `SEARCH_MIN_SCORE`. `low` = hay candidatos pero por
+            debajo (el frontend debe presentarlos con reserva). `none` = sin señal.
+        degraded:
+          type: boolean
+          description: |
+            `true` cuando la respuesta salió por el camino full-text porque el proveedor
+            de IA falló o agotó su timeout (AC-4). El frontend lo hace visible: la
+            búsqueda funciona, pero no es la semántica.
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/SearchResult' }
+        fallback:
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [suggested_categories]
+              additionalProperties: false
+              properties:
+                suggested_categories:
+                  type: array
+                  minItems: 1
+                  description: |
+                    **Nunca vacío cuando está presente** (AC-3): si no hay candidatos, cae
+                    a las categorías raíz con más productos publicados.
+                  items:
+                    type: object
+                    required: [slug, name]
+                    properties:
+                      slug: { type: string }
+                      name: { type: string }
+    SearchResult:
+      type: object
+      required: [slug, name, price_ars_cents, in_stock, score]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          description: |
+            Identificador público del producto — el frontend enlaza a `/productos/{slug}`
+            (AC-1). **El `id` UUID no se expone**, convención de US-002/US-003.
+        name: { type: string }
+        price_ars_cents:
+          type: integer
+          description: Centavos ARS, IVA incluido (`api-standards.md` §5.5, PRD §11).
+          example: 320000
+        in_stock:
+          type: boolean
+          description: |
+            `false` **no oculta el producto** (AC-7): aparece marcado «Sin stock» y sin la
+            acción de agregar al carrito. Misma regla que US-002/US-003.
+        image_url: { type: [string, 'null'], format: uri }
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: |
+            Relevancia. En el camino semántico es `1 - distancia_cosine`; en el degradado,
+            el `ts_rank` normalizado. Los resultados vienen ordenados por este valor
+            descendente.
+          example: 0.89
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

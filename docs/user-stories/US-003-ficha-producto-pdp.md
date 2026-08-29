@@ -4,7 +4,7 @@ id: US-003
 slug: ficha-producto-pdp
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: Done
 priority: High
 estimate-tshirt: S
 story_points_traditional: 5
@@ -161,6 +161,20 @@ And no sirve indefinidamente un precio desactualizado por caché
 
 - Reglas heredadas de decisiones previas: solo productos **publicados** son accesibles (US-001); **sin stock** se muestra con indicador y sin acción de compra (US-002); precio en ARS con IVA incluido; descripción **enriquecida si existe**, si no la base (US-005).
 - La acción real de agregar al carrito y su lógica viven en US-007; esta US solo expone el disparador en la ficha.
+
+### Decisiones tomadas por el PO (2026-08-16) — antes de planificar el FE
+
+Tres definiciones que estaban abiertas y que cambian lo que se construye. Se cierran acá para que
+`/plan-frontend-web-ticket US-003` las lea como dadas.
+
+| # | Decisión | Qué implica |
+|---|---|---|
+| **D-1** | **URL amigable por `slug`, materializada AHORA** (resuelve OQ-BE-1) | El SEO es el objetivo de negocio del PRD; cambiar la URL después de indexar cuesta 301s + re-crawl. Se agrega `products.slug` en la **Fase 10 del change de backend** (migración aditiva, espejo de `categories.slug`). La PDP nace en `/productos/{slug}`. **AC-1 pasa a ser declarable completo.** |
+| **D-2** ~~activo~~ → **superseded por D6 (2026-08-17)** | **El CTA va deshabilitado, con el seam listo** | D-2 pedía el botón activo. El change de FE lo construyó deshabilitado (su **D6**) argumentando design-system §7.14: un botón activo **sin destino** erosiona la confianza de una tienda sin reputación — peor señal que uno visiblemente pendiente. El PO resolvió el conflicto a favor de D6 el 2026-08-17. **AC-3 se lee así**: la ficha *presenta* la acción de compra; que sea operable llega con US-007, que reemplaza el seam sin reescribir la PDP. |
+| **D-3** | **US-018 (canal WhatsApp) se hace ANTES que el FE de US-003** | AC-4 exige ofrecer el canal en la ficha sin stock. US-018 es 1 SP, sólo FE, un enlace `wa.me`. Hacerla primero desbloquea AC-4 limpio sin inventar nada dentro de US-003 ni mezclar alcances. |
+
+**Consecuencia de secuencia**: el orden pasa a ser **US-018 → Fase 10 del backend de US-003 → FE de
+US-003 → QA de US-003**. Las dos primeras son chicas y desbloquean AC-4 y AC-1 respectivamente.
 
 ---
 

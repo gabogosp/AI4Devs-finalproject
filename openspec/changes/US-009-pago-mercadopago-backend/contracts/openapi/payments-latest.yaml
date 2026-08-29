@@ -1,0 +1,159 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /payments/latest
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-009 — **estado autoritativo del pago** (AC-2, AC-4, AC-5, AC-8).
+
+    ## La URL de retorno no es una fuente de verdad
+
+    MercadoPago devuelve al comprador a una de las tres `back_urls`
+    (`success` / `failure` / `pending`). Esa URL la puede escribir cualquiera: es una
+    **pista de UX**, no un hecho. AC-8 lo dice sin ambigüedad, y este endpoint es el
+    mecanismo que lo hace cumplible: la página de resultado no muestra lo que dice la
+    URL, muestra lo que dice este endpoint, que lee **sólo de nuestra base**.
+
+    Consecuencia de diseño: la operación **no acepta un solo parámetro**. Ni path, ni
+    query, ni cuerpo. La orden se resuelve exclusivamente desde la cookie `httpOnly`
+    `dsm_order` emitida al crear el intento. Un `?order_id=...` añadido a mano se
+    **ignora**, no se honra.
+
+    El estado que devuelve lo escriben únicamente el webhook verificado de MercadoPago
+    (US-010) o el medio simulado. Ninguna petición pública puede llevar un pago a
+    `approved` por el camino real.
+servers:
+  - url: /v1
+tags:
+  - name: payments
+    description: Inicio de pago y lectura de estado (US-009).
+paths:
+  /payments/latest:
+    get:
+      operationId: getLatestPaymentStatus
+      tags: [payments]
+      summary: Estado autoritativo del último intento de pago de la orden en curso (AC-8)
+      description: |
+        Devuelve el estado del **último** intento de la orden identificada por la cookie
+        `dsm_order` (puede haber varios: un rechazo del banco permite reintentar, hasta
+        `PAYMENTS_MAX_ATTEMPTS_PER_ORDER`).
+
+        Lo consumen las tres páginas de retorno del frontend:
+
+        | `payment_status` | Página | AC |
+        |---|---|---|
+        | `approved` | «Listo, pagaste» | AC-2 |
+        | `pending` | «Tu pago está en proceso» — se resolverá por webhook | AC-5 |
+        | `rejected` | «No pudimos completar el pago» — la orden sigue reservada y el stock intacto | AC-4 |
+
+        `order_status` viene aparte a propósito: mientras US-010 no exista, un pago
+        `approved` conviven con una orden `pending_payment`, y el frontend necesita
+        poder distinguir «pagado» de «pedido confirmado».
+      security: []
+      parameters: []
+      responses:
+        '200':
+          description: Estado del último intento.
+          headers:
+            Cache-Control:
+              description: |
+                Siempre `no-store` (§7.1). Sin esto, un CDN compartido podría servirle
+                a un comprador el estado de pago de otro.
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentStatus' }
+              examples:
+                aprobado:
+                  summary: Pagado (la orden se confirma en US-010)
+                  value:
+                    payment_status: approved
+                    order_status: pending_payment
+                    payment_method: mercadopago
+                    total_ars_cents: 4560000
+                    created_at: '2026-08-22T19:31:04.512Z'
+                pendiente:
+                  summary: MercadoPago dejó el pago en proceso (AC-5)
+                  value:
+                    payment_status: pending
+                    order_status: pending_payment
+                    payment_method: mercadopago
+                    total_ars_cents: 4560000
+                    created_at: '2026-08-22T19:31:04.512Z'
+                rechazado:
+                  summary: Rechazado o cancelado — stock intacto (AC-4)
+                  value:
+                    payment_status: rejected
+                    order_status: pending_payment
+                    payment_method: mercadopago
+                    total_ars_cents: 4560000
+                    created_at: '2026-08-22T19:31:04.512Z'
+        '404':
+          description: |
+            Cookie ausente, cookie vencida, token que no resuelve, u orden sin ningún
+            intento registrado — **los cuatro devuelven exactamente lo mismo** (AC-9).
+            No hay 200 con campos nulos: la ausencia de intento no se distingue de la
+            ausencia de orden.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:payments/order-not-found'
+                title: Orden no encontrada
+                status: 404
+                detail: No se encontró una orden para el token indicado.
+        '429':
+          description: Throttler `payments` excedido — la lectura comparte el cubo.
+          headers:
+            Retry-After:
+              schema: { type: integer }
+            RateLimit-Limit:
+              schema: { type: integer }
+            RateLimit-Remaining:
+              schema: { type: integer }
+            RateLimit-Reset:
+              schema: { type: integer }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    PaymentStatus:
+      type: object
+      required: [payment_status, order_status, payment_method, total_ars_cents, created_at]
+      additionalProperties: false
+      properties:
+        payment_status:
+          type: string
+          enum: [pending, approved, rejected, refunded]
+          description: |
+            `refunded` está en el enum porque está en el DER (E2E §8), pero **ningún
+            camino de US-009 lo escribe** — es de US-013.
+        order_status:
+          type: string
+          enum: [pending_payment, new, preparing, ready, delivered, cancelled]
+          description: FSM de orden del E2E §12. US-009 no la transiciona nunca.
+        payment_method:
+          type: string
+          enum: [mercadopago, simulated_dsm]
+        total_ars_cents:
+          type: integer
+          description: |
+            Total de la orden en **centavos ARS** (`api-standards.md` §5.5), IVA
+            incluido. El frontend formatea a `$`.
+          example: 4560000
+        created_at:
+          type: string
+          format: date-time
+          description: Cuándo se creó el intento (§5.3 — ISO 8601 UTC).
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

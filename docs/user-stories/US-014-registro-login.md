@@ -4,7 +4,7 @@ id: US-014
 slug: registro-login
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: M
 story_points_traditional: 8
@@ -177,6 +177,7 @@ And no confirma ni niega la existencia del email
 
 - Decisiones de alcance confirmadas: (1) **login inmediato** tras el registro, sin verificación de email bloqueante; (2) **recuperación de contraseña incluida** en esta US.
 - Mecánica de auth fijada en ADR-0005 (NestJS + JWT + bcrypt) y E2E §14 (cookie httpOnly, refresh rotado, anti-enumeración, rate-limit).
+- **Decisión relacionada**: US-014 **endurece** el seam de auth admin introducido en US-001 (ver [ADR-0009](../architecture/decisions/0009-admin-auth-seam-us001.md) + OQ-1 del change `US-001-admin-catalogo-productos-backend`), **preservando el contrato `role=admin`** — no reimplementar el `AdminGuard` desde cero. US-014 reemplaza solo el lado de emisión (login + cookie httpOnly/Secure/SameSite + refresh rotado + rate-limit + 2FA).
 - El email de recuperación reutiliza la integración de email transaccional (Resend, US-011).
 
 ---

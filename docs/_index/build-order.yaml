@@ -1,7 +1,12 @@
 # Materialized build-order index (DAG topological order + cycles + critical path).
 # Conforma a build-order.schema.yaml. Fuente del DAG: us-status.yaml (blocked_by).
 # Companion humano: docs/delivery/build-order.md.
-generated: 2026-06-15
+#
+# 2026-08-22 — actualización PUNTUAL (no recomputación): se agregaron US-019, US-020 y
+# US-021, que habían quedado fuera del `order[]` tras el plan del 2026-06-15 (hallazgo
+# AUDIT-FLOW-003/005 de la auditoría de flujo). Las capas y ciclos de las 19 US previas
+# NO se recalcularon. Para una recomputación completa del DAG: `/plan-build-order`.
+generated: 2026-08-22
 parent-prd: docs/product/prd.md
 cycles_detected: []          # sin ciclos — DAG válido
 critical_path: [US-001, US-003, US-007, US-008, US-009, US-010, US-012, US-011]
@@ -24,3 +29,10 @@ order:
   - { id: US-011, layer: 7, cycle: 5, on_critical_path: true,  blocked_by: [US-010, US-012], unblocked_now: false, disciplines: [BE, QA] }
   - { id: US-013, layer: 7, cycle: 5, on_critical_path: false, blocked_by: [US-010, US-012], unblocked_now: false, disciplines: [BE, FE, QA] }
   - { id: US-018, layer: 1, cycle: 6, on_critical_path: false, blocked_by: [US-001],         unblocked_now: false, disciplines: [FE] }
+  - { id: US-019, layer: 0, cycle: 1, on_critical_path: false, blocked_by: [],              unblocked_now: true,  disciplines: [INFRA] }
+  # Agregadas el 2026-08-22 (AUDIT-FLOW-003). Capa derivada de su `blocked_by`:
+  # US-021 cuelga de US-008 (capa 3) ⇒ capa 4; US-020 de US-014 (capa 1) ⇒ capa 2.
+  # Ciclo: US-021 es CONDICIÓN PREVIA A PRODUCCIÓN (PII de invitados en reposo, Ley 25.326),
+  # así que va en el ciclo 5 junto al cierre del loop de compra, no más tarde.
+  - { id: US-021, layer: 4, cycle: 5, on_critical_path: false, blocked_by: [US-008],         unblocked_now: false, disciplines: [BE, FE, QA] }
+  - { id: US-020, layer: 2, cycle: 6, on_critical_path: false, blocked_by: [US-014],         unblocked_now: false, disciplines: [BE, FE, QA] }

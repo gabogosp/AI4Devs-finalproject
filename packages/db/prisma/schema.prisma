@@ -1,0 +1,276 @@
+// Esquema del catálogo — única fuente de verdad del modelo de datos (US-001).
+// pgvector se habilita por migración (embeddings llegan en US-005).
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Category {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug       String     @unique
+  name       String
+  parent_id  String?    @db.Uuid
+  parent     Category?  @relation("CategoryTree", fields: [parent_id], references: [id])
+  children   Category[] @relation("CategoryTree")
+  created_at DateTime   @default(now())
+  products   Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sku             String   @unique
+  slug            String   @unique
+  name            String
+  description_raw String?
+  price_ars_cents Int
+  stock           Int      @default(0)
+  status          String   @default("draft")
+  category_id     String   @db.Uuid
+  category        Category @relation(fields: [category_id], references: [id])
+  image_url       String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @updatedAt
+
+  /// US-006: el import marca las filas que crea para que US-005 las enriquezca.
+  /// Los productos existentes quedan en `false`, que es correcto — ninguno fue
+  /// enriquecido nunca.
+  enrichment_done Boolean @default(false)
+
+  /// US-005 — texto que escribe la IA (`gemini-1.5-flash`) y que alimenta el
+  /// embedding. Es la columna del DER (E2E §8); las cinco de abajo son
+  /// desviación declarada en el design.md del change.
+  description_enriched String?
+
+  /// El dueño escribió este texto: la IA NO lo pisa (AC-7). Se prende al
+  /// recibir `description_enriched` por el PATCH admin.
+  description_curated Boolean @default(false)
+
+  /// SHA-256 del texto fuente usado en el último enriquecimiento (AC-6). Es el
+  /// control de costo: si no cambió, no se llama al proveedor. Un cambio de
+  /// precio o de stock no entra en el hash, así que no gatilla gasto.
+  enrichment_source_hash String?
+
+  /// Índice del backoff durable y disparador del abandono (AC-4/AC-5).
+  enrichment_attempts Int @default(0)
+
+  /// Doble función (ADR-0014): backoff que sobrevive a un reinicio **y** lease
+  /// del claim — el runner la empuja al futuro para arrendar la fila, así dos
+  /// corridas no pisan el mismo producto y una corrida que muere libera sola.
+  enrichment_next_attempt_at DateTime?
+
+  /// Último fallo, para que "el fallo queda registrado" (AC-5) sea verdad.
+  enrichment_error_code String?
+
+  /// US-004 — documento full-text de la búsqueda, `GENERATED ALWAYS ... STORED`
+  /// sobre `name` + `description_enriched` + `sku` con configuración `spanish`.
+  ///
+  /// `Unsupported` sin `@ignore`: `tsvector` no es un tipo de Prisma, y eso **ya**
+  /// deja la columna fuera del client tipado — Prisma rechaza explícitamente
+  /// combinar los dos («Fields of type `Unsupported` cannot take an `@ignore`
+  /// attribute. They are already treated as ignored by the client due to their
+  /// type»). Mismo tratamiento que `ProductEmbedding.embedding`.
+  ///
+  /// El efecto que se buscaba es el que importa y se cumple: el client no puede
+  /// leerla ni —sobre todo— escribirla. Un `UPDATE` a una columna generada es un
+  /// error de Postgres; dejarla fuera de los tipos lo hace imposible por
+  /// construcción y no por disciplina.
+  ///
+  /// Es GENERADA y no un trigger a propósito: una columna generada no puede quedar
+  /// desincronizada de su origen. Un trigger sí, el día que alguien escriba por una
+  /// vía que no lo dispare, y el síntoma —«la búsqueda no encuentra un producto que
+  /// existe»— es de los más difíciles de atribuir.
+  search_document Unsupported("tsvector")?
+
+  cart_items CartItem[]
+  embedding  ProductEmbedding?
+
+  @@index([category_id, status])
+  @@map("products")
+}
+
+/// Embedding del producto (US-005, DER del E2E §8). Relación 1:1.
+///
+/// `embedding` es `Unsupported` a propósito: pgvector no es un tipo nativo de
+/// Prisma. Eso lo deja FUERA de los tipos generados —no hay forma de leerlo por
+/// accidente con el client tipado— y toda lectura/escritura del vector va por
+/// `$queryRaw`/`$executeRaw` (E2E §16). El índice HNSW se crea a mano en la
+/// migración, que Prisma tampoco expresa.
+model ProductEmbedding {
+  product_id    String                     @id @db.Uuid
+  product       Product                    @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  embedding     Unsupported("vector(768)")
+  /// AC-8: qué modelo generó este vector. Cambiar de modelo no invalida en
+  /// silencio los existentes — quedan trazados y re-embeddeables.
+  model_version String
+  generated_at  DateTime                   @default(now())
+
+  @@map("product_embeddings")
+}
+
+/// Trabajo de import masivo (US-006, ADR-0012). El estado vive acá y no en el
+/// proceso: por eso un redeploy que corta un import deja rastro en vez de
+/// perderlo, y por eso migrar el ejecutor a BullMQ no toca esta tabla.
+model ImportJob {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status                   String    @default("pending")
+  filename                 String
+  file_size_bytes          Int
+  source_format            String
+  /// UNIQUE — reenviar el mismo archivo con la misma clave no crea otro trabajo.
+  idempotency_key          String?   @unique
+  /// Claim `sub` del JWT admin: pseudónimo interno, no PII.
+  created_by_subject       String?
+  total_rows               Int?
+  processed_rows           Int       @default(0)
+  created_count            Int       @default(0)
+  updated_count            Int       @default(0)
+  failed_count             Int       @default(0)
+  categories_created_count Int       @default(0)
+  error_code               String?
+  error_message            String?
+  report_truncated         Boolean   @default(false)
+  started_at               DateTime?
+  finished_at              DateTime?
+  /// Insumo del reaper: un trabajo `running` sin latido reciente quedó huérfano.
+  heartbeat_at             DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @default(now()) @updatedAt
+
+  rows                     ImportJobRow[]
+
+  @@index([status])
+  @@index([created_at])
+  @@map("import_jobs")
+}
+
+/// Detalle por fila fallida del reporte (US-006 AC-5). Se borra en cascada con
+/// su trabajo, así la purga por retención es un solo DELETE sobre `import_jobs`.
+model ImportJobRow {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job_id        String    @db.Uuid
+  job           ImportJob @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  row_number    Int
+  sku           String?
+  field         String?
+  error_code    String
+  error_message String
+  created_at    DateTime  @default(now())
+
+  @@index([job_id, row_number])
+  @@map("import_job_rows")
+}
+
+/// Cliente del storefront (US-014). El email se guarda YA normalizado
+/// (trim + NFKC + lowercase) por `CustomersRepository`, que es el único punto
+/// que escribe esta tabla: la unicidad es un UNIQUE plano, no `citext`.
+model Customer {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String    @unique
+  password_hash         String
+  name                  String
+  phone                 String?
+  role                  String    @default("customer")
+  failed_login_attempts Int       @default(0)
+  lockout_count         Int       @default(0)
+  locked_until          DateTime?
+  password_changed_at   DateTime  @default(now())
+  last_login_at         DateTime?
+  /// Soft-delete del DER (E2E §8). Ningún endpoint la escribe en US-014;
+  /// el login ya la filtra. Borrado de cuenta → US-020.
+  deleted_at            DateTime?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now()) @updatedAt
+
+  refresh_tokens        RefreshToken[]
+  password_reset_tokens PasswordResetToken[]
+  carts                 Cart[]
+
+  @@map("customers")
+}
+
+/// Almacén server-side de refresh tokens (ADR-0011). Sólo se guarda el hash:
+/// una fuga de base no debe entregar sesiones usables. `family_id` es la unidad
+/// de revocación — presentar un token ya rotado revoca la familia entera.
+model RefreshToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String    @db.Uuid
+  customer    Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  token_hash  String    @unique
+  family_id   String    @db.Uuid
+  expires_at  DateTime
+  rotated_at  DateTime?
+  revoked_at  DateTime?
+  created_at  DateTime  @default(now())
+
+  @@index([customer_id])
+  @@index([family_id])
+  @@index([expires_at])
+  @@map("refresh_tokens")
+}
+
+/// Token de recuperación de contraseña (uso único, AC-7). El claro sólo viaja
+/// en el email; acá vive su SHA-256.
+model PasswordResetToken {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String    @db.Uuid
+  customer    Customer  @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  token_hash  String    @unique
+  expires_at  DateTime
+  used_at     DateTime?
+  created_at  DateTime  @default(now())
+
+  @@index([customer_id, created_at])
+  @@index([expires_at])
+  @@map("password_reset_tokens")
+}
+
+/// Carrito del invitado (US-007). Se resuelve por el hash del token de la cookie
+/// `dsm_cart`; el token en claro nunca se persiste. `customer_id` es la columna del
+/// DER (E2E §8) y queda SIN ESCRITOR en esta US: la fusión invitado↔cuenta está
+/// diferida (US §4, OQ-BE-3). `ON DELETE SET NULL` y no CASCADE: borrar una cuenta
+/// (US-020) anonimiza el carrito, no lo borra.
+/// Expira por `expires_at` (`CART_TTL_DAYS` = 7, deslizante en cada escritura); la
+/// purga es OPORTUNISTA al resolver — no hay job programado (OQ-BE-6, diferido).
+model Cart {
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_token_hash String     @unique
+  customer_id        String?    @db.Uuid
+  customer           Customer?  @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  expires_at         DateTime
+  created_at         DateTime   @default(now())
+  updated_at         DateTime   @default(now()) @updatedAt
+  items              CartItem[]
+
+  @@index([expires_at])
+  @@index([customer_id])
+  @@map("carts")
+}
+
+/// Línea del carrito. `unit_price_ars_cents` es una INSTANTÁNEA del precio en el
+/// momento en que el cliente tocó la línea por última vez: nunca entra en una suma
+/// (todo importe se calcula con el precio vigente de `products`, AC-9) — su único uso
+/// es prender `price_changed` cuando difiere. Borrar el carrito borra sus líneas
+/// (CASCADE); un producto con línea viva no se puede borrar (RESTRICT), así no
+/// existen líneas huérfanas.
+model CartItem {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cart_id              String   @db.Uuid
+  cart                 Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product_id           String   @db.Uuid
+  product              Product  @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  quantity             Int
+  unit_price_ars_cents Int
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now()) @updatedAt
+
+  @@unique([cart_id, product_id])
+  @@index([cart_id])
+  @@map("cart_items")
+}

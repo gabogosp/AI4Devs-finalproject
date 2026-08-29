@@ -1,0 +1,906 @@
+# Materialized index of audit findings.
+# Fuente de verdad: los reportes en docs/audits/ (NO versionados — /docs/audits/ está en
+# .gitignore a propósito: «output de tooling que menciona agentes del framework», mismo
+# blindaje que wrappers.tracked:false). ESTE índice sí se versiona, así que es el único
+# rastro de la auditoría que sobrevive a un clon nuevo.
+#
+# Generado el 2026-08-23 a partir de los 7 reportes del 2026-08-22. La severidad se tomó
+# de los encabezados de sección de cada reporte; 9 se corrigieron a mano porque el reporte
+# las marca inline. Conforma a audit-findings.schema.yaml.
+#
+# `status` refleja la remediación de la sesión del 2026-08-23 (decisiones D1-D5 del PO).
+
+- id: AUDIT-DOC-001
+  title: "Doc obligatorio ausente (§4)"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-002
+  title: "Drift README raíz vs estado real"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-003
+  title: "Índice desincronizado (decisions.yaml)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-004
+  title: "Runbook incompleto"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-005
+  title: "README de servicio incompleto"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-006
+  title: "Doc aspiracional vs real"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-007
+  title: "Índice vs fuente"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-008
+  title: "Links/referencias"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-009
+  title: "OpenAPI freshness"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-010
+  title: "ADR cross-references"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DOC-011
+  title: "Documentación de testing"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/doc-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DOC-001-docs-obligatorios
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-001
+  title: "CSP permite `'unsafe-inline'` para scripts y styles"
+  severity: Major
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-002
+  title: "Uso extensivo de clases Tailwind en bruto (`gray-*`) saltando los design tokens semánticos"
+  severity: Major
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-003
+  title: "Sentry SDK no instalado — `captureError` es un no-op"
+  severity: Major
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-004
+  title: "Cross-feature imports violan la regla de aislamiento entre features"
+  severity: Major
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-005
+  title: "`eslint-plugin-jsx-a11y` no está instalado ni configurado como gate"
+  severity: Minor
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-006
+  # CONFIRMADO Y RELOCALIZADO 2026-08-23 (medido con axe-core en chromium real, no calculado):
+  #   `.max-w-xl` en el hero de la home — foreground #6b7280 (`--muted` = gray-500) sobre
+  #   background #fff3ec (`--accent-subtle`), 16px normal => **4.43:1**, por debajo del 4.5:1
+  #   de AA. Único elemento con violación de contraste en `/`; `/legales/*` da CERO.
+  #   Origen: `apps/web/app/(storefront)/page.tsx:25` — `<section className="bg-accent-subtle">`
+  #   con texto `text-muted` adentro.
+  # El título original apuntaba a ProductDetail y a un "fondo claro" genérico: por eso el
+  # primer intento de verificación midió `--muted` contra `--surface` (#ffffff => 4.83:1) y
+  # contra `--background` (#f9fafb => 4.62:1), los dos PASAN, y estuvo a punto de cerrarse como
+  # false-positive. El fondo que falla no es gris sino el TINTE CÁLIDO del acento, que ninguna
+  # de esas dos mediciones cubría. Lección: un cálculo contra un fondo asumido no refuta una
+  # medición de browser; hay que reproducir la medición.
+  # Fix de una línea (no aplicado acá, pertenece a este change): el texto sobre
+  # `bg-accent-subtle` no puede ser `text-muted`. Con `text-foreground` (#111827) da 15.9:1.
+  title: "Contraste WCAG AA insuficiente: `text-muted` (gray-500) sobre `bg-accent-subtle` en el hero de la home — 4.43:1 medido, exige 4.5:1"
+  severity: Minor
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred          # sigue deferred: el fix vive en AUDIT-DSM-WEB-001-deuda-frontend
+  confidence: high          # era medium; ahora está medido en un browser real
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-007
+  title: "Admin token almacenado en `sessionStorage` — no en cookie `httpOnly`"
+  severity: Major          # el reporte lo clasifica Major; el heurístico de extracción lo bajó a Minor
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: US-014
+  status: deferred
+  confidence: high
+  created: 2026-08-22
+  # VÁLIDO (adminSession.ts:12 persiste en sessionStorage), pero NO se remedia inline: es un
+  # cambio de 6 superficies en 2 apps sobre el borde de autenticación — admin.guard.ts sólo lee
+  # Bearer, el camino de bootstrapToken no emite cookies, y el rewrite de ADR-0013 no cubre
+  # /v1/admin/* (sin eso la cookie NO vuelve en producción por la Public Suffix List).
+  # US-014 FE ya lo defirió a propósito: «panel del dueño migrado a cookies → Deferred: change
+  # de endurecimiento del panel — owner: Arquitecto», y tiene un task CERRADO que asserta que
+  # esos archivos no cambiaron (git diff --quiet HEAD -- apps/web/src/features/auth ...).
+  # Decisión del PO 2026-08-23: planificarlo como ese change (opción a). Ver
+  # openspec/changes/AUDIT-dsm-web-007-endurecimiento-panel-{backend,frontend-web}/
+- id: AUDIT-DSM-WEB-008
+  title: "Sin `loading.tsx` global ni Suspense de streaming en el storefront layout"
+  severity: Minor
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-009
+  title: "`lucide-react` con version range abierta (`^1.31.0`)"
+  severity: Minor
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-010
+  title: "No hay visual regression tests (Playwright `toHaveScreenshot`)"
+  severity: Info
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-DSM-WEB-001-deuda-frontend
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-DSM-WEB-011
+  title: "`initObservability()` no se invoca en ningún entry point"
+  severity: Info
+  category: "frontend-web"
+  remediation-target: code
+  source-audit: docs/audits/dsm-web/2026-08-22/audit.md
+  related-us: null
+  status: deferred
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-E2E-001
+  title: "Suposición §21 invalidada: cuota de Gemini no cubre el camino interactivo"
+  severity: Critical
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # Enmendada §21 el 2026-08-23: la suposición valía para el enriquecimiento por lotes y no
+  # cubría el camino interactivo. Decisión del PO: free tier, 15 RPM repartidos 10/5, techo
+  # aceptado como limitación conocida. Consecuencias declaradas en el propio §21.
+  # la decisión está tomada (free tier aceptado, OQ-BE-1 de US-004 opción b); falta actualizar el §21 del E2E
+- id: AUDIT-E2E-002
+  title: "§14 STRIDE es una tabla de controles, no un modelo de amenazas por flujo"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-E2E-003
+  title: "NFR 'p95 búsqueda IA < 1.5s' sin mecanismo viable en free tier"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # Cerrado el 2026-08-23 por la enmienda del §17: el fix sugerido por el reporte era
+  # «documentar que el p95 se cumple GRACIAS a la degradación a full-text, no por la latencia
+  # nativa del proveedor» — que es exactamente lo que la fila enmendada ahora dice.
+- id: AUDIT-E2E-004
+  title: "§17 menciona 'cache Redis de queries frecuentes' pero Redis no está aprovisionado"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # Enmendada la fila del §17 el 2026-08-23: decía «cache Redis de queries frecuentes» y Redis
+  # no está aprovisionado. Ahora dice caché de vectores EN PROCESO, con el puntero a
+  # ADR-0012/0014 que enmiendan ADR-0004.
+- id: AUDIT-E2E-005
+  title: "§12 FSM menciona 'job de limpieza' de pending_payment sin US/AC que lo cubra (parcialmente mitigado)"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # Cerrado el 2026-08-23: el job de limpieza de pending_payment SÍ tiene AC y plan —
+  # US-010 AC-11 + T5.2 (runner + endpoint admin). El reporte lo marcaba «parcialmente
+  # mitigado» porque la auditoría corrió el mismo día que se escribió ese plan.
+- id: AUDIT-E2E-006
+  title: "§17 fila de disponibilidad '99.5%' sin procedimiento de medición"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-E2E-007
+  title: "§8 DER no modela `refresh_tokens` (introducida por ADR-0011)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-E2E-008
+  title: "Contratos de API delegados a la planificación de tickets (decisión de diseño)"
+  severity: Info
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-E2E-009
+  title: "§23 Q-4 sigue `[Open]` pero el E2E está `Approved`"
+  severity: Info
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/e2e/2026-08-22-e2e-depth-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-E2E-002-profundidad-e2e
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-001
+  title: "Drift de estado índice ↔ markdown en 6 US"
+  severity: Critical
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # era real; remediado por el commit 0cdd7dc durante la propia auditoría. Drift verificado en 0/21 US
+- id: AUDIT-FLOW-002
+  title: "`capabilities.yaml` no refleja US-020/US-021 en CAP-10"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-003
+  title: "US-021 (`Ready`) ausente del `build-order.yaml`"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-004
+  title: "Tres US en ejecución con task QA declarada y sin plan de QA (US-005, US-006, US-014)"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-005
+  title: "`build-order.yaml` con `generated: 2026-06-15` pero contiene US-019"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-006
+  title: "US-019 sin AC de negative-space"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-007
+  title: "Enum inconsistente: `in-progress` vs `in progress` en `openspec-changes.yaml`"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-008
+  title: "`prd-capacity` no existe como campo en el markdown de ninguna US"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-009
+  title: "`assignee` de 6 nuevos changes creados hoy es `sin-asignar` o `null`"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-010
+  title: "Cadena crítica US-007→US-008→US-009→US-010: toda planificada, nada construido pasado US-007"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-011
+  title: "Los 5 changes planificados hoy (US-004 BE, US-007 FE, US-008 BE, US-009 BE, US-010 BE) están correctamente reflejados en `openspec-changes.y"
+  severity: Info
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-012
+  title: "US-021 creada hoy está correctamente reflejada en `us-status.yaml`"
+  severity: Info
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-FLOW-013
+  title: "ADR-0014 (in-process enrichment executor) existe en disco y en el índice"
+  severity: Info
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/flow/2026-08-22-flow-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-FLOW-004-coherencia-indices
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-001
+  title: "(ver reporte)"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-002
+  title: "(ver reporte)"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-003
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-004
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-005
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-006
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-007
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-008
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: false-positive
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-009
+  title: "(ver reporte)"
+  severity: Major
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-010
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-011
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-012
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-013
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-014
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: false-positive
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-015
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-016
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-PLAN-017
+  title: "(ver reporte)"
+  severity: Minor
+  category: "docs"
+  remediation-target: docs
+  source-audit: docs/audits/openspec-plans/2026-08-22-plan-review.md
+  related-us: null
+  status: deferred  # → AUDIT-PLAN-003-deuda-planes
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-001
+  title: "Cobertura de capa ausente"
+  severity: Critical
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # batería de ~30 consultas planificada en el qa-plan de US-004; el gate del 70% se activa POST US-005 (embeddings)
+- id: AUDIT-QA-002
+  title: "Cobertura de capa ausente"
+  severity: Major
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # contract testing distribuido en los 4 qa-plan (Spectral general + supertest por endpoint)
+- id: AUDIT-QA-003
+  title: "Cobertura funcional ausente"
+  severity: Major
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-004
+  title: "Cobertura funcional ausente"
+  severity: Major
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-005
+  title: "Balance de pirámide"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-006
+  title: "Cobertura negative-space"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-007
+  title: "Accesibilidad"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-008
+  title: "Quality gates de CI"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-009
+  title: "Calidad de assertions"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: accepted-as-debt
+  confidence: medium
+  created: 2026-08-22
+  # misma deuda que AUDIT-dsm-api-004
+- id: AUDIT-QA-010
+  title: "Completitud del E2E §19"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-QA-011
+  title: "Test data management"
+  severity: Minor
+  category: "qa"
+  remediation-target: code
+  source-audit: docs/audits/dsm-ecommerce/2026-08-22/qa-audit.md
+  related-us: null
+  status: deferred  # → AUDIT-QA-003-salud-suite
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-001
+  title: "El servicio de carrito recibe `Request`/`Response` de Express"
+  severity: Major
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-002
+  title: "Sin graceful shutdown — conexiones cortadas en redeploy"
+  severity: Major
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-003
+  title: "Llamada saliente a Resend sin timeout ni retry"
+  severity: Major
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-004
+  title: "Tests con `toBeTruthy()`/`toBeDefined()` en vez de assertions de comportamiento"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: accepted-as-debt
+  confidence: medium
+  created: 2026-08-22
+  # deuda aceptada por el PO (D4). Medida en docs/audits/follow-ups/AUD-API-004-assertions-debiles.md: 79 ocurrencias, 3 clases
+- id: AUDIT-dsm-api-005
+  title: "Falta OpenAPI contract validation — el spec no se valida contra la implementación"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-006
+  title: "Métricas de aplicación (Prometheus/OpenTelemetry) ausentes"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+  # MetricsService + GET /v1/admin/metrics; los 4 planes de backend ahora delegan ahí
+- id: AUDIT-dsm-api-007
+  title: "No hay test de integración con DB real (Testcontainers)"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-008
+  title: "`$queryRawUnsafe` en tests sin parametrización"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: false-positive
+  confidence: medium
+  created: 2026-08-22
+  # los 36 usos son TRUNCATE con string constante (los identificadores no son parametrizables en SQL) o pasan parámetro ligado $1::vector
+- id: AUDIT-dsm-api-009
+  title: "Falta `service` y `version` en los campos de log"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: addressed
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-010
+  title: "Node engine mismatch (quiere >=22 <23, corre en 23)"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: false-positive
+  confidence: medium
+  created: 2026-08-22
+  # el repo declara Node 22 en engines y .nvmrc; el desvío es el shell local. Se cierra con `nvm use`, sin cambio de código
+- id: AUDIT-dsm-api-011
+  title: "Falta documentación per-service (runbook, SLO, data-model)"
+  severity: Minor
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-012
+  title: "`EnrichmentQueue` es un stub por diseño (diferido a US-005 + Redis)"
+  severity: Info
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
+  confidence: medium
+  created: 2026-08-22
+- id: AUDIT-dsm-api-013
+  title: "Los tests de integración usan DB real local — es aceptable con `docker compose`"
+  severity: Info
+  category: "backend"
+  remediation-target: code
+  source-audit: docs/audits/dsm-api/2026-08-22/audit.md
+  related-us: null
+  status: deferred  # → AUDIT-dsm-api-001-deuda-codigo
+  confidence: medium
+  created: 2026-08-22

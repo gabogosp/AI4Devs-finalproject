@@ -1,0 +1,119 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /admin/imports/{id}/report
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-006. Reporte descargable de las filas rechazadas (AC-5).
+    Al archivar el change extiende la capacidad existente
+    `openspec/specs/catalogo/`.
+
+    **Las celdas van neutralizadas contra inyección de fórmulas**
+    (`security-standards §6.3`): el destino de este texto es una planilla, no un
+    JSON. Toda celda que empiece con `=`, `+`, `-`, `@`, tab o CR se prefija con
+    `'`, así Excel no la evalúa al abrir el archivo en la máquina del dueño.
+servers:
+  - url: /v1
+tags:
+  - name: admin-imports
+    description: Importación masiva del catálogo (US-006). Sólo admin.
+paths:
+  /admin/imports/{id}/report:
+    get:
+      operationId: getImportReport
+      tags: [admin-imports]
+      summary: CSV descargable de las filas rechazadas
+      description: |
+        Devuelve **todas** las filas rechazadas persistidas (hasta **1.000**,
+        `IMPORT_MAX_REPORT_ROWS`), sin paginar: el archivo se abre en una planilla
+        y un reporte partido en páginas no sirve para arreglar el catálogo.
+
+        Un trabajo **sin** filas rechazadas devuelve el CSV con **sólo el
+        encabezado** —no 404 ni cuerpo vacío—: "no hay errores" es el mejor
+        resultado posible y no puede llegarle al panel como un caso de error.
+
+        Cuando el reporte está recortado, la última línea es un comentario que lo
+        declara (`# reporte recortado: se listan N de M filas rechazadas`), para
+        que quien lo abra meses después no tenga que consultar el estado.
+
+        Este `GET` **no** consume el presupuesto de 3 imports/hora del `POST`.
+      security:
+        - adminBearer: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: |
+            CSV UTF-8 con encabezado `fila,sku,campo,codigo,motivo`. Escapado
+            según RFC 4180 (comas y comillas encomilladas, comilla interna
+            duplicada).
+          headers:
+            Content-Disposition:
+              description: |
+                Siempre `attachment` con nombre **generado por el servidor**:
+                `import-{id}-errores.csv`. Nunca el nombre que subió el cliente.
+              schema:
+                type: string
+                examples: ['attachment; filename="import-2f1c…-errores.csv"']
+          content:
+            text/csv:
+              schema:
+                type: string
+                examples:
+                  - |
+                    fila,sku,campo,codigo,motivo
+                    2,REF-1,precio,invalid_price,"el precio tiene que ser un número mayor a 0 con hasta 2 decimales, sin separador de miles (ej. 1234,56)"
+                    5,'=1+1,sku,invalid_sku,el sku tiene caracteres no imprimibles
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          description: |
+            `dsm:import/not-found` — no existe, o la retención de 90 días lo purgó.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422':
+          description: '`dsm:catalog/validation` — el `id` no es un UUID.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          examples: ['dsm:import/not-found']
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
