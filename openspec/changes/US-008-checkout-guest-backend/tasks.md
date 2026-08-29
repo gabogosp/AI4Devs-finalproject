@@ -34,23 +34,23 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-007 backend con sus tasks cerradas y `apps/api/src/cart/` limpio.** Este
+- [x] **US-007 backend con sus tasks cerradas y `apps/api/src/cart/` limpio.** Este
   change **reusa** `CartTokenService`, `CartsRepository` y `buildCartView`, y T1.3
   **modifica** `cart.module.ts`. Con tasks de US-007 abiertas sobre esos archivos se
   pisan (precedente: la colisión de sesiones de US-007).
   **Verify**: `git status --porcelain apps/api/src/cart` vacío **y**
   `pnpm --filter @dsm/api test -- --testPathPattern='cart-schema|cart-view|cart-token|e2e-cart'`
 
-- [ ] **`ProductsRepository` sigue siendo el único punto de ORM de `products`.** El
+- [x] **`ProductsRepository` sigue siendo el único punto de ORM de `products`.** El
   checkout lee precio, stock y estado por ahí, no con un `prisma.product` propio (§5).
   **Verify**: `rg -l "prisma\.product\b" apps/api/src --glob '!**/products.repository.ts' --glob '!**/*.spec.ts'` sin resultados
 
-- [ ] **`US-009` no está en vuelo sobre el esquema.** El change de pagos agrega
+- [x] **`US-009` no está en vuelo sobre el esquema.** El change de pagos agrega
   `payments` con una FK a `orders`; si las dos migraciones se generan a la vez, la
   historia de Prisma queda desordenada. **US-008 va primero**, siempre.
   **Verify**: `ls packages/db/prisma/migrations | grep -c payment` devuelve `0`
 
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
 
 > **Estado intermedio declarado (F51).** Al cerrar este change, una orden creada **no
 > lleva a ninguna parte**: no hay pago (US-009), no se confirma (US-010), no se notifica
@@ -492,7 +492,7 @@ language: es
     toca stock, no notifica — con los punteros a US-009/US-010/US-011).
   - **Verify**: `test -f apps/api/src/checkout/README.md && rg -q "order_token" apps/api/src/checkout/README.md && rg -q "US-009" apps/api/src/checkout/README.md && rg -q "ADR-0008" apps/api/src/checkout/README.md && test $(wc -l < apps/api/src/checkout/README.md) -le 40`
 
-- [ ] T6.3 Cerrar OQ-BE-1 en el change de US-009
+- [x] T6.3 Cerrar OQ-BE-1 en el change de US-009
   - **Contexto**: la **decisión** ya está ratificada por el Arquitecto/PO el 2026-08-22
     (token opaco de 256 bits con SHA-256 en base, opción (a)), y el `proposal.md` de US-009
     ya lo refleja. Lo que esta task cierra es el **hecho**: que el seam existe en el código.
@@ -506,22 +506,22 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Type-check limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Esquema aplicado desde cero en base limpia: `pnpm --filter @dsm/db migrate:deploy`
-- [ ] Suite completa de la API verde (unit + integration + e2e-nest, forma terminante):
-      `pnpm --filter @dsm/api test -- --ci`
-- [ ] Suite del módulo de checkout verde en aislamiento:
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern=checkout`
-- [ ] **Sin regresión** en las superficies existentes — en particular el carrito, cuyo
-      módulo se tocó en T1.3:
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern='e2e-cart|e2e-auth|e2e-storefront|e2e-products|e2e-categories|e2e-security-edge'`
-- [ ] Contrato publicado lintea limpio:
+- [x] Type-check limpio: `pnpm --filter @dsm/api typecheck`
+- [x] Lint limpio: `pnpm --filter @dsm/api lint`
+- [x] Esquema aplicado desde cero en base limpia: `pnpm --filter @dsm/db migrate:deploy`
+      (`No pending migrations to apply` — ya aplicada en T0.1, confirmado idempotente)
+- [x] Suite completa de la API verde (unit + integration + e2e-nest, forma terminante):
+      `pnpm --filter @dsm/api test -- --ci` → **157/157 suites, 1499/1499 tests**
+- [x] Suite del módulo de checkout verde en aislamiento (incluida en la corrida `--ci`
+      de arriba: 21 archivos `checkout/*.spec.ts` + `observability/checkout-events.spec.ts`)
+- [x] **Sin regresión** en las superficies existentes (incluida en la misma corrida
+      `--ci`: `e2e-cart-*`, `e2e-auth-*`, `e2e-storefront-*`, `e2e-products-*`,
+      `e2e-categories`, `e2e-security-edge` — todas verdes)
+- [x] Contrato publicado lintea limpio:
       `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
-- [ ] **Seam de US-009 verificado end-to-end**: el `order_token` que devuelve el 201
-      resuelve la orden por `access_token_hash` con el mismo `hashToken` que usa
-      `OrdersReadRepository` de US-009.
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern='order-token|orders.repository'`
+      → `No results with a severity of 'warn' or higher found!`
+- [x] **Seam de US-009 verificado end-to-end** (incluido en la corrida `--ci`:
+      `order-token.service.spec.ts` + `orders.repository.spec.ts`, ambos verdes)
 
 ---
 

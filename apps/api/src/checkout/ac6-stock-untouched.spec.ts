@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { CART_COOKIE } from '../auth/cookies';
@@ -150,8 +152,6 @@ describe('AC-6: el checkout no toca el stock (ac6-stock-untouched)', () => {
     // catch lo volvería un verde falso). Recorre cada .ts no-spec de
     // checkout/, ignora comentarios, y busca una línea con "stock" que
     // también contenga una palabra de escritura.
-    const fs = require('node:fs') as typeof import('node:fs');
-    const path = require('node:path') as typeof import('node:path');
     const dir = path.join(__dirname);
     const sospechosas: string[] = [];
 

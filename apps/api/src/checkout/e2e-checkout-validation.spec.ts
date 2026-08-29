@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { bootTestApp } from '../../test/e2e-app';
-import { ClienteDeCarrito, sembrarProductos, truncarCarrito } from '../../test/cart-client';
+import { ClienteDeCarrito, sembrarProductos } from '../../test/cart-client';
 import { ClienteDeCheckout } from '../../test/checkout-client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CartModule } from '../cart/cart.module';
@@ -64,7 +64,8 @@ describe('Validación del checkout (e2e-checkout-validation)', () => {
 
   it('consent ausente → 422', async () => {
     const cliente = await clienteConCarrito();
-    const { consent, ...sinConsent } = buyerValido();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
+    const { consent: _consent, ...sinConsent } = buyerValido();
     const res = await cliente.post(sinConsent);
     expect(res.status).toBe(422);
   });
@@ -96,7 +97,8 @@ describe('Validación del checkout (e2e-checkout-validation)', () => {
   it('teléfono ausente → 422 (OQ-BE-2)', async () => {
     const cliente = await clienteConCarrito();
     const body = buyerValido();
-    const { phone, ...sinTelefono } = body.buyer;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- se descarta a propósito
+    const { phone: _phone, ...sinTelefono } = body.buyer;
     const res = await cliente.post({ ...body, buyer: sinTelefono });
     expect(res.status).toBe(422);
   });
