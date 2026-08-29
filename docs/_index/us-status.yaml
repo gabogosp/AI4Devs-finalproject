@@ -42,7 +42,7 @@
   blocked_by: [US-001]
 - id: US-004
   slug: busqueda-semantica
-  status: In Progress
+  status: Done
   priority: High
   prd-capacity: 2
   disciplines: [BE, FE, QA]
@@ -51,6 +51,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
+  done-at: 2026-08-29               # BE + FE archivados (QA vive dentro del BE)
   blocked_by: [US-005]              # US-005 va 1/28: su migración está aplicada, el pipeline en vuelo
   # 2026-08-29: US-004-busqueda-semantica-frontend-web ARCHIVADA (29/29 tasks, merged vía PR #3
   # feature-entrega2-GOSP). La US NO pasa a Done: quedan 2 de 3 disciplinas sin archivar —

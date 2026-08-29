@@ -1,8 +1,9 @@
 # Capacidad: Búsqueda semántica con IA (CAP-2)
 
-**Estado**: parcialmente entregada — `SearchExperience` (UI del storefront) viva; el
-contrato backend está implementado y en producción pero su change
-(`US-004-busqueda-semantica-backend`) todavía no pasó por `/archive-change`.
+**Estado**: entregada — `SearchExperience` (UI del storefront) y el contrato backend
+(`GET /v1/search`, con degradación a full-text) vivos y en producción. Los dos changes de
+US-004 (`-frontend-web` y `-backend`) quedaron archivados; el contrato del backend vive en
+`contracts/openapi.yaml` de este directorio.
 
 Estado declarado del sistema para la capacidad CAP-2 del PRD §2.1 (fila 2, prioridad *Must* —
 **el diferenciador** del producto). Este directorio es el **acumulado** de los changes
