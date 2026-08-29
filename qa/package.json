@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.1",
+    "exceljs": "4.4.0",
     "@cucumber/cucumber": "11.2.0",
     "@dsm/db": "workspace:*",
     "@playwright/test": "1.49.1",
