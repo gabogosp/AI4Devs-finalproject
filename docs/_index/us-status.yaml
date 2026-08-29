@@ -75,6 +75,10 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-19        # first plan invocation (backend-node-developer)
+  in-review-at: 2026-08-29T21:25:05Z # PR #8 (qa) abierto; BE y FE ya "completed" sin PR discreto
+                                      # (modelo de rama de integracion) -- status US-level se
+                                      # mantiene In Progress: el DoD todavia pide regresion en
+                                      # staging + firma del PO + merge, no solo el PR abierto
   blocked_by: [US-001]
 - id: US-007
   slug: carrito-compra

@@ -364,7 +364,7 @@
   us-id: US-006
   discipline: qa
   variant: null
-  status: in-progress
+  status: in review  # PR #8 abierto 2026-08-29, todos los stubs automatizados cerrados
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
@@ -427,6 +427,9 @@
   # propia variable. Allowlistear la IP se descarto: crea un camino que produccion no
   # tiene y dejaria el limite sin probar en ningun lado.
   estimate-hours: 7
+  branch: feat/US-006-import-masivo-inventario-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/8
+  pr-opened-at: 2026-08-29T21:25:05Z
 
 - name: US-006-import-masivo-inventario-backend
   us-id: US-006
