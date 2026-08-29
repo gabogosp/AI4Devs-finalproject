@@ -63,7 +63,7 @@ language: es
 
 ## Fase 0: Esquema y configuración — 2,2 h
 
-- [ ] T0.1 Migración aditiva `orders` + `order_items` (F40 — column-complete)
+- [x] T0.1 Migración aditiva `orders` + `order_items` (F40 — column-complete)
   - **Pattern**: dos `model` nuevos en `packages/db/prisma/schema.prisma` con
     `@id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` y `@@map("…")`, espejando
     `Cart`/`CartItem`; migración generada con `pnpm --filter @dsm/db migrate` y los

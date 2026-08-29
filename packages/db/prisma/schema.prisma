@@ -88,8 +88,9 @@ model Product {
   /// existe»— es de los más difíciles de atribuir.
   search_document Unsupported("tsvector")?
 
-  cart_items CartItem[]
-  embedding  ProductEmbedding?
+  cart_items  CartItem[]
+  order_items OrderItem[]
+  embedding   ProductEmbedding?
 
   @@index([category_id, status])
   @@map("products")
@@ -191,6 +192,7 @@ model Customer {
   refresh_tokens        RefreshToken[]
   password_reset_tokens PasswordResetToken[]
   carts                 Cart[]
+  orders                Order[]
 
   @@map("customers")
 }
@@ -273,4 +275,64 @@ model CartItem {
   @@unique([cart_id, product_id])
   @@index([cart_id])
   @@map("cart_items")
+}
+
+/// Orden del checkout guest (US-008). Nace en `pending_payment` y es INERTE: no
+/// retiene stock ni plata (ADR-0008 decrementa recién al aprobarse el pago, US-010).
+/// Datos del comprador EMBEBIDOS (es una compra guest, no hay cuenta de la que
+/// colgarlos); `customer_id` es la columna del DER (E2E §8) y queda SIN ESCRITOR en
+/// esta US (fusión invitado↔cuenta diferida a US-015). `access_token_hash` y
+/// `order_number` son deviaciones declaradas del DER (design.md §2, ítems 1 y 6): el
+/// invitado sin sesión se refiere a su orden por el token opaco (nunca el UUID sale a
+/// la red), y el dueño/comprador hablan del mismo pedido por el entero legible.
+/// `consent_accepted_at` + `consent_terms_version` (ítems 2 y 3) son lo que hace que
+/// AC-8 sea trazabilidad real y no un booleano sin fecha.
+model Order {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_number           Int       @unique @default(dbgenerated("nextval('orders_order_number_seq')"))
+  access_token_hash      String    @unique
+  customer_id            String?   @db.Uuid
+  customer               Customer? @relation(fields: [customer_id], references: [id], onDelete: SetNull)
+  buyer_name             String
+  buyer_email            String
+  buyer_phone            String
+  fulfillment            String    @default("pickup")
+  status                 String    @default("pending_payment")
+  total_ars_cents        Int
+  consent_accepted       Boolean
+  consent_accepted_at    DateTime
+  consent_terms_version  String
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @default(now()) @updatedAt
+  delivered_at           DateTime?
+  items                  OrderItem[]
+
+  @@index([status, created_at])
+  @@index([customer_id])
+  @@map("orders")
+}
+
+/// Línea de la orden. `unit_price_ars_cents` es el precio PACTADO (snapshot dentro
+/// de la misma transacción que crea la orden) — a diferencia de `cart_items`, ESTE sí
+/// entra en la suma del total: es un registro comercial, no un detector de cambios.
+/// `product_name` + `product_sku` son deviación declarada (design.md §2 ítem 5): si el
+/// dueño renombra el producto después, el email (US-011) y el panel (US-012) tienen
+/// que mostrar el nombre que el comprador vio al comprar, no el actual. El `RESTRICT`
+/// de la FK a `products` garantiza que la fila exista, no que su nombre sea el de la
+/// venta.
+model OrderItem {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id             String   @db.Uuid
+  order                Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id           String   @db.Uuid
+  product              Product  @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  quantity             Int
+  unit_price_ars_cents Int
+  product_name         String
+  product_sku          String
+  created_at           DateTime @default(now())
+
+  @@unique([order_id, product_id])
+  @@index([order_id])
+  @@map("order_items")
 }
