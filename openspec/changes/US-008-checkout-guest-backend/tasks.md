@@ -197,7 +197,7 @@ language: es
     `findByTokenHash` con hash correcto/incorrecto) **y**
     `rg -l "prisma\.order\b|prisma\.orderItem\b" apps/api/src --glob '!**/orders.repository.ts' --glob '!**/*.spec.ts'` sin resultados
 
-- [ ] T1.3 `CartModule` exporta lo que el checkout consume (cambio de wiring, sin cambio de comportamiento)
+- [x] T1.3 `CartModule` exporta lo que el checkout consume (cambio de wiring, sin cambio de comportamiento)
   - **Pattern**: agregar `CartTokenService` y `CartsRepository` al array `exports` de
     `cart.module.ts` (hoy exporta sólo `CartEventsService`). **No** se duplica la
     resolución del carrito ni se abre un segundo acceso al ORM de `carts` — `per

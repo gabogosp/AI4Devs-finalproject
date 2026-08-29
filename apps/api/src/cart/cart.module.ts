@@ -27,6 +27,9 @@ import { CartEventsService } from '../observability/cart-events.service';
     CartThrottlerGuard,
     CartEventsService,
   ],
-  exports: [CartEventsService],
+  // CartTokenService + CartsRepository exportados para US-008: el checkout
+  // resuelve el carrito de la cookie sin duplicar la primitiva del token ni
+  // abrir un segundo acceso al ORM de `carts` (§5, AGENTS.md §1.1).
+  exports: [CartEventsService, CartTokenService, CartsRepository],
 })
 export class CartModule {}
