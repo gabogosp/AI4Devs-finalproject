@@ -44,7 +44,16 @@ describe('GET /v1/search (e2e-search)', () => {
       app.get(ConfigService) as unknown as ConfigService,
     );
 
-    await prisma.$executeRawUnsafe(`DELETE FROM products WHERE slug LIKE 'e2es-%'`);
+    // Aislamiento real, no por prefijo: la búsqueda rankea sobre TODA la tabla con limit=50,
+    // así que borrar sólo `e2es-%` no alcanza — los cientos de productos que siembran otros
+    // specs (imports carga 800/900) empujan al producto sin-stock fuera del top-50 y AC-7 lo
+    // pierde ("Received: undefined", sólo en CI con la base sucia). Mismo caso que el claim de
+    // enrichment.repository: un query sobre toda la tabla no se aísla por prefijo, se trunca.
+    // La base de tests va aislada por schema por sesión y en CI es dedicada, así que truncar
+    // acá no pisa a nadie.
+    await prisma.$executeRawUnsafe(
+      'TRUNCATE TABLE products RESTART IDENTITY CASCADE',
+    );
     const categoryId = await asegurarCategoria(
       prisma,
       `e2es-${corrida}`,

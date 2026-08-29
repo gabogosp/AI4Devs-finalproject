@@ -1,18 +1,20 @@
 {
   "_comentario": [
-    "Casos semilla del arnés de relevancia (US-004 T6.1, AC-2).",
-    "",
-    "Son 8 y no 30 a propósito: la batería completa es de QA (qa-plan de US-004, QA-004-REL-1).",
-    "Acá se entrega el ARNÉS ejecutable con casos suficientes para calibrar el umbral.",
+    "Casos semilla del arnés de relevancia (US-004 T6.1, AC-2) + la batería completa de QA",
+    "(QA-004-REL-1, qa-plan de US-004): 30 casos, 5 clases (10/5/5/5/5).",
     "",
     "Las consultas salen del PRD y del design-system —la primera es literalmente el ejemplo",
     "que el readme usa para explicar el diferenciador— y cubren las cinco clases que el",
     "qa-plan define: coloquial, técnico parcial, gremio, ambigua y negative-match.",
     "",
-    "`expected` son SLUGS del catálogo de seed. Si el catálogo no los tiene, el script lo",
-    "reporta como `slug_inexistente` en vez de contarlo como fallo de relevancia: son dos",
-    "problemas distintos y confundirlos haría que un catálogo chico se lea como una búsqueda",
-    "mala."
+    "`expected` son SLUGS del catálogo de demo (packages/db/prisma/seed.ts: compresor-1-4-hp,",
+    "gas-refrigerante-r134a-1kg, taladro-percutor-650w) más productos del catálogo enriquecido",
+    "que el PRD/design-system nombran (mecha-widia-8mm, cinta-aisladora-negra, etc.) que ese",
+    "seed mínimo no incluye. Si el catálogo no los tiene, el script lo reporta como",
+    "`slug_inexistente` en vez de contarlo como fallo de relevancia: son dos problemas",
+    "distintos y confundirlos haría que un catálogo chico se lea como una búsqueda mala — la",
+    "batería completa está pensada para el catálogo enriquecido de producción, no sólo para",
+    "el seed mínimo de demo local (2026-08-29, QA-004-REL-1)."
   ],
   "cases": [
     {
@@ -70,6 +72,160 @@
       "query": "zapatillas de running talle 42",
       "expected": [],
       "por_que": "Nada que ver con una ferretería. El sistema tiene que decir `none` o `low` con fallback, y NO inventar un match con confianza alta. Un acierto acá sería una señal de que el umbral está demasiado bajo."
+    },
+    {
+      "id": "coloquial-cambiar-canilla",
+      "clase": "coloquial",
+      "query": "se me rompió la canilla y pierde agua",
+      "expected": ["canilla-monocomando-cocina"],
+      "por_que": "Describe el síntoma, no la pieza. El cliente de plomería típico no sabe si necesita una canilla nueva o una cuerina."
+    },
+    {
+      "id": "coloquial-piso-resbaladizo",
+      "clase": "coloquial",
+      "query": "algo para que el piso del baño no resbale",
+      "expected": ["cinta-antideslizante-ducha"],
+      "por_que": "Tarea doméstica descripta en lenguaje cotidiano, sin nombrar producto ni categoría."
+    },
+    {
+      "id": "coloquial-cortar-caño",
+      "clase": "coloquial",
+      "query": "necesito cortar un caño de PVC derecho",
+      "expected": ["sierra-metal-24-dientes"],
+      "por_que": "Herramienta por tarea: la intención es 'cortar', no 'sierra'."
+    },
+    {
+      "id": "coloquial-tapar-agujero-pared",
+      "clase": "coloquial",
+      "query": "quedó un agujero feo en la pared después de sacar un cuadro",
+      "expected": ["masilla-reparadora-pared"],
+      "por_que": "Reparación, no instalación — el opuesto de 'colgar un cuadro'. Verifica que el embedding distingue ambas intenciones sobre el mismo objeto (pared)."
+    },
+    {
+      "id": "coloquial-pintar-reja",
+      "clase": "coloquial",
+      "query": "quiero pintar una reja de metal que tiene óxido",
+      "expected": ["antioxido-convertidor-metal"],
+      "por_que": "Dos intenciones encadenadas (pintar + óxido): el candidato correcto atiende la causa (óxido), no el efecto (pintura decorativa)."
+    },
+    {
+      "id": "coloquial-conectar-varios-enchufes",
+      "clase": "coloquial",
+      "query": "necesito enchufar varias cosas en un solo tomacorriente",
+      "expected": ["zapatilla-electrica-6-tomas"],
+      "por_que": "Nombre coloquial ('zapatilla') vs. descripción funcional pura: valida que el vector no dependa de que el cliente use la palabra exacta del catálogo."
+    },
+    {
+      "id": "coloquial-medir-luz",
+      "clase": "coloquial",
+      "query": "cómo sé si un cable tiene corriente antes de tocarlo",
+      "expected": ["tester-de-voltaje"],
+      "por_que": "Pregunta de seguridad reformulada como necesidad de producto; el caso más alejado en forma de un nombre de producto de toda la batería."
+    },
+    {
+      "id": "coloquial-fijar-estante",
+      "clase": "coloquial",
+      "query": "quiero poner un estante flotante sin que se caiga",
+      "expected": ["taco-fischer-sx-8mm-x50"],
+      "por_que": "Reusa el dominio de 'colgar un cuadro' (fijación en pared) con otra tarea, para confirmar que el acierto de esa familia no fue casualidad de una sola consulta."
+    },
+    {
+      "id": "tecnico-parcial-mecha-widia",
+      "clase": "tecnico-parcial",
+      "query": "mecha widia 8mm",
+      "expected": ["mecha-widia-8mm"],
+      "por_que": "Nombre técnico casi literal con una unidad (8mm) que el full-text también debería resolver — control de plomería para el camino léxico, como FER-001."
+    },
+    {
+      "id": "tecnico-parcial-cinta-aisladora",
+      "clase": "tecnico-parcial",
+      "query": "cinta aisladora negra",
+      "expected": ["cinta-aisladora-negra"],
+      "por_que": "Nombre casi exacto del catálogo (ejemplo del propio OpenAPI). Si esto falla, el problema no es semántico."
+    },
+    {
+      "id": "tecnico-parcial-teflon-gas",
+      "clase": "tecnico-parcial",
+      "query": "cinta de teflón para gas",
+      "expected": ["cinta-teflon-gas-amarilla"],
+      "por_que": "Del ejemplo de búsqueda del qa-plan (§1 gremio/técnico). El color (amarilla, no blanca) es la especificación que distingue el uso en gas del uso genérico en agua."
+    },
+    {
+      "id": "gremio-electricista-diferencial",
+      "clase": "gremio",
+      "query": "algo para proteger la instalación de una descarga eléctrica",
+      "expected": ["disyuntor-diferencial-25a"],
+      "por_que": "Jerga de electricista sobre función de seguridad, no sobre el nombre del dispositivo."
+    },
+    {
+      "id": "gremio-plomero-perdida",
+      "clase": "gremio",
+      "query": "para sellar una rosca de caño y que no pierda",
+      "expected": ["cinta-teflon-gas-amarilla"],
+      "por_que": "Mismo producto que tecnico-parcial-teflon-gas, consulta distinta (función de plomero vs. nombre técnico): valida que ambas rutas de lenguaje convergen al mismo candidato."
+    },
+    {
+      "id": "gremio-albanil-fijacion",
+      "clase": "gremio",
+      "query": "para fijar un perfil a una pared de hormigón",
+      "expected": ["taco-fischer-sx-8mm-x50"],
+      "por_que": "Jerga de albañilería/instalador (pared de hormigón, no 'pared dura' del caso coloquial) sobre el mismo producto que el ejemplo del readme."
+    },
+    {
+      "id": "ambigua-algo-para-el-frio",
+      "clase": "ambigua",
+      "query": "algo para el frío",
+      "expected": [],
+      "por_que": "Demasiado corta y ambigua para resolver a un producto único (¿calefacción? ¿aislación? ¿ropa, que ni vende la ferretería?). Exige fallback, no un acierto forzado."
+    },
+    {
+      "id": "ambigua-arreglar-la-puerta",
+      "clase": "ambigua",
+      "query": "se me traba la puerta y no sé qué le pasa",
+      "expected": [],
+      "por_que": "Síntoma sin causa identificada (¿bisagra? ¿cerradura? ¿el marco?): ninguna respuesta única es defendible, así que se exige salida (fallback), no acierto."
+    },
+    {
+      "id": "ambigua-herramientas-basicas",
+      "clase": "ambigua",
+      "query": "quiero armar una caja de herramientas básica",
+      "expected": [],
+      "por_que": "Pide un conjunto, no un ítem — no hay un slug único 'correcto' en un catálogo por producto individual. Igual que las otras ambiguas: se exige fallback, no acierto."
+    },
+    {
+      "id": "ambigua-decorar-living",
+      "clase": "ambigua",
+      "query": "ideas para decorar el living",
+      "expected": [],
+      "por_que": "Fuera del dominio de una ferretería pero no tan disparatada como para ser negative-match evidente (podría, en teoría, derivar a pintura o iluminación): el límite entre ambigua y negative-match es justamente qué tan defendible es CUALQUIER match."
+    },
+    {
+      "id": "negative-match-torta-cumpleanos",
+      "clase": "negative-match",
+      "query": "receta de torta de cumpleaños",
+      "expected": [],
+      "por_que": "Ningún dominio de ferretería/refrigeración/electricidad la explica. Confidence debe ser none/low, nunca high."
+    },
+    {
+      "id": "negative-match-turno-medico",
+      "clase": "negative-match",
+      "query": "sacar turno para el dentista",
+      "expected": [],
+      "por_que": "Consulta de servicio, no de producto. Verifica que un texto gramaticalmente válido pero fuera de catálogo no fuerza un match por 'algo parecido'."
+    },
+    {
+      "id": "negative-match-letras-random",
+      "clase": "negative-match",
+      "query": "asdf qwer zxcv",
+      "expected": [],
+      "por_que": "Ruido sin significado. Corner case de robustez: ni el vector ni el full-text deberían alucinar un candidato de esto."
+    },
+    {
+      "id": "negative-match-clima-hoy",
+      "clase": "negative-match",
+      "query": "qué tiempo hace hoy en Buenos Aires",
+      "expected": [],
+      "por_que": "Pregunta conversacional genérica, el tipo de input que un chatbot recibiría (fuera de scope, PRD §2.2) pero que igual puede llegar a esta caja de búsqueda: no debe devolver nada con confianza."
     }
   ]
 }
