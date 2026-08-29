@@ -29,14 +29,23 @@ describe('EnrichmentRepository.claimBatch (integration)', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
-    // Se crea UNA categoría para toda la suite y NO se truncan tablas: este Postgres es
-    // compartido con las suites de otras sesiones, y un `TRUNCATE products` acá les
-    // borra las fixtures a mitad de su corrida. Ser buen ciudadano de la base es parte
-    // del contrato: fixtures con prefijo único y assertions por subconjunto.
     categoryId = await asegurarCategoria(prisma, `fij-${corrida}`, `Fijaciones ${corrida}`);
   });
   afterAll(async () => {
     await prisma.$disconnect();
+  });
+
+  // Aislamiento por test. `claimBatch(N)` opera sobre TODOS los productos elegibles de
+  // la base, no sólo los del test; sin limpiar, en una base con residuo (CI corre todo
+  // el paquete: imports/seed dejan cientos de productos elegibles) el lote se llena con
+  // el residuo y las filas sembradas acá quedan fuera → el `toContain` fallaba sólo en
+  // CI, no localmente. Se truncan productos + dependientes (CASCADE); la categoría del
+  // beforeAll se preserva. La base de tests va aislada por schema por sesión, así que
+  // truncar acá no pisa a nadie.
+  beforeEach(async () => {
+    await prisma.$executeRawUnsafe(
+      'TRUNCATE TABLE products RESTART IDENTITY CASCADE',
+    );
   });
 
   /** Siembra `n` productos con el estado de enriquecimiento pedido. */

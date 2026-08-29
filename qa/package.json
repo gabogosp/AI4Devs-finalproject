@@ -29,6 +29,7 @@
     "@playwright/test": "1.49.1",
     "@types/jsonwebtoken": "9.0.7",
     "@types/node": "22.10.2",
+    "exceljs": "4.4.0",
     "jsonwebtoken": "9.0.2",
     "newman": "6.2.1",
     "tsx": "4.19.2",
