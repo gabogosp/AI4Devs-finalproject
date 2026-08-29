@@ -719,7 +719,7 @@
   us-id: US-008
   discipline: backend
   variant: null
-  status: draft
+  status: in progress   # T0.1 cerrada 2026-08-29 (/develop-backend)
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null
