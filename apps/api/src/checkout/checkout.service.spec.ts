@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CartTokenService } from '../cart/cart-token.service';
 import { CartsRepository } from '../cart/carts.repository';
 import { ProductsRepository } from '../products/products.repository';
+import { CheckoutEventsService } from '../observability/checkout-events.service';
 import { CartEmptyError, CartNotPurchasableError } from './checkout-errors';
 import { CheckoutService } from './checkout.service';
 import { OrderTokenService } from './order-token.service';
@@ -28,7 +29,15 @@ describe('CheckoutService (integration)', () => {
     LEGAL_TERMS_VERSION: '2026-06-15',
   }) as ConfigService;
   const cartToken = new CartTokenService(carts, config);
-  const service = new CheckoutService(cartToken, products, orders, orderToken, config);
+  const events = new CheckoutEventsService();
+  const service = new CheckoutService(
+    cartToken,
+    products,
+    orders,
+    orderToken,
+    config,
+    events,
+  );
 
   const fakeReq = (cookies: Record<string, string> = {}) =>
     ({ cookies }) as unknown as Request;
