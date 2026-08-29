@@ -345,6 +345,21 @@ T2.2 genera los mismos 32 bytes de CSPRNG y los codifica en hex localmente, reus
 `hashToken` (agnóstico al formato del claro que recibe) para el hash — la primitiva
 compartida se reusa donde el formato coincide, no donde no.
 
+**Throttler `checkout` registrado con `limit: Number.MAX_SAFE_INTEGER` en el array
+global, no con `CHECKOUT_RATE_LIMIT_MAX`.** Mismo criterio que `enrichment`/`search`
+(comentario en `auth.module.ts`): `@nestjs/throttler` aplica **todos** los throttlers
+nombrados a **toda** ruta guardada, así que un `limit` real acá lo heredarían auth,
+storefront, cart, enrichment y search a menos que cada uno agregara
+`@SkipThrottle({ checkout: true })`. El presupuesto real va en
+`@Throttle({ checkout: { limit: CHECKOUT_RATE_LIMIT_MAX } })` sobre el único handler
+del checkout — así ningún controller existente se toca.
+
+**`CartCsrfGuard` se suma a los exports de `CartModule`, más allá de lo que T1.3
+declaró (`CartTokenService` + `CartsRepository`).** T3.2 reusa el guard tal cual
+(§Approach.3); T1.3 no lo anticipó porque su Exit criterion sólo mencionaba los dos
+primeros. Extensión aditiva del mismo wiring, en el punto donde efectivamente hace
+falta.
+
 ## Deployment considerations
 
 **No hace falta `/plan-deployment` por sí solo**, pero sí conviene coordinarlo con US-009,
