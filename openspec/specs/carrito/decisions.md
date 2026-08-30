@@ -28,6 +28,19 @@ acá se registra **cuál aplica a esta capacidad y por qué**.
 | Purga **oportunista** (al resolver una fila vencida), sin job programado. | Redis/BullMQ no está aprovisionado (mismo estado que US-006 / ADR-0012); con `CART_TTL_DAYS = 7` la purga oportunista alcanza de sobra. El job queda diferido con dueño (OQ-BE-6). |
 | Sin `Idempotency-Key` en la superficie del carrito. | La semántica `PUT` absoluta ya es idempotente; agregar la maquinaria de idempotencia sería resolver dos veces el mismo problema. |
 
+## Decisiones de frontend (US-007 frontend-web)
+
+| Decisión | Motivo |
+|---|---|
+| El carrito es una vista de **cliente forzada**, no elegida (`/carrito` Client Component + `noindex`, badge como isla cliente). | `client.ts` lanza si una llamada con `session: 'cart'` sale del servidor — mismo guard que protege datos personalizados de `session: 'customer'` (design.md D1). Renderizar en servidor reenviando `cookies()` abriría una excepción en el único lugar que impide fugar datos entre personas. |
+| El rewrite same-origin de `next.config.mjs` se extiende a `/v1/cart/:path*`. | ADR-0013 nombra explícitamente a US-007 como heredero («if it moves to a cookie-authenticated surface»); sin esto `dsm_cart` nunca vuelve en producción (`up.railway.app` está en la Public Suffix List). Configuración declarativa: no agrega un segundo cliente HTTP (F48). |
+| CSRF gana un **sujeto** (`session` \| `cart`), no un segundo lector de `document.cookie`. | `csrf.ts` es el único lector de la app por diseño; el default del parámetro preserva el comportamiento de US-014 sin tocar sus tests. Fail-closed intacto: sin cookie, la llamada sale sin header y el 403 se propaga. |
+| Estado del carrito: unión discriminada + **reemplazo completo** en cada mutación, no reconciliación local. | Las tres operaciones del backend devuelven el `CartView` completo — no hay cálculo local de totales que pueda divergir del servidor. `mutating` es por línea, no global. |
+| Stepper **pesimista** con debounce 400 ms, deshabilitado mientras la escritura está en vuelo. | El backend es la autoridad del stock; un stepper optimista obligaría a retroceder el número cuando el servidor contesta `409`. Costo aceptado: un pequeño retardo por clic sostenido (trade-off declarado, no default sin discutir). |
+| Contexto liviano (`useReducer` + Context) en vez de store global. | Sólo dos consumidores (página + badge) y el servidor ya manda el estado completo en cada mutación — un store global sería infraestructura para un problema inexistente (YAGNI, `base-standards.md` §1). |
+| `ProductCard` (US-002) gana «Agregar» con cantidad 1 sin stepper (OQ-FE-2, resuelta por el PO). | AC-1 lo nombra explícitamente; el riesgo de tocar una superficie de otra US se acota exigiendo que los tests de US-002 corran sin editarse. |
+| CTA «Ir al pago» queda deshabilitado con el motivo a la vista. | US-008 (checkout) no existe todavía; el resto del carrito es plenamente funcional (`Deferred: US-008 — owner: FE`). |
+
 ## Desviaciones conscientes registradas
 
 | Desviación | Motivo |
