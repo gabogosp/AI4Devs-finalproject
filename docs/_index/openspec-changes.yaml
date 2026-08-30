@@ -1436,7 +1436,7 @@
   us-id: US-023
   discipline: backend
   variant: null
-  status: draft
+  status: in progress   # 19/19 tasks + 5 checks de verificación cerrados 2026-08-30, PR pendiente (/commit)
   parent-us: docs/user-stories/US-023-pago-manual-offline.md
   linear-task-id: null
   audit-baseline: null
