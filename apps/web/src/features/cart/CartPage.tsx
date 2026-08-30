@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { track } from '@/lib/observability/events';
 import { useCartContext } from './CartProvider';
 import { CartItemRow } from './CartItemRow';
@@ -19,6 +20,7 @@ import { CartEmptyState } from './CartEmptyState';
  */
 export function CartPage() {
   const { state, reload, setQuantity, remove } = useCartContext();
+  const router = useRouter();
 
   useEffect(() => {
     // El badge del layout ya dispara la lectura al montar; `reload` es
@@ -63,6 +65,11 @@ export function CartPage() {
     },
     [remove],
   );
+
+  const irAlPago = useCallback(() => {
+    track('checkout_started');
+    router.push('/checkout');
+  }, [router]);
 
   if (state.kind === 'idle' || state.kind === 'loading') {
     return (
@@ -117,7 +124,7 @@ export function CartPage() {
                 />
               ))}
             </ul>
-            <CartSummary cart={cart} />
+            <CartSummary cart={cart} onCheckout={irAlPago} />
           </div>
         </>
       )}

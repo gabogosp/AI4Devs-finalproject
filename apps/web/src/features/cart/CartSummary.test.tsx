@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 import { formatArs } from '@/lib/format/currency';
 import type { Cart } from '@/api/generated/model';
 import { CartSummary } from './CartSummary';
@@ -37,37 +38,25 @@ describe('CartSummary', () => {
   });
 
   it('has_blocking_issues deshabilita el CTA Y muestra el motivo (AC-6)', () => {
-    render(<CartSummary cart={cart({ has_blocking_issues: true })} checkoutAvailable />);
+    render(<CartSummary cart={cart({ has_blocking_issues: true })} />);
 
     expect(irAlPago()).toBeDisabled();
     expect(screen.getByText(/hay líneas que no se pueden comprar/i)).toBeInTheDocument();
   });
 
-  it('sin bloqueos pero sin checkout, el CTA sigue deshabilitado con OTRO motivo', () => {
+  it('US-008: sin bloqueos, el CTA está habilitado sin necesitar ningún prop adicional', () => {
     render(<CartSummary cart={cart()} />);
 
-    expect(irAlPago()).toBeDisabled();
-    expect(screen.getByText(/se habilita en la próxima entrega/i)).toBeInTheDocument();
-    // Los dos motivos son distinguibles: uno lo resuelve la persona, el otro no.
+    expect(irAlPago()).toBeEnabled();
     expect(screen.queryByText(/no se pueden comprar/i)).not.toBeInTheDocument();
   });
 
-  it('los dos motivos son textos DISTINTOS', () => {
-    const { unmount } = render(
-      <CartSummary cart={cart({ has_blocking_issues: true })} checkoutAvailable />,
-    );
-    const bloqueo = screen.getByRole('region').textContent ?? '';
-    unmount();
+  it('click en el CTA invoca onCheckout', async () => {
+    const onCheckout = vi.fn();
+    render(<CartSummary cart={cart()} onCheckout={onCheckout} />);
 
-    render(<CartSummary cart={cart()} />);
-    const pendiente = screen.getByRole('region').textContent ?? '';
+    await userEvent.setup().click(irAlPago());
 
-    expect(bloqueo).not.toBe(pendiente);
-  });
-
-  it('con checkout disponible y sin bloqueos, el CTA se habilita', () => {
-    render(<CartSummary cart={cart()} checkoutAvailable />);
-
-    expect(irAlPago()).toBeEnabled();
+    expect(onCheckout).toHaveBeenCalledTimes(1);
   });
 });

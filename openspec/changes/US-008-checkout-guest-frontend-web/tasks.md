@@ -344,7 +344,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 4: Un-defer del CTA del carrito
 
-- [ ] T4.1 `CartSummary.tsx` — quita `checkoutAvailable`/`MOTIVO_PENDIENTE`
+- [x] T4.1 `CartSummary.tsx` — quita `checkoutAvailable`/`MOTIVO_PENDIENTE`
   - **Pattern**: el CTA se habilita salvo `has_blocking_issues`; se borra el prop
     `checkoutAvailable`, la constante `MOTIVO_PENDIENTE` y el comentario `Deferred: US-008` — la
     excepción nombrada del "tests existentes sin editar" (`per design.md D9`, mismo criterio que
@@ -357,7 +357,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     (reescribir los 3 casos que dependían de `checkoutAvailable`/`MOTIVO_PENDIENTE`: ahora "sin
     bloqueos, el CTA está habilitado" reemplaza al caso que probaba lo contrario)
 
-- [ ] T4.2 `CartPage.tsx` — navega de verdad a `/checkout`
+- [x] T4.2 `CartPage.tsx` — navega de verdad a `/checkout`
   - **Pattern**: `useRouter().push('/checkout')` en `onCheckout`, más `track('checkout_started')`
     (Fase 5) — `per` el precedente de `cambiarCantidad`/`quitar` en el mismo archivo, que ya
     envuelven la mutación con el evento correspondiente.
