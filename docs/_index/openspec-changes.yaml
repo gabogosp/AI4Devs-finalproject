@@ -1543,7 +1543,7 @@
   estimate-hours: 6.8
   assignee: sin-asignar  # planificado; 0 tasks cerradas, nadie lo ejecuta todavía
   branch: feat/US-021-retencion-datos-ordenes-backend
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/25
   created: 2026-08-30
   completed-at: null
   archived-at: null
