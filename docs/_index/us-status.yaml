@@ -302,3 +302,17 @@
   linear-issue-id: null
   created: 2026-08-23
   blocked_by: []
+- id: US-023
+  slug: pago-manual-offline
+  status: Backlog
+  priority: High
+  prd-capacity: 4   # CAP-4 «Checkout y pago» — adaptador de pago sin MercadoPago
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-08-30
+  # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
+  # el pago y la orden pasa a `paid`. Nace de "puro modelo local" sin credenciales de MP.
+  # US-023 es DUEÑA del PaymentConfirmationPort (extraído de US-009); MercadoPago (US-009)
+  # queda como otro adaptador del mismo puerto, ON HOLD por dependencia externa (credenciales).
+  blocked_by: [US-008]    # necesita la orden en `pending_payment` que crea el checkout
