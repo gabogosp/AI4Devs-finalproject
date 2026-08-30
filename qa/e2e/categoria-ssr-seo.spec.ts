@@ -197,8 +197,13 @@ test('TC-208: el listado ya está en el HTML servido, sin ejecutar JavaScript (A
 
   const html = await res!.text();
   expect(html).toContain(seed.publicados[0].name);
-  // El precio llega formateado, no en centavos crudos.
-  expect(html).not.toContain(String(seed.publicados[0].price_ars_cents));
+  // El precio llega formateado, no en centavos crudos. Con límite de palabra:
+  // un `toContain` plano da falso positivo cuando el precio sembrado (p. ej.
+  // 100000) es substring de un número no relacionado ya presente en la página
+  // (el WhatsApp de contacto de US-018 es +54 9 11 0000-0000 → "...1100000000").
+  expect(html).not.toMatch(
+    new RegExp(String.raw`\b${seed.publicados[0].price_ars_cents}\b`),
+  );
 
   await context.close();
 });

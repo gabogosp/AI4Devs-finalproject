@@ -257,15 +257,16 @@
   us-id: US-002
   discipline: qa
   variant: null
-  status: in progress
+  status: in review   # regresión completa re-verificada 2026-08-30 (/develop-qa): 20/20 automatizados verdes; 2 diferidos (T2.5/T5.1) sin cambio
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 7
   assignee: sin-identificar  # idem US-003 qa
-  branch: null
-  pr-url: null
+  branch: feat/US-002-storefront-navegacion-categorias-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/21
+  pr-opened-at: 2026-08-30T12:30:00Z
   created: 2026-08-16
   completed-at: null
   archived-at: null

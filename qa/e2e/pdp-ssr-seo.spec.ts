@@ -51,8 +51,13 @@ test('TC-302: el HTML servido ya trae el contenido, sin hidratar (AC-2/AC-10)', 
   // Si esto falla, la página se arma en el cliente y Google la ve vacía.
   expect(html).toContain(seed.publicado.name);
 
-  // El precio llega formateado, no en centavos crudos.
-  expect(html).not.toContain(String(seed.publicado.price_ars_cents));
+  // El precio llega formateado, no en centavos crudos. Con límite de palabra:
+  // un `toContain` plano da falso positivo cuando el precio sembrado (p. ej.
+  // 100000) es substring de un número no relacionado ya presente en la página
+  // (el WhatsApp de contacto de US-018 es +54 9 11 0000-0000 → "...1100000000").
+  expect(html).not.toMatch(
+    new RegExp(String.raw`\b${seed.publicado.price_ars_cents}\b`),
+  );
 });
 
 test('TC-303: el HTML trae JSON-LD Product y metadatos propios (AC-2)', async ({
