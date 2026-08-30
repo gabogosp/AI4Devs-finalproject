@@ -1441,27 +1441,37 @@
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  # BLOQUEADO: el contrato `GET/PATCH /admin/orders` no existe todavía. Depende de
-  # `US-010-orden-webhook-stock-backend` (draft, 0 tasks cerradas) y de
-  # `US-012-panel-ordenes-dueno-backend` (sin planificar, no existe el directorio). La
-  # Fase 0 de tasks.md convierte esto en un gate verificable — ningún task cierra hasta
-  # que el contrato aterrice. design.md §Approach D2 documenta la forma de contrato
-  # esperada para destrabar esa planificación de backend.
+  # REALINEADO 2026-08-30: US-012-panel-ordenes-dueno-backend fue regenerado (columna real
+  # `created_at`, no `confirmed_at`; `sort` es un enum cerrado de 6 valores, no un param
+  # libre; `AdminOrderStatusChange` ganó `changed_by`). Este plan de FE se actualizó en
+  # proposal.md/design.md/tasks.md para reflejarlo, y ya NO depende de
+  # `US-010-orden-webhook-stock-backend` (el backend regenerado se desacopló de esa US: la
+  # tabla `orders`/`order_items` ya existe desde `US-008`, mergeado). El único bloqueante
+  # de las Fases 1-11 (fulfillment) es `US-012-panel-ordenes-dueno-backend`.
   #
-  # ALCANCE: módulo admin/ordenes (listado TanStack con paginación/orden/filtro server-side,
-  # detalle con historial de estado, acciones de avance de estado con UI optimista +
-  # rollback + Idempotency-Key), reutilizando AdminGuard sin modificarlo. Cubre las 9 AC
-  # de la US desde la UI (AC-4 es trigger 100% backend; el FE solo emite el PATCH en el
-  # momento correcto).
+  # AGREGADO en la realineación: Fase 12 — `PendingPaymentsPanel`, vista separada (segunda
+  # pestaña de /admin/ordenes, nunca mezclada con OrdersList/su filtro) para que el dueño
+  # confirme pagos manuales, reusando los endpoints ya planificados por
+  # `US-023-pago-manual-offline-backend` (`GET /admin/orders/pending-payment`,
+  # `POST /admin/orders/{orderId}/confirm-payment`) — decisión de coexistencia del backend
+  # regenerado (su proposal.md decisión 3). Bloqueada por T0.3 (gate independiente de T0.1).
+  # **Esta feature NO tiene un AC Gherkin formal en la US** — nace de una nota informal §10;
+  # ver proposal.md OQ-FE-4 (recomendación de CR/enmienda a la US para un AC-10 formal).
   #
-  # 3 preguntas abiertas para quien planifique el backend: OQ-FE-1 (forma del historial de
-  # estado — el DER del E2E §8 no lo modela), OQ-FE-2 (soporte de Idempotency-Key en el
-  # PATCH), OQ-FE-3 (forma de sort/order del listado).
+  # ALCANCE (sin cambios): módulo admin/ordenes (listado TanStack con paginación/orden/filtro
+  # server-side, detalle con historial de estado, acciones de avance de estado con UI
+  # optimista + rollback + Idempotency-Key), reutilizando AdminGuard sin modificarlo. Cubre
+  # las 9 AC de la US desde la UI (AC-4 es trigger 100% backend; el FE solo emite el PATCH en
+  # el momento correcto).
   #
-  # 21 tasks (11 fases). ~7 h AI-asistido / ~14 h tradicional (dentro del rango 12-16h de
-  # US §7). Recomendación de deployment-planning: no todavía — no tiene sentido planificar
-  # despliegue de un change cuyo contrato de datos no existe.
-  estimate-hours: 7
+  # OQ-FE-1/2/3 resueltas (con revisión en la realineación); OQ-FE-4 nueva (ver arriba).
+  #
+  # 25 tasks (12 fases, +4 de la Fase 12 nueva). ~7-9 h AI-asistido / ~15-17 h tradicional
+  # (Fase 12 agrega ~1-2h sobre el rango original 12-16h de US §7 — feature aditiva sin AC,
+  # a revisar el estimado de la US si se formaliza un AC-10). Recomendación de
+  # deployment-planning: no todavía — no tiene sentido planificar despliegue de un change
+  # cuyo contrato de datos no existe.
+  estimate-hours: 8
   assignee: sin-asignar
   branch: feat/US-012-panel-ordenes-dueno-frontend-web
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
@@ -1480,49 +1490,57 @@
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  # BLOQUEADO: extiende `src/orders/` (order-state.ts, confirmed_at/cancelled_at,
-  # NotificationPort, payments), ninguno existe todavía —
-  # `US-010-orden-webhook-stock-backend` sigue `draft`, 0 tasks cerradas. La Fase 0 de
-  # tasks.md (T0.1) es un gate verificable que falla a propósito hoy, mismo patrón que el
-  # T0.1 del sibling de FE.
+  # REGENERADO 2026-08-30 (/plan-backend-ticket US-012 --regenerate). Versión anterior
+  # respaldada en openspec/changes/_backups/2026-08-30-US-012-panel-ordenes-dueno-backend/.
+  # MOTIVO: US-009 pasó a Blocked (sin credenciales MP) y US-010 queda pospuesta sin
+  # fecha — la dependencia de la versión anterior (`src/orders/`, `order-state.ts`,
+  # `confirmed_at`/`cancelled_at`, `NotificationPort`, `payments`, todo "de US-010") nunca
+  # se construyó y no hay señal de que se construya pronto. `US-023-pago-manual-offline`
+  # nace como camino interino de pago (backend planificado en worktree separado, 0 tasks
+  # ejecutadas, código sólo staged sin commitear) y decidió NO crear `src/orders/` —
+  # extiende `checkout/orders.repository.ts` en su lugar.
   #
-  # ALCANCE: tres endpoints admin (GET listado, GET detalle, PATCH transición) sobre el
-  # módulo que crea US-010; tabla nueva `order_status_history` (aditiva, resuelve AC-9);
-  # NotificationPort gana `orderReadyForPickup` (mismo seam que orderConfirmed/
-  # orderCancelledNoStock de US-010, entrega real diferida a US-011).
+  # DESBLOQUEADO, SIN GATE: este regenerate NO depende de ningún código que no exista hoy.
+  # `orders` (migrada por US-008) ya tiene el CHECK de los 6 estados de la FSM completa;
+  # eso alcanza para todo lo que este panel gestiona (las 4 fases activas). Ya no hay
+  # T0.1 en rojo — la Fase 0 sólo verifica working tree limpio.
   #
-  # RESOLUCIÓN DE LAS 3 PREGUNTAS DEL SIBLING FE (OQ-FE-1/2/3, ver proposal.md
-  # "Decisiones sobre las preguntas del FE"): OQ-FE-1 RATIFICADA (order_status_history
-  # tabla propia, exactamente el shape que el FE propuso) · OQ-FE-2 REVISADA (sin
-  # Idempotency-Key almacenada; idempotencia estructural por estado, mismo patrón que
-  # ADR-0008 — el header que el FE ya decidió mandar se acepta y se ignora) · OQ-FE-3
-  # REVISADA (un solo query param `sort` con prefijo `-`, api-standards §7.2, en vez de
-  # `sort`+`order` separados — el sibling de FE necesita ajustar `ordersService.list()`
-  # antes de ejecutar su Fase 2/5, anotado en su propio proposal.md pendiente de que esa
-  # sesión lo lea).
+  # ALCANCE: módulo NUEVO `src/orders/` (controller/servicio/FSM propia de 4 estados/
+  # NotificationPort nuevo/repositorio de historial), extendiendo `checkout/orders.
+  # repository.ts` (no reemplazándolo) para `list`/`findById`/`updateStatusConditional` —
+  # mismo patrón que US-023 ya aplicó ahí mismo. Tabla nueva `order_status_history`
+  # (aditiva, con `changed_by` — agregado deliberado, OQ-BE-3, sin AC literal que lo pida).
   #
-  # DECISIÓN LOCAL: `OrderInvalidTransitionError` propia con 409 (no el 422 de
-  # `InvalidTransitionError` de productos) — semántica RFC 7231 §6.5.8 de conflicto de
-  # estado + compatibilidad con `errors.ts` del FE, que ya mapea 409→`AppError.conflict`.
+  # DECISIONES DEL REGENERATE (ver proposal.md "Decisiones de este regenerate"):
+  # (1) superficie admin en módulo nuevo `src/orders/`, acceso a `orders`/`order_items`
+  # extendiendo `checkout/orders.repository.ts` — igual que US-023 en el mismo archivo.
+  # (2) riesgo de reconciliación FLAGEADO, no resuelto: cuando se re-planifique US-010, su
+  # propio design.md §D9 todavía describe una FSM de 6 estados para `src/orders/`, que para
+  # entonces va a existir con sólo 4 — decisión que le toca a esa futura planificación.
+  # (3) vista de "pendientes de pago" (nota §10 de la US, staged sin commitear en el
+  # worktree de US-023): COEXISTENCIA — se reusa `GET /v1/admin/orders/pending-payment`
+  # de US-023 tal cual, sin duplicarlo ni absorberlo; el listado de este change sigue
+  # excluyendo `pending_payment` siempre (AC-8 literal intacto).
+  # (4) COLISIÓN DE RUTAS encontrada y resuelta: `GET /v1/admin/orders/:id` (este change)
+  # puede interceptar `GET /v1/admin/orders/pending-payment` (US-023) si los módulos se
+  # registran en el orden equivocado en app.module.ts — resuelto con un regex de forma
+  # UUID en `:id`, independiente del orden de merge de los dos changes hermanos.
+  # (5) 409 + idempotencia estructural: mismo criterio que la versión anterior, ahora con
+  # precedente real (no hipotético) en `OrderNotPendingPaymentError` de US-023.
   #
-  # DEVIACIÓN DECLARADA del DER (E2E §8): `order_status_history` (tabla nueva, aditiva,
-  # FK a `orders`). Evaluada per `data-architecture-patterns`: sin invocar `data-architect`
-  # Mode B (tabla trivial, sin datos que migrar, proyecto pre-lanzamiento, sin backfill).
-  # Sin ADR nuevo: ADR-0008 gobierna la idempotencia estructural que este change reusa.
+  # CORRECCIÓN AL CONTRATO ASUMIDO POR EL SIBLING FE: su design.md §D2 asume
+  # `confirmed_at` y `sort` default `-confirmed_at` — ninguno existe; la columna real es
+  # `created_at`. Anotado en proposal.md References para la sesión que retome el FE.
   #
-  # 7,0 h AI-asistido / ~13,3 h tradicional (19 tasks, 9 fases). US §7 presupuesta
-  # BE-US-012 en 8-12 h: excede el techo ~1,3 h por extender NotificationPort (tercer
-  # método), la tabla transaccional de historial y el UPDATE condicional + relectura de
-  # la idempotencia estructural — la FSM/AdminGuard/filtro RFC 7807 ya los deja US-010.
+  # 6,6 h AI-asistido / ~12,5 h tradicional (17 tasks, 9 fases) — dentro del rango 8-12h
+  # que presupuesta US §7 (la versión anterior lo excedía por la extensión fantasma).
   #
-  # 2 preguntas abiertas propias (OQ-BE-1, OQ-BE-2), ninguna bloquea el arranque: ambas
-  # con default implementado (detalle de orden cancelada visible por id; filtro de
-  # listado sin la opción "cancelled").
+  # 3 preguntas abiertas propias (OQ-BE-1, OQ-BE-2, OQ-BE-3), ninguna bloquea el arranque.
   #
   # DEPLOYMENT: no amerita /plan-deployment propio (migración aditiva, sin secretos, sin
-  # flag). Sí importa el orden: US-010 → US-012-backend (no negociable, mismo criterio
-  # que la cadena US-008→US-009→US-010).
-  estimate-hours: 7.0
+  # flag, sin dependencia de orden con ningún otro change — a diferencia de la versión
+  # anterior).
+  estimate-hours: 6.6
   assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
   # Comparte rama con el sibling de FE por instrucción explícita del usuario (mismo
   # worktree, mismo PR de US-012 completo) — desviación deliberada del modelo 1

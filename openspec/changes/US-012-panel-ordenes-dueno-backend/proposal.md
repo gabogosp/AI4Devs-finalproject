@@ -6,78 +6,116 @@ discipline: backend
 variant: null
 language: es
 audit-derived: false
+regenerated-at: 2026-08-30
+regenerated-reason: >
+  US-009 pasó a Blocked (sin credenciales MercadoPago) y US-010 queda
+  indefinidamente pospuesta. US-023-pago-manual-offline nace como camino
+  interino de pago y ya tiene un backend plan completo (sin construir, en su
+  propio worktree) que NO crea `src/orders/` — extiende
+  `checkout/orders.repository.ts` en su lugar. Este regenerate desacopla el
+  plan de US-012 de ambas dependencias fantasma (`order-state.ts`,
+  `confirmed_at`/`cancelled_at`, `NotificationPort`, `payments` — ninguna
+  existe en código) y lo funda sobre lo que el schema real de `orders` (US-008,
+  ya migrado) efectivamente tiene hoy. Ver "Qué cambió respecto a la versión
+  anterior" abajo.
 ---
 
 # Proposal — Panel de órdenes del dueño (backend)
 
 > **Ticket**: US-012 — Panel de órdenes del dueño + gestión de estados
 > **Author**: backend-node-developer agent (assisted by @gabogosp)
-> **Date**: 2026-08-30
+> **Date**: 2026-08-30 (regenerado; versión original respaldada en
+> `openspec/changes/_backups/2026-08-30-US-012-panel-ordenes-dueno-backend/`)
 > **Status**: Proposed
-> **Affected layers**: controller, service, repository, DTO, dominio (FSM reusada de
-> US-010), persistencia (tabla nueva aditiva), observabilidad
+> **Affected layers**: controller, service, repositorio (extensión de
+> `checkout/orders.repository.ts` + repositorio nuevo de historial), DTO,
+> dominio (FSM propia, 4 estados activos), persistencia (tabla nueva aditiva),
+> observabilidad
 > **Affected platform**: `apps/api` (NestJS)
 
-## Why
+## Por qué (y qué cambió respecto a la versión anterior)
 
-US-012 es la mitad "el dueño prepara y entrega" del loop E2E del PRD (§9.4). US-010
-confirma la orden (`pending_payment → new`) pero no expone ninguna forma de que el dueño
-la vea ni la avance — sin este change, una orden pagada queda invisible. El E2E fija el
-contrato a nivel componente (`Rel(web, orders, "GET/PATCH /admin/orders")`, §6.1) y la
-secuencia exacta de fulfillment (§9.4): listar sólo pagadas, marcar "lista para retirar"
-(dispara el aviso de US-011), marcar "entregada". La FSM de la orden (§12, `order-state.ts`
-de US-010) ya declara las transiciones `new → preparing → ready → delivered`; este change
-es quien las **expone** por HTTP y quien decide qué pasa alrededor de ellas (autorización,
-filtro server-side, trazabilidad).
+US-012 es la mitad "el dueño prepara y entrega" del loop E2E del PRD (§9.4). La
+versión anterior de este plan asumía que `US-010-orden-webhook-stock-backend`
+ya habría construido `src/orders/` (FSM de 6 estados, columnas
+`confirmed_at`/`cancelled_at`, `NotificationPort`, tabla `payments`) y se limitaba
+a **extender** ese árbol. Esa dependencia nunca se materializó — hoy (verificado
+2026-08-30): `apps/api/src/orders/` no existe, `orders` no tiene columnas
+`confirmed_at` ni `cancelled_at` (sólo `created_at`/`updated_at`/`delivered_at`),
+y no existe ningún `NotificationPort` en el repo. US-009 (MercadoPago) pasó a
+`Blocked` y US-010 queda pospuesta sin fecha.
 
-Esta es la mitad **BE** de US-012. El sibling
-[`US-012-panel-ordenes-dueno-frontend-web`](../US-012-panel-ordenes-dueno-frontend-web/)
-ya está planificado (bloqueado por este change) y dejó una forma de contrato propuesta en
-su `design.md` §D2 junto con tres preguntas abiertas (OQ-FE-1/2/3) dirigidas explícitamente
-a quien planificara este backend. Este proposal las resuelve una por una (ver
-"Decisiones sobre las preguntas del FE" abajo) — la más importante ratifica el shape de
-listado/detalle y dos revisan el shape de `sort` y el mecanismo de idempotencia.
+En el interín, `US-023-pago-manual-offline` (status `Backlog`/en planificación
+activa, 0 tasks ejecutadas, código sólo staged sin commitear en su propio
+worktree) es quien de hecho va a construir la primera confirmación de pago real
+del proyecto — y **decidió explícitamente no crear `src/orders/`**: extiende
+`checkout/orders.repository.ts` en el lugar donde ya vive (ver su `design.md`
+§Non-goals: "mover `OrdersRepository`... es una decisión que le corresponde a
+quien planifique US-010... no se preempta acá").
 
-## What
+Este regenerate seguí el mismo criterio para US-012, con una diferencia
+importante: **no depende de que US-023 aterrice ninguna pieza de código**. La
+tabla `orders` (migrada por US-008, con su `CHECK` de `status` ya declarando
+las 6 fases de la FSM: `pending_payment, new, preparing, ready, delivered,
+cancelled`) es autosuficiente para todo lo que este panel necesita gestionar
+(las 4 fases activas de fulfillment). El resultado es un plan **desbloqueado
+hoy** — sin ningún gate en rojo — a diferencia de la versión anterior, cuyo
+T0.1 fallaba a propósito porque `US-010` seguía en `draft` sin tasks cerradas.
 
-**Extiende `src/orders/` (creado por US-010)** — no crea un segundo módulo de órdenes, no
-reabre la FSM ni las columnas que US-010 declaró (`confirmed_at`, `cancelled_at`,
-`order-state.ts`). Agrega:
+## Qué
 
-- **Tres endpoints admin** en `OrdersController` (nuevo, `src/orders/orders.controller.ts`,
-  gateado por `AdminGuard` — reusado, sin modificar):
+**Crea un módulo nuevo, angosto: `apps/api/src/orders/`** — nadie lo había
+creado todavía (ni US-010 en la práctica, ni US-023, que deliberadamente se
+quedó en `checkout/`). No reproduce el árbol completo que el `design.md` de
+US-010 bosquejó (D9) — sólo lo que este panel necesita: controller, servicio de
+caso de uso, una FSM propia de 4 estados, el repositorio del historial y el
+`NotificationPort` (nuevo, no una extensión — no hay nada que extender). Ver
+"Riesgo de reconciliación futura" abajo para lo que esto implica cuando
+alguien retome US-010.
+
+- **Tres endpoints admin** en `OrdersController`
+  (`apps/api/src/orders/orders.controller.ts`, gateado por `AdminGuard` —
+  reusado, sin modificar):
   - `GET /v1/admin/orders` — listado paginado/ordenable/filtrable, **excluye
     `pending_payment` y `cancelled` siempre** (AC-1, AC-5, AC-8).
-  - `GET /v1/admin/orders/{id}` — detalle con ítems, contacto del comprador, retiro en
-    sucursal e historial de cambios de estado (AC-2, AC-9). 404 si la orden es
-    `pending_payment` (AC-8) — `cancelled`/`delivered` sí son visibles por id (defensivo,
-    no gestionable, no enumerable desde el listado).
-  - `PATCH /v1/admin/orders/{id}` `{ status }` — única transición hacia adelante
-    (`preparing`/`ready`/`delivered`), validada contra `canTransition` de
-    `order-state.ts` (AC-3, AC-6). `ready` dispara `NotificationPort.orderReadyForPickup`
-    (AC-4, seam — la entrega real es US-011, igual que US-010 dejó `orderConfirmed`).
-- **Tabla nueva `order_status_history`** (aditiva, FK a `orders`) — resuelve AC-9 con una
-  trazabilidad real (estado anterior, nuevo, marca temporal), no una aproximación con
-  columnas puntuales. Cada transición de este endpoint escribe una fila en la misma
-  transacción que el `UPDATE` de `orders.status`. Se extiende también
-  `ConfirmOrderService` (de US-010) para escribir la fila inicial
-  (`null → new`) en su propia transacción — sin esa fila, el historial de una orden
-  recién confirmada empezaría vacío en vez de mostrar su origen.
-- **`NotificationPort` (de US-010) gana `orderReadyForPickup`** — mismo seam, mismo
-  `LoggingNotificationAdapter` (sin PII en el log), mismo dueño del reemplazo (US-011).
-- **Dos errores de dominio nuevos** en `src/orders/orders-errors.ts`:
-  `OrderNotFoundError` (404, `dsm:orders/not-found`) y `OrderInvalidTransitionError` (409,
-  `dsm:orders/invalid-transition` — ver justificación del status code abajo).
-- **`OrderEventsService` (de US-010) gana** `order.status_changed` y
+  - `GET /v1/admin/orders/{id}` — detalle con ítems, contacto del comprador,
+    retiro en sucursal e historial de cambios de estado (AC-2, AC-9). 404 si
+    la orden es `pending_payment` (AC-8). `{id}` está restringido por regex de
+    forma UUID en la ruta — ver "Colisión de rutas con US-023" abajo, es la
+    pieza que hace que este plan sea seguro sin importar qué change mergea
+    primero.
+  - `PATCH /v1/admin/orders/{id}` `{ status }` — única transición hacia
+    adelante (`preparing`/`ready`/`delivered`), validada server-side contra una
+    FSM propia de 4 estados (AC-3, AC-6). `ready` dispara
+    `NotificationPort.orderReadyForPickup` (AC-4, seam — la entrega real es
+    US-011).
+- **Tabla nueva `order_status_history`** (aditiva, FK a `orders`) — resuelve
+  AC-9. Cada transición de este endpoint escribe una fila (`from_status`,
+  `to_status`, `changed_by`, `changed_at`) en la misma transacción que el
+  `UPDATE` de `orders.status`. **No** escribe la fila inicial
+  `pending_payment → new` — esa transición la dispara la confirmación de pago
+  de US-023, un change distinto que este plan no toca ni depende de que exista
+  (ver Out of scope).
+- **Extiende `checkout/orders.repository.ts`** (no lo reemplaza, mismo patrón
+  que ya usa US-023 ahí mismo) con `list`, `findById`,
+  `updateStatusConditional` — sigue siendo el único punto de ORM para
+  `orders`/`order_items` (convención local del archivo, §5 del repo).
+- **`NotificationPort` — nuevo** (`apps/api/src/orders/ports/`), con un único
+  método `orderReadyForPickup`. `LoggingNotificationAdapter` lo implementa sin
+  loguear PII. US-011 reemplaza el adaptador cuando exista un proveedor real.
+- **`OrderEventsService` — nuevo** (`apps/api/src/observability/`, mismo
+  esqueleto que `CheckoutEventsService`), con `order.status_changed` y
   `order.transition_rejected`.
-- Contrato publicado en `apps/api/docs/api/openapi.yaml` (los tres paths, el `Idempotency-Key`
-  declarado como opcional-e-ignorado con su razón documentada).
+- **Dos errores de dominio nuevos** en `apps/api/src/orders/orders-errors.ts`:
+  `OrderNotFoundError` (404, `dsm:orders/not-found`) y
+  `OrderInvalidTransitionError` (409, `dsm:orders/invalid-transition`).
+- Contrato publicado en `apps/api/docs/api/openapi.yaml`.
 
-**No toca**: `order-state.ts` (se reusa `canTransition` tal cual), las columnas
-`confirmed_at`/`cancelled_at` (de US-010), `AdminGuard`, el filtro global RFC 7807
-(`HttpProblemFilter` ya mapea cualquier `DomainError` genéricamente), el middleware
-`no-store` de `bootstrap.ts` (`/v1/admin` ya está cubierto) ni la allowlist CORS
-(`idempotency-key` ya está permitido desde US-006).
+**No toca**: `AdminGuard`, el filtro global RFC 7807 (`HttpProblemFilter`),
+`checkout.controller.ts`/`checkout.service.ts` (sólo se agrega un `exports` a
+`checkout.module.ts`), ni ningún archivo de
+`openspec/changes/US-023-pago-manual-offline-backend/` (fuera de alcance de
+este agente, por instrucción explícita).
 
 ## AC de la US cubiertos por este change
 
@@ -85,103 +123,167 @@ reabre la FSM ni las columnas que US-010 declaró (`confirmed_at`, `cancelled_at
 |---|---|---|
 | AC-1 listado paginado/ordenable/filtrable | ✅ | `GET /v1/admin/orders` — offset/limit + `sort` + `status` |
 | AC-2 detalle con ítems/contacto/retiro | ✅ | `GET /v1/admin/orders/{id}` |
-| AC-3 avanzar estado | ✅ | `PATCH` — un paso adelante, validado contra la FSM |
-| AC-4 "lista" avisa al cliente | ✅ (seam) | `NotificationPort.orderReadyForPickup` invocado; entrega real `Deferred: US-011` |
+| AC-3 avanzar estado | ✅ | `PATCH` — un paso adelante, validado contra la FSM propia |
+| AC-4 "lista" avisa al cliente | ✅ (seam) | `NotificationPort.orderReadyForPickup` invocado; entrega real `Deferred: US-011 — owner: BE` |
 | AC-5 filtrar por estado | ✅ | `status` query param, allowlist de 4 valores activos |
-| AC-6 transición inválida bloqueada — **autoridad real** | ✅ | `canTransition` server-side; 409 sin importar qué mostró la UI |
+| AC-6 transición inválida bloqueada — **autoridad real** | ✅ | FSM propia server-side; 409 sin importar qué mostró la UI |
 | AC-7 acceso restringido — **autoridad real** | ✅ | `AdminGuard` en los tres endpoints; barrido en `e2e-rbac.spec.ts` |
 | AC-8 solo pagadas — **autoridad real** | ✅ | Listado excluye `pending_payment`/`cancelled` siempre; detalle excluye `pending_payment` |
-| AC-9 trazabilidad — **autoridad real** | ✅ | `order_status_history`, escrita transaccionalmente en cada transición |
+| AC-9 trazabilidad | ✅ (scope: transiciones iniciadas por el dueño en fulfillment) | `order_status_history`, transaccional. La transición inicial `pending_payment → new` NO entra acá — ver Out of scope |
 
-## Decisiones sobre las preguntas del FE (OQ-FE-1/2/3)
+## Decisiones de este regenerate (mandato del agente orquestador)
 
-El FE dejó estas tres explícitamente para quien planificara este backend
-(`US-012-panel-ordenes-dueno-frontend-web/proposal.md` §Open questions). Cada una se
-resuelve acá; **quien retome el plan de FE debe leer esta sección antes de ejecutar** (este
-change no edita los archivos del FE — son de solo lectura para este agente).
+### 1 — Dónde vive la superficie admin de órdenes
 
-- **OQ-FE-1 (forma del historial de estado) — RATIFICADA tal cual la propuso el FE.** Se
-  crea `order_status_history` (tabla nueva, aditiva, deviación declarada del DER igual que
-  `confirmed_at`/`cancelled_at` de US-010) y el detalle expone `status_history: []` con
-  `{from_status, to_status, changed_at}` — exactamente el shape de `design.md` §D2 del FE.
-  Es la única opción que satisface AC-9 literalmente ("estado anterior, nuevo y marca
-  temporal" por cada transición, no sólo hitos puntuales).
-- **OQ-FE-2 (Idempotency-Key en el PATCH) — REVISADA.** El backend **no** implementa
-  almacenamiento de `Idempotency-Key` (la máquina de `api-standards.md` §10.2). En su
-  lugar, el `PATCH` es **idempotente por el estado de los datos**, el mismo patrón que
-  ADR-0008/US-010 ya establecieron para el pago ("idempotente por la base, no por un
-  `if`"): si `orders.status` ya es el estado pedido, la respuesta es 200 sin re-disparar el
-  aviso ni tocar `order_status_history` de nuevo; si el estado actual no admite la
-  transición pedida, 409. Esto cubre exactamente el caso que preocupaba al FE (un reintento
-  de red tras que el email ya salió no lo duplica) sin agregar un segundo mecanismo de
-  idempotencia al proyecto. El header `Idempotency-Key` que el FE ya decidió mandar
-  (defensivo) se **acepta y se ignora** — el propio `design.md` del FE ya contemplaba este
-  desenlace ("no rompe nada si el backend lo ignora"). CORS ya permite el header desde
-  US-006; no hace falta tocar `bootstrap.ts`.
-- **OQ-FE-3 (forma de `sort`/`order`) — REVISADA.** En vez de dos query params separados
-  (`sort` + `order`), se usa el formato canónico de `api-standards.md` §7.2: un único
-  `sort` con lista separada por comas y prefijo `-` para descendente (ej.
-  `sort=-confirmed_at`). No hay precedente en el repo de un listado admin ordenable hoy
-  (`ProductsController` sólo pagina), así que no hay convención local que romper, y el
-  estándar del proyecto ya documenta esta forma. **Quien retome el plan de FE necesita
-  ajustar `ordersService.list()` de `{sort, order}` a `{sort: '-confirmed_at'}`** antes de
-  ejecutar su Fase 2/5 — queda anotado acá para que no se pierda.
+**Se crea `apps/api/src/orders/`** para el controller/servicio/FSM/puerto de
+notificación/repositorio de historial, pero **la lectura/escritura de
+`orders`/`order_items` se agrega a `checkout/orders.repository.ts`**, no a un
+repositorio nuevo. Es el mismo patrón que US-023 ya aplicó ahí mismo
+(`transitionToNewIfPending`, `listByStatus`) — dos changes hermanos
+extendiendo el mismo archivo por el mismo motivo (convención local: un solo
+punto de ORM por tabla), sin pisarse porque tocan métodos distintos.
+`OrdersModule` importa `CheckoutModule` para inyectar `OrdersRepository` —
+igual que `PaymentsModule` de US-023 — y agrega el `exports: [OrdersRepository]`
+a `checkout.module.ts` de forma **idempotente** (si US-023 ya lo agregó cuando
+esta task se ejecute, es un no-op verificado, no una segunda declaración).
+
+### 2 — Riesgo de reconciliación futura con US-010 (flageado, no resuelto acá)
+
+Cuando US-009 salga de `Blocked` y alguien retome
+`US-010-orden-webhook-stock-backend`, su propio `design.md` §D9 todavía
+describe un módulo `src/orders/` con una FSM de 6 estados y un
+`NotificationPort` compartido. Para entonces, `src/orders/` **va a existir
+ya** — con una FSM de sólo 4 estados (la que este change construye) y un
+`NotificationPort` con un solo método. Quien planifique US-010 en ese momento
+va a tener que decidir: ampliar la FSM de este módulo a los 6 estados
+(consolidando `pending_payment→new` y `→cancelled` acá), o mantener las
+transiciones federadas por módulo (`payments/` decide `pending_payment→new`,
+`orders/` decide las 4 activas, un futuro `US-013` decide `→cancelled`). **Esa
+decisión no se toma en este change** — es una tensión estructural legítima que
+se deja explícita para quien re-planifique US-010, no una resolución
+silenciosa.
+
+### 3 — Vista de "pendientes de pago": coexistencia, no absorción
+
+La nota del 2026-08-30 en `docs/user-stories/US-012-panel-ordenes-dueno.md`
+§10 (agregada — todavía sólo *staged*, sin commitear — en el worktree de
+US-023; confirmado vía `git diff --cached` ahí, no visible en este worktree
+hasta que esa sesión commitee) pide que el dueño tenga una vista separada de
+órdenes `pending_payment` para poder confirmarles el pago, **distinta** de la
+cola operativa de fulfillment.
+
+Se decide **coexistencia, reusando el endpoint que US-023 ya planificó**
+(`GET /v1/admin/orders/pending-payment`) en vez de duplicarlo:
+
+- `GET /v1/admin/orders` (este change) sigue excluyendo `pending_payment`
+  siempre — AC-8 literal ("solo pagadas") queda intacto, sin agregar
+  `pending_payment` a la allowlist del filtro `status`.
+- La vista de "pendientes de pago" que la nota de la US pide es
+  `GET /v1/admin/orders/pending-payment` (US-023, ya diseñado: angosto, sin
+  paginación, sin email/teléfono del comprador). El FE compone ambos
+  endpoints en dos tabs — decisión que le corresponde al plan de FE, no a
+  este documento (que no lo edita).
+- Se descarta que este change absorba/reemplace ese endpoint: duplicaría un
+  endpoint ya planificado y forzaría a este change a depender de la tabla
+  `payments` de US-023, que este plan explícitamente evita.
+
+### 4 — Colisión de rutas con US-023 (encontrada y resuelta, no sólo flageada)
+
+`PaymentConfirmationController` de US-023 registra
+`GET /v1/admin/orders/pending-payment` bajo el mismo `@Controller('v1/admin/orders')`
+base que este change. Sin mitigación, `GET /v1/admin/orders/:id` (este change)
+puede **interceptar** esa ruta literal si el módulo de este change se registra
+antes que el de US-023 en `app.module.ts` — Express/Nest resuelven rutas en
+orden de registro, no por especificidad. Se resuelve **sin depender del orden
+de merge de los dos changes**: `:id` se restringe con una forma UUID
+(`:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})`)
+en la ruta de Nest, de forma que `pending-payment` (no tiene forma UUID) nunca
+matchea `:id` sin importar qué controller se registró primero. Ver `design.md`
+§D6.
+
+### 5 — Idempotencia / 409, consistencia con US-023
+
+Se mantiene `OrderInvalidTransitionError` propio (409,
+`dsm:orders/invalid-transition`) y la idempotencia estructural (`UPDATE`
+condicional `WHERE status=$from` + relectura) — el mismo criterio que la
+versión anterior ya había fijado, ahora con un precedente más fuerte: US-023
+implementa el **mismo patrón exacto** (`OrderNotPendingPaymentError`, 409,
+`dsm:payments/order-not-pending-payment`, `UPDATE ... WHERE status='pending_payment'`)
+para su propia transición. Los dos nombres de error siguen la misma
+convención `dsm:{módulo}/{condición}` — consistencia de naming entre los dos
+changes hermanos del dominio de órdenes, sin que ninguno dependa del código
+del otro.
+
+## Out of scope
+
+- **La fila inicial de `order_status_history` (`pending_payment → new`)** —
+  esa transición la dispara `ConfirmOrderService` de US-023, un archivo que
+  todavía no existe en este worktree/rama y que este agente no puede editar
+  (change distinto, en curso, sin commitear). El historial de esta US empieza
+  desde la primera transición **iniciada por el dueño** en fulfillment
+  (`new → preparing`, etc.) — consistente con la letra de AC-9 ("dado que el
+  dueño cambia el estado de una orden"). La auditoría de *quién y cuándo*
+  confirmó el pago ya la cubre `payments.confirmed_by`/`processed_at` (US-023
+  AC-6), sin necesidad de una segunda fila acá. `Deferred: US-023 — owner: BE
+  del próximo touch de ConfirmOrderService, si se decide unificar el
+  historial completo de una orden en una sola tabla`.
+- **Cancelación / reembolso / reintegro de stock** — US-013. La transición a
+  `cancelled` no es alcanzable desde este `PATCH`. `Deferred: US-013 — owner: BE`
+- **El envío del email en sí** (contenido, proveedor) — US-011.
+  `Deferred: US-011 — owner: BE`
+- **Panel de métricas/gráficos** — US-016.
+- **`GET /v1/admin/orders/pending-payment`** — ya construido por US-023, este
+  change lo referencia, no lo duplica (ver decisión 3).
+- **Índice nuevo sobre `orders(created_at)`** — a ~100 órdenes/mes, un scan
+  secuencial (ya cubierto por el índice existente `orders(status, created_at)`)
+  es submilisegundo.
+
+## Open questions (propias de este backend)
+
+- **OQ-BE-1**: ¿el detalle de una orden `cancelled` debería ser visible por id
+  aunque nunca aparezca en el listado? Este plan dice que sí (defensivo, sin
+  disclosure porque no es enumerable desde el listado). Si el PO prefiere 404
+  también para `cancelled`, es un cambio de una condición.
+- **OQ-BE-2**: ¿el filtro `status=` del listado debería aceptar `cancelled`
+  como opción? Este plan dice que no (el FE nunca la ofrece). Allowlist
+  cerrada de 4 valores salvo objeción.
+- **OQ-BE-3 (nueva)**: `order_status_history.changed_by` (agregado por
+  consistencia con `payments.confirmed_by` de US-023, no por un AC literal de
+  US-012) — ¿vale la pena, o es scope creep de un solo campo? Se incluye
+  porque el costo es una columna nullable + una línea de identidad (mismo
+  patrón `JwtService.decode` que US-023 ya estableció para no tocar
+  `AdminGuard`), y refuerza el control de Repudiation de AC-9. Si el PO lo
+  considera innecesario, es una columna menos, sin romper nada más.
 
 ## Standards consultados
 
 | Standard | Secciones aplicadas |
 |---|---|
-| `base-standards.md` | §1 KISS/YAGNI (sin índice nuevo para ~1.200 filas/año, sin tabla de idempotencia cuando el estado alcanza) |
+| `base-standards.md` | §1 KISS/YAGNI (sin índice nuevo, sin `sort` parseado a mano pudiendo ser `@IsIn`, sin FSM de 6 estados para lo que sólo necesita 4) |
 | `backend-standards.md` | capas, errores tipados, transacciones, persistencia aditiva |
-| `backend-node-standards.md` | §2 capas (controller delgado → service → repository) · §3 DI por token (`NotificationPort`) · §4 DTO + `ValidationPipe` (ya global) · §5 `$transaction` + migración aditiva · §6 errores de dominio + filtro RFC 7807 (ya genérico, sin cambios) · §8 idempotencia estructural para mutaciones reintentables |
-| `api-standards.md` | §6 paginación offset (`{data, pagination:{limit,offset,total}}`, mismo shape que `ProductListResponse`) · §7.2 `sort` (lista + prefijo `-`) · §8 RFC 7807 · §10 idempotencia (evaluada y revisada a estructural, ver OQ-FE-2) · §11 auth en OpenAPI · §12 rate-limit headers (no aplica — endpoint admin de bajo volumen) |
-| `security-standards.md` | §4 autorización (deny-by-default, `AdminGuard` en los tres endpoints, chequeo server-side de la transición — nunca confía en lo que ofreció la UI) · §4.5 IDOR (ids UUID no enumerables, 404 uniforme para `pending_payment`) · §7.1 headers (heredados del borde, sin cambios) · §7.5 CSRF (no aplica — superficie Bearer, no cookie) |
-| `observability-standards.md` | §9 sin PII en logs/métricas (el payload de `orderReadyForPickup` lleva email/nombre del comprador; el log del adapter no) |
-| `testing-standards.md` / `qa-backend-standards.md` | §14 pirámide (unit del FSM ya cubierto por US-010, integration del repositorio + servicio, e2e del contrato); §2 ownership — E2E cross-stack y BDD son QA-owned, no se planifican acá |
+| `backend-node-standards.md` | §2 capas (controller delgado → service → repository) · §3 DI por token (`NotificationPort`) · §4 DTO + `ValidationPipe` (ya global) · §5 `$transaction` cruzando repositorios (patrón ya establecido por US-023) · §6 errores de dominio + filtro RFC 7807 (genérico, sin cambios) · §8 idempotencia estructural |
+| `api-standards.md` | §6 paginación offset · §7.2 `sort` (lista + prefijo `-`) · §8 RFC 7807 · §10 idempotencia (revisada a estructural) · §11 auth en OpenAPI |
+| `security-standards.md` | §4 autorización server-side · §4.5 IDOR (ids UUID no enumerables, regex de ruta) · §7.1/§7.5 heredados, sin cambios |
+| `observability-standards.md` | §9 sin PII en logs/métricas |
+| `testing-standards.md` / `qa-backend-standards.md` | §14 pirámide; ownership — E2E cross-stack y BDD son QA-owned |
+| `data-architecture-patterns` (skill) | evaluación §D2 de `design.md` — PostgreSQL puro, sin Mode B |
+| `threat-modeling-lite` (skill) | STRIDE §D8 de `design.md` |
 
-## Dependencia cruzada (bloqueante)
+## Dependencias
 
-**Este change depende de que `US-010-orden-webhook-stock-backend` esté construido**
-(`draft`, 0 tasks cerradas hoy, verificado 2026-08-30): necesita
-`orders.confirmed_at`/`cancelled_at`, `src/orders/order-state.ts` (la FSM,
-`canTransition`), `src/orders/ports/notification.port.ts` +
-`LoggingNotificationAdapter`, y la tabla `payments` (para que "solo pagadas" tenga
-sentido). La Fase 0 de `tasks.md` lo convierte en un gate verificable que **falla a
-propósito** hoy — mismo patrón que el T0.1 del plan de FE.
+**Ninguna dependencia bloqueante de código.** `orders` (tabla, con su `CHECK`
+de 6 estados) ya existe desde la migración de US-008. `AdminGuard` y
+`HttpProblemFilter` ya existen. Este es el cambio estructural principal de
+este regenerate: la versión anterior tenía un gate T0.1 en rojo contra
+US-010; esta versión no tiene ningún gate — se puede ejecutar hoy.
 
-El plan de FE (`US-012-panel-ordenes-dueno-frontend-web`) queda desbloqueado por este
-change: al cerrar la Fase de contratos (T8.x), `apps/api/docs/api/openapi.yaml` declara
-`/admin/orders` y su gate T0.1 deja de fallar.
-
-## Out of scope
-
-- **Cancelación / reembolso / reintegro de stock** — US-013. La transición a `cancelled`
-  no es alcanzable desde este `PATCH` (el DTO ni siquiera acepta ese valor).
-  `Deferred: US-013 — owner: BE`
-- **El envío del email en sí** (contenido, proveedor) — US-011. Este change invoca
-  `NotificationPort.orderReadyForPickup`, no lo implementa. `Deferred: US-011 — owner: BE`
-- **Panel de métricas/gráficos** — US-016. `order_status_changed` es insumo, no se
-  construye ningún agregado acá.
-- **Historial para la rama de cancelación automática** (`pending_payment → cancelled` por
-  falta de stock o abandono, ambas de US-010) — no escribe en `order_status_history`. AC-9
-  de esta US está scoped a transiciones **iniciadas por el dueño**; las automáticas de
-  US-010 no tienen "dueño" que trazar en este panel.
-- **Índice nuevo sobre `orders(confirmed_at)`** — a ~100 órdenes/mes (PRD §6, 1.200
-  filas/año), un scan secuencial es submilisegundo. Si el volumen crece un orden de
-  magnitud, es una migración de una línea — se deja anotado en `design.md` Trade-offs.
-
-## Open questions (propias de este backend)
-
-- **OQ-BE-1**: ¿el detalle de una orden `cancelled` debería ser visible por id (`GET
-  /v1/admin/orders/{id}`) aunque nunca aparezca en el listado? Este plan dice que sí
-  (defensivo, sin riesgo de disclosure porque no es enumerable desde el listado y hoy no
-  hay ningún link que lleve a esa id — US-013 todavía no existe). Si el PO prefiere 404
-  también para `cancelled` hasta que US-013 exista, es un cambio de una condición en el
-  repositorio.
-- **OQ-BE-2**: ¿el filtro `status=` del listado debería aceptar `cancelled` como opción
-  aunque el default nunca lo muestre? Este plan dice que no (el FE nunca ofrece esa opción
-  en el `<select>`, así que aceptarla server-side sin que nadie la pida es superficie sin
-  uso). Queda cerrado (allowlist de 4 valores activos) salvo objeción.
+**Dependencia no bloqueante, informativa**: `US-023-pago-manual-offline-backend`
+(en planificación, 0 tasks) es quien hace que las órdenes lleguen a `new` en
+primer lugar. Sin ese change ejecutado, este panel puede construirse y
+probarse igual (los tests siembran órdenes directo en el estado que
+necesitan, sin pasar por el flujo de pago real) pero no tendría datos reales
+que gestionar en producción hasta que US-023 aterrice. No es un `blocked_by`
+de este plan.
 
 ## Linear
 
@@ -190,8 +292,22 @@ MCP de Linear no conectado — proyecto local-only. No se crean sub-tasks en Lin
 ## References
 
 - User story: [`docs/user-stories/US-012-panel-ordenes-dueno.md`](../../../docs/user-stories/US-012-panel-ordenes-dueno.md)
-- PRD: [`docs/product/prd.md`](../../../docs/product/prd.md) §2.1 capacidad 5, §6 (volumetría, retención 12 meses)
-- E2E: [`docs/product/design-e2e.md`](../../../docs/product/design-e2e.md) §6.1 (`OrdersModule`), §8 (DER), §9.4 (secuencia de fulfillment), §12 (FSM), §14 (STRIDE — endpoints admin), §17 (NFRs), §18 (observabilidad)
-- Change del que depende: [`US-010-orden-webhook-stock-backend`](../US-010-orden-webhook-stock-backend/design.md) (crea `order-state.ts`, `confirmed_at`/`cancelled_at`, `NotificationPort`, `payments`)
-- Sibling FE (bloqueado por este change, solo lectura): [`US-012-panel-ordenes-dueno-frontend-web`](../US-012-panel-ordenes-dueno-frontend-web/design.md) §D2 (forma de contrato propuesta), §Open questions (OQ-FE-1/2/3, resueltas arriba)
-- Changes relacionados: US-011 (implementa `orderReadyForPickup`), US-013 (reusa `canTransition` para `cancelled` + reintegro de stock), US-016 (consume `order.status_changed`)
+- PRD: [`docs/product/prd.md`](../../../docs/product/prd.md) §2.1 capacidad 5, §6
+- E2E: [`docs/product/design-e2e.md`](../../../docs/product/design-e2e.md) §6.1, §8, §9.4, §12, §14, §17, §18
+- Change relacionado (informativo, no bloqueante, no editado por este agente):
+  [`US-023-pago-manual-offline-backend`](../../../../US-023-pago-manual-offline/openspec/changes/US-023-pago-manual-offline-backend/design.md)
+  (worktree separado) — precedente de patrón (extender `checkout/orders.repository.ts`,
+  409 por conflicto de estado, `JwtService.decode` sin tocar `AdminGuard`) y
+  dueño de `GET /v1/admin/orders/pending-payment` (decisión 3).
+- Nota §10 de la US (staged, sin commitear, en el worktree de US-023):
+  requiere la vista separada de `pending_payment` — resuelta en decisión 3.
+- Sibling FE (bloqueado por este change, solo lectura):
+  [`US-012-panel-ordenes-dueno-frontend-web`](../US-012-panel-ordenes-dueno-frontend-web/design.md)
+  §D2 — **su contrato asumido difiere del de este plan** en dos campos:
+  `confirmed_at` no existe (se usa `created_at`, la columna real) y el
+  default de `sort` es `-created_at`, no `-confirmed_at`. Queda anotado para
+  que la sesión que retome el plan de FE lo ajuste.
+- Changes relacionados: US-011 (implementa `orderReadyForPickup`), US-013
+  (reintegro de stock + `cancelled`), US-016 (consume `order.status_changed`)
+- Versión anterior de este plan (contexto histórico, no vigente):
+  `openspec/changes/_backups/2026-08-30-US-012-panel-ordenes-dueno-backend/`

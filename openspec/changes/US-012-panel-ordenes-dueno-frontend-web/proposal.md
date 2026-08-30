@@ -6,6 +6,16 @@ discipline: frontend-web
 variant: null
 language: es
 audit-derived: false
+realigned-at: 2026-08-30
+realigned-reason: >
+  `US-012-panel-ordenes-dueno-backend` fue regenerado (ver su proposal.md,
+  `regenerated-reason`): la columna real de `orders` es `created_at`, no
+  `confirmed_at` (que nunca existió); `sort` es un enum cerrado de 6 valores,
+  no un parser libre; `AdminOrderStatusChange` ganó `changed_by`. Este plan de
+  FE se realinea a ese contrato ratificado. Además se agrega la vista de
+  "pendientes de pago" (nota §10 de la US, coexistencia decidida por el
+  backend regenerado, decisión 3 de su proposal.md) — ver sección nueva abajo.
+  No es una de las 9 AC formales de la US — ver Open questions.
 ---
 
 # Proposal — Panel de órdenes del dueño (frontend)
@@ -41,7 +51,8 @@ sin modificarlo:
 - **Listado** (`/admin/ordenes`): tabla TanStack (mismo patrón que
   `ProductList.tsx`) con paginación server-side, orden por columna (`aria-sort`) y filtro por
   estado. Columnas: Nº de orden, cliente, total (ARS), estado (`OrderStatusBadge`), fecha de
-  confirmación.
+  creación (`created_at` — columna real de `orders`, no `confirmed_at`, que nunca existió; ver
+  "Actualización" en el frontmatter y `design.md` §D2).
 - **Detalle** (`/admin/ordenes/[id]`): ítems (cantidad + precio), datos de contacto del
   comprador, retiro en sucursal, acciones de avance de estado, historial de cambios de estado
   (§11.bis.4 — audit trail).
@@ -51,6 +62,16 @@ sin modificarlo:
   inválido; si el backend igual lo rechaza — carrera entre dos pestañas —, se revierte el
   estado optimista y se muestra el error).
 - **`OrderStatusBadge`**: texto + color por estado, siguiendo design-system §7.7.
+- **Vista de "pendientes de pago"** (`PendingPaymentsPanel`, nueva — segunda pestaña de
+  `/admin/ordenes`, **no** un tab dentro de `OrdersList` ni una opción de su filtro de estado):
+  permite al dueño confirmar manualmente el pago de una orden `pending_payment` (botón
+  "Confirmar pago" por fila). Consume dos endpoints **ya planificados por
+  `US-023-pago-manual-offline-backend`** (`GET /v1/admin/orders/pending-payment`,
+  `POST /v1/admin/orders/{orderId}/confirm-payment`), no construidos por este change ni por su
+  backend hermano — ver "Vista de pendientes de pago" abajo y `design.md` §D9.
+  **Importante**: esto NO es una de las 9 AC Gherkin formales de esta US — nace de una nota
+  informal §10 de la US, no de un AC ratificado. Se planifica igual porque el backend
+  regenerado ya decidió reusarla (coexistencia, no absorción); ver Open questions.
 
 ## Out of scope
 
@@ -70,21 +91,27 @@ sin modificarlo:
 
 ## Dependencia cruzada (bloqueante)
 
-**El contrato `GET/PATCH /admin/orders` no existe todavía.** Verificado en
-`apps/api/docs/api/openapi.yaml`: no hay ningún path `/admin/orders*`. Dos changes previos
-tienen que aterrizar antes de que este FE pueda generar tipos y desarrollarse:
+**El contrato `GET/PATCH /admin/orders` no existe todavía construido.** Verificado en
+`apps/api/docs/api/openapi.yaml`: no hay ningún path `/admin/orders*`. **Actualización tras la
+regeneración del backend**: la tabla `orders`/`order_items` **ya existe** (migrada por
+`US-008-checkout-guest-backend`, ya mergeado) — el backend regenerado dejó de depender de
+`US-010-orden-webhook-stock-backend` (que sigue `Draft` indefinidamente, sin fecha) y se
+funda directamente sobre esa tabla real. El único change que sigue bloqueando a este FE es:
 
-1. **`US-010-orden-webhook-stock-backend`** — crea las tablas `orders`/`order_items` y la FSM
-   (`order-state.ts`). Estado real: `docs/_index/openspec-changes.yaml` lo marca `status:
-   draft`, `assignee: sin-asignar`, **0 tasks cerradas**.
-2. **`US-012-panel-ordenes-dueno-backend`** — todavía no planificado (no existe el directorio
-   en `openspec/changes/`). Es quien declara el contrato OpenAPI de listado/detalle/PATCH que
-   este FE consume vía codegen (`orval`, `frontend-standards.md` §3.1/§3.2).
+1. **`US-012-panel-ordenes-dueno-backend`** — planificado (regenerado 2026-08-30), 0 tasks
+   ejecutadas todavía. Es quien declara el contrato OpenAPI de listado/detalle/PATCH que este
+   FE consume vía codegen (`orval`, `frontend-standards.md` §3.1/§3.2).
 
-Este plan documenta en `design.md` la forma de contrato **esperada** (derivada del E2E §6.2,
-§9.4 y §8 DER) para que la planificación de backend tenga un punto de partida, pero **ningún
-task de este `tasks.md` puede cerrarse antes de que el contrato exista** — la Fase 0 lo
-convierte en un gate explícito y verificable, no solo en una nota de esta sección.
+Adicionalmente, la vista de pendientes de pago (ver arriba) depende de
+`US-023-pago-manual-offline-backend` (planificado, 0 tasks ejecutadas, worktree separado) —
+esa dependencia es específica de `PendingPaymentsPanel`, no del panel de fulfillment
+(`OrdersList`/`OrderDetail`/`OrderStatusActions`), que sólo depende del punto 1.
+
+Este plan documenta en `design.md` §D2/§D9 la forma de contrato **ratificada** (ya no una
+propuesta abierta) para que el desarrollo de FE tenga tipos exactos que generar en cuanto el
+backend publique su OpenAPI, pero **ningún task de este `tasks.md` puede cerrarse antes de que
+el contrato exista** — la Fase 0 lo convierte en un gate explícito y verificable, no solo en
+una nota de esta sección.
 
 ## Affected components / screens
 
@@ -98,22 +125,36 @@ convierte en un gate explícito y verificable, no solo en una nota de esta secci
 - `apps/web/src/features/orders/OrderDetail.tsx` — nuevo.
 - `apps/web/src/features/orders/OrderStatusActions.tsx` — nuevo.
 - `apps/web/src/features/orders/OrderStatusHistory.tsx` — nuevo.
+- `apps/web/src/features/orders/PendingPaymentsPanel.tsx` — nuevo (vista de pendientes de
+  pago, ver `design.md` §D9).
+- `apps/web/src/features/orders/pendingPaymentsService.ts` — nuevo repositorio, separado de
+  `ordersService.ts` (concern distinto, endpoints de un backend hermano — `design.md` §D9).
 - `apps/web/orval.config.ts` — sin cambios de configuración (el mismo `dsmCatalog`/
   `dsmCatalogZod` ya apunta al contrato completo; solo hace falta re-generar cuando el
   contrato tenga los paths nuevos).
 
 ## API consumption
 
-Contrato **esperado** (no existe aún — ver dependencia cruzada), derivado del E2E §6.2/§9.4:
+Contrato **ratificado** por el backend regenerado (`US-012-panel-ordenes-dueno-backend`
+design.md §D3 — todavía sin construir, pero ya no es una propuesta abierta de este plan):
 
 | Endpoint | Uso | AC |
 |---|---|---|
-| `GET /v1/admin/orders?status=&limit=&offset=&sort=` | Listado paginado/ordenable/filtrable, solo pagadas — `sort` es un solo param (`-confirmed_at` = desc), no `sort`/`order` separados (ver OQ-FE-3, resuelta) | AC-1, AC-5, AC-8 |
-| `GET /v1/admin/orders/{id}` | Detalle: ítems, comprador, retiro, historial de estado | AC-2, AC-9 |
+| `GET /v1/admin/orders?status=&limit=&offset=&sort=` | Listado paginado/ordenable/filtrable, solo pagadas — `sort` es un **enum cerrado de 6 valores** (`order_number`, `-order_number`, `created_at`, `-created_at`, `total_ars_cents`, `-total_ars_cents`; default `-created_at`), no un parser libre ni dos params separados (ver OQ-FE-3, resuelta) | AC-1, AC-5, AC-8 |
+| `GET /v1/admin/orders/{id}` | Detalle: ítems, comprador, retiro, historial de estado (incluye `changed_by`, nuevo) | AC-2, AC-9 |
 | `PATCH /v1/admin/orders/{id}` `{ status }` | Transición de estado | AC-3, AC-4, AC-6, AC-9 |
 
-Detalle completo de los shapes propuestos y de los campos que la US necesita y el DER del E2E
-§8 todavía no nombra (p. ej. un registro de historial de estado) en `design.md` §Approach D2.
+Endpoints de la vista de pendientes de pago (planificados por
+`US-023-pago-manual-offline-backend`, no por este change ni por su backend hermano — ver
+"Vista de pendientes de pago" arriba y `design.md` §D9):
+
+| Endpoint | Uso | Cubre |
+|---|---|---|
+| `GET /v1/admin/orders/pending-payment` | Listado sin paginación de órdenes `pending_payment` (`order_number`, `buyer_name`, `total_ars_cents`, `created_at`) | Nota §10 de la US (no AC formal) |
+| `POST /v1/admin/orders/{orderId}/confirm-payment` | Confirma el pago manual; `200 { order_number, status: "new" }` | Nota §10 de la US (no AC formal) |
+
+Detalle completo de los shapes en `design.md` §D2 (contrato de fulfillment) y §D9 (pendientes
+de pago).
 
 ## Acceptance criteria (mapeo con las 9 AC de la US)
 
@@ -138,7 +179,13 @@ Detalle completo de los shapes propuestos y de los campos que la US necesita y e
       opción; el listado confía en que el backend ya excluye esas órdenes (autoridad real es
       server-side, per US §9 NFR de autorización).
 - [ ] **AC-9** (trazabilidad): `OrderStatusHistory` en el detalle, alimentado por el campo de
-      historial que el contrato debe exponer (§11.bis.4 — audit trail).
+      historial que el contrato debe exponer (§11.bis.4 — audit trail); incluye `changed_by`
+      cuando el backend lo provee (campo nuevo, no un AC literal — ver `design.md` §D2/§D8).
+
+> **`PendingPaymentsPanel` no tiene un AC propio en esta lista** — las 9 son las de la US tal
+> como está escrita hoy. Se construye igual por la decisión de coexistencia del backend
+> regenerado (ver "Vista de pendientes de pago" arriba); ver Open questions para el pedido de
+> formalizarla.
 
 ## Standards consulted
 
@@ -156,43 +203,57 @@ Detalle completo de los shapes propuestos y de los campos que la US necesita y e
 
 ## Open questions
 
-> **Actualización 2026-08-30**: `US-012-panel-ordenes-dueno-backend` ya está planificado y
-> resuelve las tres preguntas de abajo. Se dejan con su redacción original (contexto) + la
-> resolución al final de cada una.
+> **Actualización 2026-08-30 (realineación)**: `US-012-panel-ordenes-dueno-backend` fue
+> **regenerado** (ver su proposal.md `regenerated-reason`) desde la versión que había resuelto
+> OQ-FE-1/2/3 la primera vez. Las tres siguen resueltas, pero dos de ellas cambiaron de
+> respuesta concreta en la regeneración (columna real `created_at`, no `confirmed_at`; `sort`
+> ahora es un enum cerrado de 6 valores, no un param libre con prefijo). Se deja la redacción
+> original (contexto histórico) + la resolución vigente al final de cada una. Se agrega
+> OQ-FE-4, nueva de esta realineación.
 
 - **OQ-FE-1**: el DER del E2E §8 no modela una tabla/registro de "historial de cambio de
   estado" (solo `orders.delivered_at` y timestamps puntuales). AC-9 pide "estado anterior,
   nuevo y marca temporal" consultable. ¿El backend expone esto como una tabla nueva
-  (`order_status_history`, deviación declarada del DER, mismo patrón que
-  `orders.confirmed_at`/`cancelled_at` en US-010) o reconstruye una vista simplificada a
-  partir de columnas puntuales (`confirmed_at`, `updated_at`, `delivered_at`)? Este plan
-  asume lo primero (un array `status_history` en el detalle) porque es lo único que satisface
-  AC-9 literalmente (estado anterior *y* nuevo, no solo timestamps de hitos) — a ratificar
-  con quien planifique `US-012-panel-ordenes-dueno-backend`.
-  **Resuelta — RATIFICADA tal cual** (`US-012-panel-ordenes-dueno-backend` design.md §D2):
-  tabla `order_status_history`, mismo shape propuesto acá. Nada que cambiar en este plan.
-- **OQ-FE-2**: ¿el backend soporta `Idempotency-Key` en el `PATCH` de transición? La
-  transición a `ready` tiene un efecto lateral externo (dispara el email de US-011); sin
-  dedupe server-side, un reintento de red del mismo intento podría re-disparar el aviso. Este
-  plan envía el header igual (defensivo, no rompe nada si el backend lo ignora) y **no**
-  hace retry automático de la mutación (solo manual, reusando la misma clave) — a confirmar
-  si el backend lo aprovecha.
-  **Resuelta — REVISADA** (`US-012-panel-ordenes-dueno-backend` design.md §D4): el backend
-  NO almacena la clave; usa idempotencia estructural por estado (un `UPDATE` condicional que
-  no re-dispara el efecto lateral si la orden ya está en el estado pedido). El header se
-  acepta pero se ignora — documentado así en el contrato. Nada que cambiar en este plan: el
-  envío defensivo del header sigue siendo correcto, solo no hace lo que se especulaba.
-- **OQ-FE-3**: ¿`sort`/`order` como query params del listado, o el backend prefiere un único
-  parámetro combinado (`sort=-confirmed_at`)? Este plan asume dos params separados, mismo
-  estilo que `limit`/`offset` ya establecido en `productsService`. A confirmar con backend.
-  **Resuelta — REVISADA** (`US-012-panel-ordenes-dueno-backend` design.md §D5): un solo
-  param `sort` (`api-standards.md` §7.2 — prefijo `-` = descendente, default
-  `-confirmed_at`), no dos separados. **Este plan se actualizó** (`design.md` §D2/D3/D5,
-  `tasks.md` T4.1/T4.3) para reflejar el param único — ver esos archivos.
-- **Bloqueante de todo lo anterior**: el contrato no existe todavía (ver "Dependencia
-  cruzada"). Nada de este plan puede ejecutarse hasta que `US-010-orden-webhook-stock-backend`
-  y `US-012-panel-ordenes-dueno-backend` (ambos planificados, 0 tasks cerradas) publiquen su
-  OpenAPI.
+  (`order_status_history`) o reconstruye una vista simplificada a partir de columnas
+  puntuales? Este plan asume lo primero (un array `status_history` en el detalle) porque es
+  lo único que satisface AC-9 literalmente — a ratificar con quien planifique
+  `US-012-panel-ordenes-dueno-backend`.
+  **Resuelta — RATIFICADA, con un campo extra** (`US-012-panel-ordenes-dueno-backend`
+  design.md §D2): tabla `order_status_history`, mismo shape propuesto acá, **más**
+  `changed_by` (nullable — no estaba en la propuesta original de este plan). Este plan se
+  actualizó (`design.md` §D2/§D8) para reflejarlo.
+- **OQ-FE-2**: ¿el backend soporta `Idempotency-Key` en el `PATCH` de transición? Este plan
+  envía el header igual (defensivo) y no hace retry automático de la mutación.
+  **Resuelta — REVISADA** (`US-012-panel-ordenes-dueno-backend` design.md §D4): el backend NO
+  almacena la clave; usa idempotencia estructural por estado (`UPDATE` condicional). El header
+  se acepta pero se ignora — documentado así en el contrato. Nada que cambiar en este plan.
+- **OQ-FE-3**: ¿`sort`/`order` como query params separados, o un único parámetro combinado?
+  Este plan asumía originalmente dos params separados, luego un solo param libre
+  (`-confirmed_at`).
+  **Resuelta — REVISADA de nuevo, tras la regeneración del backend** (design.md §D5): un solo
+  param `sort`, pero como **enum cerrado de 6 valores** (`order_number`, `-order_number`,
+  `created_at`, `-created_at`, `total_ars_cents`, `-total_ars_cents`; default `-created_at` —
+  ni `confirmed_at` existe como columna, ni `sort` acepta valores fuera del enum). **Este plan
+  se actualizó de nuevo** (`design.md` §D2/D3/D5, `tasks.md` T4.1) para: (a) usar `created_at`
+  en vez de `confirmed_at` en todo el plan, (b) restringir las columnas ordenables de
+  `OrdersList` a las 3 que el enum permite (Nº de orden, total, fecha — **no** cliente ni
+  estado, que nunca tuvieron un campo `sort` que las respalde).
+- **OQ-FE-4 (nueva)**: la vista de "pendientes de pago" (nota §10 de la US, ver "Vista de
+  pendientes de pago" y `design.md` §D9) **no tiene un AC Gherkin formal** en
+  `docs/user-stories/US-012-panel-ordenes-dueno.md` — nace de una nota informal, no de una de
+  las 9 AC ratificadas. Este plan la construye igual porque el backend regenerado ya decidió
+  reusar el endpoint de `US-023-pago-manual-offline-backend` (coexistencia, decisión 3 de su
+  proposal.md) y dejarlo sin consumidor FE sería peor. **Recomendación**: que el PO o quien
+  mantenga la US considere un CR (change request) o una enmienda a la US agregando un AC-10
+  formal para esta vista — este plan no tiene autoridad para inventar esa AC por su cuenta.
+  Hasta que eso ocurra, `PendingPaymentsPanel` queda documentado como "feature aditiva sin AC
+  propio", con sus propias tasks y Exit criteria en `tasks.md`, pero fuera de la matriz de
+  trazabilidad de las 9 AC.
+- **Bloqueante de todo lo anterior**: el contrato no existe todavía construido (ver
+  "Dependencia cruzada"). Nada de este plan puede ejecutarse hasta que
+  `US-012-panel-ordenes-dueno-backend` publique su OpenAPI — su plan ya no depende de
+  `US-010-orden-webhook-stock-backend` (regenerado sobre la tabla real de US-008; ver su
+  proposal.md), así que ese gate de T0.1 se angosta a un solo change bloqueante, no dos.
 
 ## Linear
 

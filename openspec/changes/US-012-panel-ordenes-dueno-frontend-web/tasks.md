@@ -1,8 +1,15 @@
 # Tasks — US-012 Frontend: Panel de órdenes del dueño
 
-> Per `AGENTS.md` §1.1: tasks chicas, una a la vez. Todas las de Fase 1+ están bloqueadas por
-> T0.1 (ver Pre-requisitos) — `/develop-frontend-web` NO debe avanzar más allá de la Fase 0
-> mientras T0.1 siga en rojo.
+> Per `AGENTS.md` §1.1: tasks chicas, una a la vez. Las Fases 1-11 (fulfillment) están
+> bloqueadas por T0.1 (ver Pre-requisitos) — `/develop-frontend-web` NO debe avanzar más allá
+> de la Fase 0 mientras T0.1 siga en rojo. La Fase 12 (pendientes de pago) tiene su propio gate
+> independiente, T0.3 — puede desarrollarse en paralelo o después, según cuándo aterrice
+> `US-023-pago-manual-offline-backend`; no depende de T0.1.
+>
+> **Actualización 2026-08-30 (realineación)**: se corrigieron todas las referencias a
+> `confirmed_at` (columna inexistente → `created_at`) y a `sort` como param libre (→ enum
+> cerrado de 6 valores) en T4.1. Se agregó la Fase 12 completa (`PendingPaymentsPanel`, nota
+> §10 de la US, sin AC formal — ver `proposal.md` OQ-FE-4).
 
 ## Traceability matrix (AC de la US → tasks)
 
@@ -17,18 +24,21 @@
 | AC-7 | Acceso restringido | T8.1 |
 | AC-8 | Solo pagadas | T4.1 |
 | AC-9 | Trazabilidad de cambios | T7.1, T7.2 |
+| *(sin AC formal — ver proposal.md OQ-FE-4)* | `PendingPaymentsPanel` (nota §10 de la US) | T12.1, T12.2, T12.3, T12.4 |
 
 ## Pre-requisitos
 
 - [ ] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
   - Este change consume `GET /v1/admin/orders`, `GET /v1/admin/orders/{id}`,
     `PATCH /v1/admin/orders/{id}`, que hoy **no existen** en
-    `apps/api/docs/api/openapi.yaml` (verificado 2026-08-30). Dependen de
-    `US-010-orden-webhook-stock-backend` (Draft, 0 tasks cerradas) y de
-    `US-012-panel-ordenes-dueno-backend` (aún no planificado).
+    `apps/api/docs/api/openapi.yaml` (verificado 2026-08-30). Dependen únicamente de
+    `US-012-panel-ordenes-dueno-backend` (regenerado 2026-08-30, 0 tasks ejecutadas — ya NO
+    depende de `US-010-orden-webhook-stock-backend`, que su propio proposal.md desacopló: la
+    tabla `orders`/`order_items` ya existe desde `US-008`, mergeado).
   - **Exit criterion**: `apps/api/docs/api/openapi.yaml` declara los tres paths
     `/admin/orders` y `/admin/orders/{id}` con un schema de orden que incluya
-    `status: enum [new, preparing, ready, delivered]` (mínimo).
+    `status: enum [new, preparing, ready, delivered]` y `created_at` (nunca `confirmed_at`,
+    que no existe como columna).
   - **Verify**: `grep -E "^  /admin/orders" apps/api/docs/api/openapi.yaml | wc -l` → debe
     imprimir `2` (las dos rutas: `/admin/orders` y `/admin/orders/{id}`). Hoy imprime `0` —
     esta task **falla a propósito** hasta que el backend publique el contrato; ninguna task
@@ -38,6 +48,18 @@
     `app/(admin)/admin/ordenes/*` o el feature `apps/web/src/features/orders/`.
   - **Verify**: `grep -rl "features/orders\|admin/ordenes" openspec/changes/*/design.md
     2>/dev/null | grep -v US-012-panel-ordenes-dueno-frontend-web` → debe imprimir vacío.
+- [ ] **T0.3 — Gate de contrato (pendientes de pago): `pending-payment`/`confirm-payment` deben
+  existir en el OpenAPI del backend antes de cerrar la Fase 12**
+  - Este gate es **específico de la Fase 12** (`PendingPaymentsPanel`) — a diferencia de T0.1,
+    NO bloquea las Fases 1-11 (fulfillment), que solo dependen de
+    `US-012-panel-ordenes-dueno-backend`. Depende de
+    `US-023-pago-manual-offline-backend` (planificado, 0 tasks ejecutadas, worktree separado).
+  - **Exit criterion**: `apps/api/docs/api/openapi.yaml` declara
+    `GET /admin/orders/pending-payment` y `POST /admin/orders/{orderId}/confirm-payment`.
+  - **Verify**: `grep -c "pending-payment\|confirm-payment" apps/api/docs/api/openapi.yaml` →
+    mayor que `0`. Hoy imprime `0` — esta task falla a propósito hasta que
+    `US-023-pago-manual-offline-backend` publique su contrato; T12.1-T12.4 no pueden cerrarse
+    mientras esta falle (T1.1-T11.1 sí pueden, son independientes).
 
 ## Fase 1: Codegen (contract-derived artifacts)
 
@@ -97,23 +119,32 @@
 
 - [ ] **T4.1 — Listado con TanStack Table: paginación + orden + filtro server-side**
   - **Pattern**: `design.md` D5 — `manualPagination` + `manualSorting` (nuevo respecto a
-    `ProductList`, que no ordena), filtro de estado con `<select>` nativo (5 opciones:
+    `ProductList`, que no ordena) restringido a las 3 columnas que el **enum cerrado** del
+    backend permite (`order_number`, `total_ars_cents`, `created_at` — `enableSorting: false`
+    en `buyer_name`/`status`), filtro de estado con `<select>` nativo (5 opciones:
     "Todas"/4 estados activos, **nunca** `pending_payment`). Cambiar filtro u orden resetea
     `offset` a 0.
   - **Exit criterion**: columnas Nº de orden / cliente / total (ARS, `formatArs`) / estado
-    (`OrderStatusBadge`) / fecha confirmada; cada `<th>` ordenable expone `aria-sort`; cambiar
-    el `<select>` de estado dispara una nueva request con `status=` correspondiente y
-    `offset=0`.
+    (`OrderStatusBadge`) / fecha de creación (`created_at`); solo los `<th>` de Nº de orden,
+    total y fecha son ordenables y exponen `aria-sort`; los `<th>` de cliente y estado NO
+    exponen `aria-sort` (no son ordenables — el backend no tiene un valor de `sort` para
+    ellos); cambiar el `<select>` de estado dispara una nueva request con `status=`
+    correspondiente y `offset=0`.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/OrdersList.test.tsx`
     con MSW mockeando `GET /v1/admin/orders`. Casos que DEBEN estar cubiertos (y que fallarían
     si el comportamiento no está):
     1. filtrar por "Nuevas" → el `request.url` capturado por el handler MSW trae
        `status=new` Y `offset=0` (no solo que el select cambió de valor visualmente).
-    2. hacer click en el header "Fecha" → la segunda request trae `sort=confirmed_at` (asc) o
-       `sort=-confirmed_at` (desc, prefijo `-`, en el segundo click) — un solo query param, no
-       `sort`/`order` separados (OQ-FE-3, resuelta por `US-012-panel-ordenes-dueno-backend`
-       design.md §D5) — asserta sobre la URL real, no sobre el estado interno.
-    3. el `<select>` de estado NO contiene una `option` con `value="pending_payment"`
+    2. hacer click en el header "Fecha" → la segunda request trae `sort=created_at` (asc) o
+       `sort=-created_at` (desc, prefijo `-`, en el segundo click) — uno de los 6 valores del
+       enum cerrado del backend (`order_number | -order_number | created_at | -created_at |
+       total_ars_cents | -total_ars_cents`), nunca `confirmed_at` ni `sort`/`order` separados
+       (OQ-FE-3, resuelta y luego revisada por `US-012-panel-ordenes-dueno-backend`
+       design.md §D3/§D5) — asserta sobre la URL real, no sobre el estado interno.
+    3. el `<th>` de "Cliente" y el de "Estado" NO tienen `aria-sort` ni disparan una request
+       nueva al hacer click (`fireEvent.click` sobre esos headers → `expect(fetchCount)` no
+       cambia) — cubre que el FE no ofrece ordenar por un campo fuera del enum del backend.
+    4. el `<select>` de estado NO contiene una `option` con `value="pending_payment"`
        (`expect(screen.queryByRole('option', { name: /pendiente de pago/i}))` →
        `toBeNull()`) — cubre AC-8 estructuralmente.
 - [ ] **T4.2 — Estados de carga/error/vacío**
@@ -265,6 +296,73 @@
     eventos del panel, debe listar el nuevo evento; si no existe tal doc en el repo, esta
     task se marca cerrada con nota "no aplica — no existe doc de eventos del panel" (no se
     inventa documentación nueva fuera de alcance).
+
+## Fase 12: `PendingPaymentsPanel` (feature aditiva, sin AC formal — ver proposal.md OQ-FE-4, `design.md` §D9)
+
+> Bloqueada por T0.3, no por T0.1 — puede ejecutarse en paralelo a las Fases 1-11 o después,
+> según cuándo `US-023-pago-manual-offline-backend` publique su contrato.
+
+- [ ] **T12.1 — Regenerar el cliente/Zod/MSW con los endpoints de pendientes de pago**
+  - **Pattern**: mismo `orval.config.ts` que T1.1 (un solo `dsmCatalog`/`dsmCatalogZod` sobre
+    el contrato completo) — re-ejecutar codegen una vez `US-023-pago-manual-offline-backend`
+    publique `GET /admin/orders/pending-payment` y `POST /admin/orders/{orderId}/confirm-payment`.
+  - **Exit criterion**: `apps/web/src/api/generated/model/` incluye tipos de
+    `PendingPaymentOrder`/`ConfirmOrderPayment` (nombres exactos derivados de `operationId`,
+    ilustrativos acá); `apps/web/src/api/generated/zod.ts` y `endpoints.ts` incluyen los
+    schemas/operaciones correspondientes.
+  - **Verify**: `pnpm --filter @dsm/web codegen` sale con código 0, y
+    `grep -ril "pending.payment\|confirm.payment" apps/web/src/api/generated/ | wc -l` → mayor
+    que `0`.
+- [ ] **T12.2 — `pendingPaymentsService.ts`**
+  - **Pattern**: `design.md` §D9 — servicio separado de `ordersService.ts` (concern distinto,
+    backend hermano), `parseContract` sobre las operaciones generadas (nunca `fetch` crudo,
+    F48), `list()` sin params (el endpoint no pagina) y `confirm(orderId)`.
+  - **Exit criterion**: `pendingPaymentsService.list()` y `.confirm(orderId)` existen, tipados
+    con los tipos generados en T12.1.
+  - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/pendingPaymentsService.test.ts`
+    — el test asserta (vía MSW) que `confirm('order-1')` manda
+    `POST /v1/admin/orders/order-1/confirm-payment` (el id correcto en el path, no un id
+    hardcodeado ni el `order_number`) y que `list()` parsea la respuesta con el schema Zod
+    generado (un body con un campo fuera de forma debe hacer fallar el test con `ZodError`).
+- [ ] **T12.3 — `PendingPaymentsPanel`: listado + confirmación por fila**
+  - **Pattern**: `design.md` §D9 — estados explícitos (`idle`/`loading`/`success`/`error` a
+    nivel panel, `confirming` por fila vía `Set<orderId>`), refetch-on-success (NO UI
+    optimista — deviación explícita de D7, documentada en Trade-offs), botón "Confirmar pago"
+    `disabled`+`aria-busy` solo en la fila en vuelo.
+  - **Exit criterion**: al hacer click en "Confirmar pago" de una fila, se dispara
+    exactamente un `POST /v1/admin/orders/{esa orden}/confirm-payment`; si resuelve OK, la
+    fila desaparece del listado tras el refetch; si falla, la fila permanece con un mensaje
+    `role="alert"` inline y el botón vuelve a estar habilitado. 0 filas (sin error) renderiza
+    "No hay pagos pendientes de confirmar".
+  - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/PendingPaymentsPanel.test.tsx`
+    con MSW mockeando `GET /v1/admin/orders/pending-payment` y
+    `POST /v1/admin/orders/{orderId}/confirm-payment`. Casos que DEBEN estar cubiertos:
+    1. MSW devuelve 2 filas (`order_number: 101` con id `order-a`, `order_number: 102` con id
+       `order-b`); click en "Confirmar pago" de la fila de `order-a` → el handler MSW del
+       `POST` recibe el path param `order-a` (no `order-b`, no un id fijo) — assert sobre
+       `params.orderId` capturado por el handler, no solo que "se hizo un POST".
+    2. tras resolver ese `POST` con 200, el próximo `GET` (refetch) devuelve solo la fila de
+       `order-b` — el test asserta que la UI ya NO renderiza `getByText('101')` y sí
+       `getByText('102')` (falla si la fila desaparece del estado local sin refetch real, o si
+       no desaparece en absoluto).
+    3. MSW devuelve 409 (`dsm:payments/order-not-pending-payment`) para el `POST` → la fila de
+       `order-a` sigue visible, aparece `role="alert"` con el mensaje de conflicto, y el botón
+       de esa fila vuelve a `disabled: false` (falla si el componente la remueve igual sobre
+       un fallo confirmado, o si el botón queda deshabilitado para siempre).
+    4. con MSW devolviendo `[]`, renderiza el texto "No hay pagos pendientes de confirmar" (no
+       una tabla vacía muda).
+- [ ] **T12.4 — Segunda pestaña en `/admin/ordenes`, mutuamente excluyente con `OrdersList`**
+  - **Pattern**: `design.md` §D9 — `?tab=pendientes-de-pago` leído por el Server Component de
+    `page.tsx`; nunca `OrdersList` y `PendingPaymentsPanel` montados a la vez.
+  - **Exit criterion**: `apps/web/app/(admin)/admin/ordenes/page.tsx` renderiza
+    `<PendingPaymentsPanel />` cuando `searchParams.tab === 'pendientes-de-pago'`, y
+    `<OrdersList />` en cualquier otro caso (incluyendo ausencia del param); nunca ambos.
+  - **Verify**: `pnpm --filter @dsm/web vitest run src/app/admin/ordenes/page.test.tsx` (o
+    equivalente de test de Server Component) — un caso con `searchParams: {}` renderiza
+    `OrdersList` y NO `PendingPaymentsPanel` (`queryByTestId` del otro → `null`); un caso con
+    `searchParams: { tab: 'pendientes-de-pago' }` renderiza `PendingPaymentsPanel` y NO
+    `OrdersList` — falla si ambos aparecen en el DOM simultáneamente en cualquiera de los dos
+    casos.
 
 ## Verification (suite-level)
 

@@ -117,7 +117,13 @@
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
-  status: In Progress
+  status: Blocked        # 2026-08-30: confirmado por el usuario — sin credenciales de MP
+  # (us-status.schema.yaml no tiene "On Hold"; "Blocked" es el valor canónico per
+  # governance-state-machine.md §2.8 — "any state with dependency / issue").
+  # US-023-pago-manual-offline nace como "puro modelo local" independiente de este pago;
+  # extrae PaymentConfirmationPort de forma que MercadoPago quede como OTRO adaptador del
+  # mismo puerto cuando esta US se retome. No se cancela — retomar cuando existan las
+  # credenciales.
   priority: High
   prd-capacity: 4
   disciplines: [BE, QA, INFRA]
@@ -172,6 +178,17 @@
   # en planificarse) ni `blocked_by` (sigue siendo propiedad de otro agente) — el bloqueo
   # real de la US completa sigue siendo US-010, ahora con las tres disciplinas de US-012
   # (FE, BE) planificadas y la de QA todavía pendiente.
+  #
+  # NOTA (2026-08-30, /plan-backend-ticket US-012 --regenerate): el backend se replanificó
+  # de cero (US-009 → Blocked, US-010 pospuesta sin fecha; ver US-023-pago-manual-offline
+  # como camino interino). El regenerate de US-012-backend YA NO depende de US-010 en
+  # código — `orders` (migrada por US-008) alcanza para las 4 transiciones de fulfillment
+  # que este panel gestiona; su tasks.md no tiene gate en rojo. Sigue sin tocarse
+  # `blocked_by` (propiedad de otro agente, mismo criterio que la nota de arriba) — pero
+  # el bloqueo real declarado en ese campo (US-010) ya no aplica al backend de esta US;
+  # sí puede seguir aplicando al sibling FE (su propio proposal.md lo declara — no editado
+  # por este agente). Quien posea `blocked_by` debería revisar si vale la pena bajarlo a
+  # `[]` o mantenerlo por el lado FE.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
