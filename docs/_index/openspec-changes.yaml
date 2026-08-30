@@ -1437,7 +1437,7 @@
   us-id: US-008
   discipline: frontend-web
   variant: null
-  status: in progress   # 39/39 tasks cerradas 2026-08-30, pendiente /commit (PR)
+  status: in review   # 39/39 tasks cerradas 2026-08-30, PR abierto (/commit)
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null
@@ -1476,9 +1476,10 @@
   # BE US-008 → FE US-008 → US-009). Hereda el gate legal de US-017: si /legales/* sigue con texto
   # provisional, este checkout no debería salir a producción aunque el código esté completo.
   estimate-hours: 5.4
-  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: feat/US-008-checkout-guest-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/23
+  pr-opened-at: 2026-08-30
   created: 2026-08-30
   completed-at: null
   archived-at: null
