@@ -221,7 +221,7 @@ contra el build real del FE.
 
 ## 5. Performance (k6)
 
-- [ ] **QA-008-PERF-1**: Script k6 para `POST /v1/checkout` con target p95 < 500 ms
+- [x] **QA-008-PERF-1**: Script k6 para `POST /v1/checkout` con target p95 < 500 ms
 
   ```yaml
   id: QA-008-PERF-1
@@ -236,7 +236,7 @@ contra el build real del FE.
   - Exit criterion: `qa/performance/checkout.js` crea carritos → ejecuta checkouts con datos válidos, midiendo la escritura. Threshold: `'http_req_duration{endpoint:checkout}': ['p(95)<500']`. Requiere seed previo.
   - Verify: `k6 run --vus 3 --duration 15s qa/performance/checkout.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"`
 
-- [ ] **QA-008-PERF-2**: Threshold de checkout agregado a `thresholds.js`
+- [x] **QA-008-PERF-2**: Threshold de checkout agregado a `thresholds.js`
 
   ```yaml
   id: QA-008-PERF-2

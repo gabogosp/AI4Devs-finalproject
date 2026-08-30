@@ -82,6 +82,29 @@ export const auth_login = {
   rate_limited: ['count<1'],
 };
 
-// Unión de los thresholds de US-004 (`search`, llegó por main) y US-014 (`auth_login`):
-// las dos suites QA extienden el mismo archivo compartido.
-export default { list_products, storefront_product, cart_write, auth_login, search, MIN_SKUS };
+/**
+ * Escritura del checkout de US-008 (QA-008-PERF-1). Mismo NFR que `cart_write` y
+ * `auth_login` (PRD §4: «p95 de escritura (carrito/orden) < 500 ms», US-008 §9 lo
+ * repite), y misma guarda de honestidad: `CHECKOUT_RATE_LIMIT_MAX` por defecto es
+ * 10 cada `CHECKOUT_RATE_LIMIT_TTL_MS` (10 min) por IP — bajísimo a propósito
+ * (checkout.controller.ts), así que una corrida real necesita el presupuesto
+ * elevado del entorno QA. Un 429 no degrada el número: aborta la corrida.
+ */
+export const checkout = {
+  'http_req_duration{endpoint:checkout}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+  rate_limited: ['count<1'],
+};
+
+// Unión de los thresholds de US-004 (`search`, llegó por main), US-014 (`auth_login`)
+// y US-008 (`checkout`): las suites QA extienden el mismo archivo compartido.
+export default {
+  list_products,
+  storefront_product,
+  cart_write,
+  auth_login,
+  search,
+  checkout,
+  MIN_SKUS,
+};
