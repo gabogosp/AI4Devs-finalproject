@@ -88,12 +88,13 @@
 - id: US-007
   slug: carrito-compra
   # Las TRES disciplinas con sus tasks al 100% el 2026-08-23 (backend 37/37,
-  # frontend-web 25/25, qa 22/22), mergeadas a main vía PR #3 (feature-entrega2-GOSP,
-  # 2026-08-29). Backend archivado el 2026-08-29 (/archive-change). frontend-web y qa
-  # siguen activas: falta su propio /archive-change. NO pasa a Done: el DoD de la US
-  # exige regresión verde en staging, AC manuales verificados por QA y firma del PO —
-  # ninguna la cierra un dev.
-  status: In Progress
+  # frontend-web 36/37 — 1 gate humano de consola en dev sin cerrar, ver
+  # openspec/specs/carrito/requirements.md D-6 —, qa 22/22), mergeadas a main vía PR #3
+  # (feature-entrega2-GOSP, 2026-08-29). Backend archivado 2026-08-29, frontend-web
+  # archivado 2026-08-30 (/archive-change). Sólo falta QA (US-007-carrito-compra-qa
+  # sigue activa). NO pasa a Done: el DoD de la US exige regresión verde en staging, AC
+  # manuales verificados por QA y firma del PO — ninguna la cierra un dev.
+  status: QA
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]

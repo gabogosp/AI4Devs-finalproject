@@ -48,4 +48,37 @@ Superficie cubierta: `GET /v1/cart`, `PUT /v1/cart/items/{slug}`, `DELETE /v1/ca
 |---|---|---|
 | D-1 | Fusión del carrito del invitado con la cuenta al iniciar sesión (política ya decidida: sumar cantidades, tope al stock). | US de fusión, fuera de v1. `carts.customer_id` existe en el esquema sin escritor hasta esa US. |
 | D-2 | Job programado de purga de carritos vencidos (hoy sólo purga oportunista al resolver). | Diferido mientras Redis/BullMQ no esté aprovisionado (OQ-BE-6). |
-| D-3 | UI del carrito (stepper, estados de disponibilidad, a11y) y la suite QA cross-stack. | `US-007-carrito-compra-frontend-web` / `-qa` — tasks cerradas, pendientes de su propio `/archive-change`. |
+| D-3 | Suite QA cross-stack del carrito. | `US-007-carrito-compra-qa` — tasks cerradas, pendiente de su propio `/archive-change`. |
+
+## Desde US-007 frontend-web — Carrito de compra del invitado: UI (archivada 2026-08-30)
+
+Superficie cubierta: `/carrito`, badge del top-nav, `AddToCartButton` en ficha y listado.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-11 | La página `/carrito` muestra las líneas, el total y el estado vacío calculados por el `CartView` del backend, sin recalcular nada localmente. | AC-1, AC-2, AC-3 |
+| R-12 | El carrito sobrevive al cierre del navegador y a recargas sin que el frontend administre la cookie `dsm_cart` — persistencia delegada al backend vía el rewrite same-origin. | AC-4 |
+| R-13 | Una línea con `availability: 'insufficient_stock'` muestra «quedan N» con acciones «ajustar» / «quitar»; una con `'unavailable'` muestra «ya no disponible» con «quitar»; ninguna de las dos entra en el total mostrado (el backend ya las excluyó). | AC-5, AC-6, AC-8 |
+| R-14 | `has_blocking_issues: true` deshabilita el CTA «Ir al pago» con el motivo visible. | AC-6 |
+| R-15 | Un cambio de precio (`price_changed` + `previous_unit_price_ars_cents`) se muestra explícitamente («cambió de $X a $Y»), nunca en silencio. | AC-9 |
+| R-16 | El stepper de cantidad no permite superar `max_quantity`; es pesimista (espera la respuesta del servidor antes de reflejar el nuevo valor) con debounce de 400 ms. | AC-5 |
+| R-17 | El badge del top-nav refleja el conteo de unidades del carrito como isla cliente dentro de un layout que sigue siendo Server Component (lo necesita `CategoryNav` para el SEO de US-002). | AC-1 |
+| R-18 | «Agregar al carrito» está habilitado en la ficha de producto (`ProductPurchase`, apaga el cartel de roadmap de US-003) y en la card del listado (`ProductCard`, cantidad 1 sin stepper). | AC-1 |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-6 | `/carrito` es `noindex` — un carrito no es contenido público. | Metadata API; E2E de topología (espejo de `auth-topology.spec.ts`). |
+| NFR-7 | Accesibilidad WCAG 2.1 AA: stepper operable por teclado con `aria-label` que nombra el producto, total con `aria-live="polite"`, mini-cart `role="status"` sin robar foco, motivo de bloqueo en texto (nunca sólo color). | Suite a11y dev-owned + `US-007-carrito-compra-qa`. |
+| NFR-8 | p95 de escritura del carrito (`PUT`/`DELETE`) `< 500 ms` medido en la operación, no en la pintura — la llamada suma un hop same-origin por el rewrite (costo declarado en ADR-0013). | E2E §17. |
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-4 | CTA «Ir al pago» — hoy deshabilitado con el motivo a la vista. | `US-008` (checkout) — owner: FE. |
+| D-5 | Carrito sin JavaScript / renderizado en servidor. | No soportado a propósito: exigiría relajar el guard que impide fugar datos personalizados entre personas (OQ-FE-5, design.md D1). |
+| D-6 | Verificación manual de consola limpia al recorrer el carrito en `dev` (agregar, cambiar cantidad, quitar, vaciar). | Único ítem sin cerrar de `tasks.md` — lo hace una persona, no el ejecutor; queda registrado en el PR de este archive. |
