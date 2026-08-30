@@ -89,10 +89,10 @@
   slug: carrito-compra
   # Las TRES disciplinas con sus tasks al 100% el 2026-08-23 (backend 37/37,
   # frontend-web 25/25, qa 22/22), mergeadas a main vía PR #3 (feature-entrega2-GOSP,
-  # 2026-08-29). Backend archivado el 2026-08-29 (/archive-change). frontend-web y qa
-  # siguen activas: falta su propio /archive-change. NO pasa a Done: el DoD de la US
-  # exige regresión verde en staging, AC manuales verificados por QA y firma del PO —
-  # ninguna la cierra un dev.
+  # 2026-08-29). Backend archivado el 2026-08-29; qa archivada el 2026-08-30
+  # (/archive-change). frontend-web sigue activa: falta su propio /archive-change.
+  # NO pasa a Done: el DoD de la US exige regresión verde en staging, AC manuales
+  # verificados por QA y firma del PO — ninguna la cierra un dev.
   status: In Progress
   priority: High
   prd-capacity: 4
