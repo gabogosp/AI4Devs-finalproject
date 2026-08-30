@@ -279,7 +279,7 @@ contra el build real del FE.
 > detiene ahí porque no hay nada más que hacer con la orden hasta que exista la pantalla de pago
 > (US-009 FE, sin planificar).
 
-- [ ] **QA-008-E2E-1**: Spec Playwright cross-stack — checkout completo (FE real + BE real)
+- [x] **QA-008-E2E-1**: Spec Playwright cross-stack — checkout completo (FE real + BE real)
 
   ```yaml
   id: QA-008-E2E-1
@@ -310,7 +310,15 @@ contra el build real del FE.
     8. Segundo caso (SC-008-A3, mitad UI): mismo flujo sin marcar el consentimiento → el submit
        **no** navega, el banner "Tenés que aceptar los términos…" queda visible, y no se dispara
        ningún `POST /v1/checkout` (`page.waitForResponse` con timeout corto debe **no** resolver).
-  - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "checkout" --reporter=list` (exit 0)
+  - Verify: `pnpm --filter @dsm/qa exec playwright test -c e2e/playwright.config.ts --grep
+    "checkout" --reporter=list` (exit 0). **Corrección**: `test:e2e -- --grep ...` no reenvía
+    el flag (mismo problema de `test:acceptance`) — `exec` sí lo hace, sin necesitar un script
+    dedicado nuevo.
+  - **Nota de implementación**: los links legales se escopean a `page.locator('form')` — el
+    footer del sitio (fuera del `<form>`) también linkea a `/legales/*` pero con distinta
+    capitalización ("Política de privacidad" vs "política de privacidad" de `CONSENT_COPY`), y
+    un locator sin escopear rompe en modo estricto (2 elementos). No es un defecto: son dos
+    links legítimos y distintos: FOOTER-desde-cualquier-página vs consent-checkbox-del-checkout.
 
   **Nota de alcance (evita duplicar con el FE)**: este spec es el E2E **QA-owned** de Layer 3 —
   corre contra API y UI reales, con datos sembrados por la API. **No** duplica el E2E dev-owned de
