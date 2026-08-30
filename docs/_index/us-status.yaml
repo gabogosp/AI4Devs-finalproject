@@ -158,7 +158,7 @@
   blocked_by: [US-010, US-012]
 - id: US-012
   slug: panel-ordenes-dueno
-  status: Ready
+  status: In Progress   # /develop-backend, primer task cerrado 2026-08-30 (index-conventions.md §30 — este comando SÍ es dueño de esta transición)
   priority: High
   prd-capacity: 5
   disciplines: [BE, FE, QA]

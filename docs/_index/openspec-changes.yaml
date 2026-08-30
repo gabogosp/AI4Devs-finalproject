@@ -1485,7 +1485,7 @@
   us-id: US-012
   discipline: backend
   variant: null
-  status: draft
+  status: in-progress   # /develop-backend, primer task cerrado 2026-08-30
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null

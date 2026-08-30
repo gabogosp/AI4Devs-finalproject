@@ -42,7 +42,7 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — `apps/api` limpio antes de empezar**
+- [x] **T0.1 — `apps/api` limpio antes de empezar**
   - **Exit criterion**: no hay cambios sin commitear en `apps/api/src/orders/`,
     `apps/api/src/checkout/orders.repository.ts`,
     `apps/api/src/checkout/checkout.module.ts` ni
@@ -50,16 +50,27 @@ language: es
     worktree.
   - **Verify**: `git status --porcelain apps/api/src/orders apps/api/src/checkout/orders.repository.ts apps/api/src/checkout/checkout.module.ts packages/db/prisma/schema.prisma` vacío
 
-- [ ] **T0.2 — Postgres local arriba**
+- [x] **T0.2 — Postgres local arriba**
   - **Exit criterion**: el contenedor de Postgres del `docker-compose` del
     repo responde.
   - **Verify**: `docker compose up -d postgres && sleep 1 && docker compose exec -T postgres pg_isready`
+  - **Nota de ejecución (2026-08-30)**: el `docker compose up` literal falla en un worktree
+    (`Bind for 0.0.0.0:55432 failed: port is already allocated`) — cada worktree resuelve a
+    un project name de compose distinto (basename del directorio), así que intenta levantar
+    un contenedor NUEVO en el mismo puerto fijo que ya usa el compose del checkout principal
+    (`packages/db/.env`: puerto 55432 fijo porque 5432 lo ocupa otro proyecto de la máquina).
+    El contenedor compartido `ai4devs-finalproject-postgres-1` (el mismo que aplica
+    `DATABASE_URL`) ya estaba arriba y sano — verificado con
+    `docker exec ai4devs-finalproject-postgres-1 pg_isready -U dsm -d dsm` → `accepting
+    connections`. Exit criterion cumplido contra ese contenedor; el compose huérfano que se
+    alcanzó a crear (`us-012-panel-ordenes-dueno-frontend-web-postgres-1` + volumen + red) se
+    limpió con `docker compose down -v` antes de continuar.
 
 ---
 
 ## Fase 1: Esquema — `order_status_history` — 0,4 h
 
-- [ ] T1.1 Migración aditiva + modelo Prisma (F40 — column-complete: las 6
+- [x] T1.1 Migración aditiva + modelo Prisma (F40 — column-complete: las 6
   columnas del §D2 de `design.md`, ni una menos)
   - **Pattern**: tabla nueva con FK `ON DELETE CASCADE` a `orders`, mismo
     estilo que las migraciones aditivas de US-007/US-008 — `per
