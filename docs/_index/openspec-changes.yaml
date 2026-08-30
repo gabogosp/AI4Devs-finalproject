@@ -1437,7 +1437,7 @@
   us-id: US-008
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in progress   # 39/39 tasks cerradas 2026-08-30, pendiente /commit (PR)
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null

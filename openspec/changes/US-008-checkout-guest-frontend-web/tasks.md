@@ -470,18 +470,18 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Verification (suite-level)
 
-- [ ] Type-check limpio: `pnpm --filter @dsm/web typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`
-- [ ] Codegen sigue fresco (no diff): `pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated`
-- [ ] Suite unit + componente + a11y verde: `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web test`
-- [ ] Build de producción verde: `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web build`
-- [ ] E2E completa verde: `pnpm --filter @dsm/web test:e2e`
-- [ ] **Sin regresión de US-007** (el carrito es el archivo que este change modifica más allá de su
+- [x] Type-check limpio: `pnpm --filter @dsm/web typecheck`
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`
+- [x] Codegen sigue fresco (no diff): `pnpm --filter @dsm/web codegen && git diff --exit-code -- apps/web/src/api/generated`
+- [x] Suite unit + componente + a11y verde: `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web test`
+- [x] Build de producción verde: `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web build`
+- [x] E2E completa verde: `pnpm --filter @dsm/web test:e2e`
+- [x] **Sin regresión de US-007** (el carrito es el archivo que este change modifica más allá de su
       propio feature): `pnpm --filter @dsm/web test -- --run src/features/cart` y
       `pnpm --filter @dsm/web test:e2e e2e/cart-topology.spec.ts e2e/cart-persistence.spec.ts e2e/cart-noindex.spec.ts`
-- [ ] **Sin regresión de US-017** (el guard de rutas legales corre sobre los archivos nuevos):
+- [x] **Sin regresión de US-017** (el guard de rutas legales corre sobre los archivos nuevos):
       `pnpm --filter @dsm/web test -- --run src/features/legal`
-- [ ] **Sin regresión de US-014** (`csrf.ts`/`client.ts` no se tocan, pero su suite es la red de
+- [x] **Sin regresión de US-014** (`csrf.ts`/`client.ts` no se tocan, pero su suite es la red de
       seguridad de cualquier cambio cerca de `session: 'cart'`):
       `pnpm --filter @dsm/web test -- --run src/lib/http`
-- [ ] PR referencia el ticket US-008 y el path de este change (`openspec/changes/US-008-checkout-guest-frontend-web/`).
+- [x] PR referencia el ticket US-008 y el path de este change (`openspec/changes/US-008-checkout-guest-frontend-web/`).
