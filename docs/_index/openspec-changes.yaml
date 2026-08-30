@@ -1431,3 +1431,66 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-023-pago-manual-offline-backend
+  us-id: US-023
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-023-pago-manual-offline.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # ~8,0 h AI-asistido / ~17 h tradicional (7 fases). US §7 presupuesta BE-US-023 en
+  # 6-10 h asumiendo "confirmar un pago y actualizar un estado" — lo que ese presupuesto
+  # no veía: NADA de `payments` ni de `products.stock` existe todavía en código
+  # (US-009/US-010 son sólo plan, 1/40 y 0/40 tasks hechas, y US-009 pasa a `Blocked` por
+  # esta US). Este change es la PRIMERA migración de `payments`, el PRIMER escritor de
+  # `products.stock`, y la primera transacción que cruza tres repositorios del proyecto.
+  #
+  # RESTRICCIÓN DURA que dictó el diseño: `checkout/ac6-stock-untouched.spec.ts` (T5.1 de
+  # US-008) escanea estáticamente `apps/api/src/checkout/` y falla si aparece una
+  # escritura de stock ahí — por eso el decremento vive en un módulo `stock/` nuevo, no en
+  # una extensión de OrdersRepository.
+  #
+  # ARQUITECTURA SEGUIDA, NO INVENTADA: `PaymentConfirmationPort` + `ConfirmOrderService`
+  # en `src/payments/` son el mismo nombre y el mismo lugar que
+  # US-010-orden-webhook-stock-backend/design.md §D9 ya había bosquejado (sin construir) —
+  # US-010 extiende esto, no lo reescribe, cuando se planifique.
+  #
+  # DEVIACIONES DECLARADAS en design.md: `payments.provider` agrega 'manual' al enum del
+  # DER (E2E §8, que sólo tenía mercadopago|simulated_dsm) + columna `confirmed_by` sin FK
+  # (identidad del admin que confirma — soporta el caso bootstrap-token, que no tiene fila
+  # en Customer) + created_at/updated_at (convención universal del esquema, no en el DER).
+  # RECONCILIADO con US-009-pago-mercadopago-backend/design.md §Persistencia (planificado,
+  # sin construir): el CHECK de `provider` ya incluye los tres valores
+  # (mercadopago|simulated_dsm|manual) para que la migración aditiva de esa US no tenga
+  # que tocar el constraint; sus columnas propias (preference_id, init_point) y el índice
+  # único parcial de "a lo sumo un pending" quedan fuera de esta migración — irrelevantes
+  # para el flujo manual, que nunca pasa por 'pending'.
+  #
+  # ALCANCE: `payments` + `src/payments/` + `src/stock/` son de este change; extiende
+  # `checkout/orders.repository.ts` (dos métodos nuevos, sin tocar su contrato existente);
+  # NO mueve OrdersRepository a un módulo `orders/` dedicado (decisión de quien planifique
+  # US-010, que sí necesita más superficie); NO construye el panel de US-012 (sólo el
+  # endpoint mínimo de lectura que esa US va a necesitar — ver la nota agregada a
+  # docs/user-stories/US-012-panel-ordenes-dueno.md §10).
+  #
+  # 3 preguntas abiertas, NINGUNA bloquea el arranque (las tres [Deferred] con owner):
+  # ¿actualizar el DER del E2E §8 con 'manual' + confirmed_by? (owner: tech-architect);
+  # ¿el job de retención de `orders` cascadea a `payments`? (owner: próximo change que
+  # toque retención); ¿`confirmed_by` sin FK es un trade-off permanente o hay una US de
+  # administradores futura? (owner: Arquitecto/Producto).
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment US-023 — migración aditiva de bajo riesgo,
+  # pero primera vez que se toca products.stock en producción; gate de release sugerido:
+  # confirmar en staging una orden pending_payment real confirmada de punta a punta con
+  # stock decrementado exacto.
+  estimate-hours: 8.0
+  assignee: claude-code
+  branch: feat/US-023-pago-manual-offline
+  pr-url: null
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null

@@ -1,0 +1,98 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — GET /admin/orders/pending-payment
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-023 (AC-2). Lista mínima para que el dueño vea qué
+    confirmar — **no** es el listado general de US-012 (sin paginación, sin
+    filtros, sin ordenamiento): esa US, cuando se planifique, decide si lo
+    reemplaza por `GET /v1/admin/orders?status=pending_payment` o lo deja
+    convivir.
+
+    ## Por qué no trae email ni teléfono del comprador
+
+    El dueño necesita identificar la orden para actuar (número + nombre +
+    total), no gestionar el contacto desde esta lista — eso es un endpoint de
+    detalle que esta US no construye. Menos PII en tránsito por cada request
+    de esta pantalla (`security-standards.md` §9 — minimización).
+servers:
+  - url: /v1
+tags:
+  - name: admin-payments
+paths:
+  /admin/orders/pending-payment:
+    get:
+      operationId: listPendingPaymentOrders
+      tags: [admin-payments]
+      summary: Listar órdenes pendientes de confirmar pago (AC-2)
+      description: |
+        Órdenes en estado `pending_payment`, más nuevas primero. El E2E §12
+        dice que el panel del dueño no muestra `pending_payment` — este
+        endpoint es la excepción declarada por US-023: sin verlas, no hay
+        forma de llegar a `POST /confirm-payment`.
+
+        **`id` es obligatorio en cada fila**: `POST
+        /admin/orders/{orderId}/confirm-payment` toma el UUID interno de la
+        orden en el path — el mismo que `ConfirmOrderService` resuelve por
+        `WHERE id = :id`, no el `order_number` legible. Sin `id` acá, ningún
+        consumidor puede construir la URL del `POST` a partir de este listado.
+      responses:
+        '200':
+          description: Lista de órdenes pendientes (puede ser vacía).
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PendingPaymentOrder' }
+              example:
+                - id: 6f1a2b3c-4d5e-4f60-8a1b-2c3d4e5f6071
+                  order_number: 1042
+                  buyer_name: Juana Pérez
+                  total_ars_cents: 4560000
+                  created_at: '2026-08-30T14:03:00Z'
+        '401':
+          description: JWT admin ausente o inválido.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '403':
+          description: JWT válido sin `role=admin`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  schemas:
+    PendingPaymentOrder:
+      type: object
+      required: [id, order_number, buyer_name, total_ars_cents, created_at]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            UUID interno de la orden — el que espera el path de
+            `POST /admin/orders/{orderId}/confirm-payment`. A diferencia del
+            `order_token` que ve el comprador (US-008), acá el consumidor es
+            el panel del dueño, autenticado, así que exponer el UUID no es un
+            problema de enumerabilidad (mismo criterio que el resto de la
+            superficie `/v1/admin/*`).
+        order_number: { type: integer, example: 1042 }
+        buyer_name: { type: string, example: Juana Pérez }
+        total_ars_cents: { type: integer, example: 4560000 }
+        created_at: { type: string, format: date-time }
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
