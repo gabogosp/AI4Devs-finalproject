@@ -4,23 +4,11 @@ import { Button } from '@/components/ui/Button';
 import { formatArs } from '@/lib/format/currency';
 import type { Cart } from '@/api/generated/model';
 
-/**
- * Motivo por el que el pago no está disponible. Los dos son **distinguibles** a
- * propósito: uno lo resuelve la persona (ajustando su carrito), el otro no
- * depende de ella (la pantalla de pago todavía no existe).
- */
 const MOTIVO_BLOQUEO =
   'Revisá los productos marcados antes de seguir: hay líneas que no se pueden comprar.';
-const MOTIVO_PENDIENTE = 'El pago se habilita en la próxima entrega.';
 
 export interface CartSummaryProps {
   cart: Cart;
-  /**
-   * `/checkout` todavía no existe (US-008). Cuando exista, este flag desaparece
-   * junto con `MOTIVO_PENDIENTE`.
-   * `Deferred: US-008 — owner: FE`.
-   */
-  checkoutAvailable?: boolean;
   onCheckout?: () => void;
 }
 
@@ -34,17 +22,8 @@ export interface CartSummaryProps {
  * El contenedor del total es una región `aria-live="polite"`: recalcularlo tiene
  * que anunciarse sin interrumpir a quien está navegando.
  */
-export function CartSummary({
-  cart,
-  checkoutAvailable = false,
-  onCheckout,
-}: CartSummaryProps) {
+export function CartSummary({ cart, onCheckout }: CartSummaryProps) {
   const bloqueado = cart.has_blocking_issues;
-  const motivo = bloqueado
-    ? MOTIVO_BLOQUEO
-    : checkoutAvailable
-      ? null
-      : MOTIVO_PENDIENTE;
 
   return (
     <section
@@ -62,17 +41,13 @@ export function CartSummary({
       </div>
       <p className="text-xs text-muted">IVA incluido</p>
 
-      <Button
-        variant="accent"
-        disabled={bloqueado || !checkoutAvailable}
-        onClick={onCheckout}
-      >
+      <Button variant="accent" disabled={bloqueado} onClick={onCheckout}>
         Ir al pago
       </Button>
 
       {/* El motivo va SIEMPRE a la vista: un botón deshabilitado y mudo erosiona
           la confianza — no se sabe si es un error propio o del sitio. */}
-      {motivo && <p className="text-xs text-gray-600">{motivo}</p>}
+      {bloqueado && <p className="text-xs text-gray-600">{MOTIVO_BLOQUEO}</p>}
 
       <p className="text-xs text-muted">Retirás en el local: Av. Córdoba y Av. Pueyrredón.</p>
     </section>

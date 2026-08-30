@@ -10,6 +10,9 @@ import { cartService } from './cartService';
 vi.mock('./cartService', () => ({
   cartService: { get: vi.fn(), setItemQuantity: vi.fn(), removeItem: vi.fn() },
 }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 const servicio = vi.mocked(cartService);
 
