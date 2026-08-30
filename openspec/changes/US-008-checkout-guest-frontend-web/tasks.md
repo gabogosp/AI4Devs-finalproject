@@ -49,7 +49,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Pre-requisitos
 
-- [ ] **P1 — BLOQUEANTE: `apps/web` sin cambios sin commitear**
+- [x] **P1 — BLOQUEANTE: `apps/web` sin cambios sin commitear**
 
   Precedente repetido en este repo (US-006, US-014, US-017, US-018): sesiones paralelas sobre el
   mismo working tree pisan trabajo sin commitear con un `git add -A` ajeno. Este change toca
@@ -59,7 +59,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     devuelve algo, `/develop-frontend-web` **para acá** y reporta.
   - **Verify**: `test -z "$(git status --porcelain -- apps/web)" && echo "OK"`
 
-- [ ] **P2 — El backend de checkout está en `main` y el cliente generado está fresco**
+- [x] **P2 — El backend de checkout está en `main` y el cliente generado está fresco**
 
   El PR #11 (`US-008-checkout-guest-backend`) ya mergeó y el cliente ya se regeneró
   (`67c70a3`). Este pre-requisito no "wirea" codegen — verifica que sigue fresco, que es la
@@ -74,12 +74,12 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
       && echo "OK — codegen fresco"
     ```
 
-- [ ] **P3 — `design-system.md` en `Approved`**
+- [x] **P3 — `design-system.md` en `Approved`**
   - **Exit criterion**: el doc declara la aprobación de PO y Arquitecto (§7.13 CheckoutStepper/Form
     es la sección que gobierna este change).
   - **Verify**: `grep -q '^- \[x\] PO:' docs/product/design-system.md && grep -q '^- \[x\] Arquitecto:' docs/product/design-system.md && echo OK`
 
-- [ ] **P4 — AS-BUILT: el CTA del carrito tiene el marcador exacto que este change cierra**
+- [x] **P4 — AS-BUILT: el CTA del carrito tiene el marcador exacto que este change cierra**
   - **Exit criterion**: `CartSummary.tsx` declara `checkoutAvailable` con default `false` y el
     comentario `Deferred: US-008`. Si el marcador no está, este plan está planificando sobre una
     suposición vieja.
@@ -90,7 +90,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
       && echo OK
     ```
 
-- [ ] **P5 — AS-BUILT: el seam de consentimiento de US-017 existe con la forma esperada**
+- [x] **P5 — AS-BUILT: el seam de consentimiento de US-017 existe con la forma esperada**
   - **Exit criterion**: `LEGAL_ROUTES` y `CONSENT_COPY` existen en `features/legal/routes.ts` sin
     ningún `href` igual a `'#'`; `LEGAL_TERMS_VERSION` existe en `features/legal/content.ts`.
   - **Verify**:
@@ -102,7 +102,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
       && echo OK
     ```
 
-- [ ] **P6 — Suite y build verdes en el `HEAD` de partida**
+- [x] **P6 — Suite y build verdes en el `HEAD` de partida**
   - **Exit criterion**: unit/componente y `next build` pasan antes de tocar nada.
   - **Verify**: `API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web test && API_INTERNAL_ORIGIN=http://localhost:3000 pnpm --filter @dsm/web build`
 
