@@ -244,7 +244,7 @@ language: es
 
 ## Fase 5: Los AC como invariantes probadas — 1,4 h
 
-- [ ] T5.1 AC-1 + AC-2: confirmación exitosa de punta a punta + listado
+- [x] T5.1 AC-1 + AC-2: confirmación exitosa de punta a punta + listado
   - **Pattern**: e2e contra Postgres real (mismo estilo que
     `e2e-checkout-validation.spec.ts` de US-008) — siembra una orden
     `pending_payment` real (vía `OrdersRepository.createPendingOrder`, no un
@@ -256,14 +256,14 @@ language: es
     verificar en base) queda verde, no sólo la respuesta HTTP.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-confirm-happy`
 
-- [ ] T5.2 AC-3: sin JWT admin, o JWT sin `role=admin`, rechaza (401/403)
+- [x] T5.2 AC-3: sin JWT admin, o JWT sin `role=admin`, rechaza (401/403)
   - **Pattern**: reusa el mismo estilo de `e2e-admin-auth.spec.ts` (auth
     module) aplicado a las dos rutas nuevas.
   - **Exit criterion**: ninguna de las dos rutas cambia estado ni devuelve
     datos sin un JWT `role=admin` válido.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-auth`
 
-- [ ] T5.3 AC-4 + AC-5: estado inválido y doble confirmación son el mismo 409
+- [x] T5.3 AC-4 + AC-5: estado inválido y doble confirmación son el mismo 409
   - **Pattern**: tres casos en un `describe`: orden `new` de entrada, orden
     `cancelled` de entrada, y doble-click real (dos `POST` seguidos sobre la
     misma orden `pending_payment` — el segundo debe 409, el primero 200).
@@ -275,7 +275,7 @@ language: es
     `payments` tiene **exactamente una** fila para esa orden.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-idempotency`
 
-- [ ] T5.4 AC-6: registro auditable de quién y cuándo
+- [x] T5.4 AC-6: registro auditable de quién y cuándo
   - **Pattern**: confirma con un JWT cuyo `sub` es un uuid conocido, lee la
     fila de `payments` por `order_id`, verifica `confirmed_by` = ese uuid y
     `processed_at` dentro de los 5s del request (mismo margen que
@@ -285,7 +285,7 @@ language: es
     guarda el literal `'admin'` sin romper (columna sin FK, per `design.md`).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-audit-trail`
 
-- [ ] T5.5 Insuficiencia de stock al confirmar (invariante de ADR-0008, no un
+- [x] T5.5 Insuficiencia de stock al confirmar (invariante de ADR-0008, no un
   AC nuevo — ver `design.md` §Non-goals)
   - **Pattern**: siembra una orden `pending_payment` y luego, **entre el
     checkout y la confirmación**, baja el stock del producto por debajo de lo

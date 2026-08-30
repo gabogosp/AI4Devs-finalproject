@@ -1,4 +1,13 @@
-import { Controller, Get, Param, ParseUUIDPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { AdminGuard } from '../auth/admin.guard';
@@ -29,6 +38,7 @@ export class PaymentConfirmationController {
   ) {}
 
   @Post(':orderId/confirm-payment')
+  @HttpCode(200)
   async confirmPayment(
     @Param('orderId', new ParseUUIDPipe()) orderId: string,
     @Req() req: Request,
