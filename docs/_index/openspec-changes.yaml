@@ -1488,7 +1488,7 @@
   # stock decrementado exacto.
   estimate-hours: 8.0
   assignee: claude-code
-  branch: feat/US-023-pago-manual-offline
+  branch: feat/US-023-pago-manual-offline-backend
   pr-url: null
   created: 2026-08-30
   completed-at: null
