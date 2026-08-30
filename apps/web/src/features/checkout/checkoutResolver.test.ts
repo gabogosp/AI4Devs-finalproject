@@ -1,7 +1,13 @@
+import type { FieldErrors, ResolverOptions } from 'react-hook-form';
 import { describe, expect, it } from 'vitest';
+import type { CreateCheckoutRequest } from '@/api/generated/model';
 import { checkoutResolver } from './checkoutResolver';
 
-const opts = { criteriaMode: 'firstError', shouldUseNativeValidation: false } as const;
+const opts: ResolverOptions<CreateCheckoutRequest> = {
+  criteriaMode: 'firstError',
+  shouldUseNativeValidation: false,
+  fields: {},
+};
 
 const valido = {
   buyer: { name: 'Ana Gómez', email: 'ana@example.com', phone: '+54 9 11 5555 5555' },
@@ -24,7 +30,8 @@ describe('checkoutResolver — sobre el schema generado (D3)', () => {
       opts,
     );
 
-    expect(result.errors.buyer?.name?.message).toMatch(/nombre/i);
+    const errors = result.errors as FieldErrors<CreateCheckoutRequest>;
+    expect(errors.buyer?.name?.message).toMatch(/nombre/i);
   });
 
   it('consent: false produce errors.consent', async () => {
@@ -35,6 +42,7 @@ describe('checkoutResolver — sobre el schema generado (D3)', () => {
       opts,
     );
 
-    expect(result.errors.consent?.message).toMatch(/términos/i);
+    const errors = result.errors as FieldErrors<CreateCheckoutRequest>;
+    expect(errors.consent?.message).toMatch(/términos/i);
   });
 });

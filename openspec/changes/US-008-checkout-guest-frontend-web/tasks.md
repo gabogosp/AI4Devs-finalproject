@@ -229,7 +229,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 3: Componentes
 
-- [ ] T3.1 `checkoutCopy.ts` — banners por `AppError.kind` (tono §10.2)
+- [x] T3.1 `checkoutCopy.ts` — banners por `AppError.kind` (tono §10.2)
   - **Pattern**: constantes, no derivadas de `error.message` crudo — `per` el mismo criterio de
     seguridad de `authCopy.ts` (US-014 D9): el texto de un 409/403 no debe filtrar detalle del
     backend a la UI. Ver la tabla de `design.md` D5 para el texto exacto de cada caso.
@@ -239,7 +239,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     `cart-not-purchasable`) son **strings distintos**.
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/checkout/checkoutCopy.test.ts`
 
-- [ ] T3.2 `ConsentCheckbox.tsx` — consume el seam de US-017, no lo reescribe
+- [x] T3.2 `ConsentCheckbox.tsx` — consume el seam de US-017, no lo reescribe
   - **Pattern**: importa `CONSENT_COPY`/`LEGAL_ROUTES` de `@/features/legal/routes` y renderiza
     los dos `<Link>` con sus `href` tal cual vienen — **cero literales `'/legales/`** en este
     archivo — `per` el guard existente `routes.test.ts` (US-017), que ya recorre todo
@@ -260,7 +260,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     (el guard de `routes.test.ts` de US-017 corre igual sobre este archivo nuevo por recorrer todo
     `apps/web/src` — no hace falta duplicar el chequeo, sólo no violarlo)
 
-- [ ] T3.3 `OrderSummary.tsx` — ítems + total del carrito ya cargado, sin recalcular (AC-2)
+- [x] T3.3 `OrderSummary.tsx` — ítems + total del carrito ya cargado, sin recalcular (AC-2)
   - **Pattern**: recibe el `Cart` de `useCartContext()` como prop; usa `formatArs` (el mismo
     helper de `lib/format/currency.ts` que usa `CartSummary`) — `per api-standards.md §5.5`, nunca
     aritmética propia sobre `unit_price_ars_cents`.
@@ -269,7 +269,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     submit, D8); una línea bloqueada no aparece acá (ya la filtró `CheckoutBlocked`, T3.4).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/checkout/OrderSummary.test.tsx`
 
-- [ ] T3.4 `CheckoutBlocked.tsx` — entrada bloqueada por carrito inválido (AC-5, mitad de entrada)
+- [x] T3.4 `CheckoutBlocked.tsx` — entrada bloqueada por carrito inválido (AC-5, mitad de entrada)
   - **Pattern**: componente puro; recibe `reason: 'empty' | 'not_purchasable'` y renderiza el
     mensaje + `<Link href="/carrito">` — mismo criterio que `CartEmptyState.tsx` (US-007 §10.1).
   - **Exit criterion**: `reason: 'empty'` y `reason: 'not_purchasable'` producen textos
@@ -277,7 +277,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     link vuelve a `/carrito`, donde ya se ve el detalle por línea (D5 — no se duplica acá).
   - **Verify**: `pnpm --filter @dsm/web test -- --run src/features/checkout/CheckoutBlocked.test.tsx`
 
-- [ ] T3.5 `CheckoutForm.tsx` — el formulario (AC-1, AC-3, AC-4)
+- [x] T3.5 `CheckoutForm.tsx` — el formulario (AC-1, AC-3, AC-4)
   - **Pattern**: RHF + `checkoutResolver` (T1.2) + `Field`/`Input` existentes (`@/components/ui/Field`)
     — mismo patrón que `RegisterForm.tsx` (US-014), pero con el resolver custom de T1.2 en vez de
     `zodResolver` directo. `fulfillment` es un campo **oculto** con valor fijo `'pickup'`
@@ -296,7 +296,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     `cart-not-purchasable` → banner + link a `/carrito`; 403 → banner "Recargá la página…"; éxito
     → se invoca el callback `onSuccess` con el `CheckoutCreated`)
 
-- [ ] T3.6 `CheckoutConfirmation.tsx` — pantalla post-201, CTA deshabilitado (`Deferred: US-009`)
+- [x] T3.6 `CheckoutConfirmation.tsx` — pantalla post-201, CTA deshabilitado (`Deferred: US-009`)
   - **Pattern**: muestra `order_number`, `total_ars_cents` (vía `formatArs`), `status`; llama a
     `saveOrderToken` (T2.3) al montar; CTA "Continuar al pago" **deshabilitado** con motivo visible
     — mismo patrón textual que `CartSummary`'s `MOTIVO_PENDIENTE` (`per design.md D8`).
@@ -312,7 +312,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     `toBeDisabled()`; `saveOrderToken` mockeado se llama 1 vez en `mount`, 0 veces en un re-render
     con las mismas props)
 
-- [ ] T3.7 `CheckoutPage.tsx` — composición de los 3 estados de entrada (D4/D8, `frontend-standards.md §11.9`)
+- [x] T3.7 `CheckoutPage.tsx` — composición de los 3 estados de entrada (D4/D8, `frontend-standards.md §11.9`)
   - **Pattern**: lee `useCartContext()`; si `cart` está `idle`/`loading` → skeleton (mismo patrón
     que `CartPage.tsx`); si vacío o `has_blocking_issues` → `CheckoutBlocked` (T3.4); si no →
     `CheckoutForm` (T3.5) hasta `success`, entonces `CheckoutConfirmation` (T3.6) — **nunca** un
@@ -326,7 +326,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     `reason: 'not_purchasable'`; carrito válido → `CheckoutForm`; tras un submit exitoso simulado →
     `CheckoutConfirmation` y el formulario deja de estar en el DOM)
 
-- [ ] T3.8 `checkoutMetadata.ts` + `app/(storefront)/checkout/page.tsx` — la ruta
+- [x] T3.8 `checkoutMetadata.ts` + `app/(storefront)/checkout/page.tsx` — la ruta
   - **Pattern**: mismo patrón que `cartMetadata.ts`/`carrito/page.tsx` — Server Component que sólo
     exporta `metadata` y compone la hoja cliente; `robots: { index: false, follow: true }`
     (`per frontend-next-standards.md §6` — un formulario con PII del comprador no es indexable).
@@ -371,7 +371,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 5: Observabilidad
 
-- [ ] T5.1 Cinco eventos de checkout en `BusinessEvent` + wiring
+- [x] T5.1 Cinco eventos de checkout en `BusinessEvent` + wiring
   - **Pattern**: extender la unión `BusinessEvent` y el `Set` `PUBLIC_EVENTS` (superficie de
     invitado, sin `operator_id`) — `per observability-patterns` §9.5.2 y el precedente exacto de
     los eventos de carrito en el mismo archivo. Sin PII, sin el `order_token` en ninguna prop
