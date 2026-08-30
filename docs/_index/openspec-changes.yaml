@@ -1484,3 +1484,67 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-021-retencion-datos-ordenes-backend
+  us-id: US-021
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
+  audit-baseline: null
+  audit-derived: false
+  # ~6,8 h AI-asistido / ~13,5 h tradicional (16 tasks, 7 fases). US §7 presupuesta
+  # BE-US-021 en 5-8 h tradicional: el tradicional excede el techo ~5,5 h por trabajo
+  # que la US da por resuelto al describirla como "transformación acotada sobre un
+  # esquema que ya existe" — no hay módulo de órdenes admin todavía (US-012 sigue
+  # Ready sin change de backend), así que este change construye DESDE CERO los dos
+  # endpoints admin + guards + rate-limit + contrato OpenAPI, el runner de arranque
+  # (mismo patrón que ADR-0012, con su propio ciclo de vida y tests) y el servicio de
+  # eventos dedicado (US §9 exige cero PII en el payload). La transformación en sí
+  # —dos columnas, un UPDATE guardado por WHERE— son ~2 h.
+  #
+  # DECISIÓN DE ARQUITECTURA (no es pregunta abierta): mismo patrón que ADR-0012
+  # (contrato asíncrono/on-demand con ejecutor in-process + barrido oportunista al
+  # arrancar) aplicado al barrido mensual de retención — Redis sigue sin aprovisionar
+  # (ADR-0004/US-019). Precedente citado por el propio ADR-0012:
+  # openspec/changes/US-014-registro-login-backend/design.md ("purga programada de
+  # tokens vencidos", Deferred: US-011/operaciones). `Deferred: operaciones / US-019`
+  # para el processor BullMQ real — el contrato HTTP no cambia cuando eso ocurra.
+  #
+  # ALCANCE: migración aditiva sobre `orders` (2 columnas + 2 CHECK, F40
+  # column-complete); OrdersRepository (checkout/) gana findById/anonymize/
+  # anonymizeRetentionEligible; POST /v1/admin/orders/:id/anonymize (AC-3/AC-9);
+  # POST /v1/admin/orders/retention-sweep (AC-1, síncrono — un solo UPDATE de
+  # conjunto, no batching tipo ImportRunner); OrdersRetentionRunner
+  # (onApplicationBootstrap, barrido oportunista); OrdersRetentionEventsService
+  # (cero PII, un evento por corrida + uno por acción a pedido). Extiende
+  # CheckoutModule — no abre un módulo `orders` nuevo, porque no hay dueño natural
+  # distinto todavía para la superficie admin de órdenes.
+  #
+  # DECISIÓN DECLARADA: `access_token_hash` queda FUERA de alcance (no es PII —
+  # es el hash del token de acceso del invitado, no derivado de datos personales; y
+  # revocarlo rompería la consulta de estado que ningún AC pide tocar). Placeholders
+  # de anonimización con dominio `.invalid` (RFC 2606) para el email — no resoluble
+  # aunque algún día un adapter de email lo intente.
+  #
+  # OPEN QUESTION dejada para quien planifique US-012 (panel de órdenes del dueño,
+  # Ready, sin change de backend todavía): el futuro DTO de lectura de una orden DEBE
+  # exponer `anonymized_at`/`anonymization_reason` para que el AC-5 de esta US se
+  # pueda renderizar. Documentada en design.md §Open questions, no bloquea este change.
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment — migración de esquema sobre `orders`
+  # (tabla ya en producción potencial de US-008/009/010), primera superficie admin
+  # que muta/suprime PII, y dependencia de un disparador externo (cron Railway o
+  # manual) para la cadencia mensual real de AC-1 que este change no provisiona.
+  #
+  # Capability nueva esperada en openspec/specs/ tras el primer /archive-change:
+  # `retencion-datos-personales` (CAP-13, partida de CAP-10 el 2026-08-23).
+  estimate-hours: 6.8
+  assignee: sin-asignar  # planificado; 0 tasks cerradas, nadie lo ejecuta todavía
+  branch: feat/US-021-retencion-datos-ordenes-backend
+  pr-url: null
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
