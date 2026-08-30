@@ -181,11 +181,39 @@ contra el build real del FE.
 (cross-stack, cubre `SC-008-X3`).
 **Reuses**: seed de `qa/support/seed-carrito.ts` + `qa/support/cart-client.ts`.
 
+- [ ] **QA-008-BDD-1**: `checkout.feature` — los 12 escenarios API-level (Cucumber-js + supertest)
+
+  ```yaml
+  id: QA-008-BDD-1
+  scenario: SC-008-H1, SC-008-H2, SC-008-A1, SC-008-A2, SC-008-A3, SC-008-A4, SC-008-A5, SC-008-N1, SC-008-N2, SC-008-N3, SC-008-X1, SC-008-X2
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Cucumber+Supertest
+  gherkin_scenario: "AC-1..AC-8 — qa/acceptance/features/checkout.feature completo"
+  ```
+
+  - Exit criterion: `qa/acceptance/features/checkout.feature` existe con los 12 escenarios
+    API-level de §3 (todo menos `SC-008-X3`, que corre en `QA-008-E2E-1`) y sus steps en
+    `qa/acceptance/steps/checkout.steps.ts` (reusando `seed-carrito.ts`/`cart-client.ts`); los 12
+    pasan contra el backend real.
+  - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-008"` (exit 0, 12 escenarios
+    passing, 0 pending/undefined)
+
 ---
 
 ## 4. Contract testing
 
 - [ ] **QA-008-CT-1**: Supertest contract test para `POST /v1/checkout` vs OpenAPI
+
+  ```yaml
+  id: QA-008-CT-1
+  scenario: contract
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Supertest
+  gherkin_scenario: "AC-1/AC-3/AC-4/AC-5 — contrato de POST /v1/checkout vs OpenAPI"
+  ```
+
   - Exit criterion: un spec valida que el 201 matchee el schema de response, que el 409 y 422 matcheen `application/problem+json`, y que el 429 incluya las cabeceras `RateLimit-*`.
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=checkout` (exit 0)
 
@@ -194,10 +222,31 @@ contra el build real del FE.
 ## 5. Performance (k6)
 
 - [ ] **QA-008-PERF-1**: Script k6 para `POST /v1/checkout` con target p95 < 500 ms
+
+  ```yaml
+  id: QA-008-PERF-1
+  scenario: L-1
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: k6
+  gherkin_scenario: "US-008 §9 / NFR p95 escritura < 500ms"
+  name: Checkout_OrdenPendingPayment_P95BajoQuinientosMs
+  ```
+
   - Exit criterion: `qa/performance/checkout.js` crea carritos → ejecuta checkouts con datos válidos, midiendo la escritura. Threshold: `'http_req_duration{endpoint:checkout}': ['p(95)<500']`. Requiere seed previo.
   - Verify: `k6 run --vus 3 --duration 15s qa/performance/checkout.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"`
 
 - [ ] **QA-008-PERF-2**: Threshold de checkout agregado a `thresholds.js`
+
+  ```yaml
+  id: QA-008-PERF-2
+  scenario: L-1
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: k6
+  gherkin_scenario: "US-008 §9 / NFR p95 escritura < 500ms"
+  ```
+
   - Exit criterion: `qa/performance/lib/thresholds.js` exporta `checkout` con `'http_req_duration{endpoint:checkout}': ['p(95)<500']`.
   - Verify: `grep -q "p(95)<500" qa/performance/lib/thresholds.js && grep -q "checkout" qa/performance/lib/thresholds.js`
 
