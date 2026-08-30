@@ -26,6 +26,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-16
+  in-review-at: 2026-08-30T12:30:00Z # PR #21 (qa) abierto; BE y FE siguen sin rama/PR propios (branch: null) — US-level se queda In Progress
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
