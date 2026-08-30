@@ -187,4 +187,97 @@ describe('OrdersRepository (integration)', () => {
 
     expect(await repo.findByTokenHash('h-no-existe')).toBeNull();
   });
+
+  it('transitionToNewIfPending: sobre pending_payment, transiciona a new y devuelve la orden con items (US-023 AC-1)', async () => {
+    const creada = await repo.createPendingOrder({
+      ...ordenBase('transition-ok'),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+
+    const resultado = await repo.transitionToNewIfPending(creada.id);
+
+    expect(resultado?.status).toBe('new');
+    expect(resultado?.items).toHaveLength(1);
+    const enBase = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
+    expect(enBase.status).toBe('new');
+  });
+
+  it('transitionToNewIfPending: sobre una orden que ya no está pending_payment, devuelve null y no cambia nada (US-023 AC-4/AC-5)', async () => {
+    const creada = await repo.createPendingOrder({
+      ...ordenBase('transition-noop'),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+    await repo.transitionToNewIfPending(creada.id); // ya queda en `new`
+
+    const segundaVez = await repo.transitionToNewIfPending(creada.id);
+
+    expect(segundaVez).toBeNull();
+    const enBase = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
+    expect(enBase.status).toBe('new'); // sin cambios por el segundo intento
+  });
+
+  it('listByStatus: devuelve sólo las órdenes del estado pedido, más nuevas primero (US-023 AC-2)', async () => {
+    const pendienteVieja = await repo.createPendingOrder({
+      ...ordenBase('list-pending-1'),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+    const pendienteNueva = await repo.createPendingOrder({
+      ...ordenBase('list-pending-2'),
+      totalArsCents: 430_000,
+      lines: [
+        {
+          productId: productoC,
+          quantity: 1,
+          unitPriceArsCents: 430_000,
+          productName: 'Cable de cobre 3x2',
+          productSku: 'ORD-REPO-C',
+        },
+      ],
+    });
+    const confirmada = await repo.createPendingOrder({
+      ...ordenBase('list-confirmed'),
+      totalArsCents: 12_500_000,
+      lines: [
+        {
+          productId: productoA,
+          quantity: 1,
+          unitPriceArsCents: 12_500_000,
+          productName: 'Compresor Embraco',
+          productSku: 'ORD-REPO-A',
+        },
+      ],
+    });
+    await repo.transitionToNewIfPending(confirmada.id);
+
+    const pendientes = await repo.listByStatus('pending_payment');
+
+    expect(pendientes.map((o) => o.id)).toEqual([pendienteNueva.id, pendienteVieja.id]);
+  });
 });

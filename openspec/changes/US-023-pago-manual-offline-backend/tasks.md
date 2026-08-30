@@ -116,7 +116,7 @@ language: es
 
 ## Fase 2: Extender `orders.repository.ts` — 0,6 h
 
-- [ ] T2.1 `transitionToNewIfPending(orderId, tx)` + `listByStatus(status)`
+- [x] T2.1 `transitionToNewIfPending(orderId, tx)` + `listByStatus(status)`
   - **Pattern**: `updateMany({ where: { id: orderId, status: 'pending_payment' },
     data: { status: 'new' } })` dentro del mismo `tx` que recibe el parámetro;
     si `count === 0`, el método devuelve `null` (no lanza — `ConfirmOrderService`
@@ -130,7 +130,7 @@ language: es
     ordenadas por más nueva primero.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository`
 
-- [ ] T2.2 `CheckoutModule` exporta `OrdersRepository`
+- [x] T2.2 `CheckoutModule` exporta `OrdersRepository`
   - **Pattern**: agregar `OrdersRepository` al array `exports` de
     `checkout.module.ts` (hoy sólo está en `providers`) — sin tocar ningún
     otro provider ni el contrato público del módulo (`CheckoutController`
@@ -139,9 +139,12 @@ language: es
     `CheckoutModule` e inyectar `OrdersRepository` sin re-declararlo como
     provider propio.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=checkout.module`
-    (spec nuevo, chico: instancia el módulo de Nest y confirma que
-    `OrdersRepository` resuelve desde afuera vía un módulo consumidor de
-    prueba — no sólo que la palabra `OrdersRepository` aparezca en el archivo)
+    (spec nuevo, chico: lee la metadata `@Module({ exports })` real de Nest —
+    no sólo que la palabra `OrdersRepository` aparezca en el archivo. **Nota
+    de ejecución**: se descartó compilar el `CheckoutModule` completo con
+    `Test.createTestingModule` porque arrastra transitivamente media app
+    —`ProductsModule` -> `CatalogEventsService`, etc.— que no son parte de
+    este contrato; la metadata de Nest es la prueba correcta y proporcional)
 
 ---
 
