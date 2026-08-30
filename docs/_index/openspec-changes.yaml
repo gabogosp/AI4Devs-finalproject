@@ -1436,7 +1436,7 @@
   us-id: US-023
   discipline: backend
   variant: null
-  status: in progress   # 19/19 tasks + 5 checks de verificación cerrados 2026-08-30, PR pendiente (/commit)
+  status: in review   # 19/19 tasks + 5 checks de verificación cerrados 2026-08-30, PR #27 abierto
   parent-us: docs/user-stories/US-023-pago-manual-offline.md
   linear-task-id: null
   audit-baseline: null
@@ -1489,7 +1489,8 @@
   estimate-hours: 8.0
   assignee: claude-code
   branch: feat/US-023-pago-manual-offline-backend
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/27
+  pr-opened-at: 2026-08-30
   created: 2026-08-30
   completed-at: null
   archived-at: null

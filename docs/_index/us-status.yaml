@@ -313,6 +313,8 @@
   created: 2026-08-30
   ready-at: 2026-08-30
   in-progress-at: 2026-08-30   # /plan-backend-ticket — primer plan de disciplina abierto
+  in-review-at: 2026-08-30     # backend PR #27 abierto (/commit); FE/QA todavía no arrancaron —
+                                # el status de la US queda en In Progress hasta que las tres tengan PR
   t-shirt: M
   # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
   # el pago y la orden pasa a `new` (FSM E2E §12, no "paid" — corregido en el enrich).
