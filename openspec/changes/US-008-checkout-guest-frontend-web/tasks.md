@@ -395,7 +395,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 6: Accesibilidad
 
-- [ ] T6.1 axe sobre los 4 estados de `/checkout`
+- [x] T6.1 axe sobre los 4 estados de `/checkout`
   - **Pattern**: `jest-axe`, mismo patrón que `cartA11y.test.tsx`/`legalA11y.test.tsx` — `per
     qa-frontend-standards.md §23.6` + `design-system.md §11`.
   - **Exit criterion**: cero violaciones de axe en `CheckoutBlocked`, `CheckoutForm` (con y sin
