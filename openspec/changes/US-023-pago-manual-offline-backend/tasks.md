@@ -116,7 +116,10 @@ language: es
 
 ## Fase 2: Extender `orders.repository.ts` — 0,6 h
 
-- [x] T2.1 `transitionToNewIfPending(orderId, tx)` + `listByStatus(status)`
+- [x] T2.1 `transitionToNewIfPending(orderId, tx)` + `listByStatus(status)` +
+  `findById(orderId)` (agregado durante T3.3 — ver nota ahí; necesario para
+  que `ConfirmOrderService` distinga 404 de 409, algo que el `updateMany`
+  guardado de `transitionToNewIfPending` no puede por sí solo)
   - **Pattern**: `updateMany({ where: { id: orderId, status: 'pending_payment' },
     data: { status: 'new' } })` dentro del mismo `tx` que recibe el parámetro;
     si `count === 0`, el método devuelve `null` (no lanza — `ConfirmOrderService`
@@ -150,7 +153,7 @@ language: es
 
 ## Fase 3: Módulo `payments/` — la transacción — 2,0 h
 
-- [ ] T3.1 `PaymentConfirmationPort` (interfaz) + `PaymentsRepository`
+- [x] T3.1 `PaymentConfirmationPort` (interfaz) + `PaymentsRepository`
   - **Pattern**: interfaz per `design.md` §Approach (`ConfirmPaymentInput`,
     `ConfirmedPayment`); `PaymentsRepository.create(data, tx)` — único punto de
     ORM de `payments`, traduce `P2002` sobre `idempotency_key` a
@@ -163,7 +166,7 @@ language: es
     lanza `OrderNotPendingPaymentError` en vez del `P2002` crudo de Prisma.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payments.repository`
 
-- [ ] T3.2 `OrderNotPendingPaymentError` (409, unifica AC-4 + AC-5)
+- [x] T3.2 `OrderNotPendingPaymentError` (409, unifica AC-4 + AC-5)
   - **Pattern**: extiende `DomainError`; `type: 'dsm:payments/order-not-pending-payment'`;
     constructor recibe el `currentStatus` para el `detail` (per contrato
     OpenAPI del change).
@@ -171,7 +174,7 @@ language: es
     estado actual de la orden.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payment-confirmation-errors`
 
-- [ ] T3.3 `ConfirmOrderService.confirm()` — la transacción de las tres
+- [x] T3.3 `ConfirmOrderService.confirm()` — la transacción de las tres
   escrituras (AC-1, AC-4, AC-5, AC-6)
   - **Pattern**: `prisma.$transaction(async (tx) => { … })` orquestando, en
     orden, `orders.transitionToNewIfPending` → si `null`, throw

@@ -188,6 +188,30 @@ describe('OrdersRepository (integration)', () => {
     expect(await repo.findByTokenHash('h-no-existe')).toBeNull();
   });
 
+  it('findById: encuentra la orden por su uuid interno, con items (US-023, distingue 404 de 409)', async () => {
+    const creada = await repo.createPendingOrder({
+      ...ordenBase('find-by-id'),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+
+    const encontrada = await repo.findById(creada.id);
+    expect(encontrada?.id).toBe(creada.id);
+    expect(encontrada?.items).toHaveLength(1);
+  });
+
+  it('findById: uuid inexistente devuelve null', async () => {
+    expect(await repo.findById('00000000-0000-0000-0000-000000000000')).toBeNull();
+  });
+
   it('transitionToNewIfPending: sobre pending_payment, transiciona a new y devuelve la orden con items (US-023 AC-1)', async () => {
     const creada = await repo.createPendingOrder({
       ...ordenBase('transition-ok'),

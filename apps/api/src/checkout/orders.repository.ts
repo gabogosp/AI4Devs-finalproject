@@ -83,6 +83,19 @@ export class OrdersRepository {
   }
 
   /**
+   * Por id interno (US-023): `ConfirmOrderService` la usa para distinguir
+   * 404 (orden inexistente) de 409 (existe pero no está `pending_payment`),
+   * algo que `transitionToNewIfPending` por sí sola no puede — su `updateMany`
+   * guardado devuelve 0 filas afectadas en ambos casos por igual.
+   */
+  findById(orderId: string): Promise<OrderWithItems | null> {
+    return this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+  }
+
+  /**
    * Transiciona `pending_payment -> new` (US-023 AC-1), guardada por
    * `WHERE status = 'pending_payment'` — devuelve `null` si la orden ya no
    * estaba en ese estado (idempotencia/concurrencia, AC-4/AC-5). No lanza:
