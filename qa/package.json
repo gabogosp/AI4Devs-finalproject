@@ -10,6 +10,7 @@
   "scripts": {
     "test:acceptance": "env NODE_OPTIONS=\"--import tsx\" cucumber-js --config acceptance/cucumber.mjs",
     "test:acceptance:import": "env NODE_OPTIONS=\"--import tsx\" cucumber-js --config acceptance/cucumber.mjs --tags \"@importar\"",
+    "test:acceptance:us008": "env NODE_OPTIONS=\"--import tsx\" cucumber-js --config acceptance/cucumber.mjs --tags \"@us-008\"",
     "test:e2e": "playwright test -c e2e/playwright.config.ts",
     "test:e2e:import": "playwright test -c e2e/playwright.config.ts importar.spec.ts",
     "test:a11y": "playwright test -c e2e/playwright.a11y.config.ts",

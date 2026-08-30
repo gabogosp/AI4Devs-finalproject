@@ -181,7 +181,7 @@ contra el build real del FE.
 (cross-stack, cubre `SC-008-X3`).
 **Reuses**: seed de `qa/support/seed-carrito.ts` + `qa/support/cart-client.ts`.
 
-- [ ] **QA-008-BDD-1**: `checkout.feature` — los 12 escenarios API-level (Cucumber-js + supertest)
+- [x] **QA-008-BDD-1**: `checkout.feature` — los 12 escenarios API-level (Cucumber-js + supertest)
 
   ```yaml
   id: QA-008-BDD-1
@@ -196,8 +196,11 @@ contra el build real del FE.
     API-level de §3 (todo menos `SC-008-X3`, que corre en `QA-008-E2E-1`) y sus steps en
     `qa/acceptance/steps/checkout.steps.ts` (reusando `seed-carrito.ts`/`cart-client.ts`); los 12
     pasan contra el backend real.
-  - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-008"` (exit 0, 12 escenarios
-    passing, 0 pending/undefined)
+  - Verify: `pnpm --filter @dsm/qa test:acceptance:us008` (exit 0, 14 escenarios passing —
+    12 + 2 ejemplos extra del Esquema del escenario SC-008-A2 —, 0 pending/undefined)
+  - **Corrección de Verify**: `test:acceptance` no reenvía flags extra (el script no deja un
+    `--` para pnpm) — el mismo problema que ya tenía `@importar`, resuelto ahí con un script
+    dedicado. Se agregó `test:acceptance:us008`, mismo patrón.
 
 ---
 
