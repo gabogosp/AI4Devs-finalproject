@@ -449,7 +449,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 8: Documentación
 
-- [ ] T8.1 README: la ruta, el seam de US-017 y el `Deferred: US-009`
+- [x] T8.1 README: la ruta, el seam de US-017 y el `Deferred: US-009`
   - **Pattern**: extiende `## Mapa de rutas` con `/checkout`, agrega una sección hermana de las que
     ya documentan `/carrito` — `per documentation-standards.md §11.1`.
   - **Exit criterion**: documenta (a) que `/checkout` consume `LEGAL_ROUTES`/`CONSENT_COPY` y
