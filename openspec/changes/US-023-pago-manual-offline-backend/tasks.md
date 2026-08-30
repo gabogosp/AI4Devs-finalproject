@@ -317,7 +317,7 @@ language: es
 
 ## Fase 7: Contratos y documentación — 0,7 h
 
-- [ ] T7.1 Mergear los dos contratos draft al OpenAPI publicado del servicio
+- [x] T7.1 Mergear los dos contratos draft al OpenAPI publicado del servicio
   - **Pattern**: agregar el tag `admin-payments` + las dos rutas de
     `contracts/openapi/orders-confirm-payment.yaml` y
     `contracts/openapi/orders-pending-payment.yaml` a
@@ -329,7 +329,7 @@ language: es
     limpio.
   - **Verify**: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
 
-- [ ] T7.2 Nota operativa en el runbook del servicio
+- [x] T7.2 Nota operativa en el runbook del servicio
   - **Pattern**: una entrada corta en `docs/services/dsm-ecommerce/runbook.md`
     — mientras `US-009` esté `Blocked`, **toda** orden requiere confirmación
     manual del dueño; si el panel (US-012) todavía no existe, `GET
@@ -341,9 +341,9 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Todos los unit + integration pasan: `pnpm --filter @dsm/api test`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Contrato OpenAPI lintea: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
-- [ ] `ac6-stock-untouched.spec.ts` sigue verde (nada de este change tocó
+- [x] Todos los unit + integration pasan: `pnpm --filter @dsm/api test`
+- [x] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
+- [x] Lint limpio: `pnpm --filter @dsm/api lint`
+- [x] Contrato OpenAPI lintea: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
+- [x] `ac6-stock-untouched.spec.ts` sigue verde (nada de este change tocó
   `checkout/` para escribir stock): `pnpm --filter @dsm/api test -- --testPathPattern=ac6-stock-untouched`
