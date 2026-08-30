@@ -1432,3 +1432,54 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-008-checkout-guest-frontend-web
+  us-id: US-008
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-008-checkout-guest.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Backend hermano (US-008-checkout-guest-backend) ya en `main` vía PR #11, 20/20 tasks; el
+  # cliente generado (orval) ya está regenerado con createGuestCheckout/CreateGuestCheckoutBody/
+  # CheckoutCreated — no hay tarea de "wirear codegen", sólo de verificar que sigue fresco (T0.1/P2).
+  #
+  # ALCANCE: formulario de checkout (nombre/email/teléfono, retiro fijo — sucursal única,
+  # consentimiento wireado al seam YA CONSTRUIDO de US-017 — LEGAL_ROUTES/CONSENT_COPY, NO
+  # hand-written), resumen de orden, validación inline con el schema GENERADO del contrato
+  # (resolver custom que traduce mensajes, nunca un segundo schema — frontend-standards §3.2),
+  # manejo de 409/422/403/429/network, un-defer del CTA "Ir al pago" del carrito
+  # (CartSummary.tsx/CartPage.tsx, con excepción nombrada de CartSummary.test.tsx).
+  #
+  # DE LAS 8 AC DE LA US, este change prueba desde la UI: AC-1 (parcial — "avanza al pago" queda
+  # Deferred: US-009, sin plan de FE todavía), AC-3, AC-4 (mitad UX), AC-5, AC-8 (mitad FE). AC-2,
+  # AC-6, AC-7 son backend-verificados (ya cerrados en US-008-checkout-guest-backend T5.1/T5.2/T5.4);
+  # no observables desde esta UI.
+  #
+  # DECISIONES DE DISEÑO propias de este change (no ADR — documentadas en design.md, abiertas a
+  # ratificación PO/Arquitecto, ninguna bloquea el arranque): OQ-FE-19 order_token en sessionStorage
+  # (nunca la URL — es la credencial de la orden, mismo razonamiento que el backend aplicó al no
+  # exponer order_id) · OQ-FE-20 confirmación in-place en /checkout, sin ruta nueva (no precompromete
+  # a US-009 FE, que no tiene plan) · OQ-FE-21 retiro como información fija, sin checkbox redundante
+  # (fulfillment tiene un solo valor posible) · OQ-FE-22 reload() del carrito al montar /checkout.
+  #
+  # 23 tasks + 6 pre-requisitos. ~5,4 h AI-asistido / ~10,5 h tradicional (estimado por fase). US §7
+  # presupuesta FE-US-008 en 8-12 h tradicional: entra en el rango — a diferencia de otras US de este
+  # repo, acá el trabajo no presupuestado (un-defer del CTA, seam de consentimiento, resolver sobre
+  # schema generado) se compensa con que el contrato YA está publicado y regenerado, y con reusar
+  # patrones ya construidos (RegisterForm.tsx para RHF+Field, useCart.ts para la unión discriminada,
+  # csrf.ts/client.ts sin cambios — session:'cart' ya cubre exactamente lo que checkout necesita).
+  #
+  # DEPLOYMENT: no requiere /plan-deployment propio; coordinar con US-009 (orden no negociable:
+  # BE US-008 → FE US-008 → US-009). Hereda el gate legal de US-017: si /legales/* sigue con texto
+  # provisional, este checkout no debería salir a producción aunque el código esté completo.
+  estimate-hours: 5.4
+  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
+  branch: null
+  pr-url: null
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
