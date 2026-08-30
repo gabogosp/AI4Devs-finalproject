@@ -1,0 +1,66 @@
+post:
+  tags:
+  - admin-imports
+  summary: Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
+  description: |
+    CSV o XLSX detectado por contenido (magic bytes), no por extensión ni
+    `Content-Type`. Valida antes de crear el trabajo (AC-6): formato, encoding,
+    encabezados requeridos, tope de filas — si falla cualquiera, no se crea el
+    trabajo ni se toca un solo producto. Sólo un import vigente a la vez: un
+    segundo `POST` mientras hay uno `pending`/`running` da `409`. Reintento con
+    la misma `Idempotency-Key` da `200` con el trabajo original.
+  parameters:
+  - name: Idempotency-Key
+    in: header
+    required: false
+    schema:
+      type: string
+      maxLength: 255
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          required:
+          - file
+          properties:
+            file:
+              type: string
+              format: binary
+              description: CSV (UTF-8) o XLSX del catálogo. Máximo 4 MiB, 5.000 filas.
+  responses:
+    '202':
+      description: Trabajo creado y encolado (`pending`); el progreso se consulta por GET.
+      headers:
+        Location:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/ImportCreated'
+    '200':
+      description: Reintento con Idempotency-Key ya usada — trabajo original, sin crear otro.
+      headers:
+        Location:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/ImportCreated'
+    '401':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '403':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '409':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '413':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '415':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '422':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
