@@ -174,7 +174,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 2: Servicio y estado
 
-- [ ] T2.1 `checkoutService.ts` — repositorio del checkout (`frontend-standards.md` §3.3/§11.5)
+- [x] T2.1 `checkoutService.ts` — repositorio del checkout (`frontend-standards.md` §3.3/§11.5)
   - **Pattern**: envuelve `createGuestCheckout` generado con `session: 'cart'` (mismo sujeto de
     CSRF que el carrito — cero cambios en `client.ts`/`csrf.ts`) y valida la respuesta con
     `parseContract` — `per` el precedente exacto de `cartService.ts`.
@@ -199,7 +199,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     (MSW: `getCreateGuestCheckoutMockHandler` para el 201; un handler que devuelve un 201 con
     `order_token` mal formado → `parseContract` lanza `server`)
 
-- [ ] T2.2 `useCheckout.ts` — unión discriminada de 4 casos (`frontend-standards.md` §11.4)
+- [x] T2.2 `useCheckout.ts` — unión discriminada de 4 casos (`frontend-standards.md` §11.4)
   - **Pattern**: `useReducer` de `idle | submitting | success | error`, sin contexto compartido
     (un solo consumidor) — `per design.md D4`. El error se mapea con `isAppError`/`appErrorDe`
     (mismo helper que `useCart.ts`, no se reescribe).
@@ -212,7 +212,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     (reducer puro: los 4 casos + transición de `error` de vuelta a `submitting` en un reintento;
     hook con `checkoutService` mockeado: dos llamadas a `submit` simultáneas → un solo POST)
 
-- [ ] T2.3 `orderToken.ts` — persistencia del token para US-009 (`Deferred: US-009 — owner: FE`)
+- [x] T2.3 `orderToken.ts` — persistencia del token para US-009 (`Deferred: US-009 — owner: FE`)
   - **Pattern**: `sessionStorage`, nunca la URL — `per design.md D7` (razonamiento de seguridad:
     el token es la credencial, no un identificador).
   - **Exit criterion**: `saveOrderToken(token)` escribe en `sessionStorage` bajo la clave
