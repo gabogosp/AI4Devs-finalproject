@@ -203,19 +203,31 @@ contra el build real del FE.
 
 ## 4. Contract testing
 
-- [ ] **QA-008-CT-1**: Supertest contract test para `POST /v1/checkout` vs OpenAPI
+- [x] **QA-008-CT-1**: Contract test para `POST /v1/checkout` vs OpenAPI
 
   ```yaml
   id: QA-008-CT-1
   scenario: contract
   execution_mode: automated
   test_layer: 3
-  target_tooling: Supertest
+  target_tooling: fetch (script standalone, mismo estilo que search.contract.ts)
   gherkin_scenario: "AC-1/AC-3/AC-4/AC-5 — contrato de POST /v1/checkout vs OpenAPI"
   ```
 
-  - Exit criterion: un spec valida que el 201 matchee el schema de response, que el 409 y 422 matcheen `application/problem+json`, y que el 429 incluya las cabeceras `RateLimit-*`.
-  - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=checkout` (exit 0)
+  - Exit criterion: `qa/contract/checkout.contract.ts` valida que el 201 matchee el
+    schema de `CheckoutCreated`, que el 409 y 422 matcheen `application/problem+json`
+    (`Problem`), y que el 429 incluya las cabeceras `RateLimit-*` — el 429 corre
+    contra una instancia dedicada de rate-limit bajo (`QA_CHECKOUT_LOWLIMIT_BASE_URL`,
+    mismo patrón que TC-613 de `importar.steps.ts`) para no quemar el cupo de la
+    instancia compartida.
+  - Verify: `QA_CHECKOUT_LOWLIMIT_BASE_URL=http://localhost:3014 pnpm --filter @dsm/qa
+    test:contract:checkout` (exit 0)
+  - **Corrección de tooling declarado en el plan**: `test:contract` es un script
+    hardcodeado a `search.contract.ts` (no acepta `--testPathPattern`, no es
+    Supertest sino `fetch` contra un servidor real, igual que el resto de
+    `qa/contract/`) — se agregó `test:contract:checkout` como script propio, mismo
+    patrón que ya existía, en vez de forzar el nombre que el plan asumía sin
+    verificar el runner real.
 
 ---
 
