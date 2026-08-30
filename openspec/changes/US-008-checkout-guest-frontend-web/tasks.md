@@ -141,7 +141,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 1: Validación — el schema generado, traducido
 
-- [ ] T1.1 `checkoutFieldMessages.ts` — traducción de issues Zod a copy es-AR, sin redeclarar constraints
+- [x] T1.1 `checkoutFieldMessages.ts` — traducción de issues Zod a copy es-AR, sin redeclarar constraints
   - **Pattern**: mapa `path.join('.') → mensaje`, **nunca** un segundo `z.object` con `min`/`max`/
     regex propios — `per frontend-standards.md §3.2 — prohibido hand-write mirrors del contrato`.
     Ver `design.md` D3 para el snippet completo.
@@ -156,7 +156,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
       && echo OK
     ```
 
-- [ ] T1.2 `checkoutResolver.ts` — Resolver de react-hook-form sobre `CreateGuestCheckoutBody`
+- [x] T1.2 `checkoutResolver.ts` — Resolver de react-hook-form sobre `CreateGuestCheckoutBody`
   - **Pattern**: `Resolver<CheckoutFormValues>` que corre `CreateGuestCheckoutBody.safeParse` y
     traduce con T1.1 — `per design.md D3`. **No** usa `zodResolver` con un schema propio.
   - **Exit criterion**: valores válidos (buyer completo, `consent: true`, `fulfillment: 'pickup'`)
