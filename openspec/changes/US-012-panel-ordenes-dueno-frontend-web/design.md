@@ -372,6 +372,7 @@ backend hermano):
 GET /v1/admin/orders/pending-payment
   200: PendingPaymentOrder[]   # sin paginación (volumen bajo, un solo local)
 PendingPaymentOrder:
+  id: string (uuid)     # requerido — lo consume POST /confirm-payment
   order_number: integer, buyer_name: string, total_ars_cents: integer, created_at: date-time
   # sin buyer_email/buyer_phone (mínimo necesario, criterio de US-023)
 
@@ -382,14 +383,11 @@ POST /v1/admin/orders/{orderId}/confirm-payment
   409: Problem (dsm:payments/insufficient-stock — stock agotado entre checkout y confirmación)
 ```
 
-**Assumption a confirmar cuando el contrato de US-023 se publique (flagged, no bloquea este
-plan)**: el shape de `GET /pending-payment`, tal como está en prosa en el `design.md` de
-US-023, **no incluye `id` (uuid)** — solo `order_number`. Pero `POST /confirm-payment` toma
-`{orderId}` en el path y `ConfirmOrderService` resuelve por `WHERE id=:id` (uuid), no por
-`order_number`. Este plan **asume** que el contrato OpenAPI real, cuando se genere, sí expone
-`id` en cada fila (de lo contrario el endpoint sería inconsumible desde cualquier cliente, no
-solo este FE). Si en cambio la ruta real toma `order_number`, el ajuste es de una línea en
-`pendingPaymentsService.ts`.
+**Resuelto 2026-08-30**: se había flageado que el shape de `GET /pending-payment` en prosa no
+incluía `id` (uuid), necesario para `POST /confirm-payment`. `US-023-pago-manual-offline-backend`
+corrigió su contrato (`contracts/openapi/orders-pending-payment.yaml` §schema, `id` ahora
+`required`) — ya no es una asunción de este plan, es parte del contrato fijado por el backend
+hermano. Sin cambios pendientes en `pendingPaymentsService.ts`.
 
 **Componente — `PendingPaymentsPanel`** (`apps/web/src/features/orders/
 PendingPaymentsPanel.tsx`), **deliberadamente separado** de `OrdersList`: no un tab dentro de
