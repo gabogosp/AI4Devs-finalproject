@@ -1,0 +1,84 @@
+get:
+  operationId: getCart
+  tags: [cart]
+  summary: Devuelve el carrito con precios vigentes y disponibilidad (AC-4, AC-6, AC-7, AC-9)
+  description: |
+    **Operación segura**: no crea carrito, no emite cookie y no desliza la
+    ventana de retención. Sin cookie, con una cookie huérfana o con la fila
+    vencida devuelve el **carrito vacío** con **200** (AC-7) — «no tengo
+    carrito» es un estado válido del recurso, no un recurso ausente.
+
+    Cada lectura re-evalúa precio y disponibilidad contra `products`, así que
+    una línea despublicada o sin stock suficiente aparece **marcada** (AC-6) y
+    fuera del `total_ars_cents`, nunca borrada sola.
+
+    Si la fila estaba vencida, se **purga** en el acto (purga oportunista) y
+    se responde como si no hubiera carrito.
+
+    **Carrito vacío (AC-7)**: `{ "cart": { "id": null, "items": [],
+    "item_count": 0, "total_quantity": 0, "total_ars_cents": 0,
+    "has_blocking_issues": false, "updated_at": null } }`, con **200** y
+    **sin** `Set-Cookie`.
+  security: []
+  responses:
+    '200':
+      description: |
+        Carrito del invitado. `Cache-Control: no-store` en toda la superficie
+        (security-standards §7.1): sin él, una caché intermedia podría servir
+        el carrito de otro cliente o precios viejos, y AC-9 se caería aunque
+        el cálculo del servidor fuera perfecto.
+      headers:
+        Cache-Control:
+          description: Siempre `no-store`.
+          schema: { type: string }
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/CartEnvelope'
+          examples:
+            conProductos:
+              summary: Carrito con una línea disponible y un cambio de precio
+              value:
+                cart:
+                  id: 9b2f8c1e-4d5a-4f6b-8c7d-1e2f3a4b5c6d
+                  items:
+                    - slug: amoladora-angular-115mm
+                      name: Amoladora angular 115mm
+                      image_url: https://cdn.example.com/amoladora.jpg
+                      quantity: 2
+                      unit_price_ars_cents: 185000
+                      currency: ARS
+                      subtotal_ars_cents: 370000
+                      availability: available
+                      max_quantity: 5
+                      price_changed: true
+                      previous_unit_price_ars_cents: 179000
+                  item_count: 1
+                  total_quantity: 2
+                  total_ars_cents: 370000
+                  has_blocking_issues: false
+                  updated_at: '2026-08-22T12:00:00.000Z'
+            conLineaBloqueada:
+              summary: Línea sin stock suficiente — marcada y fuera del total (AC-6)
+              value:
+                cart:
+                  id: 9b2f8c1e-4d5a-4f6b-8c7d-1e2f3a4b5c6d
+                  items:
+                    - slug: taco-fischer-sx-8mm
+                      name: Taco Fischer SX 8mm (x50)
+                      image_url: https://cdn.example.com/taco.jpg
+                      quantity: 3
+                      unit_price_ars_cents: 320000
+                      currency: ARS
+                      subtotal_ars_cents: 960000
+                      availability: insufficient_stock
+                      available_quantity: 1
+                      max_quantity: 1
+                      price_changed: false
+                  item_count: 1
+                  total_quantity: 3
+                  total_ars_cents: 0
+                  has_blocking_issues: true
+                  updated_at: '2026-08-22T12:00:00.000Z'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

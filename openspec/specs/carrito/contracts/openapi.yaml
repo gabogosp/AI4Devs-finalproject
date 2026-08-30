@@ -1,0 +1,247 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Carrito (CAP-4)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-007 (carrito de compra del invitado) — capacidad 4 del PRD, con su
+    propio `CartModule` en el E2E §6.1. No se mezcla con `catalogo`.
+
+    **La identidad del carrito es la cookie `dsm_cart`** (token opaco de 256
+    bits, guardado hasheado en `carts.session_token_hash`). No viaja en el
+    cuerpo de ninguna respuesta ni aparece en ninguna URL: la superficie es
+    estructuralmente inmune a IDOR en vez de depender de un chequeo de
+    propiedad. Sin autenticación Bearer.
+
+    **Todos los importes se calculan con el precio vigente** de `products`
+    leído en la misma request (AC-9); la instantánea guardada en
+    `cart_items.unit_price_ars_cents` sólo alimenta el flag `price_changed`.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: cart
+    description: Carrito de compra del invitado (US-007). Superficie pública, sin auth.
+security: []
+components:
+  parameters:
+    CartCsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: false
+      description: |
+        Double-submit firmado (security-standards §7.5): `HMAC(JWT_SECRET,
+        token del carrito)`, igual al valor de la cookie legible
+        `dsm_cart_csrf`. Obligatorio cuando la petición trae la cookie
+        `dsm_cart`; se exige junto con un `Origin` de la allowlist (su
+        ausencia también se rechaza con 403). La primera escritura de un
+        cliente nuevo no la trae — todavía no hay carrito que secuestrar.
+      schema:
+        type: string
+  responses:
+    RateLimited:
+      description: |
+        Presupuesto del throttler `cart` excedido (security-standards §7.3).
+        `Cache-Control: no-store` también acá: un 429 cacheado en el edge
+        convertiría el rate-limit en un DoS.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+        Cache-Control:
+          description: Siempre `no-store`.
+          schema: { type: string }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    SetCartItemRequest:
+      type: object
+      required: [quantity]
+      additionalProperties: false
+      description: |
+        **Un solo campo, a propósito.** No hay `unit_price_ars_cents`, ni
+        `product_id`, ni `cart_id`: todos los importes se derivan server-side
+        del precio vigente de `products`, y el carrito se identifica por la
+        cookie.
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+          description: |
+            Cantidad **absoluta** de unidades de este producto en el carrito
+            (semántica de `PUT`, no de suma — OQ-BE-5). El máximo es
+            `CART_MAX_QTY_PER_LINE` (99 por defecto). No se acepta 0: cantidad
+            0 no es una línea, es un `DELETE`.
+    CartEnvelope:
+      type: object
+      required: [cart]
+      properties:
+        cart:
+          $ref: '#/components/schemas/Cart'
+    Cart:
+      type: object
+      required:
+        - id
+        - items
+        - item_count
+        - total_quantity
+        - total_ars_cents
+        - has_blocking_issues
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            `null` cuando todavía no hay carrito. Conocer este id **no** da
+            acceso: el acceso es la cookie `dsm_cart`.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        item_count:
+          type: integer
+          description: Líneas distintas (no unidades).
+        total_quantity:
+          type: integer
+          description: Unidades, incluidas las de las líneas bloqueadas.
+        total_ars_cents:
+          type: integer
+          description: |
+            Suma de los subtotales de las líneas `available` **solamente**
+            (OQ-BE-4). Un total que incluyera lo no comprable sería un número
+            que el checkout va a desmentir.
+        has_blocking_issues:
+          type: boolean
+          description: |
+            `true` si alguna línea no es `available`. Es la señal con la que
+            US-008 impide avanzar al pago.
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+    CartItem:
+      type: object
+      required:
+        - slug
+        - name
+        - image_url
+        - quantity
+        - unit_price_ars_cents
+        - currency
+        - subtotal_ars_cents
+        - availability
+        - max_quantity
+        - price_changed
+      properties:
+        slug:
+          type: string
+          description: |
+            Identificador **público** del producto (convención de
+            US-002/US-003: los DTO del storefront no exponen `id`).
+        name:
+          type: string
+        image_url:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+          minimum: 1
+        unit_price_ars_cents:
+          type: integer
+          description: |
+            Precio **vigente** en centavos ARS (IVA incluido), no la
+            instantánea.
+        currency:
+          type: string
+          enum: [ARS]
+        subtotal_ars_cents:
+          type: integer
+          description: |
+            `unit_price_ars_cents × quantity`. Se calcula también en las
+            líneas bloqueadas, aunque no entren en el total.
+        availability:
+          type: string
+          enum: [available, insufficient_stock, unavailable]
+          description: |
+            `available`: publicado y con stock ≥ cantidad.
+            `insufficient_stock`: publicado con stock < cantidad (AC-6).
+            `unavailable`: `draft` o `archived` (AC-6).
+        available_quantity:
+          type: integer
+          description: |
+            Presente sólo cuando la línea pide más de lo que hay. Divulgación
+            **acotada y deliberada** del nivel de stock (OQ-BE-2): el dato ya
+            es sondeable con el 409, vive sólo detrás de la cookie del
+            carrito.
+        max_quantity:
+          type: integer
+          description: '`min(stock, CART_MAX_QTY_PER_LINE)` — techo del stepper.'
+        price_changed:
+          type: boolean
+          description: |
+            `true` si el precio vigente difiere de la instantánea del último
+            toque. El cambio se **muestra**, no se aplica en silencio (es
+            dinero).
+        previous_unit_price_ars_cents:
+          type: integer
+          description: Presente sólo si `price_changed` es `true`.
+    Problem:
+      type: object
+      description: RFC 7807
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            Catálogo **cerrado** de esta capacidad: `dsm:cart/insufficient-stock`,
+            `dsm:cart/too-many-items`, `dsm:catalog/not-found`,
+            `dsm:auth/csrf`, `dsm:catalog/http-422`, `dsm:catalog/http-429`.
+          example: dsm:catalog/http-429
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+          description: '**Nunca** contiene el token del carrito ni su hash.'
+        instance:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        available_quantity:
+          type: integer
+          description: |
+            Extension member de RFC 7807 §3.2 en `dsm:cart/insufficient-stock`:
+            unidades realmente disponibles.
+        max_items:
+          type: integer
+          description: |
+            Extension member en `dsm:cart/too-many-items`: tope de líneas
+            distintas por carrito (`CART_MAX_ITEMS`).
+paths:
+  /cart:
+    $ref: ./openapi/paths/cart.yaml
+  /cart/items/{slug}:
+    $ref: ./openapi/paths/cart-items-slug.yaml
