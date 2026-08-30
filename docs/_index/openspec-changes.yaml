@@ -1551,3 +1551,69 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-012-panel-ordenes-dueno-qa
+  us-id: US-012
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # PLANIFICADO 2026-08-30 (/plan-qa US-012). ASIMETRIA respecto a todo change de QA
+  # anterior de este repo (US-002/US-007/US-014): acá NINGUNA de las dos capas dev
+  # hermanas existe todavía — backend y frontend-web están en 0 tasks ejecutadas cada
+  # uno, mismo PR (#22), mismo branch. Ningún test case de este plan es ejecutable hoy.
+  #
+  # ALCANCE: 24 test cases owned-by-QA — 13 de aceptación BDD API-level (Cucumber+
+  # Playwright: 5 happy + 2 corner + 3 negative-space + 3 cross-feature), 5 E2E de
+  # navegador (Playwright), 2 de accesibilidad (axe-core+Playwright), 2 de carga (k6) y
+  # 2 charters exploratorios. Las 9 AC de la US tienen ≥1 escenario definido; ninguno
+  # es ejecutable hoy — los 13 de aceptación se desbloquean con solo el backend, los 9
+  # restantes necesitan además el frontend.
+  #
+  # LO QUE AGREGA sobre la TDD dev-owned (ninguna capa unit/integration/e2e-nest/
+  # component se re-autora): que la orden que el dueño gestiona es la que un cliente
+  # compró de verdad vía checkout real (US-008, cross-feature X-1); que una sesión de
+  # cliente REAL (US-014, registro+login reales) no alcanza para entrar al panel
+  # (X-2, distinto de "sin token" o "JWT minteado con rol distinto", que ya cubre la
+  # capa dev); y que cada transición incrementa las métricas de /v1/admin/metrics, una
+  # superficie construida por otro change (X-3).
+  #
+  # PUENTE DE SIEMBRA (OQ-QA-1, design.md §D2): no existe ningún endpoint que mueva una
+  # orden de pending_payment a new (esa transición la escribe ConfirmOrderService de
+  # US-023-pago-manual-offline-backend, también en 0 tasks, worktree separado).
+  # seed-ordenes.ts hace el checkout real y puentea SOLO ese salto con un UPDATE directo
+  # vía @dsm/db (ya es devDependency de @dsm/qa) — deviación temporal, documentada y
+  # acotada a un único uso por archivo; a reemplazar por
+  # POST /v1/admin/orders/{orderId}/confirm-payment cuando US-023 aterrice (charter
+  # TC-1251).
+  #
+  # PendingPaymentsPanel (Fase 12 del FE) — SIN tratamiento de AC completo (qa-plan.md
+  # §6): no tiene AC Gherkin formal en la US (mismo hallazgo que ya dejó el proposal.md
+  # de FE, OQ-FE-4). Se documenta como boceto no comprometido (PP-1/2/3), sin Gherkin
+  # ni test-case stubs comprometidos, y se deja un punto de coordinación explícito
+  # (OQ-QA-2): su testing completo necesita el plan de QA de
+  # US-023-pago-manual-offline-backend, que no existe todavía (worktree/sesión distinta).
+  #
+  # NFR YA RATIFICADOS EN LA PROPIA US (a diferencia de US-007, donde el número de
+  # lectura del carrito estaba [propuesto — confirma Arquitecto]): US §9 fija
+  # p95 lectura < 300ms / p95 escritura (transición) < 500ms sin condicional — los dos
+  # se emiten (TC-1240, TC-1241), ninguno queda "sin threshold".
+  #
+  # Numeración TC-12NN (4 dígitos, a propósito: evita colisión con el rango de 3 dígitos
+  # que ya usan US-001..US-014).
+  #
+  # 3-4 h AI-asistido / ~6-8 h tradicional. La US §7 presupuesta QA-US-012 en 6-8 h.
+  estimate-hours: 3.5
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  # Comparte rama y PR con los dos hermanos dev de esta US, por el mismo criterio ya
+  # declarado en sus entradas (mismo worktree, mismo PR de US-012 completo).
+  branch: feat/US-012-panel-ordenes-dueno-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
+  pr-opened-at: 2026-08-30
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null

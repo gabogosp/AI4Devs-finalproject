@@ -189,6 +189,13 @@
   # sí puede seguir aplicando al sibling FE (su propio proposal.md lo declara — no editado
   # por este agente). Quien posea `blocked_by` debería revisar si vale la pena bajarlo a
   # `[]` o mantenerlo por el lado FE.
+  #
+  # NOTA (2026-08-30, /plan-qa): US-012-panel-ordenes-dueno-qa ya está planificado
+  # (openspec/changes/US-012-panel-ordenes-dueno-qa/, draft, 0 tasks cerradas) — las tres
+  # disciplinas de la US (FE, BE, QA) ya tienen plan. Ningún test case de QA es ejecutable
+  # hoy: los 13 de aceptación se desbloquean con solo el backend, los 9 restantes (E2E,
+  # a11y, exploratorio-FE) necesitan además el frontend. No se toca `in-progress-at` ni
+  # `blocked_by` (propiedad de otro agente, mismo criterio que las notas anteriores).
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
