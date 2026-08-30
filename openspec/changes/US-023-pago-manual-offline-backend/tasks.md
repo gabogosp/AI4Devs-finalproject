@@ -26,21 +26,22 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **`US-008` backend cerrado y sin tasks en vuelo sobre `checkout/`.** Este
+- [x] **`US-008` backend cerrado y sin tasks en vuelo sobre `checkout/`.** Este
   change extiende `orders.repository.ts` y agrega un `exports` a
   `checkout.module.ts` — con tasks de US-008 abiertas sobre esos archivos se
   pisan.
   **Verify**: `git status --porcelain apps/api/src/checkout` vacío
 
-- [ ] **Ninguna migración de `payments` generada todavía** (evita choque de
+- [x] **Ninguna migración de `payments` generada todavía** (evita choque de
   historia de Prisma con quien planifique US-009/US-010 después).
   **Verify**: `ls packages/db/prisma/migrations | grep -c payment` devuelve `0`
 
-- [ ] **`ac6-stock-untouched.spec.ts` sigue verde** (la restricción que dicta
+- [x] **`ac6-stock-untouched.spec.ts` sigue verde** (la restricción que dicta
   todo el layout de este change no cambió de forma silenciosa).
   **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac6-stock-untouched`
 
-- [ ] **Postgres local arriba**: `docker compose up -d postgres`.
+- [x] **Postgres arriba**: `ai4devs-finalproject-postgres-1` (host `:55432`,
+  compartido entre worktrees) — ya estaba corriendo, healthy.
 
 > **Estado intermedio declarado (F51).** Al cerrar este change, `PaymentConfirmationPort`
 > tiene un solo adaptador (`manual`) — el camino de MercadoPago (webhook, firma,
@@ -54,7 +55,7 @@ language: es
 
 ## Fase 0: Esquema — 1,0 h
 
-- [ ] T0.1 Migración aditiva `payments` (F40 — column-complete: las 11
+- [x] T0.1 Migración aditiva `payments` (F40 — column-complete: las 11
   columnas del §Persistence de `design.md`, ni una menos)
   - **Pattern**: `model Payment` nuevo en `packages/db/prisma/schema.prisma`
     con `@id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` (igual que
@@ -73,10 +74,10 @@ language: es
     `idempotency_key`, y los CHECK `payments_provider_check` (con los tres
     valores) + `payments_status_check`. `confirmed_by` **sin** FK.
   - **Verify**: `for col in id order_id provider external_id status amount_ars_cents idempotency_key processed_at confirmed_by created_at updated_at; do grep -q "\"$col\"" packages/db/prisma/migrations/*_add_payments/migration.sql || echo "FALTA: $col"; done` no imprime nada **y**
-    `for v in mercadopago simulated_dsm manual; do grep -q "payments_provider_check.*'$v'" packages/db/prisma/migrations/*_add_payments/migration.sql || echo "FALTA valor: $v"; done` no imprime nada **y**
+    `for v in mercadopago simulated_dsm manual; do tr '\n' ' ' < packages/db/prisma/migrations/*_add_payments/migration.sql | grep -q "payments_provider_check.*'$v'" || echo "FALTA valor: $v"; done` no imprime nada (el CHECK es multi-línea, igual que `orders_status_check` — `tr` lo aplana antes de grepear) **y**
     `grep -c "UNIQUE" packages/db/prisma/migrations/*_add_payments/migration.sql | grep -qv '^0$'`
 
-- [ ] T0.2 Aplicar la migración y regenerar el client
+- [x] T0.2 Aplicar la migración y regenerar el client
   - **Exit criterion**: la migración corre contra el Postgres local sin error;
     `@dsm/db` exporta el tipo `Payment`.
   - **Verify**: `pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/db generate && pnpm --filter @dsm/db typecheck`
