@@ -160,6 +160,12 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
+  # `status`/`blocked_by` sin tocar: propiedad de prd-decomposer/user-story-author
+  # (index-conventions.md §84). El bloqueo real sigue vigente — ver
+  # openspec/changes/US-012-panel-ordenes-dueno-frontend-web/proposal.md
+  # §"Dependencia cruzada": ni US-010-backend (Draft, 0 tasks) ni
+  # US-012-backend (sin planificar) existen todavía.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso

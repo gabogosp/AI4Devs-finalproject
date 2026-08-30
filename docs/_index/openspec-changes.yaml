@@ -1431,3 +1431,41 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-012-panel-ordenes-dueno-frontend-web
+  us-id: US-012
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # BLOQUEADO: el contrato `GET/PATCH /admin/orders` no existe todavía. Depende de
+  # `US-010-orden-webhook-stock-backend` (draft, 0 tasks cerradas) y de
+  # `US-012-panel-ordenes-dueno-backend` (sin planificar, no existe el directorio). La
+  # Fase 0 de tasks.md convierte esto en un gate verificable — ningún task cierra hasta
+  # que el contrato aterrice. design.md §Approach D2 documenta la forma de contrato
+  # esperada para destrabar esa planificación de backend.
+  #
+  # ALCANCE: módulo admin/ordenes (listado TanStack con paginación/orden/filtro server-side,
+  # detalle con historial de estado, acciones de avance de estado con UI optimista +
+  # rollback + Idempotency-Key), reutilizando AdminGuard sin modificarlo. Cubre las 9 AC
+  # de la US desde la UI (AC-4 es trigger 100% backend; el FE solo emite el PATCH en el
+  # momento correcto).
+  #
+  # 3 preguntas abiertas para quien planifique el backend: OQ-FE-1 (forma del historial de
+  # estado — el DER del E2E §8 no lo modela), OQ-FE-2 (soporte de Idempotency-Key en el
+  # PATCH), OQ-FE-3 (forma de sort/order del listado).
+  #
+  # 21 tasks (11 fases). ~7 h AI-asistido / ~14 h tradicional (dentro del rango 12-16h de
+  # US §7). Recomendación de deployment-planning: no todavía — no tiene sentido planificar
+  # despliegue de un change cuyo contrato de datos no existe.
+  estimate-hours: 7
+  assignee: sin-asignar
+  branch: feat/US-012-panel-ordenes-dueno-frontend-web
+  pr-url: null
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
