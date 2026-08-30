@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { CheckoutModule } from '../checkout/checkout.module';
+import { PaymentsEventsService } from '../observability/payments-events.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { StockModule } from '../stock/stock.module';
 import { ConfirmOrderService } from './confirm-order.service';
@@ -16,7 +17,7 @@ import { PaymentsRepository } from './payments.repository';
 @Module({
   imports: [PrismaModule, AuthModule, CheckoutModule, StockModule],
   controllers: [PaymentConfirmationController],
-  providers: [ConfirmOrderService, PaymentsRepository],
+  providers: [ConfirmOrderService, PaymentsRepository, PaymentsEventsService],
   exports: [ConfirmOrderService],
 })
 export class PaymentsModule {}

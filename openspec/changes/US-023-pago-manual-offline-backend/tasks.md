@@ -300,7 +300,7 @@ language: es
 
 ## Fase 6: Observabilidad — 0,5 h
 
-- [ ] T6.1 `PaymentEventsService` (`payments.manual_confirmed` +
+- [x] T6.1 `PaymentEventsService` (`payments.manual_confirmed` +
   `payments.manual_confirm_rejected`)
   - **Pattern**: mismo esqueleto que `CheckoutEventsService` — delega el
     contador en `MetricsService` (`@Optional()`), firma que sólo acepta

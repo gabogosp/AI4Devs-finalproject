@@ -1,4 +1,5 @@
 import { OrdersRepository } from '../checkout/orders.repository';
+import { PaymentsEventsService } from '../observability/payments-events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockRepository } from '../stock/stock.repository';
 import { InsufficientStockError } from '../stock/stock-errors';
@@ -17,7 +18,13 @@ describe('ConfirmOrderService.confirm (US-023)', () => {
   const orders = new OrdersRepository(prisma);
   const stock = new StockRepository(prisma);
   const payments = new PaymentsRepository(prisma);
-  const service = new ConfirmOrderService(prisma, orders, stock, payments);
+  const service = new ConfirmOrderService(
+    prisma,
+    orders,
+    stock,
+    payments,
+    new PaymentsEventsService(),
+  );
 
   let categoriaId = '';
 

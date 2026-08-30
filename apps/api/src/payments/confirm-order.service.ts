@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../checkout/orders.repository';
+import { PaymentsEventsService } from '../observability/payments-events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockRepository } from '../stock/stock.repository';
+import { InsufficientStockError } from '../stock/stock-errors';
 import { OrderNotFoundError, OrderNotPendingPaymentError } from './payment-confirmation-errors';
 import {
   ConfirmedPayment,
@@ -32,6 +34,7 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
     private readonly orders: OrdersRepository,
     private readonly stock: StockRepository,
     private readonly payments: PaymentsRepository,
+    private readonly events: PaymentsEventsService,
   ) {}
 
   async confirm(input: ConfirmPaymentInput): Promise<ConfirmedPayment> {
@@ -40,39 +43,52 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
       throw new OrderNotFoundError();
     }
     if (orden.status !== 'pending_payment') {
+      this.events.emitRejected(input.orderId, 'not-pending-payment');
       throw new OrderNotPendingPaymentError(orden.status);
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const confirmada = await this.orders.transitionToNewIfPending(input.orderId, tx);
-      if (!confirmada) {
-        // Carrera: alguien más confirmó/canceló entre el chequeo de arriba y acá.
-        throw new OrderNotPendingPaymentError();
-      }
+    try {
+      const resultado = await this.prisma.$transaction(async (tx) => {
+        const confirmada = await this.orders.transitionToNewIfPending(input.orderId, tx);
+        if (!confirmada) {
+          // Carrera: alguien más confirmó/canceló entre el chequeo de arriba y acá.
+          throw new OrderNotPendingPaymentError();
+        }
 
-      await this.stock.decrementForOrder(
-        confirmada.items.map((item) => ({
-          productId: item.product_id,
-          quantity: item.quantity,
-        })),
-        tx,
-      );
+        await this.stock.decrementForOrder(
+          confirmada.items.map((item) => ({
+            productId: item.product_id,
+            quantity: item.quantity,
+          })),
+          tx,
+        );
 
-      const pago = await this.payments.createManualPayment(
-        {
+        const pago = await this.payments.createManualPayment(
+          {
+            orderId: confirmada.id,
+            amountArsCents: confirmada.total_ars_cents,
+            confirmedBy: input.confirmedBy,
+          },
+          tx,
+        );
+
+        return {
           orderId: confirmada.id,
-          amountArsCents: confirmada.total_ars_cents,
-          confirmedBy: input.confirmedBy,
-        },
-        tx,
-      );
+          orderNumber: confirmada.order_number,
+          status: 'new' as const,
+          paymentId: pago.id,
+        };
+      });
 
-      return {
-        orderId: confirmada.id,
-        orderNumber: confirmada.order_number,
-        status: 'new',
-        paymentId: pago.id,
-      };
-    });
+      this.events.emitConfirmed(input.orderId);
+      return resultado;
+    } catch (error) {
+      if (error instanceof InsufficientStockError) {
+        this.events.emitRejected(input.orderId, 'insufficient-stock');
+      } else if (error instanceof OrderNotPendingPaymentError) {
+        this.events.emitRejected(input.orderId, 'not-pending-payment');
+      }
+      throw error;
+    }
   }
 }
