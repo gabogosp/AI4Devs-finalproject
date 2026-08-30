@@ -200,7 +200,7 @@ language: es
 
 ## Fase 4: Superficie HTTP — 1,0 h
 
-- [ ] T4.1 DTOs de respuesta + `PaymentConfirmationController`
+- [x] T4.1 DTOs de respuesta + `PaymentConfirmationController`
   - **Pattern**: `@Controller('v1/admin/orders')` `@UseGuards(AdminGuard)`,
     sin throttler dedicado (mismo criterio que `ProductsController` —
     `design.md` §Approach "Endpoints"). `confirmedByFrom(req)` decodifica
@@ -214,9 +214,16 @@ language: es
     `id` (el UUID que el `POST` espera en el path — sin él ningún consumidor
     puede construir esa URL desde el listado) y **sin**
     `buyer_email`/`buyer_phone` (`design.md` §Threat model, Info disclosure).
-  - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payment-confirmation.controller`
+  - **Verify**: `pnpm --filter @dsm/api typecheck` (el controller y los DTOs
+    compilan). **Nota de ejecución**: este repo no tiene precedente de
+    `*.controller.spec.ts` en ningún módulo — todo controller se verifica
+    vía e2e-nest con `bootTestApp` + supertest (`ProductsController`,
+    `CheckoutController`, etc., ninguno tiene spec propio). La prueba
+    comportamental real de este controller (200/401/403/404/409, shape
+    exacto de las dos respuestas) es la Fase 5 — T4.1 sólo deja el código
+    compilando; T5.1-T5.5 lo ejercen por HTTP contra Postgres real.
 
-- [ ] T4.2 `PaymentsModule` completo + wiring en `app.module.ts`
+- [x] T4.2 `PaymentsModule` completo + wiring en `app.module.ts`
   - **Pattern**: `PaymentsModule` importa `PrismaModule`, `AuthModule` (por
     `AdminGuard` + `JwtModule` re-exportado), `CheckoutModule` (por
     `OrdersRepository`), `StockModule`. `app.module.ts` agrega
@@ -227,8 +234,11 @@ language: es
     módulos nuevos cargados; ningún `forwardRef` en ninguno de los dos (per
     `design.md` §Approach, dirección acíclica).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-bootstrap`
-    (spec nuevo, chico: `Test.createTestingModule({ imports: [AppModule] }).compile()`
-    no lanza) **y** `! grep -r "forwardRef" apps/api/src/payments apps/api/src/stock`
+    (spec nuevo: `bootTestApp([StockModule, PaymentsModule])` — mismo helper
+    que el resto de la suite, no `AppModule` completo — no lanza) **y**
+    `! grep -rE "forwardRef\(" apps/api/src/payments apps/api/src/stock` (sólo
+    `forwardRef(` real como llamada — los comentarios que MENCIONAN la palabra
+    no cuentan como violación)
 
 ---
 
