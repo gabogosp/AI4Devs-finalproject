@@ -24,6 +24,8 @@ let contador = 0;
 export const PASSWORD_VALIDA = 'Contrasena-Valida-1';
 
 export interface Cuenta {
+  /** Ausente hasta que la cuenta se registra de verdad (per `nuevaCuenta`). */
+  id?: string;
   email: string;
   password: string;
   nombre: string;
@@ -51,11 +53,34 @@ export function datosDeCuenta(sufijo = ''): Cuenta {
  *
  * En producción `TRUST_PROXY_HOPS` es 0 a propósito: confiar en este header permitiría
  * evadir el límite falsificándolo. Elevarlo es una decisión **del entorno de QA**.
+ *
+ * **El segundo octeto es el índice de worker** (`TEST_PARALLEL_INDEX`, que Playwright
+ * expone por proceso). Sin esto, `ip` es una variable de módulo que arranca en 0 en
+ * CADA worker —son procesos Node separados—, así que dos specs corriendo en paralelo
+ * (el caso normal, `fullyParallel` o no: cada archivo va a su propio worker) le asignan
+ * la MISMA IP simulada a cuentas de tests distintos y comparten cubo de rate-limit sin
+ * saberlo. Por spec en soledad nunca se veía —el filtro `--grep` de cada task acota a un
+ * solo archivo—; corriendo la suite completa sí. Además, la mayoría de los throttlers de
+ * `auth` (register 5/h, login 10/15min…) están en `@Throttle` **por ruta** en
+ * `customer-auth.controller.ts` y NO leen `AUTH_RATE_LIMIT_MAX` —ese env sólo cambia el
+ * default global del throttler, que ninguna ruta de auth de cliente usa—: son
+ * presupuestos de producción a propósito (§7.3), así que la única forma de no
+ * autobloquearse es que cada cuenta hable desde una IP realmente distinta.
+ *
+ * **`SESSION` desplaza el tercer octeto con un salto al azar por PROCESO.** El
+ * throttler de `register` es 5/hora — una ventana larga a propósito (§7.3) — y
+ * `ip` vuelve a 0 en cada invocación nueva de Playwright (proceso nuevo). Sin
+ * `SESSION`, dos corridas sucesivas de la suite en la misma hora (el caso normal
+ * mientras se desarrolla, no sólo un CI de una sola pasada) reusarían la MISMA
+ * secuencia de IPs y la segunda corrida heredaría el presupuesto ya gastado por
+ * la primera.
  */
+const SESSION = Math.floor(Math.random() * 256);
+const WORKER = Number(process.env.TEST_PARALLEL_INDEX ?? process.env.TEST_WORKER_INDEX ?? 0);
 let ip = 0;
 const proximaIp = (): string => {
   ip += 1;
-  return `10.${(ip >> 16) & 255}.${(ip >> 8) & 255}.${ip & 255}`;
+  return `10.${WORKER & 255}.${(SESSION ^ ((ip >> 8) & 255)) & 255}.${ip & 255}`;
 };
 
 /** Contexto de API con su propio almacén de cookies, su `Origin` y su IP. */
@@ -92,6 +117,8 @@ export async function nuevaCuenta(sufijo = ''): Promise<Sesion> {
   if (res.status() !== 201 && res.status() !== 200) {
     throw new Error(`registro falló con ${res.status()} — ${await res.text()}`);
   }
+  const cuerpo = (await res.json()) as { customer: { id: string } };
+  cuenta.id = cuerpo.customer.id;
   return { ctx, cuenta };
 }
 
@@ -161,28 +188,39 @@ export function marcaDeLog(logPath = process.env.QA_API_LOG ?? '/tmp/api.log'): 
 }
 
 /**
- * Token de recuperación escrito **después** de `marca`.
+ * Token de recuperación escrito **después** de `marca`, para la cuenta `customerId`.
  *
  * Se ESPERA la línea en vez de leer una vez: pino bufferea, así que leer justo después
  * del request encuentra el archivo sin el token todavía. Es una carrera, no una
  * ausencia — y sin el reintento el fallo miente sobre su causa.
+ *
+ * `marca` sólo acota cuánto log hay que buscar — la correlación real es por
+ * `customer_id`, no por posición: con varios escenarios pidiendo reset en paralelo
+ * (workers distintos, mismo archivo), "el último token después de la marca" puede
+ * pertenecer a OTRA cuenta y el `confirm` aplicaría a la cuenta equivocada — que es
+ * justo lo que hacía fallar TC-143 contra TC-144 en paralelo.
  *
  * No hay endpoint que exponga el token, y está bien que no lo haya: viaja por email.
  * Fuera de producción el mailer de log lo escribe con `LOG_LEVEL=debug` (OQ-QA-4).
  */
 export async function tokenDeResetDesde(
   marca: number,
+  customerId: string,
   logPath = process.env.QA_API_LOG ?? '/tmp/api.log',
 ): Promise<string> {
   const limite = Date.now() + 5000;
   while (Date.now() < limite) {
     const log = readFileSync(logPath, 'utf8').slice(marca);
-    const tokens = [...log.matchAll(/password_reset\.token[^\n]*token=([A-Za-z0-9._-]+)/g)];
-    if (tokens.length > 0) return tokens[tokens.length - 1]![1]!;
+    const tokens = [
+      ...log.matchAll(
+        /password_reset\.token customer_id=([A-Za-z0-9-]+) token=([A-Za-z0-9._-]+)/g,
+      ),
+    ].filter((m) => m[1] === customerId);
+    if (tokens.length > 0) return tokens[tokens.length - 1]![2]!;
     await new Promise((r) => setTimeout(r, 100));
   }
   throw new Error(
-    `no apareció un token de reset después del byte ${marca} en ${logPath}. ` +
+    `no apareció un token de reset para customer_id=${customerId} después del byte ${marca} en ${logPath}. ` +
       '¿La API corre con LOG_LEVEL=debug y NODE_ENV != production?',
   );
 }
