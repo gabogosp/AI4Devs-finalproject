@@ -108,7 +108,7 @@ Contrato **esperado** (no existe aún — ver dependencia cruzada), derivado del
 
 | Endpoint | Uso | AC |
 |---|---|---|
-| `GET /v1/admin/orders?status=&limit=&offset=&sort=&order=` | Listado paginado/ordenable/filtrable, solo pagadas | AC-1, AC-5, AC-8 |
+| `GET /v1/admin/orders?status=&limit=&offset=&sort=` | Listado paginado/ordenable/filtrable, solo pagadas — `sort` es un solo param (`-confirmed_at` = desc), no `sort`/`order` separados (ver OQ-FE-3, resuelta) | AC-1, AC-5, AC-8 |
 | `GET /v1/admin/orders/{id}` | Detalle: ítems, comprador, retiro, historial de estado | AC-2, AC-9 |
 | `PATCH /v1/admin/orders/{id}` `{ status }` | Transición de estado | AC-3, AC-4, AC-6, AC-9 |
 
@@ -156,6 +156,10 @@ Detalle completo de los shapes propuestos y de los campos que la US necesita y e
 
 ## Open questions
 
+> **Actualización 2026-08-30**: `US-012-panel-ordenes-dueno-backend` ya está planificado y
+> resuelve las tres preguntas de abajo. Se dejan con su redacción original (contexto) + la
+> resolución al final de cada una.
+
 - **OQ-FE-1**: el DER del E2E §8 no modela una tabla/registro de "historial de cambio de
   estado" (solo `orders.delivered_at` y timestamps puntuales). AC-9 pide "estado anterior,
   nuevo y marca temporal" consultable. ¿El backend expone esto como una tabla nueva
@@ -165,18 +169,30 @@ Detalle completo de los shapes propuestos y de los campos que la US necesita y e
   asume lo primero (un array `status_history` en el detalle) porque es lo único que satisface
   AC-9 literalmente (estado anterior *y* nuevo, no solo timestamps de hitos) — a ratificar
   con quien planifique `US-012-panel-ordenes-dueno-backend`.
+  **Resuelta — RATIFICADA tal cual** (`US-012-panel-ordenes-dueno-backend` design.md §D2):
+  tabla `order_status_history`, mismo shape propuesto acá. Nada que cambiar en este plan.
 - **OQ-FE-2**: ¿el backend soporta `Idempotency-Key` en el `PATCH` de transición? La
   transición a `ready` tiene un efecto lateral externo (dispara el email de US-011); sin
   dedupe server-side, un reintento de red del mismo intento podría re-disparar el aviso. Este
   plan envía el header igual (defensivo, no rompe nada si el backend lo ignora) y **no**
   hace retry automático de la mutación (solo manual, reusando la misma clave) — a confirmar
   si el backend lo aprovecha.
+  **Resuelta — REVISADA** (`US-012-panel-ordenes-dueno-backend` design.md §D4): el backend
+  NO almacena la clave; usa idempotencia estructural por estado (un `UPDATE` condicional que
+  no re-dispara el efecto lateral si la orden ya está en el estado pedido). El header se
+  acepta pero se ignora — documentado así en el contrato. Nada que cambiar en este plan: el
+  envío defensivo del header sigue siendo correcto, solo no hace lo que se especulaba.
 - **OQ-FE-3**: ¿`sort`/`order` como query params del listado, o el backend prefiere un único
   parámetro combinado (`sort=-confirmed_at`)? Este plan asume dos params separados, mismo
   estilo que `limit`/`offset` ya establecido en `productsService`. A confirmar con backend.
-- **Bloqueante de todo lo anterior**: el contrato no existe (ver "Dependencia cruzada"). Nada
-  de este plan puede ejecutarse hasta que `US-010-orden-webhook-stock-backend` y
-  `US-012-panel-ordenes-dueno-backend` publiquen su OpenAPI.
+  **Resuelta — REVISADA** (`US-012-panel-ordenes-dueno-backend` design.md §D5): un solo
+  param `sort` (`api-standards.md` §7.2 — prefijo `-` = descendente, default
+  `-confirmed_at`), no dos separados. **Este plan se actualizó** (`design.md` §D2/D3/D5,
+  `tasks.md` T4.1/T4.3) para reflejar el param único — ver esos archivos.
+- **Bloqueante de todo lo anterior**: el contrato no existe todavía (ver "Dependencia
+  cruzada"). Nada de este plan puede ejecutarse hasta que `US-010-orden-webhook-stock-backend`
+  y `US-012-panel-ordenes-dueno-backend` (ambos planificados, 0 tasks cerradas) publiquen su
+  OpenAPI.
 
 ## Linear
 

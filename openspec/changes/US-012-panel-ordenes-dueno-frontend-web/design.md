@@ -76,7 +76,9 @@ actual:
 
 ```yaml
 # GET /v1/admin/orders
-# query: status?, limit, offset, sort? (order_number|confirmed_at|total_ars_cents), order? (asc|desc)
+# query: status?, limit, offset, sort? (default "-confirmed_at" — un solo param, comma-list
+#   con prefijo "-" para descendente, api-standards §7.2; RATIFICADO por
+#   US-012-panel-ordenes-dueno-backend design.md §D5, revisión de OQ-FE-3)
 AdminOrderListResponse:
   data: AdminOrderSummary[]
   pagination: { limit, offset, total }
@@ -127,7 +129,9 @@ export type { AdminOrderSummary as OrderSummary, AdminOrderDetail as OrderDetail
 
 export const ordersService = {
   async list(
-    params: { status?: OrderStatus; limit: number; offset: number; sort?: string; order?: 'asc' | 'desc' },
+    // `sort` es un solo param canónico ("-confirmed_at" = desc, "confirmed_at" = asc) —
+    // no dos params separados; ver D5 abajo.
+    params: { status?: OrderStatus; limit: number; offset: number; sort?: string },
     signal?: AbortSignal,
   ) {
     const res = await listAdminOrders(params, { signal });
@@ -194,14 +198,17 @@ evita mostrarle al operador un botón que sabemos de antemano que va a fallar.
 ### D5 — `OrdersList`: TanStack Table con `manualSorting` (patrón nuevo respecto a `ProductList`)
 
 `ProductList.tsx` ya establece `manualPagination` pero no ordena. AC-1 pide "ordenable", así
-que se agrega `manualSorting` cableado a `sort`/`order`:
+que se agrega `manualSorting` cableado a un único param `sort` (RATIFICADO por
+`US-012-panel-ordenes-dueno-backend` design.md §D5 — revisión de OQ-FE-3: el backend expone
+`sort=-confirmed_at`, no `sort`/`order` separados):
 
 ```tsx
 const [sorting, setSorting] = useState<SortingState>([{ id: 'confirmed_at', desc: true }]);
 const [status, setStatus] = useState<OrderStatus | ''>('');
 const [offset, setOffset] = useState(0);
 
-// ... fetch con { status: status || undefined, limit, offset, sort: sorting[0]?.id, order: sorting[0]?.desc ? 'desc' : 'asc' }
+// ... fetch con { status: status || undefined, limit, offset,
+//   sort: `${sorting[0]?.desc ? '-' : ''}${sorting[0]?.id}` }
 
 const table = useReactTable({
   data: rows,

@@ -1470,3 +1470,66 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-012-panel-ordenes-dueno-backend
+  us-id: US-012
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # BLOQUEADO: extiende `src/orders/` (order-state.ts, confirmed_at/cancelled_at,
+  # NotificationPort, payments), ninguno existe todavía —
+  # `US-010-orden-webhook-stock-backend` sigue `draft`, 0 tasks cerradas. La Fase 0 de
+  # tasks.md (T0.1) es un gate verificable que falla a propósito hoy, mismo patrón que el
+  # T0.1 del sibling de FE.
+  #
+  # ALCANCE: tres endpoints admin (GET listado, GET detalle, PATCH transición) sobre el
+  # módulo que crea US-010; tabla nueva `order_status_history` (aditiva, resuelve AC-9);
+  # NotificationPort gana `orderReadyForPickup` (mismo seam que orderConfirmed/
+  # orderCancelledNoStock de US-010, entrega real diferida a US-011).
+  #
+  # RESOLUCIÓN DE LAS 3 PREGUNTAS DEL SIBLING FE (OQ-FE-1/2/3, ver proposal.md
+  # "Decisiones sobre las preguntas del FE"): OQ-FE-1 RATIFICADA (order_status_history
+  # tabla propia, exactamente el shape que el FE propuso) · OQ-FE-2 REVISADA (sin
+  # Idempotency-Key almacenada; idempotencia estructural por estado, mismo patrón que
+  # ADR-0008 — el header que el FE ya decidió mandar se acepta y se ignora) · OQ-FE-3
+  # REVISADA (un solo query param `sort` con prefijo `-`, api-standards §7.2, en vez de
+  # `sort`+`order` separados — el sibling de FE necesita ajustar `ordersService.list()`
+  # antes de ejecutar su Fase 2/5, anotado en su propio proposal.md pendiente de que esa
+  # sesión lo lea).
+  #
+  # DECISIÓN LOCAL: `OrderInvalidTransitionError` propia con 409 (no el 422 de
+  # `InvalidTransitionError` de productos) — semántica RFC 7231 §6.5.8 de conflicto de
+  # estado + compatibilidad con `errors.ts` del FE, que ya mapea 409→`AppError.conflict`.
+  #
+  # DEVIACIÓN DECLARADA del DER (E2E §8): `order_status_history` (tabla nueva, aditiva,
+  # FK a `orders`). Evaluada per `data-architecture-patterns`: sin invocar `data-architect`
+  # Mode B (tabla trivial, sin datos que migrar, proyecto pre-lanzamiento, sin backfill).
+  # Sin ADR nuevo: ADR-0008 gobierna la idempotencia estructural que este change reusa.
+  #
+  # 7,0 h AI-asistido / ~13,3 h tradicional (19 tasks, 9 fases). US §7 presupuesta
+  # BE-US-012 en 8-12 h: excede el techo ~1,3 h por extender NotificationPort (tercer
+  # método), la tabla transaccional de historial y el UPDATE condicional + relectura de
+  # la idempotencia estructural — la FSM/AdminGuard/filtro RFC 7807 ya los deja US-010.
+  #
+  # 2 preguntas abiertas propias (OQ-BE-1, OQ-BE-2), ninguna bloquea el arranque: ambas
+  # con default implementado (detalle de orden cancelada visible por id; filtro de
+  # listado sin la opción "cancelled").
+  #
+  # DEPLOYMENT: no amerita /plan-deployment propio (migración aditiva, sin secretos, sin
+  # flag). Sí importa el orden: US-010 → US-012-backend (no negociable, mismo criterio
+  # que la cadena US-008→US-009→US-010).
+  estimate-hours: 7.0
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  # Comparte rama con el sibling de FE por instrucción explícita del usuario (mismo
+  # worktree, mismo PR de US-012 completo) — desviación deliberada del modelo 1
+  # change = 1 rama, análoga a la ya declarada para US-001 bootstrap.
+  branch: feat/US-012-panel-ordenes-dueno-frontend-web
+  pr-url: null
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null

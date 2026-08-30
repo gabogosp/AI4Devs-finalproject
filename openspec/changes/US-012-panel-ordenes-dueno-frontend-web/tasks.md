@@ -109,8 +109,10 @@
     si el comportamiento no está):
     1. filtrar por "Nuevas" → el `request.url` capturado por el handler MSW trae
        `status=new` Y `offset=0` (no solo que el select cambió de valor visualmente).
-    2. hacer click en el header "Fecha" → la segunda request trae `sort=confirmed_at&order=asc`
-       (o `desc` en el segundo click) — asserta sobre la URL real, no sobre el estado interno.
+    2. hacer click en el header "Fecha" → la segunda request trae `sort=confirmed_at` (asc) o
+       `sort=-confirmed_at` (desc, prefijo `-`, en el segundo click) — un solo query param, no
+       `sort`/`order` separados (OQ-FE-3, resuelta por `US-012-panel-ordenes-dueno-backend`
+       design.md §D5) — asserta sobre la URL real, no sobre el estado interno.
     3. el `<select>` de estado NO contiene una `option` con `value="pending_payment"`
        (`expect(screen.queryByRole('option', { name: /pendiente de pago/i}))` →
        `toBeNull()`) — cubre AC-8 estructuralmente.

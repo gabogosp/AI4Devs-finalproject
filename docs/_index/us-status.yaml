@@ -166,6 +166,12 @@
   # openspec/changes/US-012-panel-ordenes-dueno-frontend-web/proposal.md
   # §"Dependencia cruzada": ni US-010-backend (Draft, 0 tasks) ni
   # US-012-backend (sin planificar) existen todavía.
+  # NOTA (2026-08-30, /plan-backend-ticket): US-012-panel-ordenes-dueno-backend ya está
+  # planificado (openspec/changes/US-012-panel-ordenes-dueno-backend/, draft, 0 tasks
+  # cerradas). No se toca `in-progress-at` (ya lo puso la sesión de FE, primera disciplina
+  # en planificarse) ni `blocked_by` (sigue siendo propiedad de otro agente) — el bloqueo
+  # real de la US completa sigue siendo US-010, ahora con las tres disciplinas de US-012
+  # (FE, BE) planificadas y la de QA todavía pendiente.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
