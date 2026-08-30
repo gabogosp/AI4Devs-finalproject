@@ -86,7 +86,7 @@ language: es
 
 ## Fase 1: Módulo `stock/` — 0,8 h
 
-- [ ] T1.1 `StockRepository.decrementForOrder` — único punto de ORM que
+- [x] T1.1 `StockRepository.decrementForOrder` — único punto de ORM que
   escribe `products.stock`
   - **Pattern**: `UPDATE products SET stock = stock - :qty WHERE id = :id AND
     stock >= :qty` por línea (Prisma `updateMany` con `data: { stock: { decrement: qty } }`
@@ -103,7 +103,7 @@ language: es
     (el spec cubre ambos casos: éxito y corte con rollback — no un test que
     sólo confirme que el método existe, F50)
 
-- [ ] T1.2 `InsufficientStockError` (409) + `StockModule`
+- [x] T1.2 `InsufficientStockError` (409) + `StockModule`
   - **Pattern**: extiende `DomainError` igual que `checkout-errors.ts`;
     `type: 'dsm:payments/insufficient-stock'` (vive acá porque el consumidor es
     `payments/`, no porque el error sea "de stock").
