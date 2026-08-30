@@ -326,7 +326,7 @@
   us-id: US-006
   discipline: frontend-web
   variant: null
-  status: completed   # 2026-08-23: 13/13 tasks; 100 archivos / 648 tests verdes en @dsm/web
+  status: archived   # 2026-08-23: 13/13 tasks; 100 archivos / 648 tests verdes en @dsm/web; merged vía PR #3 (feature-entrega2-GOSP); archivado 2026-08-30
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
@@ -353,18 +353,18 @@
   # final de AC-4, con el import perfecto y el cliente viendo el precio anterior.
   estimate-hours: 4.6
   assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
-  branch: null
-  pr-url: null
+  branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-23
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-08-30
+  archive-path: openspec/changes/archive/US-006-import-masivo-inventario-frontend-web
 
 - name: US-006-import-masivo-inventario-qa
   us-id: US-006
   discipline: qa
   variant: null
-  status: in review  # PR #8 abierto 2026-08-29, todos los stubs automatizados cerrados
+  status: archived  # PR #8 mergeado 2026-08-29T22:07:48Z; archivado 2026-08-30
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
@@ -430,13 +430,17 @@
   branch: feat/US-006-import-masivo-inventario-qa
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/8
   pr-opened-at: 2026-08-29T21:25:05Z
+  completed-at: 2026-08-29T22:07:48Z
+  archived-at: 2026-08-30
+  archive-path: openspec/changes/archive/US-006-import-masivo-inventario-qa
 
 - name: US-006-import-masivo-inventario-backend
   us-id: US-006
   discipline: backend
   variant: null
-  status: completed   # 2026-08-23: 35/35 tasks. Antes `in progress` (normalizado el 2026-08-22 por
+  status: archived   # 2026-08-23: 35/35 tasks. Antes `in progress` (normalizado el 2026-08-22 por
                       # AUDIT-FLOW-008, que lo habia llevado de `in-progress` a `in progress`)
+                      # merged vía PR #3 (feature-entrega2-GOSP); archivado 2026-08-30
   parent-us: docs/user-stories/US-006-import-masivo-inventario.md
   linear-task-id: null
   audit-baseline: null
@@ -453,12 +457,12 @@
   # objetivo del E2E §21, con gatillo de revisión declarado en design.md §NFRs cuantificados.
   estimate-hours: 9.5
   assignee: bce7ffb7
-  branch: null
-  pr-url: null
+  branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-19
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-08-30
+  archive-path: openspec/changes/archive/US-006-import-masivo-inventario-backend
 
 - name: US-007-carrito-compra-backend
   us-id: US-007
@@ -887,11 +891,7 @@
   us-id: US-007
   discipline: frontend-web
   variant: null
-  # 25/25 tasks cerradas el 2026-08-23. Suite: 86 archivos / 516 tests unitarios +
-  # 12 E2E dev-owned; typecheck, lint y codegen sin drift. Queda UN gate y es humano:
-  # recorrer el carrito en `dev` sin errores de consola (se registra en el PR).
-  # Pendiente PR — este repo integra en feature-entrega2-GOSP (ver cabecera).
-  status: in progress
+  status: archived   # 36/37 tasks cerradas 2026-08-23 (1 gate humano de consola en dev, sin cerrar — ver requirements.md D-6); merged vía PR #3 (feature-entrega2-GOSP, 2026-08-29); archivado 2026-08-30
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
@@ -951,13 +951,13 @@
   # una: un deploy sin ella rompe login Y carrito. Ya falla ruidoso al arrancar; conviene
   # que quede dicho en el plan de despliegue de US-008/US-009.
   estimate-hours: 10.4
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  branch: null
-  pr-url: null
+  assignee: sin-identificar
+  branch: feature-entrega2-GOSP   # rama de integración del repo (sin PR por-cambio)
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-23T17:20:03Z
+  archived-at: 2026-08-30
+  archive-path: openspec/changes/archive/US-007-carrito-compra-frontend-web
 
 # qa-plan.md agregado 2026-08-23 por /plan-qa (batería relevancia QA-001 + contract QA-002 + k6 + BDD + E2E)
 - name: US-004-busqueda-semantica-frontend-web

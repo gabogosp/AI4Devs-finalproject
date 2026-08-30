@@ -1,8 +1,9 @@
 # Capacidad: Carrito de compra del invitado (CAP-4)
 
-**Estado**: parcialmente entregada — superficie de **backend** viva y **QA cross-stack
-archivada**; el frontend tiene sus 25/25 tasks cerradas pero sigue pendiente de su propio
-`/archive-change`.
+**Estado**: entregada — backend, UI del carrito y suite QA cross-stack archivados. Falta
+sólo el gate humano de la US (regresión en staging + AC manuales + firma del PO, ver
+`docs/user-stories/US-007-carrito-compra.md` §Definition of Done): archivar las tres
+disciplinas no mueve la US a `Done` por sí solo.
 
 Estado declarado del sistema para la capacidad CAP-4 del PRD §2.1. Este directorio es el
 **acumulado** de los changes archivados: se extiende en cada `/archive-change`, nunca se reescribe.
@@ -27,11 +28,26 @@ Un carrito que funciona **sin cuenta**, identificado por una cookie propia (US-0
   oportunista al resolver.
 - Errores en envelope RFC 7807 con extension members (`available_quantity`, `max_items`).
 
+Una **UI de cliente** que consume esa superficie (US-007 frontend-web):
+
+- `/carrito` es Client Component + `noindex` — el carrito es dato personalizado, así que
+  hereda el guard de `client.ts` que impide que una llamada con sesión salga del servidor
+  (design.md D1, evita que la Data Cache de Next sirva un carrito ajeno).
+- Rewrite same-origin extendido a `/v1/cart/:path*` (heredado de ADR-0013): sin esto el
+  carrito funciona en local y está roto en producción, porque `up.railway.app` está en la
+  Public Suffix List.
+- Segundo sujeto de CSRF (`dsm_cart_csrf`) sobre el mismo lector único de `document.cookie`
+  que US-014 dejó atado a `dsm_csrf` — se parametriza el sujeto, no se duplica el parser.
+- Estado por unión discriminada + **reemplazo completo** en cada mutación (no reconciliación
+  local): las tres respuestas del backend traen el carrito entero, así que el total nunca
+  puede divergir del servidor.
+- Stepper **pesimista** con debounce de 400 ms, acotado a `max_quantity`, operable por
+  teclado; badge del top-nav como isla cliente dentro de un layout que sigue siendo servidor.
+- Cinco eventos de negocio sin PII (`cart.item_added`, `cart.quantity_changed`,
+  `cart.item_removed`, `cart.viewed`, `cart.blocked_checkout`).
+
 ## Qué NO está vivo todavía
 
-- **La UI del carrito** (`US-007-carrito-compra-frontend-web`) tiene sus 25/25 tasks
-  cerradas y sus commits ya están en `main`, pero el change no pasó su propio
-  `/archive-change` todavía — este documento se extiende cuando lo haga.
 - **Fusión** del carrito del invitado con la cuenta al iniciar sesión — fuera de alcance de
   v1 (US §4); la política ya está decidida (sumar cantidades, tope al stock) pero sin
   implementar. `carts.customer_id` existe en el esquema y queda sin escritor hasta esa US.
@@ -87,7 +103,7 @@ archivo por path bajo [`contracts/openapi/paths/`](contracts/openapi/paths/) ref
 | Change | Disciplina | Aporte |
 |---|---|---|
 | [`US-007-carrito-compra-backend`](../../changes/archive/US-007-carrito-compra-backend/) | BE | `CartModule`, identidad por cookie + CSRF, stock sin reserva, precio vigente, RFC 7807 con extension members |
-| [`US-007-carrito-compra-frontend-web`](../../changes/US-007-carrito-compra-frontend-web/) | FE | UI del carrito (topología, persistencia entre visitas, a11y, eventos de negocio). Tasks cerradas, pendiente `/archive-change` propio |
+| [`US-007-carrito-compra-frontend-web`](../../changes/archive/US-007-carrito-compra-frontend-web/) | FE | UI del carrito (topología, persistencia entre visitas, a11y, eventos de negocio) |
 | [`US-007-carrito-compra-qa`](../../changes/archive/US-007-carrito-compra-qa/) | QA | Suite L3 cross-stack: 14 aceptación BDD, 6 E2E de navegador, 2 a11y, 1 carga k6, 2 charters. AC-8 con tres invitados independientes |
 
 ## Estado de la provisión

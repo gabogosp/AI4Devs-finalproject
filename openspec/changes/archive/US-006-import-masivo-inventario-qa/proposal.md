@@ -1,3 +1,10 @@
+---
+archived: true
+archived_at: 2026-08-30
+merged_commit: 8dd0ec974b548f76e9a10f2a8afec7eaeedc1a0e
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/8
+---
+
 # US-006 QA — Importación masiva de inventario: suite owned-by-QA
 
 > **Change**: `US-006-import-masivo-inventario-qa` · **US**: `docs/user-stories/US-006-import-masivo-inventario.md`

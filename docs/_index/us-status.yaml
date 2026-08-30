@@ -71,7 +71,7 @@
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
-  status: In Progress
+  status: Done
   priority: Medium
   prd-capacity: 7
   disciplines: [BE, FE, QA]
@@ -81,19 +81,20 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-19        # first plan invocation (backend-node-developer)
   in-review-at: 2026-08-29T21:25:05Z # PR #8 (qa) abierto; BE y FE ya "completed" sin PR discreto
-                                      # (modelo de rama de integracion) -- status US-level se
-                                      # mantiene In Progress: el DoD todavia pide regresion en
-                                      # staging + firma del PO + merge, no solo el PR abierto
+                                      # (modelo de rama de integracion)
+  done-at: 2026-08-30               # 3/3 discipline changes archivados (BE+FE via PR #3, QA via PR #8)
   blocked_by: [US-001]
 - id: US-007
   slug: carrito-compra
   # Las TRES disciplinas con sus tasks al 100% el 2026-08-23 (backend 37/37,
-  # frontend-web 25/25, qa 22/22), mergeadas a main vía PR #3 (feature-entrega2-GOSP,
-  # 2026-08-29). Backend archivado el 2026-08-29; qa archivada el 2026-08-30
-  # (/archive-change). frontend-web sigue activa: falta su propio /archive-change.
-  # NO pasa a Done: el DoD de la US exige regresión verde en staging, AC manuales
-  # verificados por QA y firma del PO — ninguna la cierra un dev.
-  status: In Progress
+  # frontend-web 36/37 — 1 gate humano de consola en dev sin cerrar, ver
+  # openspec/specs/carrito/requirements.md D-6 —, qa 22/22), mergeadas a main vía PR #3
+  # (feature-entrega2-GOSP, 2026-08-29). Las TRES disciplinas ya archivaron
+  # (/archive-change): backend 2026-08-29, frontend-web 2026-08-30, qa 2026-08-30.
+  # NO pasa a Done: el DoD de la US (gate QA → Done) exige regresión verde en staging,
+  # AC manuales verificados por QA y firma del PO — ninguno tildado todavía; archivar
+  # las tres disciplinas cierra el código, no el gate humano.
+  status: QA
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]
@@ -302,3 +303,17 @@
   linear-issue-id: null
   created: 2026-08-23
   blocked_by: []
+- id: US-023
+  slug: pago-manual-offline
+  status: Backlog
+  priority: High
+  prd-capacity: 4   # CAP-4 «Checkout y pago» — adaptador de pago sin MercadoPago
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-08-30
+  # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
+  # el pago y la orden pasa a `paid`. Nace de "puro modelo local" sin credenciales de MP.
+  # US-023 es DUEÑA del PaymentConfirmationPort (extraído de US-009); MercadoPago (US-009)
+  # queda como otro adaptador del mismo puerto, ON HOLD por dependencia externa (credenciales).
+  blocked_by: [US-008]    # necesita la orden en `pending_payment` que crea el checkout
