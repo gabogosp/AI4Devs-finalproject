@@ -526,7 +526,7 @@
   # Dos fragilidades PREEXISTENTES de la suite de US-002 quedan diferidas en su
   # tasks.md (TC-204 por datos de otras sesiones, TC-208 por un assert que colisiona
   # con el teléfono del footer) y una interferencia entre specs del propio carrito.
-  status: in progress  # 15/22 cerradas 2026-08-23 (Fases 1-3, 6, 7 + 3 gates); 4-5 bloqueadas por el FE
+  status: archived
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
@@ -554,12 +554,12 @@
   # un generador) bloquea la CORRIDA de carga hasta que se decida.
   estimate-hours: 4
   assignee: 9a385021
-  branch: null
-  pr-url: null
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-23  # 22/22 tasks; Fases 4/5 desbloqueadas el mismo día al cerrar el FE (25/25)
+  archived-at: 2026-08-30
+  archive-path: openspec/changes/archive/US-007-carrito-compra-qa
 
 - name: US-014-registro-login-frontend-web
   us-id: US-014

@@ -36,8 +36,8 @@ Superficie cubierta: `GET /v1/cart`, `PUT /v1/cart/items/{slug}`, `DELETE /v1/ca
 
 | # | Requisito | Verificación |
 |---|---|---|
-| NFR-1 | Latencia de escritura (`PUT`/`DELETE`) **p95 < 500 ms**. | Hereda E2E §17; sin carga k6 propia todavía (queda en `/plan-qa`). |
-| NFR-2 | Latencia de lectura (`GET /v1/cart`) **p95 < 300 ms** `[propuesto — confirma Arquitecto]`. | Íd. |
+| NFR-1 | Latencia de escritura (`PUT`/`DELETE`) **p95 < 500 ms**. | **Medido** (QA, `US-007-carrito-compra-qa`, 2026-08-23): `qa/performance/cart-write.js`, **p95 4,28 ms**, `rate_limited: 0`, checks 34.794/34.794. Corrida con `CART_WRITE_RATE_LIMIT_MAX` elevado sólo en el entorno de carga — el presupuesto productivo (30/min/IP) hace irrealizable la medición (OQ-QA-2). |
+| NFR-2 | Latencia de lectura (`GET /v1/cart`) `[propuesto — confirma Arquitecto]`, sin umbral ratificado. | **Medido informativamente** (QA, misma corrida): **p95 1,61 ms**, sin gate — el PRD §4 acota su `p95 < 300 ms` a catálogo/ficha, no al carrito; adoptarlo por analogía sería inventar el número (OQ-QA-1, decisión (b)). |
 | NFR-3 | Retención del carrito invitado: **7 días** deslizantes desde la última escritura. | `CART_TTL_DAYS = 7`; decisión del PO (OQ-BE-1). Variable de entorno, ajustable sin deploy de código. |
 | NFR-4 | Cota de 50 líneas distintas por carrito (`CART_MAX_ITEMS`) y 99 unidades por línea (`CART_MAX_QTY_PER_LINE`). | `409 dsm:cart/too-many-items` / `422`. |
 | NFR-5 | El borde HTTP cumple los controles §7 de security-standards sobre esta superficie: throttler `cart` nombrado (120/min lectura, 30/min escritura por IP), `no-store` también en 4xx/429, CORS con `PUT`/`DELETE` en la allowlist. | Suite `e2e-cart-*` (dev-owned). |
@@ -48,7 +48,6 @@ Superficie cubierta: `GET /v1/cart`, `PUT /v1/cart/items/{slug}`, `DELETE /v1/ca
 |---|---|---|
 | D-1 | Fusión del carrito del invitado con la cuenta al iniciar sesión (política ya decidida: sumar cantidades, tope al stock). | US de fusión, fuera de v1. `carts.customer_id` existe en el esquema sin escritor hasta esa US. |
 | D-2 | Job programado de purga de carritos vencidos (hoy sólo purga oportunista al resolver). | Diferido mientras Redis/BullMQ no esté aprovisionado (OQ-BE-6). |
-| D-3 | Suite QA cross-stack del carrito. | `US-007-carrito-compra-qa` — tasks cerradas, pendiente de su propio `/archive-change`. |
 
 ## Desde US-007 frontend-web — Carrito de compra del invitado: UI (archivada 2026-08-30)
 
@@ -82,3 +81,32 @@ Superficie cubierta: `/carrito`, badge del top-nav, `AddToCartButton` en ficha y
 | D-4 | CTA «Ir al pago» — hoy deshabilitado con el motivo a la vista. | `US-008` (checkout) — owner: FE. |
 | D-5 | Carrito sin JavaScript / renderizado en servidor. | No soportado a propósito: exigiría relajar el guard que impide fugar datos personalizados entre personas (OQ-FE-5, design.md D1). |
 | D-6 | Verificación manual de consola limpia al recorrer el carrito en `dev` (agregar, cambiar cantidad, quitar, vaciar). | Único ítem sin cerrar de `tasks.md` — lo hace una persona, no el ejecutor; queda registrado en el PR de este archive. |
+
+## Desde US-007 QA — Suite L3 cross-stack (archivada 2026-08-30)
+
+Cobertura: aceptación BDD API-level (14 escenarios), E2E de navegador (6), a11y (2), carga
+k6 (1) y exploratorio (2 charters) sobre el carrito descrito arriba.
+
+### Funcionales verificadas
+
+| # | Requisito verificado | Test case |
+|---|---|---|
+| V-1 | Los 10 AC del backend tienen ≥1 escenario ejecutable a nivel API, sin esperar al FE. | TC-701..712 |
+| V-2 | AC-8 (stock nunca reservado) resiste el ataque específico: **tres invitados independientes** agotan el mismo stock de 3 unidades cada uno; los tres quedan `available`; el panel del dueño y la ficha pública siguen mostrando el stock real tras un ciclo completo de escritura. | TC-709 |
+| V-3 | El recorrido de compra completo (agregar desde la ficha, ver línea con subtotal, editar con el stepper, quitar) funciona en un navegador real; el carrito persiste entre **contextos de navegador nuevos** (sólo cookies). | TC-720, TC-721 |
+| V-4 | El carrito vacío invita a seguir comprando (no sólo ausencia de ítems). | TC-722 |
+| V-5 | El stepper no permite superar el stock disponible y muestra el motivo; una línea no disponible se ve marcada sin ofrecer camino al pago; el importe mostrado es siempre el vigente. | TC-723, TC-724, TC-725 |
+| V-6 | 0 violaciones axe-core nivel AA en las 3 variantes del carrito (con ítems, vacío, con línea bloqueada). | TC-730 |
+| V-7 | El stepper y "quitar" se operan **sólo con teclado** con foco visible y orden lógico; el cambio de cantidad anuncia el nuevo total por una región viva. | TC-731 |
+
+### No funcionales verificadas
+
+Ver NFR-1 y NFR-2 arriba (medidos por esta suite).
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-7 | Charter exploratorio TC-750 (carrito bajo navegadores reales: incógnito, cookies bloqueadas, ITP de Safari — su techo de vida cae en los mismos 7 días de `CART_TTL_DAYS`). | Sesión manual con el dueño — ejecutable ahora que la UI existe; no automatizado por diseño. |
+| D-8 | Saneamiento de los seeds no idempotentes de US-002/US-003 (H-2) y de los `Verify:` de aceptación sin ancla de conteo (H-1). | Ajenos al carrito, detectados corriendo su suite. Owner: QA — pase de saneamiento pendiente de agendar. |
+| D-9 | Aislamiento de fixtures entre specs E2E del carrito (`TC-724`/`TC-725` interfieren con la suite completa por la caché de 3600 s del storefront sobre mutaciones reales del catálogo). | Owner: QA — pasan aislados; no debilita ningún assert existente. |

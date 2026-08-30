@@ -89,10 +89,11 @@
   # Las TRES disciplinas con sus tasks al 100% el 2026-08-23 (backend 37/37,
   # frontend-web 36/37 — 1 gate humano de consola en dev sin cerrar, ver
   # openspec/specs/carrito/requirements.md D-6 —, qa 22/22), mergeadas a main vía PR #3
-  # (feature-entrega2-GOSP, 2026-08-29). Backend archivado 2026-08-29, frontend-web
-  # archivado 2026-08-30 (/archive-change). Sólo falta QA (US-007-carrito-compra-qa
-  # sigue activa). NO pasa a Done: el DoD de la US exige regresión verde en staging, AC
-  # manuales verificados por QA y firma del PO — ninguna la cierra un dev.
+  # (feature-entrega2-GOSP, 2026-08-29). Las TRES disciplinas ya archivaron
+  # (/archive-change): backend 2026-08-29, frontend-web 2026-08-30, qa 2026-08-30.
+  # NO pasa a Done: el DoD de la US (gate QA → Done) exige regresión verde en staging,
+  # AC manuales verificados por QA y firma del PO — ninguno tildado todavía; archivar
+  # las tres disciplinas cierra el código, no el gate humano.
   status: QA
   priority: High
   prd-capacity: 4
