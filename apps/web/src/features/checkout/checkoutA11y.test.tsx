@@ -3,18 +3,18 @@ import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CheckoutCreated } from './checkoutService';
-import { checkoutService } from './checkoutService';
 import { CheckoutBlocked } from './CheckoutBlocked';
 import { CheckoutConfirmation } from './CheckoutConfirmation';
 import { CheckoutForm } from './CheckoutForm';
 
+// Ningún test de este archivo dispara un submit real (la validación con
+// errores visibles es 100% cliente) — mockeado sólo para que CheckoutForm
+// (vía useCheckout) no intente una llamada de red real al montar/enviar.
 vi.mock('./checkoutService', () => ({
   checkoutService: { submit: vi.fn() },
 }));
 
 expect.extend(toHaveNoViolations);
-
-const servicio = vi.mocked(checkoutService);
 
 afterEach(() => vi.clearAllMocks());
 

@@ -408,7 +408,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 7: E2E sobre la app construida
 
-- [ ] T7.1 Extender `e2e/support/api-stub.mjs` con `POST /v1/checkout`
+- [x] T7.1 Extender `e2e/support/api-stub.mjs` con `POST /v1/checkout`
   - **Pattern**: mismo estilo que el bloque de carrito ya existente en el stub (cookies
     `dsm_cart`/`dsm_cart_csrf`, CSRF por comparación directa, `Cache-Control: no-store`) — `per`
     el bloque `/v1/cart` del propio archivo, sin reinventar el mecanismo de sesión.
@@ -427,7 +427,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
   - **Verify**: `node -e "require('apps/web/e2e/support/api-stub.mjs')" 2>&1 | grep -qv SyntaxError && echo OK`
     (smoke de sintaxis; el comportamiento real lo prueban T7.2/T7.3)
 
-- [ ] T7.2 `e2e/checkout-topology.spec.ts` — el rewrite contra la app construida
+- [x] T7.2 `e2e/checkout-topology.spec.ts` — el rewrite contra la app construida
   - **Pattern**: espejo exacto de `cart-topology.spec.ts` (US-007 T5.1) — `per
     playwright-stability` (selectores por rol, sin `waitForTimeout`) y `design.md` D2. Asserta
     sobre `response.status()` y `context.cookies()`, nunca sobre el DOM.
@@ -436,7 +436,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
     ausente.
   - **Verify**: `pnpm --filter @dsm/web test:e2e e2e/checkout-topology.spec.ts`
 
-- [ ] T7.3 `e2e/checkout-happy-path.spec.ts` — el flujo completo
+- [x] T7.3 `e2e/checkout-happy-path.spec.ts` — el flujo completo
   - **Pattern**: agregar un producto al carrito → `/carrito` → click "Ir al pago" → `/checkout` →
     completar el formulario → submit → confirmación visible con `order_number` — `per
     playwright-stability` (locators por rol/label, sin CSS frágil).
