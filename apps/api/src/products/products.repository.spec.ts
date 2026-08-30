@@ -372,9 +372,13 @@ describe('ProductsRepository (products.repository, integration)', () => {
     it('trae los campos que la vista del carrito necesita', async () => {
       const [p] = await repo.findManyBySlugs(['pub']);
 
+      // 'sku' se suma en US-008 T2.1: el checkout lo necesita para
+      // order_items.product_sku (design.md §Trade-offs), leído de la MISMA
+      // proyección que consume la vista del carrito.
       expect(Object.keys(p).sort()).toEqual(
         [
           'id',
+          'sku',
           'slug',
           'name',
           'image_url',

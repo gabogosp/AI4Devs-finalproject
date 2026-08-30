@@ -90,6 +90,16 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: Number(config.get('SEARCH_RATE_LIMIT_TTL_MS') ?? 60_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — sexto throttler nombrado: el checkout (US-008). Mismo criterio
+        // que `enrichment`/`search`: el `limit` de acá es un techo deliberadamente
+        // inalcanzable, y el presupuesto real (`CHECKOUT_RATE_LIMIT_MAX`, 10/10min)
+        // va como `@Throttle({ checkout: … })` en el único handler del checkout —
+        // así ningún controller existente necesita un `@SkipThrottle({ checkout: true })`.
+        {
+          name: 'checkout',
+          ttl: config.get<number>('CHECKOUT_RATE_LIMIT_TTL_MS', 600_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],

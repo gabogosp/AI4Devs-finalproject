@@ -578,6 +578,44 @@ export const RemoveCartItemResponse = zod.object({
 
 
 /**
+ * Ruta PÚBLICA SIN auth. El carrito se identifica por la cookie `dsm_cart` (US-007) — NO viaja en el cuerpo ni hay `cart_id`. El cuerpo trae SÓLO los datos del comprador, el consentimiento y el modo de entrega; el total y las líneas salen del carrito y del catálogo leídos DENTRO de la transacción (`ValidationPipe` con `forbidNonWhitelisted`: `total_ars_cents`, `items`, `cart_id`, `status` u `order_number` en el cuerpo → 422). Carrito ausente, vencido o vacío → 409 `dsm:checkout/cart-empty`; alguna línea despublicada o sin stock suficiente → 409 `dsm:checkout/cart-not-purchasable` con `errors[]` por línea (slug + motivo). La orden nace INERTE: no descuenta stock (AC-6, ADR-0008), no cobra y es invisible para el panel del dueño hasta que se apruebe el pago (US-009 → US-010). Ningún campo del request acepta datos de tarjeta y ninguna columna de `orders`/`order_items` puede alojarlos (AC-7) — el pago ocurre íntegramente en el checkout hosted de MercadoPago (ADR-0006). `Cache-Control: no-store` en toda la superficie, incluidos los errores. Sin `Idempotency-Key` (deviación declarada de api-standards §10.1): dos llamadas crean dos órdenes, ambas inertes; la abandonada la cancela la limpieza de US-010.
+ * @summary Crea la orden en pending_payment con snapshot de precios (US-008 AC-1/AC-2)
+ */
+export const CreateGuestCheckoutHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado del carrito (§7.5): el valor de la cookie dsm_cart_csrf. Reusa CartCsrfGuard tal cual (misma cookie dsm_cart); acá SIEMPRE es obligatorio (a diferencia de CartCsrfToken) porque el checkout exige un carrito ya existente con líneas — nunca es la primera escritura de un cliente nuevo.')
+})
+
+export const createGuestCheckoutBodyBuyerNameMin = 2;
+export const createGuestCheckoutBodyBuyerNameMax = 120;
+
+export const createGuestCheckoutBodyBuyerPhoneRegExp = new RegExp('^\\+?[0-9 ()-]{8,20}$');
+
+
+export const CreateGuestCheckoutBody = zod.object({
+  "buyer": zod.object({
+  "name": zod.string().min(createGuestCheckoutBodyBuyerNameMin).max(createGuestCheckoutBodyBuyerNameMax),
+  "email": zod.string().email().describe('Se normaliza (trim + NFKC + lowercase) antes de persistir.'),
+  "phone": zod.string().regex(createGuestCheckoutBodyBuyerPhoneRegExp)
+}).describe('PII mínima (PRD §6): nombre para el retiro, email para la confirmación de US-011, teléfono para coordinar el retiro y el contacto por WhatsApp de US-018.'),
+  "consent": zod.literal(true).describe('Aceptación de términos y privacidad (Ley 25.326, PRD §2.1 cap. 10). false o ausente → 422 (AC-4). Un CHECK de la base impide que exista una orden sin ella (AC-8).'),
+  "fulfillment": zod.enum(['pickup']).describe('Sucursal única: el checkout confirma el retiro, no ofrece elección. Envío a domicilio es roadmap (PRD §2.2).')
+}).describe('Entrada de POST \/checkout. SÓLO buyer\/consent\/fulfillment: con forbidNonWhitelisted, total_ars_cents\/items\/cart_id\/status\/order_number en el cuerpo son 422 — el total y las líneas salen del carrito y del catálogo, nunca del cliente.')
+
+export const createGuestCheckoutResponseOrderTokenRegExp = new RegExp('^[0-9a-f]{64}$');
+export const createGuestCheckoutResponseOrderNumberMin = 1000;
+
+
+
+export const CreateGuestCheckoutResponse = zod.object({
+  "order_token": zod.string().regex(createGuestCheckoutResponseOrderTokenRegExp).describe('Token opaco de 256 bits, hex. Se entrega UNA SOLA VEZ; en base vive su SHA-256 (orders.access_token_hash). Es la entrada de POST \/v1\/payments (US-009) — mismo pattern que ese contrato.'),
+  "order_number": zod.number().int().min(createGuestCheckoutResponseOrderNumberMin).describe('Número legible (SEQUENCE START WITH 1000, OQ-BE-4). No autoriza nada — la autorización es order_token. El order_id UUID no se expone.'),
+  "status": zod.enum(['pending_payment']).describe('Primer estado de la FSM (E2E §12). Inerte hasta US-010.'),
+  "total_ars_cents": zod.number().int().describe('Centavos ARS (api-standards §5.5), IVA incluido. Suma exacta de los subtotales del snapshot, no del carrito.'),
+  "items_count": zod.number().int().describe('Líneas distintas de la orden.')
+})
+
+
+/**
  * Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo `file`. El formato se decide por CONTENIDO (magic bytes), no por la extensión ni por el Content-Type. El archivo se valida ANTES de crear el trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1: requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías en una actualización: vacío significa "no cambiar ese campo" (así funciona el archivo de ajuste de precios). En una fila de alta, una celda requerida vacía la rechaza con missing_required. El precio va en ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un import vigente a la vez (409); un reintento con la misma `Idempotency-Key` devuelve 200 con el mismo trabajo.
  * @summary Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
  */

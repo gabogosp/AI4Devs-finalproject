@@ -327,6 +327,60 @@ migración de un `ALTER`.
 como componente separado, y además `cart/` ya tiene 888 líneas. Módulo propio, con
 `CartModule` exportando lo que el checkout consume.
 
+**`CartProduct` suma `sku` vs una segunda lectura de productos en el checkout.**
+`CartView.items` trae el precio vigente y el nombre, pero no `product_id` ni `sku`:
+`cart.dto.ts` los excluye a propósito de la vista pública (identificadores internos no
+salen a la red). `order-draft.ts` (T2.1) los necesita para las líneas de la orden. La
+alternativa era una query de productos propia del checkout; se prefirió sumar `sku` a la
+proyección `CART_PRODUCT_SELECT`/`CartProduct` existente (§5, único punto de ORM de
+`products`) — el carrito ignora el campo nuevo, el checkout lo consume. Costo: dos specs
+de US-007 tocados de forma aditiva (`cart.service.spec.ts` con un default de `sku` en su
+factory), sin cambiar su comportamiento ni sus aserciones.
+
+**`OrderTokenService` no llama a `newToken()` para el claro.** `newToken()`
+(`auth/tokens/opaque-token.ts`) codifica en base64url; el contrato ya escrito de
+`POST /v1/payments` (US-009) declara `order_token` con `pattern: '^[0-9a-f]{64}$'` — hex.
+Cambiar la codificación de `newToken()` afectaría refresh/reset/carrito, que no lo piden.
+T2.2 genera los mismos 32 bytes de CSPRNG y los codifica en hex localmente, reusando
+`hashToken` (agnóstico al formato del claro que recibe) para el hash — la primitiva
+compartida se reusa donde el formato coincide, no donde no.
+
+**Throttler `checkout` registrado con `limit: Number.MAX_SAFE_INTEGER` en el array
+global, no con `CHECKOUT_RATE_LIMIT_MAX`.** Mismo criterio que `enrichment`/`search`
+(comentario en `auth.module.ts`): `@nestjs/throttler` aplica **todos** los throttlers
+nombrados a **toda** ruta guardada, así que un `limit` real acá lo heredarían auth,
+storefront, cart, enrichment y search a menos que cada uno agregara
+`@SkipThrottle({ checkout: true })`. El presupuesto real va en
+`@Throttle({ checkout: { limit: CHECKOUT_RATE_LIMIT_MAX } })` sobre el único handler
+del checkout — así ningún controller existente se toca.
+
+**`CartCsrfGuard` se suma a los exports de `CartModule`, más allá de lo que T1.3
+declaró (`CartTokenService` + `CartsRepository`).** T3.2 reusa el guard tal cual
+(§Approach.3); T1.3 no lo anticipó porque su Exit criterion sólo mencionaba los dos
+primeros. Extensión aditiva del mismo wiring, en el punto donde efectivamente hace
+falta.
+
+**`checkout.rejected_consent` y `checkout.validation_failed` no tienen call-site en
+este change.** Los cinco nombres existen y `CheckoutEventsService` está probado
+(T4.1); `CheckoutService.createOrder` emite los tres que puede ver
+(`order_created`, `rejected_empty_cart`, `rejected_blocking_issues`). Los otros dos
+corresponden a un rechazo del `ValidationPipe` **global** (`consent`/cualquier otro
+campo del DTO) — ese pipe rechaza **antes** de que el controller o el service
+corran, así que no hay forma de emitir desde ahí sin hacer el pipe global
+consciente de la ruta `/v1/checkout`, lo que acoplaría el error-handling de
+**todas** las superficies a una métrica de negocio de una sola. Ningún otro
+`*EventsService` del proyecto (`CartEventsService` incluido) engancha el
+`ValidationPipe` por la misma razón. `Deferred: sin owner — requiere una decisión
+de diseño (pipe por-ruta o interceptor dedicado) que excede el alcance de esta US.`
+
+**El guard de T5.1 no invoca `rg` por `execSync`.** El `rg` del Verify es una función
+de shell del entorno interactivo (delega en el binario embebido de Claude Code), no
+un ejecutable instalado en el sistema — un `execSync('rg …')` fallaría "command not
+found" en CI/producción, y un `catch` que lo tragara sería un verde falso (exactamente
+la trampa F49). `ac6-stock-untouched.spec.ts` reimplementa el mismo chequeo en Node
+puro (recorre los `.ts` no-spec de `checkout/`, filtra comentarios, busca `stock` +
+`update|decrement|set` en la misma línea).
+
 ## Deployment considerations
 
 **No hace falta `/plan-deployment` por sí solo**, pero sí conviene coordinarlo con US-009,

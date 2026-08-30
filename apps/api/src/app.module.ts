@@ -13,6 +13,7 @@ import { CartModule } from './cart/cart.module';
 import { ImportsModule } from './imports/imports.module';
 import { EnrichmentModule } from './enrichment/enrichment.module';
 import { SearchModule } from './search/search.module';
+import { CheckoutModule } from './checkout/checkout.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -26,6 +27,8 @@ import { SearchModule } from './search/search.module';
  * `SearchModule` (US-004) expone `GET /v1/search`, el diferenciador del producto: superficie
  * PÚBLICA que consume los vectores de US-005 y degrada a full-text cuando el proveedor no
  * responde, sin romper la navegación.
+ * `CheckoutModule` (US-008) expone `POST /v1/checkout`: convierte el carrito en una orden
+ * `pending_payment`, con el `order_token` que US-009 consume para iniciar el pago.
  */
 @Module({
   imports: [
@@ -43,6 +46,7 @@ import { SearchModule } from './search/search.module';
     ImportsModule,
     EnrichmentModule,
     SearchModule,
+    CheckoutModule,
   ],
   controllers: [],
   providers: [],

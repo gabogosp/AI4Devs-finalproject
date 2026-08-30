@@ -34,23 +34,23 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-007 backend con sus tasks cerradas y `apps/api/src/cart/` limpio.** Este
+- [x] **US-007 backend con sus tasks cerradas y `apps/api/src/cart/` limpio.** Este
   change **reusa** `CartTokenService`, `CartsRepository` y `buildCartView`, y T1.3
   **modifica** `cart.module.ts`. Con tasks de US-007 abiertas sobre esos archivos se
   pisan (precedente: la colisión de sesiones de US-007).
   **Verify**: `git status --porcelain apps/api/src/cart` vacío **y**
   `pnpm --filter @dsm/api test -- --testPathPattern='cart-schema|cart-view|cart-token|e2e-cart'`
 
-- [ ] **`ProductsRepository` sigue siendo el único punto de ORM de `products`.** El
+- [x] **`ProductsRepository` sigue siendo el único punto de ORM de `products`.** El
   checkout lee precio, stock y estado por ahí, no con un `prisma.product` propio (§5).
   **Verify**: `rg -l "prisma\.product\b" apps/api/src --glob '!**/products.repository.ts' --glob '!**/*.spec.ts'` sin resultados
 
-- [ ] **`US-009` no está en vuelo sobre el esquema.** El change de pagos agrega
+- [x] **`US-009` no está en vuelo sobre el esquema.** El change de pagos agrega
   `payments` con una FK a `orders`; si las dos migraciones se generan a la vez, la
   historia de Prisma queda desordenada. **US-008 va primero**, siempre.
   **Verify**: `ls packages/db/prisma/migrations | grep -c payment` devuelve `0`
 
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
 
 > **Estado intermedio declarado (F51).** Al cerrar este change, una orden creada **no
 > lleva a ninguna parte**: no hay pago (US-009), no se confirma (US-010), no se notifica
@@ -63,7 +63,7 @@ language: es
 
 ## Fase 0: Esquema y configuración — 2,2 h
 
-- [ ] T0.1 Migración aditiva `orders` + `order_items` (F40 — column-complete)
+- [x] T0.1 Migración aditiva `orders` + `order_items` (F40 — column-complete)
   - **Pattern**: dos `model` nuevos en `packages/db/prisma/schema.prisma` con
     `@id @default(dbgenerated("gen_random_uuid()")) @db.Uuid` y `@@map("…")`, espejando
     `Cart`/`CartItem`; migración generada con `pnpm --filter @dsm/db migrate` y los
@@ -131,7 +131,7 @@ language: es
     borrar un `product` con línea vendida **falla**; borrar un `customer` deja
     `orders.customer_id` en `NULL` **sin borrar la orden**)
 
-- [ ] T0.2 Variables de entorno del checkout validadas por Zod
+- [x] T0.2 Variables de entorno del checkout validadas por Zod
   - **Pattern**: extender `envSchema` en `apps/api/src/config/env.validation.ts` —
     `per backend-node-standards.md §7 — config validada al arranque, fail-fast`.
   - **Exit criterion**: `env.validation.ts` declara con default seguro
@@ -158,7 +158,7 @@ language: es
 
 ## Fase 1: Errores, persistencia y el seam con el carrito — 1,4 h
 
-- [ ] T1.1 Errores de dominio del checkout
+- [x] T1.1 Errores de dominio del checkout
   - **Pattern**: extender `DomainError` en un archivo propio, como `auth-errors.ts` —
     **no** se toca `common/errors/domain-errors.ts`, cuyos `type` llevan el prefijo
     `dsm:catalog/` — `per backend-node-standards.md §6 — errores de dominio mapeados
@@ -174,7 +174,7 @@ language: es
     `cart-not-purchasable` trae `errors[]` con `field` = slug, y ninguno contiene
     `Error:` ni `at ` (stack); los casos existentes del filtro siguen verdes)
 
-- [ ] T1.2 `OrdersRepository` — único punto de ORM de `orders` + `order_items`
+- [x] T1.2 `OrdersRepository` — único punto de ORM de `orders` + `order_items`
   - **Pattern**: repositorio que envuelve Prisma y expone la creación como **una
     transacción**; el service no ve el cliente — `per backend-node-standards.md §5 — el
     repositorio envuelve el ORM; `$transaction` para el caso de uso multi-escritura`.
@@ -197,7 +197,7 @@ language: es
     `findByTokenHash` con hash correcto/incorrecto) **y**
     `rg -l "prisma\.order\b|prisma\.orderItem\b" apps/api/src --glob '!**/orders.repository.ts' --glob '!**/*.spec.ts'` sin resultados
 
-- [ ] T1.3 `CartModule` exporta lo que el checkout consume (cambio de wiring, sin cambio de comportamiento)
+- [x] T1.3 `CartModule` exporta lo que el checkout consume (cambio de wiring, sin cambio de comportamiento)
   - **Pattern**: agregar `CartTokenService` y `CartsRepository` al array `exports` de
     `cart.module.ts` (hoy exporta sólo `CartEventsService`). **No** se duplica la
     resolución del carrito ni se abre un segundo acceso al ORM de `carts` — `per
@@ -217,7 +217,7 @@ language: es
 
 ## Fase 2: Caso de uso — 1,8 h
 
-- [ ] T2.1 `order-draft.ts` — snapshot y total como función **pura**
+- [x] T2.1 `order-draft.ts` — snapshot y total como función **pura**
   - **Pattern**: función pura sin tipos de framework ni acceso a base, igual que
     `cart-view.ts` de US-007, para poder ejercer las reglas que tienen dinero adentro sin
     HTTP ni Postgres — `per backend-node-standards.md §2 — la lógica de dominio no
@@ -241,7 +241,7 @@ language: es
     `unit_price_ars_cents` de la vista y **no** el `previous_unit_price_ars_cents`
     —caso con `price_changed: true`, que es donde un error de copiado costaría plata)
 
-- [ ] T2.2 `OrderTokenService` — identidad opaca de la orden (**resuelve OQ-BE-1 de US-009**)
+- [x] T2.2 `OrderTokenService` — identidad opaca de la orden (**resuelve OQ-BE-1 de US-009**)
   - **Pattern**: reusar `newToken` / `hashToken` de `auth/tokens/opaque-token.ts` (256
     bits de CSPRNG, SHA-256 en reposo) en vez de duplicar la primitiva — tercera vez que
     el proyecto necesita lo mismo (refresh de ADR-0011, carrito de US-007, ahora la
@@ -257,7 +257,7 @@ language: es
     contrato de US-009—; `hashToken(token)` reproduce el hash emitido; el claro **no**
     aparece en el objeto devuelto por ninguna otra vía)
 
-- [ ] T2.3 `CheckoutService.createOrder` — el caso de uso transaccional
+- [x] T2.3 `CheckoutService.createOrder` — el caso de uso transaccional
   - **Pattern**: resolver el carrito, leer los productos **vigentes**, construir la
     vista, validar, snapshotear e insertar — todo dentro de la transacción, de modo que
     el precio guardado sea el que la transacción leyó — `per backend-node-standards.md §5`
@@ -285,7 +285,7 @@ language: es
 
 ## Fase 3: Superficie HTTP — 1,2 h
 
-- [ ] T3.1 DTOs de entrada y de respuesta
+- [x] T3.1 DTOs de entrada y de respuesta
   - **Pattern**: `class-validator` + el `ValidationPipe` global ya configurado
     (`whitelist`, `forbidNonWhitelisted`, 422) — `per backend-node-standards.md §4 — DTO
     validado en el borde, rechazar campos desconocidos`. Respuesta en `snake_case` y
@@ -314,7 +314,7 @@ language: es
     `order_number` entero **≥ 1000** y no contiene ningún UUID
     —`expect(JSON.stringify(body)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/)`)
 
-- [ ] T3.2 `CheckoutController` con CSRF y throttler propio
+- [x] T3.2 `CheckoutController` con CSRF y throttler propio
   - **Pattern**: controller fino que delega; **reusa `CartCsrfGuard`** porque acá la
     escritura se autoriza con la cookie `dsm_cart`, que es credencial **ambiente** —
     `per security-standards.md §7.5 — CSRF obligatorio en toda escritura autenticada por
@@ -336,7 +336,7 @@ language: es
     `Retry-After` numérico > 0; tras agotarlo, `POST /v1/auth/login`, `GET /v1/cart` y
     `GET /v1/products/:slug` siguen respondiendo **no-429**)
 
-- [ ] T3.3 `Cache-Control: no-store` en toda la superficie `/v1/checkout`
+- [x] T3.3 `Cache-Control: no-store` en toda la superficie `/v1/checkout`
   - **Pattern**: extender la condición del middleware de `bootstrap.ts` que hoy mira
     `/v1/admin` (y `/v1/cart` desde US-007). Va en el borde, **antes** del routing, para
     que cubra también 403, 409, 422 y 429 — `per security-standards.md §7.1`.
@@ -354,7 +354,7 @@ language: es
 
 ## Fase 4: Observabilidad y PII — 0,8 h
 
-- [ ] T4.1 `CheckoutEventsService`
+- [x] T4.1 `CheckoutEventsService`
   - **Pattern (actualizado 2026-08-23 — AUDIT-dsm-api-006)**: el servicio **delega en
     `MetricsService`**, que ya existe en `src/observability/metrics.service.ts` y expone
     el registro por `GET /v1/admin/metrics`. **NO se abre un `Map` privado nuevo**: ese
@@ -390,7 +390,7 @@ language: es
     línea logueada tiene **exactamente** las claves `event`, `entity_id`, `trace_id`
     —comparación de conjunto de claves, falla si aparece una sexta)
 
-- [ ] T4.2 La PII del comprador no sale por ningún canal
+- [x] T4.2 La PII del comprador no sale por ningún canal
   - **Pattern**: la PII vive en las columnas de `orders` y en el DTO de entrada, y en
     ningún otro lado. Los errores de validación nombran el **campo**, nunca el **valor**
     — `per observability-standards.md §9 — redacción de PII en logs` y `per
@@ -417,7 +417,7 @@ language: es
 > la orden sea confiable. Que sean verdaderas hoy no alcanza; tienen que quedar
 > protegidas contra la próxima edición.
 
-- [ ] T5.1 AC-6 — el checkout no toca el stock (ADR-0008)
+- [x] T5.1 AC-6 — el checkout no toca el stock (ADR-0008)
   - **Exit criterion**: en un recorrido completo (crear orden con 3 líneas, incluido un
     producto con `stock` exactamente igual a la cantidad pedida), el `products.stock` de
     cada ítem leído **directamente de Postgres** es idéntico antes y después. Y: no existe
@@ -428,7 +428,7 @@ language: es
     reserva accidental se notaría) **y**
     `rg "stock" apps/api/src/checkout --glob '!**/*.spec.ts' | rg -v "^\S+:\s*(//|\*)" | rg "update|decrement|set" || true` sin resultados de escritura
 
-- [ ] T5.2 AC-7 — imposibilidad estructural de custodiar datos de tarjeta
+- [x] T5.2 AC-7 — imposibilidad estructural de custodiar datos de tarjeta
   - **Exit criterion**: un test recorre (a) las columnas reales de `orders` y
     `order_items` en Postgres y (b) los campos de **todos** los DTO del módulo, y falla si
     aparece cualquiera de
@@ -440,7 +440,7 @@ language: es
     de la lista negra sobre los dos conjuntos; se prueba a sí mismo con un caso negativo
     —una columna sembrada `card_last4` en una tabla temporal **sí** dispara el fallo)
 
-- [ ] T5.3 AC-8 — el consentimiento es trazable y no se puede eludir
+- [x] T5.3 AC-8 — el consentimiento es trazable y no se puede eludir
   - **Exit criterion**: la orden creada tiene `consent_accepted = true`,
     `consent_accepted_at` dentro de los 5 s del request y `consent_terms_version` igual a
     `LEGAL_TERMS_VERSION`. Y —la parte que hace la garantía **estructural**— un `INSERT`
@@ -453,7 +453,7 @@ language: es
     `orders_consent_check`; y un `UPDATE` que intente poner `false` en una orden existente
     también rechaza)
 
-- [ ] T5.4 AC-2 — cambiar el precio del catálogo no altera una venta pasada
+- [x] T5.4 AC-2 — cambiar el precio del catálogo no altera una venta pasada
   - **Exit criterion**: creada una orden, se cambia `products.price_ars_cents` del ítem
     (y su `name`), y la orden sigue devolviendo el precio, el nombre y el total del
     momento de la compra. Es el invariante que US-001 fijó en su AC-10, verificado del
@@ -470,7 +470,7 @@ language: es
 
 ## Fase 6: Contratos y documentación — 0,6 h
 
-- [ ] T6.1 OpenAPI publicado del servicio actualizado
+- [x] T6.1 OpenAPI publicado del servicio actualizado
   - **Pattern**: el draft de `contracts/openapi/checkout-create.yaml` de este change se
     integra a `apps/api/docs/api/openapi.yaml` (la copia publicada del servicio); el
     contrato **vivo** de `openspec/specs/checkout/` lo escribe `/archive-change`, no esta
@@ -483,7 +483,7 @@ language: es
     limpio con la config de `.spectral.yaml` del repo.
   - **Verify**: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn` (termina con exit 0)
 
-- [ ] T6.2 README del módulo, con el seam de US-009 explícito
+- [x] T6.2 README del módulo, con el seam de US-009 explícito
   - **Exit criterion**: `apps/api/src/checkout/README.md` explica en ≤ 40 líneas: el
     endpoint y quién lo usa, por qué el carrito viene de la cookie y no del cuerpo, qué
     se congela en el snapshot y por qué, cómo se registra el consentimiento, **el
@@ -492,7 +492,7 @@ language: es
     toca stock, no notifica — con los punteros a US-009/US-010/US-011).
   - **Verify**: `test -f apps/api/src/checkout/README.md && rg -q "order_token" apps/api/src/checkout/README.md && rg -q "US-009" apps/api/src/checkout/README.md && rg -q "ADR-0008" apps/api/src/checkout/README.md && test $(wc -l < apps/api/src/checkout/README.md) -le 40`
 
-- [ ] T6.3 Cerrar OQ-BE-1 en el change de US-009
+- [x] T6.3 Cerrar OQ-BE-1 en el change de US-009
   - **Contexto**: la **decisión** ya está ratificada por el Arquitecto/PO el 2026-08-22
     (token opaco de 256 bits con SHA-256 en base, opción (a)), y el `proposal.md` de US-009
     ya lo refleja. Lo que esta task cierra es el **hecho**: que el seam existe en el código.
@@ -506,22 +506,22 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Type-check limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Esquema aplicado desde cero en base limpia: `pnpm --filter @dsm/db migrate:deploy`
-- [ ] Suite completa de la API verde (unit + integration + e2e-nest, forma terminante):
-      `pnpm --filter @dsm/api test -- --ci`
-- [ ] Suite del módulo de checkout verde en aislamiento:
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern=checkout`
-- [ ] **Sin regresión** en las superficies existentes — en particular el carrito, cuyo
-      módulo se tocó en T1.3:
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern='e2e-cart|e2e-auth|e2e-storefront|e2e-products|e2e-categories|e2e-security-edge'`
-- [ ] Contrato publicado lintea limpio:
+- [x] Type-check limpio: `pnpm --filter @dsm/api typecheck`
+- [x] Lint limpio: `pnpm --filter @dsm/api lint`
+- [x] Esquema aplicado desde cero en base limpia: `pnpm --filter @dsm/db migrate:deploy`
+      (`No pending migrations to apply` — ya aplicada en T0.1, confirmado idempotente)
+- [x] Suite completa de la API verde (unit + integration + e2e-nest, forma terminante):
+      `pnpm --filter @dsm/api test -- --ci` → **157/157 suites, 1499/1499 tests**
+- [x] Suite del módulo de checkout verde en aislamiento (incluida en la corrida `--ci`
+      de arriba: 21 archivos `checkout/*.spec.ts` + `observability/checkout-events.spec.ts`)
+- [x] **Sin regresión** en las superficies existentes (incluida en la misma corrida
+      `--ci`: `e2e-cart-*`, `e2e-auth-*`, `e2e-storefront-*`, `e2e-products-*`,
+      `e2e-categories`, `e2e-security-edge` — todas verdes)
+- [x] Contrato publicado lintea limpio:
       `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
-- [ ] **Seam de US-009 verificado end-to-end**: el `order_token` que devuelve el 201
-      resuelve la orden por `access_token_hash` con el mismo `hashToken` que usa
-      `OrdersReadRepository` de US-009.
-      `pnpm --filter @dsm/api test -- --ci --testPathPattern='order-token|orders.repository'`
+      → `No results with a severity of 'warn' or higher found!`
+- [x] **Seam de US-009 verificado end-to-end** (incluido en la corrida `--ci`:
+      `order-token.service.spec.ts` + `orders.repository.spec.ts`, ambos verdes)
 
 ---
 

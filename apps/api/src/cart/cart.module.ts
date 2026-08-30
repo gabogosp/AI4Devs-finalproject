@@ -27,6 +27,17 @@ import { CartEventsService } from '../observability/cart-events.service';
     CartThrottlerGuard,
     CartEventsService,
   ],
-  exports: [CartEventsService],
+  // CartTokenService + CartsRepository exportados para US-008 (T1.3): el
+  // checkout resuelve el carrito de la cookie sin duplicar la primitiva del
+  // token ni abrir un segundo acceso al ORM de `carts` (§5, AGENTS.md §1.1).
+  // CartCsrfGuard se suma en T3.2: CheckoutController lo reusa tal cual
+  // (design.md §Approach.3 — la escritura del checkout se autoriza con la
+  // misma cookie `dsm_cart`, así que es el mismo guard, no uno nuevo).
+  exports: [
+    CartEventsService,
+    CartTokenService,
+    CartsRepository,
+    CartCsrfGuard,
+  ],
 })
 export class CartModule {}
