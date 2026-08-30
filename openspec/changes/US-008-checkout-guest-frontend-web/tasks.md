@@ -110,7 +110,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
 
 ## Fase 0: Contrato y plomería — same-origin
 
-- [ ] T0.1 Confirmar que el cliente generado cubre el shape exacto del backend (gate, sin código)
+- [x] T0.1 Confirmar que el cliente generado cubre el shape exacto del backend (gate, sin código)
   - **Exit criterion**: `CreateGuestCheckoutBody`/`CreateGuestCheckoutResponse` (Zod) y
     `CheckoutCreated`/`CreateCheckoutRequest` (modelo) existen y coinciden campo a campo con
     `openspec/changes/US-008-checkout-guest-backend/contracts/openapi/checkout-create.yaml`. Es el
@@ -122,7 +122,7 @@ recuperación del `order_token` tras cerrar la pestaña → `Deferred: sin AC qu
       && echo OK
     ```
 
-- [ ] T0.2 Extender el rewrite same-origin a `/v1/checkout/:path*` (ADR-0013, heredado)
+- [x] T0.2 Extender el rewrite same-origin a `/v1/checkout/:path*` (ADR-0013, heredado)
   - **Pattern**: una entrada más en el array de `rewrites()` de `next.config.mjs`, mismo patrón
     que `/v1/cart/:path*` (US-007 D2) — `per` `design.md` D2 — `frontend-next-standards.md` §1.
     ```js
