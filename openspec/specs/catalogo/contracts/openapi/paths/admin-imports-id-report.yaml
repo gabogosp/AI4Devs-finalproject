@@ -1,0 +1,37 @@
+get:
+  tags:
+  - admin-imports
+  summary: CSV descargable de las filas rechazadas (AC-5)
+  description: |
+    Hasta 1.000 filas persistidas (`IMPORT_MAX_REPORT_ROWS`), sin paginar. Un
+    trabajo sin filas rechazadas devuelve el CSV con sólo el encabezado, nunca
+    404. Celdas neutralizadas contra inyección de fórmulas
+    (`security-standards §6.3`). No consume el presupuesto de imports/hora del
+    `POST`.
+  parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+  responses:
+    '200':
+      description: 'CSV UTF-8, encabezado `fila,sku,campo,codigo,motivo` (RFC 4180).'
+      headers:
+        Content-Disposition:
+          description: 'Siempre `attachment`, nombre generado por el servidor.'
+          schema:
+            type: string
+      content:
+        text/csv:
+          schema:
+            type: string
+    '401':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '403':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '404':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '422':
+      $ref: '../../openapi.yaml#/components/responses/Problem'

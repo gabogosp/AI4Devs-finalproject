@@ -71,7 +71,7 @@
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
-  status: In Progress
+  status: Done
   priority: Medium
   prd-capacity: 7
   disciplines: [BE, FE, QA]
@@ -81,9 +81,8 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-19        # first plan invocation (backend-node-developer)
   in-review-at: 2026-08-29T21:25:05Z # PR #8 (qa) abierto; BE y FE ya "completed" sin PR discreto
-                                      # (modelo de rama de integracion) -- status US-level se
-                                      # mantiene In Progress: el DoD todavia pide regresion en
-                                      # staging + firma del PO + merge, no solo el PR abierto
+                                      # (modelo de rama de integracion)
+  done-at: 2026-08-30               # 3/3 discipline changes archivados (BE+FE via PR #3, QA via PR #8)
   blocked_by: [US-001]
 - id: US-007
   slug: carrito-compra

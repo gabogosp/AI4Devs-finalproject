@@ -1,0 +1,45 @@
+get:
+  tags:
+  - admin-imports
+  summary: Estado y progreso del trabajo, con las filas rechazadas paginadas (AC-5, AC-7)
+  description: |
+    No consume el presupuesto de imports/hora del `POST` — mirar la barra de
+    progreso no puede dejar al dueño sin poder importar. `total_rows` es `null`
+    hasta que termina la lectura del archivo.
+  parameters:
+  - name: id
+    in: path
+    required: true
+    schema:
+      type: string
+      format: uuid
+  - name: limit
+    in: query
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 200
+      default: 50
+  - name: offset
+    in: query
+    required: false
+    schema:
+      type: integer
+      minimum: 0
+      default: 0
+  responses:
+    '200':
+      description: Estado del trabajo.
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/ImportJob'
+    '401':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '403':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '404':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '422':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
