@@ -211,7 +211,7 @@ Scenario: X-2 — Publicar un producto lo hace aparecer en su categoría
   gherkin_scenario: "N-2 — 404"
   name: Categoria_Inexistente_Devuelve404YNoQuedaEnSitemap
 
-- id: TC-208   # [x] verde 2026-08-19 (qa/e2e/categoria-ssr-seo.spec.ts)
+- id: TC-208   # [x] verde 2026-08-19; assert reajustado 2026-08-30 (qa/e2e/categoria-ssr-seo.spec.ts)
   scenario: S-8
   execution_mode: automated
   test_layer: 3
