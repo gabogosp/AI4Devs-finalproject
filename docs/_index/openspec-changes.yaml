@@ -1464,7 +1464,8 @@
   estimate-hours: 7
   assignee: sin-asignar
   branch: feat/US-012-panel-ordenes-dueno-frontend-web
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
+  pr-opened-at: 2026-08-30
   created: 2026-08-30
   completed-at: null
   archived-at: null
