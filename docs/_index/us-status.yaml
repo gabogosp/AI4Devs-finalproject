@@ -325,4 +325,9 @@
   # AC-2 fija un requisito nuevo para US-012 (vista separada de pending_payment en el panel);
   # US-012-panel-ordenes-dueno-backend (PR #22) se está re-planificando 2026-08-30 para
   # depender de PaymentConfirmationPort/payments de esta US en vez de la cadena US-009→US-010.
-  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción (FE) y su AC-1 debe incorporar AC-2 de esta US.
+  # 2026-08-31: /plan-frontend-web-ticket US-023 NO abrió change — la Fase 12 de
+  # US-012-panel-ordenes-dueno-frontend-web (PR #22, `PendingPaymentsPanel.tsx`) ya construye
+  # el FE completo de esta US (confirmar pago + vista de pendientes), consumiendo sus dos
+  # endpoints. FE-US-023 queda sin change propio; no es una disciplina huérfana, está
+  # satisfecha por el change de US-012.
+  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción (FE, ya construida en su PR #22) y su AC-1/Fase 12 cubre AC-2 de esta US.

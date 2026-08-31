@@ -139,8 +139,8 @@ And ese registro es trazable para auditoría, junto al consentimiento ya registr
 
 | Disciplina | Task id | Estimado (h) | Owner | Estado |
 |---|---|---|---|---|
-| BE | BE-US-023 | 6-10h | TBD | Todo |
-| FE | FE-US-023 | 4-6h | TBD | Todo |
+| BE | BE-US-023 | 6-10h | TBD | Done (PR #27) |
+| FE | FE-US-023 | 4-6h | TBD | **Absorbida por US-012** (ver nota abajo) |
 | QA | QA-US-023 | 4-6h | TBD | Todo |
 
 - BE: extraer el puerto de confirmación de pago del diseño de US-009 (si aún no está
@@ -157,11 +157,17 @@ And ese registro es trazable para auditoría, junto al consentimiento ya registr
 > `openspec/changes/US-023-pago-manual-offline-{discipline}/`. La task QA vive en
 > `tasks/US-023/qa-deliverable.md`.
 
-> **Para quien planifique `FE-US-023`**: si al momento de planificar todavía no existe
-> `US-012-panel-ordenes-dueno-frontend-web`, este change necesita al menos un host mínimo
-> (la vista de `pending_payment` de AC-2) o coordinarse con la planificación de US-012 — ver
-> §6 Dependencias. No dupliques el listado completo de US-012 (AC-1/AC-2 de esa US); solo la
-> sección de pendientes de confirmar pago que introduce este US-023.
+> **Resuelto 2026-08-31 — `FE-US-023` NO abre change propio.** Al planificar
+> (`/plan-frontend-web-ticket US-023`), `US-012-panel-ordenes-dueno-frontend-web`
+> (PR #22) ya había agregado su **Fase 12** (`PendingPaymentsPanel.tsx`,
+> `apps/web/src/features/orders/`): vista separada de `pending_payment` +
+> acción "Confirmar pago" + estados de carga/error + dedup por fila, consumiendo
+> los dos endpoints de este US-023 (`GET .../pending-payment`,
+> `POST .../confirm-payment`). No queda nada de FE por construir en un change
+> aparte — abrir uno sería trabajo duplicado. El PR #22 mismo señala que
+> `PendingPaymentsPanel` no tiene un AC Gherkin formal en la US-012 todavía
+> (usa los AC de este US-023 informalmente) — si eso se formaliza más
+> adelante (CR o enmienda de US-012), es responsabilidad de esa US, no de ésta.
 
 ## 8. Diseño
 
