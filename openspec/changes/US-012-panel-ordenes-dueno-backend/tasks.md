@@ -207,14 +207,12 @@ language: es
        lee la metadata real que Nest adjunta al decorator `@Module()`
        (`Reflect.getMetadata('exports'|'providers', CheckoutModule)`) — ejercita la misma
        propiedad (una sola aparición en cada array) sin requerir el árbol de DI completo.
-    (spec: instancia el módulo de Nest y confirma que `OrdersRepository`
-    resuelve desde afuera vía un módulo consumidor de prueba)
 
 ---
 
 ## Fase 4: Repositorio del historial — 0,5 h
 
-- [ ] T4.1 `OrderStatusHistoryRepository` — único punto de ORM de `order_status_history`
+- [x] T4.1 `OrderStatusHistoryRepository` — único punto de ORM de `order_status_history`
   - **Pattern**: acepta `tx?: Prisma.TransactionClient` (default
     `this.prisma`) — mismo patrón cross-repositorio que
     `ConfirmOrderService`/`StockRepository`/`PaymentsRepository` de US-023
