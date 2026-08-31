@@ -103,7 +103,7 @@ language: es
 
 ## Fase 2: Dominio — errores y FSM de fulfillment — 0,4 h
 
-- [ ] T2.1 `orders-errors.ts` — `OrderNotFoundError` (404) + `OrderInvalidTransitionError` (409)
+- [x] T2.1 `orders-errors.ts` — `OrderNotFoundError` (404) + `OrderInvalidTransitionError` (409)
   - **Pattern**: extienden `DomainError` de `common/errors/domain-errors.ts`,
     sin tipos de NestJS — `per design.md §D3` (por qué 409, con el precedente
     de `OrderNotPendingPaymentError` de US-023).
@@ -124,7 +124,7 @@ language: es
     declarados. El `HttpProblemFilter` (sin tocar) los mapea correctamente.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-errors`
 
-- [ ] T2.2 `order-state.ts` — FSM propia de 4 estados activos (AC-3, AC-6)
+- [x] T2.2 `order-state.ts` — FSM propia de 4 estados activos (AC-3, AC-6)
   - **Pattern**: TS plano sin framework, mismo estilo que `products.state.ts`
     — `per design.md §Non-goals` (sólo 4 estados, no los 6 de la FSM
     completa).
