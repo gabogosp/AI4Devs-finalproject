@@ -167,6 +167,11 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
+  in-review-at: 2026-08-30   # /commit — backend (primera disciplina) llega a in-review, 22/22 tasks
+  # `status` se queda en `In Progress` (no avanza a `In Review`): aunque las 3 disciplinas
+  # comparten PR #22, sólo backend tiene código implementado (FE y QA siguen 0/25 y 0/24
+  # tasks — sólo planificación). Avanzar el status de la US completa sería engañoso para
+  # quien lo lea esperando "lista para revisión holística".
   # `status`/`blocked_by` sin tocar: propiedad de prd-decomposer/user-story-author
   # (index-conventions.md §84). El bloqueo real sigue vigente — ver
   # openspec/changes/US-012-panel-ordenes-dueno-frontend-web/proposal.md

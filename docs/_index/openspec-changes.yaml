@@ -1485,7 +1485,7 @@
   us-id: US-012
   discipline: backend
   variant: null
-  status: in-progress   # /develop-backend, primer task cerrado 2026-08-30
+  status: in-review   # /commit — 22/22 tasks cerradas, 2026-08-30
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1541,12 +1541,15 @@
   # flag, sin dependencia de orden con ningún otro change — a diferencia de la versión
   # anterior).
   estimate-hours: 6.6
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  # Comparte rama con el sibling de FE por instrucción explícita del usuario (mismo
-  # worktree, mismo PR de US-012 completo) — desviación deliberada del modelo 1
-  # change = 1 rama, análoga a la ya declarada para US-001 bootstrap.
+  assignee: sin-asignar  # /develop-backend lo ejecutó, pero el campo es de asignación humana
+  # Comparte rama con el sibling de FE (y con QA) por instrucción explícita del usuario
+  # (mismo worktree, mismo PR #22 de US-012 completo) — desviación deliberada del modelo
+  # 1 change = 1 rama, análoga a la ya declarada para US-001 bootstrap. check-pr-scope.sh
+  # marca ✗ por esto (bundling real, no falso positivo) — proceder conscientemente per
+  # /commit "Edge cases", documentado acá y en el body del PR.
   branch: feat/US-012-panel-ordenes-dueno-frontend-web
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
+  pr-opened-at: 2026-08-30
   created: 2026-08-30
   completed-at: null
   archived-at: null
