@@ -264,7 +264,7 @@ language: es
 
 ## Fase 6: Servicio de caso de uso — `OrdersAdminService` — 1,0 h
 
-- [ ] T6.1 `list` y `get` (AC-1, AC-2, AC-5, AC-8)
+- [x] T6.1 `list` y `get` (AC-1, AC-2, AC-5, AC-8)
   - **Exit criterion**: `list(query)` computa `statusIn` como
     `query.status ? [query.status] : ['new','preparing','ready','delivered']`
     (AC-8: `pending_payment`/`cancelled` **nunca** entran, sin importar el
@@ -280,7 +280,7 @@ language: es
     `get` con repositorio devolviendo una orden `pending_payment` lanza
     `OrderNotFoundError`; `get` con `cancelled` no lanza)
 
-- [ ] T6.2 `changeStatus` — la transición completa (AC-3, AC-4, AC-6, AC-9)
+- [x] T6.2 `changeStatus` — la transición completa (AC-3, AC-4, AC-6, AC-9)
   - **Pattern**: `per design.md §D4` (idempotencia estructural + transacción
     cruzando `OrdersRepository`/`OrderStatusHistoryRepository`, patrón de
     `ConfirmOrderService` de US-023 reusado).
@@ -298,6 +298,18 @@ language: es
     arriba, incluido el conteo exacto de invocaciones al puerto: 1 para
     `ready`, 0 para `preparing`/`delivered`, 0 en el caso no-op y en el caso
     inválido — no un test que sólo confirme que el método resuelve, F50)
+  - **Nota de ejecución (2026-08-30)**: el pseudocódigo de `design.md` §D4 encadena
+    `.then()` DESPUÉS de la transacción de forma incondicional — eso re-invoca
+    `orderReadyForPickup` también en el camino no-op (`current.status === target`) si
+    `target==='ready'`, violando el propio Exit criterion de arriba ("sin re-invocar el
+    puerto"). Se corrigió: la transacción devuelve `{order, transitioned, from}`, y el
+    bloque post-commit (notificación + `events.emit`) sólo corre si `transitioned===true`.
+    El caso de la carrera (`updateStatusConditional` devuelve `null`, alguien más aplicó
+    exactamente esta transición) también queda marcado `transitioned:false` — mismo
+    criterio no-op, no re-dispara nada. El test que hoy pasa (`transición inválida... 0
+    invocaciones`) hubiera fallado con la versión literal del pseudocódigo si el target
+    hubiera sido `ready` — no fue el caso probado, pero el fix es real y necesario para
+    cualquier caller que reintente sobre una orden ya en `ready`.
 
 ---
 
