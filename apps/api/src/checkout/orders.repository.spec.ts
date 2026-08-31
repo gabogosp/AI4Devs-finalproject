@@ -187,4 +187,101 @@ describe('OrdersRepository (integration)', () => {
 
     expect(await repo.findByTokenHash('h-no-existe')).toBeNull();
   });
+
+  /** T3.1 — list/findById/updateStatusConditional (US-012, admin fulfillment). */
+  async function crearOrdenConEstado(sufijo: string, status: string) {
+    const creada = await repo.createPendingOrder({
+      ...ordenBase(sufijo),
+      totalArsCents: 850_000,
+      lines: [
+        {
+          productId: productoB,
+          quantity: 1,
+          unitPriceArsCents: 850_000,
+          productName: 'Gas R134a',
+          productSku: 'ORD-REPO-B',
+        },
+      ],
+    });
+    if (status !== 'pending_payment') {
+      await prisma.order.update({ where: { id: creada.id }, data: { status } });
+    }
+    return creada;
+  }
+
+  it('list: statusIn filtra — 3 órdenes sembradas (new/preparing/pending_payment), statusIn:[new,preparing] → 2 filas, total=2', async () => {
+    await crearOrdenConEstado('list-new', 'new');
+    await crearOrdenConEstado('list-prep', 'preparing');
+    await crearOrdenConEstado('list-pend', 'pending_payment');
+
+    const { data, total } = await repo.list({
+      statusIn: ['new', 'preparing'],
+      sortField: 'order_number',
+      sortDesc: false,
+      limit: 20,
+      offset: 0,
+    });
+
+    expect(total).toBe(2);
+    expect(data).toHaveLength(2);
+    expect(data.map((o) => o.status).sort()).toEqual(['new', 'preparing']);
+  });
+
+  it('list: sortDesc cambia el orden de data', async () => {
+    const a = await crearOrdenConEstado('sort-a', 'new');
+    const b = await crearOrdenConEstado('sort-b', 'new');
+
+    const asc = await repo.list({
+      statusIn: ['new'],
+      sortField: 'order_number',
+      sortDesc: false,
+      limit: 20,
+      offset: 0,
+    });
+    const desc = await repo.list({
+      statusIn: ['new'],
+      sortField: 'order_number',
+      sortDesc: true,
+      limit: 20,
+      offset: 0,
+    });
+
+    expect(asc.data.map((o) => o.id)).toEqual([a.id, b.id]);
+    expect(desc.data.map((o) => o.id)).toEqual([b.id, a.id]);
+  });
+
+  it('findById: una orden pending_payment devuelve objeto no nulo con items (el filtro AC-8 no vive acá)', async () => {
+    const creada = await crearOrdenConEstado('find-pending', 'pending_payment');
+
+    const encontrada = await repo.findById(creada.id);
+
+    expect(encontrada).not.toBeNull();
+    expect(encontrada?.items).toHaveLength(1);
+    expect(encontrada?.status).toBe('pending_payment');
+  });
+
+  it('updateStatusConditional: la orden ya no está en `from` (carrera) → null', async () => {
+    const creada = await crearOrdenConEstado('race', 'preparing');
+
+    const resultado = await prisma.$transaction((tx) =>
+      repo.updateStatusConditional(creada.id, 'new', 'preparing', tx),
+    );
+
+    expect(resultado).toBeNull();
+    // la orden sigue en `preparing` — el UPDATE condicional no tocó nada
+    const actual = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
+    expect(actual.status).toBe('preparing');
+  });
+
+  it('updateStatusConditional: to=delivered setea delivered_at', async () => {
+    const creada = await crearOrdenConEstado('deliver', 'ready');
+
+    const resultado = await prisma.$transaction((tx) =>
+      repo.updateStatusConditional(creada.id, 'ready', 'delivered', tx),
+    );
+
+    expect(resultado).not.toBeNull();
+    expect(resultado?.status).toBe('delivered');
+    expect(resultado?.delivered_at).not.toBeNull();
+  });
 });

@@ -28,5 +28,8 @@ import { CheckoutEventsService } from '../observability/checkout-events.service'
     CheckoutThrottlerGuard,
     CheckoutEventsService,
   ],
+  // Exportado para que otros módulos (panel admin de US-012, pagos de US-023)
+  // inyecten el repositorio sin re-declararlo como provider propio (§5).
+  exports: [OrdersRepository],
 })
 export class CheckoutModule {}
