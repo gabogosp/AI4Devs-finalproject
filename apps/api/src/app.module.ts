@@ -14,6 +14,7 @@ import { ImportsModule } from './imports/imports.module';
 import { EnrichmentModule } from './enrichment/enrichment.module';
 import { SearchModule } from './search/search.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { OrdersModule } from './orders/orders.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -29,6 +30,8 @@ import { CheckoutModule } from './checkout/checkout.module';
  * responde, sin romper la navegación.
  * `CheckoutModule` (US-008) expone `POST /v1/checkout`: convierte el carrito en una orden
  * `pending_payment`, con el `order_token` que US-009 consume para iniciar el pago.
+ * `OrdersModule` (US-012) expone `GET/PATCH /v1/admin/orders`: el panel del dueño gestiona
+ * las 4 transiciones activas de fulfillment (`new→preparing→ready→delivered`).
  */
 @Module({
   imports: [
@@ -47,6 +50,7 @@ import { CheckoutModule } from './checkout/checkout.module';
     EnrichmentModule,
     SearchModule,
     CheckoutModule,
+    OrdersModule,
   ],
   controllers: [],
   providers: [],

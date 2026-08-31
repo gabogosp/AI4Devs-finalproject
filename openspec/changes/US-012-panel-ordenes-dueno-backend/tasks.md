@@ -333,11 +333,15 @@ language: es
     }
     ```
   - **Exit criterion**: un `status` fuera del enum, o un `sort` fuera de los 6
-    valores, o `limit`/`offset` fuera de rango → 400 vía `ValidationPipe`
-    (sin código de dominio a mano).
+    valores, o `limit`/`offset` fuera de rango → error vía `ValidationPipe`
+    (sin código de dominio a mano). **Nota de ejecución (2026-08-30)**:
+    `bootstrap.ts` configura `errorHttpStatusCode: UNPROCESSABLE_ENTITY` — el
+    código real es **422**, no 400 (verificado leyendo el archivo). El 400 sí
+    es correcto para `ParseUUIDPipe` (T7.2/D6), que es un pipe distinto sin
+    ese override.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=order.dto`
 
-- [ ] T7.2 `OrdersController` — con la mitigación de colisión de rutas (D6)
+- [x] T7.2 `OrdersController` — con la mitigación de colisión de rutas (D6)
   - **Pattern**: controller delgado gateado por `AdminGuard`, mismo estilo
     que `ProductsController` — `per backend-node-standards.md §2`. `:id`
     restringido a forma UUID en el path — `per design.md §D6` (colisión con
@@ -373,7 +377,7 @@ language: es
     US-023 presente, que es exactamente el escenario de riesgo si los
     módulos se registraran en el orden equivocado—)
 
-- [ ] T7.3 `AppModule` importa `OrdersModule`
+- [x] T7.3 `AppModule` importa `OrdersModule`
   - **Exit criterion**: `apps/api/src/app.module.ts` agrega `OrdersModule` al
     array `imports`. La app arranca sin `forwardRef`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-orders-bootstrap`
@@ -388,7 +392,7 @@ language: es
 > propiedades que, si se rompen, dejan al dueño gestionando mal un pedido real
 > o exponiendo datos que no le corresponden.
 
-- [ ] T8.1 AC-6 — transición inválida bloqueada, incluida la carrera de dos pestañas
+- [x] T8.1 AC-6 — transición inválida bloqueada, incluida la carrera de dos pestañas
   - **Exit criterion**: `PATCH {status:'delivered'}` sobre una orden `new`
     (salto de dos pasos) → 409, `orders.status` sigue `new`, **cero** filas
     nuevas en `order_status_history`. Carrera: dos `PATCH {status:'ready'}`
@@ -397,7 +401,7 @@ language: es
     forma determinística y `orderReadyForPickup` se invocó **una sola vez**.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac6-invalid-transition`
 
-- [ ] T8.2 AC-7 — extender el barrido de RBAC existente
+- [x] T8.2 AC-7 — extender el barrido de RBAC existente
   - **Pattern**: agregar las 3 rutas nuevas al array `routes` de
     `e2e-rbac.spec.ts` existente (US-001) y `OrdersModule` al array de
     módulos de `bootTestApp` — **no** un spec nuevo, el invariante "ninguna
@@ -410,7 +414,7 @@ language: es
     (el spec extendido corre completo, sin regresión sobre las rutas
     preexistentes)
 
-- [ ] T8.3 AC-4 — la notificación se invoca con el payload correcto, sin PII en logs
+- [x] T8.3 AC-4 — la notificación se invoca con el payload correcto, sin PII en logs
   - **Exit criterion**: `changeStatus(id, 'ready', changedBy)` invoca
     `orderReadyForPickup` con `orderId`, `orderNumber`, `buyerName`,
     `buyerEmail` reales de la orden. Ninguna línea de log de todo el flujo
@@ -420,18 +424,19 @@ language: es
     (centinelas en `buyer_email`/`buyer_name`,
     `expect(JSON.stringify(todasLasLineas)).not.toContain(centinela)`)
 
-- [ ] T8.4 AC-8 — sólo pagadas, probado end-to-end
+- [x] T8.4 AC-8 — sólo pagadas, probado end-to-end
   - **Exit criterion**: con 6 órdenes sembradas (una por cada uno de los 6
     valores de `status`), `GET /v1/admin/orders` sin filtro devuelve
     exactamente las 4 activas; `GET .../{id}` de la `pending_payment` → 404;
     de la `cancelled` → 200 (defensivo, OQ-BE-1). El filtro
-    `status=cancelled` (fuera de la allowlist del DTO) → 400.
+    `status=cancelled` (fuera de la allowlist del DTO) → 422 (ver nota de
+    ejecución de T7.1 — `ValidationPipe` global usa 422, no 400).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac8-only-paid-orders`
     (las órdenes se siembran con `prisma.order.create` directo en el test —
     sin depender de que exista ningún flujo real de pago/checkout para
     llegar a cada estado, per `proposal.md` "Dependencias")
 
-- [ ] T8.5 AC-9 — trazabilidad consultable de punta a punta
+- [x] T8.5 AC-9 — trazabilidad consultable de punta a punta
   - **Exit criterion**: una orden sembrada ya en `new` que pasa por
     `preparing → ready → delivered` vía tres `PATCH` sucesivos tiene, en su
     `GET /{id}`, un `status_history` con **3** entradas (una por transición,

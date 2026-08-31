@@ -178,7 +178,9 @@ PATCH /v1/admin/orders/{id([0-9a-fA-F-]{36})}
     Idempotency-Key?: string   # aceptado, documentado como IGNORADO (ver D5)
   200: AdminOrderDetail (actualizado; no-op si status ya era el pedido)
   401/403/404/409: Problem
-  400: Problem (ValidationPipe — status fuera del enum, id fuera de la forma UUID)
+  422: Problem (ValidationPipe global — status fuera del enum; bootstrap.ts usa
+       errorHttpStatusCode: UNPROCESSABLE_ENTITY, no 400)
+  400: Problem (ParseUUIDPipe — id fuera de la forma UUID; pipe distinto, sin ese override)
 
 AdminOrderSummary:
   id: uuid, order_number: int, buyer_name: string, total_ars_cents: int,
@@ -205,7 +207,7 @@ ajuste antes de ejecutar.
 **`sort` como enum cerrado de 6 valores, no un parser custom** (simplificación
 respecto a la versión anterior, `base-standards.md` §1 KISS): con sólo 3
 campos ordenables × 2 direcciones, `@IsIn([...])` en el DTO valida y devuelve
-400 por el `ValidationPipe` global — sin una función que lance una excepción
+422 por el `ValidationPipe` global (`bootstrap.ts` — no 400) — sin una función que lance una excepción
 de dominio a mano. `parseSort(raw)` queda como una función pura de
 `string → {field, desc}` sin rama de error (el DTO ya garantizó que `raw` es
 uno de los 6 valores válidos).
