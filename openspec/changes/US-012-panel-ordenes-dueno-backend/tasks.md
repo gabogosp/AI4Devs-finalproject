@@ -315,7 +315,7 @@ language: es
 
 ## Fase 7: Superficie HTTP — 1,0 h
 
-- [ ] T7.1 DTOs — `ListOrdersQueryDto`, `UpdateOrderStatusDto`, response DTOs
+- [x] T7.1 DTOs — `ListOrdersQueryDto`, `UpdateOrderStatusDto`, response DTOs
   - **Pattern**: `class-validator` + `ValidationPipe` global, mismo estilo
     que `product.dto.ts` — `per backend-node-standards.md §4`. `sort` es un
     enum cerrado de 6 valores (`per design.md §D5`, no un parser custom).
