@@ -231,7 +231,7 @@ language: es
 
 ## Fase 5: `NotificationPort` + `OrderEventsService` (ambos nuevos) — 0,6 h
 
-- [ ] T5.1 `NotificationPort` + `LoggingNotificationAdapter` — nuevos, un solo método
+- [x] T5.1 `NotificationPort` + `LoggingNotificationAdapter` — nuevos, un solo método
   - **Pattern**: interfaz + adaptador por DI de token, mismo seam que
     `backend-node-standards.md §3` — `per design.md §D7`. Sin PII en el log.
   - **Exit criterion**: `NotificationPort.orderReadyForPickup({orderId,
@@ -246,7 +246,7 @@ language: es
     `expect(JSON.stringify(lineaDeLog)).not.toContain(centinela)` para los
     dos)
 
-- [ ] T5.2 `OrderEventsService` — nuevo, mismo esqueleto que `CheckoutEventsService`
+- [x] T5.2 `OrderEventsService` — nuevo, mismo esqueleto que `CheckoutEventsService`
   - **Pattern**: `per design.md §D8` — delega el contador en `MetricsService`
     (`@Optional()`), firma que sólo acepta `orderId | null` + los dos enums
     de estado, nunca PII.
