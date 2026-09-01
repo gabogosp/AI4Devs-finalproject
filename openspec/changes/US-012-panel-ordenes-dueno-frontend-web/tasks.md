@@ -250,7 +250,7 @@
 
 ## Fase 7: `OrderStatusHistory` (AC-9)
 
-- [ ] **T7.1 — Lista de cambios de estado**
+- [x] **T7.1 — Lista de cambios de estado**
   - **Pattern**: `design.md` D8 — `{from_status ?? '—'} → {to_status}` + `changed_at`
     formateado con `Intl.DateTimeFormat('es-AR', {dateStyle:'short', timeStyle:'short'})` y
     la zona horaria visible (§11.bis.1).
@@ -260,6 +260,11 @@
     — con 3 entradas mockeadas, `getAllByRole('listitem')` (o el rol equivalente) tiene
     `length === 3`, y el texto de cada fila incluye AMBOS estados (no solo el nuevo) — falla
     si el componente solo muestra `to_status`.
+  - **Nota de ejecución (2026-08-30)**: el `Pattern` literal (`dateStyle`+`timeStyle` combinado
+    con `timeZoneName`) tira un error real en runtime — `Intl.DateTimeFormat` rechaza
+    combinar `dateStyle`/`timeStyle` con `timeZoneName` ("Invalid option : option"). Se usaron
+    componentes explícitos (`year/month/day/hour/minute` + `timeZoneName: 'short'`) — mismo
+    resultado visual, con el huso horario visible, sin el error.
 - [ ] **T7.2 — El detalle refleja el nuevo cambio sin recargar**
   - **Exit criterion**: al confirmar una transición en `OrderStatusActions` (Fase 6), la
     nueva entrada aparece en `OrderStatusHistory` sin un segundo `GET` al detalle completo
