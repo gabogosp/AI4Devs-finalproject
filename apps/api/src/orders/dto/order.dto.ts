@@ -49,13 +49,19 @@ export class UpdateOrderStatusDto {
   status!: 'preparing' | 'ready' | 'delivered';
 }
 
-/** Forma de respuesta per design.md §D3 — mismo shape que el listado del panel de productos. */
+/**
+ * Forma de respuesta per design.md §D3 — mismo shape que el listado del panel de productos.
+ * `status` incluye `cancelled` (openapi.yaml AdminOrderSummary — corrección 2026-08-30): el
+ * listado nunca la devuelve (AC-8, garantía de negocio), pero este DTO también es la base del
+ * detalle (`AdminOrderDetailDto`), y `GET /{id}` de una orden `cancelled` responde 200
+ * (defensivo, OQ-BE-1) — nunca `pending_payment` (ese caso es 404 antes de construir el DTO).
+ */
 export class AdminOrderSummaryDto {
   id!: string;
   order_number!: number;
   buyer_name!: string;
   total_ars_cents!: number;
-  status!: string;
+  status!: 'new' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
   created_at!: string;
 
   static from(o: Order): AdminOrderSummaryDto {
@@ -64,7 +70,9 @@ export class AdminOrderSummaryDto {
       order_number: o.order_number,
       buyer_name: o.buyer_name,
       total_ars_cents: o.total_ars_cents,
-      status: o.status,
+      // Cast seguro: OrdersAdminService ya garantizó que o.status nunca es
+      // pending_payment antes de llegar acá (get()/list() lo excluyen).
+      status: o.status as AdminOrderSummaryDto['status'],
       created_at: o.created_at.toISOString(),
     };
   }

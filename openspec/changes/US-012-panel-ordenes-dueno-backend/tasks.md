@@ -457,6 +457,15 @@ language: es
     Lintea limpio.
   - **Verify**: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
     **y** `grep -cE "^  /admin/orders" apps/api/docs/api/openapi.yaml` → `2`
+  - **Corrección post-cierre (2026-08-30, durante `/develop-frontend-web`)**: `AdminOrderSummary.status`
+    declaraba sólo 4 valores (`new/preparing/ready/delivered`), pero `AdminOrderDetail` lo extiende
+    (`allOf`) y `GET /{id}` de una orden `cancelled` responde 200 real (T8.4, ya testeado) — el
+    enum de 4 valores le habría rechazado esa respuesta real a cualquier cliente generado (Zod
+    del FE incluido). Ampliado a 5 valores (+`cancelled`), documentado inline por qué el listado
+    igual nunca la devuelve (AC-8 es garantía de negocio, no de schema). `order.dto.ts`
+    (`AdminOrderSummaryDto.status`) ídem, con cast explícito comentado (el service ya garantiza
+    que nunca es `pending_payment` antes de construir el DTO). Type-check, spectral y
+    `checkout|orders` (30/30 suites, 144/144 tests) reverificados verdes.
 
 - [x] T9.2 README de `src/orders/`
   - **Exit criterion**: `apps/api/src/orders/README.md` explica qué
