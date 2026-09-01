@@ -1436,7 +1436,7 @@
   us-id: US-012
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in-progress   # /develop-frontend-web, primer task cerrado 2026-08-30 (T0.1 desbloqueado)
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null

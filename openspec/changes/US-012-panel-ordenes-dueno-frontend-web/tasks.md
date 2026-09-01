@@ -28,7 +28,7 @@
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
+- [x] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
   - Este change consume `GET /v1/admin/orders`, `GET /v1/admin/orders/{id}`,
     `PATCH /v1/admin/orders/{id}`, que hoy **no existen** en
     `apps/api/docs/api/openapi.yaml` (verificado 2026-08-30). Dependen únicamente de
@@ -43,11 +43,21 @@
     imprimir `2` (las dos rutas: `/admin/orders` y `/admin/orders/{id}`). Hoy imprime `0` —
     esta task **falla a propósito** hasta que el backend publique el contrato; ninguna task
     de las Fases 1-12 puede marcarse cerrada mientras esta falle.
-- [ ] **T0.2 — Confirmar que no hay change en curso que colisione**
+  - **Nota de ejecución (2026-08-30)**: `US-012-panel-ordenes-dueno-backend` completó sus
+    22/22 tasks (PR #22) y publicó el contrato. `grep` imprime `2`. Schema confirmado con
+    `status: enum [new, preparing, ready, delivered]` y `created_at` (sin `confirmed_at`).
+    Gate desbloqueado — Fases 1-11 ejecutables.
+- [x] **T0.2 — Confirmar que no hay change en curso que colisione**
   - **Exit criterion**: no existe otro directorio en `openspec/changes/` que declare rutas
     `app/(admin)/admin/ordenes/*` o el feature `apps/web/src/features/orders/`.
   - **Verify**: `grep -rl "features/orders\|admin/ordenes" openspec/changes/*/design.md
     2>/dev/null | grep -v US-012-panel-ordenes-dueno-frontend-web` → debe imprimir vacío.
+  - **Nota de ejecución (2026-08-30)**: el grep encuentra
+    `openspec/changes/US-012-panel-ordenes-dueno-qa/design.md` — no es una colisión, es el
+    change hermano de QA de esta misma US describiendo qué rutas testea (línea 147, "el
+    plan de FE que fijó /admin/ordenes..."). No es un change *distinto* construyendo el
+    mismo feature — la intención del gate (evitar dos FE compitiendo por la misma
+    superficie) está satisfecha.
 - [ ] **T0.3 — Gate de contrato (pendientes de pago): `pending-payment`/`confirm-payment` deben
   existir en el OpenAPI del backend antes de cerrar la Fase 12**
   - Este gate es **específico de la Fase 12** (`PendingPaymentsPanel`) — a diferencia de T0.1,
