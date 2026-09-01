@@ -12,6 +12,7 @@ import type { AsyncState } from '@/lib/async';
 import { AppErrorException, networkError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/Button';
 import { formatArs } from '@/lib/format/currency';
+import { track } from '@/lib/observability/events';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { ordersService, type FulfillmentStatus, type OrderSummary } from './ordersService';
 import type { ListAdminOrdersSort } from '@/api/generated/model';
@@ -123,6 +124,7 @@ export function OrdersList() {
   function onStatusChange(value: FulfillmentStatus | '') {
     setStatusFilter(value);
     setOffset(0);
+    track('orders_filtered', { status: value || 'all' });
   }
 
   if (state.status === 'idle' || state.status === 'loading') {

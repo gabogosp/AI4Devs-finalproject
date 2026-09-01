@@ -289,7 +289,7 @@
 
 ## Fase 9: Observabilidad
 
-- [ ] **T9.1 — Eventos de negocio nuevos**
+- [x] **T9.1 — Eventos de negocio nuevos**
   - **Pattern**: `design.md` §Observabilidad — agregar `'bo_screen_shown'` (si no existe ya
     en el enum), `'order_status_change_attempted'`, `'order_status_change_succeeded'`,
     `'order_status_change_failed'`, `'orders_filtered'` a `BusinessEvent` en
@@ -304,6 +304,13 @@
     spy sobre `setEventSink` captura las llamadas y asserta el nombre exacto del evento y que
     NO incluye `buyer_name`/`buyer_email` en las props (PII — falla si algún campo de
     comprador se filtra al evento).
+  - **Nota de ejecución (2026-08-30)**: el nombre de archivo del `Verify`
+    (`src/features/orders/imports.events.test.tsx`) es un copy-paste del ejemplo de
+    `imports` sin renombrar — el patrón a seguir es el estilo del archivo, no ese nombre
+    literal dentro de `orders/`. Creado como `orders.events.test.tsx` (nombre coherente con
+    el resto del directorio). `pnpm --filter @dsm/web vitest run <path>` también falla
+    (mismo gap de T2.1: el script real es `test`, no `vitest`) — comando correcto:
+    `pnpm --filter @dsm/web test -- src/features/orders/orders.events.test.tsx`. 3/3 tests.
 
 ## Fase 10: Accesibilidad
 

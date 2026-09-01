@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { isAppError } from '@/lib/http/errors';
+import { track } from '@/lib/observability/events';
 import { ordersService, type OrderDetail, type OrderStatus } from './ordersService';
 import { ACTION_LABEL, NEXT_STATUS } from './orderStatus';
 
@@ -35,10 +36,13 @@ export function OrderStatusActions({
     setError(null);
     const previous = order.status;
     onOptimisticUpdate(next); // 1. optimista — el badge cambia YA
+    // Sin buyer_name/buyer_email — sólo order_id correlaciona (T9.1).
+    track('order_status_change_attempted', { order_id: order.id, to_status: next });
     try {
       const updated = await ordersService.updateStatus(order.id, next, key);
       idempotencyKeyRef.current = null; // intento cerrado — el próximo click es un intento nuevo
       onConfirmed(updated); // 2. reconcilia con lo que el backend confirmó
+      track('order_status_change_succeeded', { order_id: order.id, to_status: next });
       if (next === 'ready') {
         setMessage('Se avisó al cliente que su pedido está listo.');
       } else {
@@ -46,6 +50,7 @@ export function OrderStatusActions({
       }
     } catch (err) {
       onOptimisticUpdate(previous); // 3. rollback — el backend no confirmó
+      track('order_status_change_failed', { order_id: order.id, to_status: next });
       setError(
         isAppError(err, 'conflict')
           ? 'La orden ya cambió de estado (probablemente en otra pestaña). Recargá para ver el estado actual.'
