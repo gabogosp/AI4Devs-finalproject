@@ -134,7 +134,7 @@
 
 ## Fase 3: `OrderStatusBadge`
 
-- [ ] **T3.1 — Badge de estado (texto + color, design-system §7.7)**
+- [x] **T3.1 — Badge de estado (texto + color, design-system §7.7)**
   - **Pattern**: mismo shape que `apps/web/src/features/products/StatusBadge.tsx` — un mapa
     `Record<OrderStatus, {text, className}>` (ver `design.md` D6 para la tabla de 5 estados).
   - **Exit criterion**: cada uno de los 5 estados (`new/preparing/ready/delivered/cancelled`)
