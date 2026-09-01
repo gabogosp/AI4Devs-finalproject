@@ -87,7 +87,7 @@
 
 ## Fase 2: Dominio (repositorio + FSM pura)
 
-- [ ] **T2.1 — `ordersService.ts`**
+- [x] **T2.1 — `ordersService.ts`**
   - **Pattern**: mismo shape que `apps/web/src/features/products/productsService.ts` —
     re-exporta tipos generados, envuelve las operaciones generadas con `parseContract`
     (nunca `fetch` crudo, F48). Ver `design.md` D3 para el shape exacto.
@@ -100,7 +100,16 @@
     `{"status":"ready"}`; que el resultado se parsea con el schema Zod generado (un body con
     un campo `status` fuera del enum debe hacer fallar el test con `ZodError`, no pasar
     silenciosamente).
-- [ ] **T2.2 — `orderStatus.ts` (FSM pura, vista FE)**
+  - **Nota de ejecución (2026-08-30)**: `pnpm --filter @dsm/web vitest run <path>` falla
+    ("None of the selected packages has a 'vitest' script") — el script real es `test`
+    (`vitest run` ya está en su definición). Comando correcto: `pnpm --filter @dsm/web
+    test -- <path>`. También: `id: zod.string().uuid()` en el schema generado — el `id-1`
+    del escenario es válido como segmento de URL (no se valida), pero el `id` del **body de
+    respuesta** mockeado tiene que ser un UUID real o `parseContract` lo rechaza (ya
+    ejerciendo exactamente el caso "ZodError, no pasa silenciosamente" que pedía el Verify,
+    sólo que en el fixture en vez del escenario de `status` — se agregó un test dedicado a
+    `status` fuera del enum además).
+- [x] **T2.2 — `orderStatus.ts` (FSM pura, vista FE)**
   - **Pattern**: ver `design.md` D4 — `NEXT_STATUS`, `STATUS_LABEL`, `ACTION_LABEL` como
     mapas puros, sin React ni red (análogo a por qué `order-state.ts` es puro en el backend).
   - **Exit criterion**: `NEXT_STATUS['new'] === 'preparing'`,
