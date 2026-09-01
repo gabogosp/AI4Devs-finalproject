@@ -147,7 +147,7 @@
 
 ## Fase 4: `OrdersList` (AC-1, AC-5, AC-8)
 
-- [ ] **T4.1 — Listado con TanStack Table: paginación + orden + filtro server-side**
+- [x] **T4.1 — Listado con TanStack Table: paginación + orden + filtro server-side**
   - **Pattern**: `design.md` D5 — `manualPagination` + `manualSorting` (nuevo respecto a
     `ProductList`, que no ordena) restringido a las 3 columnas que el **enum cerrado** del
     backend permite (`order_number`, `total_ars_cents`, `created_at` — `enableSorting: false`
@@ -177,7 +177,7 @@
     4. el `<select>` de estado NO contiene una `option` con `value="pending_payment"`
        (`expect(screen.queryByRole('option', { name: /pendiente de pago/i}))` →
        `toBeNull()`) — cubre AC-8 estructuralmente.
-- [ ] **T4.2 — Estados de carga/error/vacío**
+- [x] **T4.2 — Estados de carga/error/vacío**
   - **Exit criterion**: `status: 'loading'` renderiza filas skeleton (no texto plano);
     `status: 'error'` renderiza `role="alert"` + botón "Reintentar" que re-dispara la misma
     request; 0 resultados con un filtro activo renderiza "No hay órdenes con ese filtro" +
@@ -187,7 +187,7 @@
     `getByRole('button', {name: /reintentar/i})`; otro caso devuelve `{data: [], pagination:
     {total: 0, ...}}` con un filtro activo y asserta el mensaje + el botón de reset (falla si
     la tabla simplemente queda vacía sin texto).
-- [ ] **T4.3 — Página de ruta**
+- [x] **T4.3 — Página de ruta**
   - **Pattern**: calco de `app/(admin)/admin/productos/page.tsx` (Server Component delgado).
   - **Exit criterion**: `apps/web/app/(admin)/admin/ordenes/page.tsx` existe, renderiza
     `<h1>Órdenes</h1>` + `<OrdersList />`, sin lógica propia.
