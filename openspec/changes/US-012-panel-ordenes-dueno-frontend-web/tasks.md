@@ -73,7 +73,7 @@
 
 ## Fase 1: Codegen (contract-derived artifacts)
 
-- [ ] **T1.1 — Regenerar el cliente/Zod/MSW desde el contrato**
+- [x] **T1.1 — Regenerar el cliente/Zod/MSW desde el contrato**
   - **Pattern**: `orval.config.ts` ya declara `dsmCatalog` (cliente+MSW) y `dsmCatalogZod`
     (validación) apuntando a `../api/docs/api/openapi.yaml` completo — no hace falta tocar la
     config, solo re-ejecutar `codegen` una vez el contrato tenga los paths de T0.1. Per
