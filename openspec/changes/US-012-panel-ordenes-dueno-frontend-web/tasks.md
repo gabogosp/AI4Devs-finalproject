@@ -196,7 +196,7 @@
 
 ## Fase 5: `OrderDetail` (AC-2)
 
-- [ ] **T5.1 — Vista de detalle**
+- [x] **T5.1 — Vista de detalle**
   - **Exit criterion**: renderiza ítems (nombre, sku, cantidad, precio unitario, subtotal),
     total, datos de contacto del comprador (nombre/email/teléfono), retiro en sucursal
     (`fulfillment: 'pickup'` → texto fijo "Retiro en sucursal"), `OrderStatusBadge`, y el
@@ -205,7 +205,7 @@
     — MSW devuelve un detalle con 2 ítems; el test hace `getByText` sobre nombre+cantidad+
     subtotal de AMBOS ítems (no solo el primero) y sobre `buyer_email`/`buyer_phone` — falla
     si el componente trunca la lista de ítems o no muestra el contacto.
-- [ ] **T5.2 — Página de ruta con `params` async (Next 15)**
+- [x] **T5.2 — Página de ruta con `params` async (Next 15)**
   - **Pattern**: calco de `app/(admin)/admin/productos/[id]/page.tsx` (`params: Promise<{id}>`).
   - **Exit criterion**: `apps/web/app/(admin)/admin/ordenes/[id]/page.tsx` existe y pasa el
     `id` resuelto a `<OrderDetail id={id} />`.
