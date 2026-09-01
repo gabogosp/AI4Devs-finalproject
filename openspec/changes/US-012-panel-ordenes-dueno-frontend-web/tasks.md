@@ -276,7 +276,7 @@
 
 ## Fase 8: Routing / acceso (AC-7)
 
-- [ ] **T8.1 — Confirmar que las rutas nuevas heredan `AdminGuard` sin tocarlo**
+- [x] **T8.1 — Confirmar que las rutas nuevas heredan `AdminGuard` sin tocarlo**
   - **Exit criterion**: `apps/web/app/(admin)/admin/ordenes/page.tsx` y
     `.../ordenes/[id]/page.tsx` viven bajo el route group `(admin)`, cuyo único
     `layout.tsx` envuelve con `<AdminGuard>`; `apps/web/src/features/auth/guard.tsx` no se
