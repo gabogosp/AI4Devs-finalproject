@@ -13,6 +13,8 @@ import type {
   AdminOrderSummary,
   AdminOrderDetail,
   AdminOrderSummaryStatus,
+  ListAdminOrdersStatus,
+  ListAdminOrdersSort,
   UpdateAdminOrderStatusStatus,
 } from '@/api/generated/model';
 
@@ -20,9 +22,17 @@ import type {
  * Tipos DERIVADOS DEL CONTRATO — generados desde `apps/api/docs/api/openapi.yaml`
  * (`frontend-standards.md` §3.1/§3.2). Se re-exportan con los nombres de dominio
  * que usa el panel; nunca se declaran a mano.
+ *
+ * Dos tipos de status, a propósito (openapi.yaml — corrección 2026-08-30):
+ * `OrderStatus` (5 valores, incluye `cancelled`) es lo que una orden PUEDE
+ * traer en el detalle (`GET /{id}` de una `cancelled` responde 200,
+ * defensivo). `FulfillmentStatus` (4 valores) es el sub-conjunto activo que
+ * gestiona este panel — filtro del listado y FSM (`orderStatus.ts`); `Record<
+ * FulfillmentStatus, …>` en la FSM sería un error de tipo si se usara el de 5.
  */
 export type { AdminOrderSummary as OrderSummary, AdminOrderDetail as OrderDetail };
 export type OrderStatus = AdminOrderSummaryStatus;
+export type FulfillmentStatus = ListAdminOrdersStatus;
 export type FulfillmentTarget = UpdateAdminOrderStatusStatus;
 
 /**
@@ -35,7 +45,12 @@ export type FulfillmentTarget = UpdateAdminOrderStatusStatus;
  */
 export const ordersService = {
   async list(
-    params: { status?: OrderStatus; limit: number; offset: number; sort?: string },
+    params: {
+      status?: FulfillmentStatus;
+      limit: number;
+      offset: number;
+      sort?: ListAdminOrdersSort;
+    },
     signal?: AbortSignal,
   ) {
     const res = await listAdminOrders(params, { signal });

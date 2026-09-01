@@ -109,6 +109,17 @@
     ejerciendo exactamente el caso "ZodError, no pasa silenciosamente" que pedía el Verify,
     sólo que en el fixture en vez del escenario de `status` — se agregó un test dedicado a
     `status` fuera del enum además).
+  - **Corrección post-cierre (2026-08-30, durante T3.1)**: se encontró que `AdminOrderSummary.status`
+    del backend (base de `AdminOrderDetail`) sólo declaraba 4 valores, pero `GET /{id}` de una
+    orden `cancelled` responde 200 real — corregido en el backend (ver su `tasks.md` T9.1) a 5
+    valores. Esto obligó a separar dos tipos acá: `OrderStatus` (5, para display/detalle) y
+    `FulfillmentStatus` (4, para el filtro del listado y la FSM) — antes `OrderStatus` cubría
+    ambos casos de forma imprecisa. El test de "status fuera del enum" usaba `'cancelled'` como
+    valor inválido — ya no lo es; se cambió a `'pending_payment'` (genuinamente inválido acá).
+    También se tipó `sort` con `ListAdminOrdersSort` en vez de `string` (gap de tipos preexistente
+    de T2.1, no relacionado a `cancelled, sólo detectado ahora porque T2.1 nunca corrió
+    `tsc --noEmit` completo — su Verify era sólo el test). Type-check limpio, 9/9 tests
+    (`ordersService` + `orderStatus`) reverificados verdes.
 - [x] **T2.2 — `orderStatus.ts` (FSM pura, vista FE)**
   - **Pattern**: ver `design.md` D4 — `NEXT_STATUS`, `STATUS_LABEL`, `ACTION_LABEL` como
     mapas puros, sin React ni red (análogo a por qué `order-state.ts` es puro en el backend).

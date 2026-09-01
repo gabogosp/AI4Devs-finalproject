@@ -364,7 +364,7 @@ export const ListAdminOrdersResponse = zod.object({
   "order_number": zod.number().int(),
   "buyer_name": zod.string(),
   "total_ars_cents": zod.number().int(),
-  "status": zod.enum(['new', 'preparing', 'ready', 'delivered']),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']).describe('El listado (GET \/admin\/orders) NUNCA incluye cancelled\/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET \/admin\/orders\/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.'),
   "created_at": zod.string().datetime({"offset":true})
 })),
   "pagination": zod.object({
@@ -388,7 +388,7 @@ export const GetAdminOrderResponse = zod.object({
   "order_number": zod.number().int(),
   "buyer_name": zod.string(),
   "total_ars_cents": zod.number().int(),
-  "status": zod.enum(['new', 'preparing', 'ready', 'delivered']),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']).describe('El listado (GET \/admin\/orders) NUNCA incluye cancelled\/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET \/admin\/orders\/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.'),
   "created_at": zod.string().datetime({"offset":true})
 }).and(zod.object({
   "buyer_email": zod.string(),
@@ -427,7 +427,7 @@ export const UpdateAdminOrderStatusResponse = zod.object({
   "order_number": zod.number().int(),
   "buyer_name": zod.string(),
   "total_ars_cents": zod.number().int(),
-  "status": zod.enum(['new', 'preparing', 'ready', 'delivered']),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']).describe('El listado (GET \/admin\/orders) NUNCA incluye cancelled\/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET \/admin\/orders\/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.'),
   "created_at": zod.string().datetime({"offset":true})
 }).and(zod.object({
   "buyer_email": zod.string(),

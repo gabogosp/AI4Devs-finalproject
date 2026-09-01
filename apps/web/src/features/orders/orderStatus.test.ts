@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { OrderStatus } from './ordersService';
+import type { FulfillmentStatus } from './ordersService';
 import { ACTION_LABEL, NEXT_STATUS } from './orderStatus';
 
 describe('orderStatus — FSM vista desde el FE (design.md §D4)', () => {
-  const CASOS: Array<[OrderStatus, OrderStatus | null, string | undefined]> = [
+  const CASOS: Array<[FulfillmentStatus, FulfillmentStatus | null, string | undefined]> = [
     ['new', 'preparing', 'Marcar como preparando'],
     ['preparing', 'ready', 'Marcar como lista para retirar'],
     ['ready', 'delivered', 'Marcar como entregada'],

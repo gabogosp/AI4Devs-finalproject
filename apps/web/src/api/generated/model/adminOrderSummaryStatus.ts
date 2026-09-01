@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
+/**
+ * El listado (GET /admin/orders) NUNCA incluye cancelled/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET /admin/orders/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.
+ */
 export type AdminOrderSummaryStatus = typeof AdminOrderSummaryStatus[keyof typeof AdminOrderSummaryStatus];
 
 
@@ -14,4 +17,5 @@ export const AdminOrderSummaryStatus = {
   preparing: 'preparing',
   ready: 'ready',
   delivered: 'delivered',
+  cancelled: 'cancelled',
 } as const;

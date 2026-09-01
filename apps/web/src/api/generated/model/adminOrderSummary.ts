@@ -12,6 +12,7 @@ export interface AdminOrderSummary {
   order_number: number;
   buyer_name: string;
   total_ars_cents: number;
+  /** El listado (GET /admin/orders) NUNCA incluye cancelled/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET /admin/orders/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado. */
   status: AdminOrderSummaryStatus;
   created_at: string;
 }

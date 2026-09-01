@@ -46,9 +46,11 @@ describe('ordersService', () => {
   });
 
   it('un body con status fuera del enum falla con ZodError, no pasa silenciosamente', async () => {
+    // pending_payment nunca es un status válido en este contrato (AC-8) — a
+    // diferencia de cancelled, que sí lo es (defensivo, OQ-BE-1).
     server.use(
       http.patch(`${API}/v1/admin/orders/id-1`, () =>
-        HttpResponse.json(orden({ status: 'cancelled' as never })),
+        HttpResponse.json(orden({ status: 'pending_payment' as never })),
       ),
     );
 
