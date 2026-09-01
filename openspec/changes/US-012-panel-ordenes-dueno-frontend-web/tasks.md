@@ -213,7 +213,7 @@
 
 ## Fase 6: `OrderStatusActions` (AC-3, AC-4, AC-6)
 
-- [ ] **T6.1 — Un botón por el único paso siguiente válido, con UI optimista + rollback**
+- [x] **T6.1 — Un botón por el único paso siguiente válido, con UI optimista + rollback**
   - **Pattern**: `design.md` D7 — snippet completo de `advance()` (optimista → confirma o
     revierte, `idempotency-key` por intento reusada en reintento manual, sin retry
     automático). Cita: `frontend-resilience-patterns` #3, #4, #9.
@@ -233,7 +233,7 @@
        vuelve a mostrar el estado ORIGINAL (no el optimista) y aparece un `role="alert"` con
        el mensaje de conflicto — falla si el componente deja el estado optimista aplicado
        sobre un fallo confirmado.
-- [ ] **T6.2 — Mensaje de confirmación al marcar "lista" (AC-4)**
+- [x] **T6.2 — Mensaje de confirmación al marcar "lista" (AC-4)**
   - **Exit criterion**: al confirmar exitosamente la transición a `ready` (y solo esa), se
     muestra "Se avisó al cliente que su pedido está listo." Ninguna otra transición muestra
     ese texto.
@@ -241,7 +241,7 @@
     — un caso transiciona `preparing → ready` y asserta el texto; otro transiciona
     `new → preparing` y asserta `queryByText(/se avisó al cliente/i)` → `null` (falla si el
     mensaje aparece para cualquier transición, no solo para `ready`).
-- [ ] **T6.3 — Deshabilitado durante el vuelo (dedupe de clicks)**
+- [x] **T6.3 — Deshabilitado durante el vuelo (dedupe de clicks)**
   - **Exit criterion**: mientras la request está en curso, el botón está `disabled` y
     `aria-busy="true"`; un segundo click durante ese lapso NO dispara una segunda request.
   - **Verify**: en `OrderStatusActions.test.tsx`, contar cuántas veces MSW recibió el

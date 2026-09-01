@@ -1,4 +1,4 @@
-import type { FulfillmentStatus } from './ordersService';
+import type { FulfillmentStatus, FulfillmentTarget } from './ordersService';
 
 /**
  * Proyección FE, pura, de la FSM del E2E §12 (`design.md` §D4). El backend es
@@ -12,8 +12,13 @@ import type { FulfillmentStatus } from './ordersService';
  * sentido de dominio acá.
  */
 
-/** Único paso siguiente válido por estado. `null` = terminal para este panel. */
-export const NEXT_STATUS: Record<FulfillmentStatus, FulfillmentStatus | null> = {
+/**
+ * Único paso siguiente válido por estado. `null` = terminal para este panel.
+ * Tipado como `FulfillmentTarget | null` (no `FulfillmentStatus`): el valor
+ * nunca es `'new'` (nada transiciona HACIA `new` en esta FSM) — mismo tipo
+ * que espera `ordersService.updateStatus`, sin necesitar un cast en el caller.
+ */
+export const NEXT_STATUS: Record<FulfillmentStatus, FulfillmentTarget | null> = {
   new: 'preparing',
   preparing: 'ready',
   ready: 'delivered',
