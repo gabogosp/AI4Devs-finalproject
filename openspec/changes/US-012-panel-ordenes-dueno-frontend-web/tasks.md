@@ -265,7 +265,7 @@
     combinar `dateStyle`/`timeStyle` con `timeZoneName` ("Invalid option : option"). Se usaron
     componentes explícitos (`year/month/day/hour/minute` + `timeZoneName: 'short'`) — mismo
     resultado visual, con el huso horario visible, sin el error.
-- [ ] **T7.2 — El detalle refleja el nuevo cambio sin recargar**
+- [x] **T7.2 — El detalle refleja el nuevo cambio sin recargar**
   - **Exit criterion**: al confirmar una transición en `OrderStatusActions` (Fase 6), la
     nueva entrada aparece en `OrderStatusHistory` sin un segundo `GET` al detalle completo
     (el `PATCH` ya devuelve el `AdminOrderDetail` actualizado — `design.md` D3).

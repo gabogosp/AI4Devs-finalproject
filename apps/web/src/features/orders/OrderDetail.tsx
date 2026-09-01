@@ -6,12 +6,15 @@ import { AppErrorException, networkError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/Button';
 import { formatArs } from '@/lib/format/currency';
 import { OrderStatusBadge } from './OrderStatusBadge';
-import { ordersService, type OrderDetail as Order } from './ordersService';
+import { OrderStatusActions } from './OrderStatusActions';
+import { OrderStatusHistory } from './OrderStatusHistory';
+import { ordersService, type OrderDetail as Order, type OrderStatus } from './ordersService';
 
 /**
- * Vista de detalle (AC-2). `OrderStatusActions` (Fase 6) y `OrderStatusHistory`
- * (Fase 7) todavía no existen — el slot queda marcado acá, se integran en sus
- * propias tasks.
+ * Vista de detalle (AC-2). `OrderStatusActions`/`OrderStatusHistory` integrados
+ * (T7.2): el `PATCH` ya devuelve el `AdminOrderDetail` completo (con
+ * `status_history` actualizado) — `onConfirmed` reemplaza el objeto entero,
+ * sin un segundo `GET` (`design.md` §D3).
  */
 export function OrderDetail({ id }: { id: string }) {
   const [state, setState] = useState<AsyncState<Order>>({ status: 'idle' });
@@ -54,6 +57,16 @@ export function OrderDetail({ id }: { id: string }) {
 
   const order = state.data;
 
+  function onOptimisticUpdate(status: OrderStatus) {
+    setState((prev) =>
+      prev.status === 'success' ? { ...prev, data: { ...prev.data, status } } : prev,
+    );
+  }
+
+  function onConfirmed(updated: Order) {
+    setState({ status: 'success', data: updated });
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
@@ -61,7 +74,11 @@ export function OrderDetail({ id }: { id: string }) {
         <OrderStatusBadge status={order.status} />
       </div>
 
-      {/* Slot: OrderStatusActions (T6.1) */}
+      <OrderStatusActions
+        order={{ id: order.id, status: order.status }}
+        onOptimisticUpdate={onOptimisticUpdate}
+        onConfirmed={onConfirmed}
+      />
 
       <section aria-labelledby="orden-items-heading">
         <h3 id="orden-items-heading" className="font-medium">
@@ -108,7 +125,12 @@ export function OrderDetail({ id }: { id: string }) {
         </dl>
       </section>
 
-      {/* Slot: OrderStatusHistory (T7.1) */}
+      <section aria-labelledby="orden-historial-heading">
+        <h3 id="orden-historial-heading" className="font-medium">
+          Historial
+        </h3>
+        <OrderStatusHistory entries={order.status_history} />
+      </section>
     </div>
   );
 }
