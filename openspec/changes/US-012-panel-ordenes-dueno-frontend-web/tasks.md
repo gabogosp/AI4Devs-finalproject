@@ -339,7 +339,7 @@
 
 ## Fase 11: Documentación
 
-- [ ] **T11.1 — Actualizar el módulo de eventos en la doc de observabilidad del panel (si existe)**
+- [x] **T11.1 — Actualizar el módulo de eventos en la doc de observabilidad del panel (si existe)**
   - **Exit criterion**: si `docs/services/*/observability.md` (o equivalente) enumera
     `BusinessEvent`s del panel admin, se agregan los 4 nuevos de T9.1. Si no existe tal doc
     para el web, se documenta como no aplicable (no se crea un doc nuevo solo para esto).
@@ -347,6 +347,10 @@
     eventos del panel, debe listar el nuevo evento; si no existe tal doc en el repo, esta
     task se marca cerrada con nota "no aplica — no existe doc de eventos del panel" (no se
     inventa documentación nueva fuera de alcance).
+  - **No aplica — no existe doc de eventos del panel** (2026-08-30): `find docs -iname
+    "observability*"` no devuelve nada; `grep -rl "order_status_change_attempted" docs/`
+    tampoco. Consistente con el resto del repo (`imports`/`search`/`cart` tampoco documentan
+    sus `BusinessEvent` en `docs/`) — no se crea un doc nuevo fuera de alcance.
 
 ## Fase 12: `PendingPaymentsPanel` (feature aditiva, sin AC formal — ver proposal.md OQ-FE-4, `design.md` §D9)
 
