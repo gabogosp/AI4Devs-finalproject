@@ -152,7 +152,7 @@ language: es
 
 ## Fase 2: Errores + eventos — 0,9 h
 
-- [ ] T2.1 `OrderNotFoundError` (404 RFC 7807)
+- [x] T2.1 `OrderNotFoundError` (404 RFC 7807)
   - **Pattern**: en `apps/api/src/checkout/checkout-errors.ts`, espejando
     `CartEmptyError` — `per backend-node-standards.md §6 — errores de dominio
     en TS plano, mapeados por el filtro global a RFC 7807`.
@@ -167,7 +167,7 @@ language: es
     `type: 'dsm:checkout/order-not-found'` en el envelope RFC 7807.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=checkout-errors` en 0
 
-- [ ] T2.2 `OrdersRetentionEventsService` (cero PII)
+- [x] T2.2 `OrdersRetentionEventsService` (cero PII)
   - **Pattern**: `apps/api/src/observability/orders-retention-events.service.ts`,
     mismo esqueleto que `CheckoutEventsService` (delega el contador en
     `MetricsService`, `@Optional()`) — ver `design.md` §Approach
