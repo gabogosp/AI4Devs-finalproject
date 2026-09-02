@@ -2,10 +2,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppErrorException } from '@/lib/http/errors';
+import { setEventSink } from '@/lib/observability/events';
 import type { Cart } from '@/api/generated/model';
 import { CartProvider } from './CartProvider';
 import { CartPage } from './CartPage';
 import { cartService } from './cartService';
+
+const push = vi.fn();
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push }),
+}));
 
 vi.mock('./cartService', () => ({
   cartService: { get: vi.fn(), setItemQuantity: vi.fn(), removeItem: vi.fn() },
@@ -115,6 +121,19 @@ describe('CartPage — los cuatro estados (§11.9)', () => {
     expect(screen.getByText('Taco Fischer SX 8mm')).toBeInTheDocument();
   });
 
+  it('US-008: click en "Ir al pago" navega a /checkout y emite checkout_started una vez', async () => {
+    const eventos: string[] = [];
+    setEventSink((event) => eventos.push(event));
+    montar();
+    await screen.findByRole('listitem');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /ir al pago/i }));
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith('/checkout');
+    expect(eventos.filter((e) => e === 'checkout_started')).toHaveLength(1);
+  });
 });
 
 describe('CartPage — reintento', () => {

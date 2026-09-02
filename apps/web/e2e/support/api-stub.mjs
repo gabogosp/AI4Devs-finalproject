@@ -239,6 +239,11 @@ const carts = new Map();
 let contadorToken = 0;
 const nuevoToken0 = (prefijo) => `${prefijo}-${++contadorToken}-${Date.now()}`;
 
+/** Órdenes del checkout (US-008): sólo lo que un E2E necesita afirmar. */
+let orders = [];
+let ordenSecuencia = 1000;
+const BUYER_PHONE_RE = /^\+?[0-9 ()-]{8,20}$/;
+
 /**
  * Arma el sobre del carrito con la MISMA semántica que el backend: el total suma
  * sólo las líneas comprables (una línea no comprable en el total es un número que
@@ -277,7 +282,12 @@ function vistaCarrito(carrito) {
   const comprables = items.filter((i) => i.availability === 'available');
   return {
     cart: {
-      id: 'cart-e2e',
+      // El contrato exige `cart.id` como **uuid** (GetCartResponse). Un id con
+      // prefijo legible hace que la validación Zod del cliente real lo
+      // rechace — invisible en los specs que leen `/v1/cart` con `fetch`
+      // crudo (topología/persistencia), pero rompe cualquier flujo que
+      // navegue por la UI real y valide la respuesta (US-008 T7.3).
+      id: '99999999-9999-4999-8999-999999999999',
       items,
       item_count: items.length,
       total_quantity: items.reduce((a, i) => a + i.quantity, 0),
@@ -417,6 +427,14 @@ const server = createServer(async (req, res) => {
     const scope = url.searchParams.get('scope');
     if (scope === null || scope === 'pdp') products = initialCatalog();
     if (scope === null || scope === 'catalog') browseProducts = initialBrowseCatalog();
+    // `checkout` es su propio alcance, igual que `auth`: los carritos ya viven
+    // por cookie aislada de Playwright (contexto nuevo por test), así que un
+    // reset sin alcance nunca los tocó — mantenerlo opt-in evita romper specs
+    // de carrito corriendo en paralelo (fullyParallel).
+    if (scope === 'checkout') {
+      orders = [];
+      ordenSecuencia = 1000;
+    }
     // `auth` es su propio alcance: un spec de auth que resetea NO puede pisarle
     // el catálogo a un spec de PDP corriendo en paralelo (fullyParallel).
     // `auth` sólo se resetea si se pide EXPLÍCITAMENTE. El reset sin alcance
@@ -661,6 +679,87 @@ const server = createServer(async (req, res) => {
       res.setHeader('Cache-Control', 'no-store');
       return json(res, 200, vistaCarrito(carrito));
     }
+  }
+
+  // --- Checkout del invitado (US-008) ---
+  //
+  // Mismo sujeto de CSRF que el carrito (`dsm_cart`/`dsm_cart_csrf`, D2/D9):
+  // el checkout exige un carrito ya existente con líneas, nunca es la primera
+  // escritura de un cliente nuevo.
+  if (req.method === 'POST' && path === '/v1/checkout') {
+    res.setHeader('Cache-Control', 'no-store');
+    const cookies = leerCookies(req);
+    const token = cookies.dsm_cart;
+    const carrito = token ? carts.get(token) : undefined;
+
+    const enviado = req.headers['x-csrf-token'];
+    if (!req.headers.origin || !carrito || enviado !== carrito.csrf) {
+      return problem(res, 403, 'dsm:checkout/csrf-failed', 'Forbidden', {
+        detail: 'Falta el token CSRF o el origen',
+      });
+    }
+
+    if (carrito.items.size === 0) {
+      return problem(res, 409, 'dsm:checkout/cart-empty', 'Conflict', {
+        detail: 'El carrito está vacío',
+      });
+    }
+
+    const lineas = [...carrito.items].map(([slug, quantity]) => {
+      const p = products.get(slug) ?? browseProducts.get(slug);
+      return { slug, quantity, disponible: Boolean(p?.in_stock) };
+    });
+    if (lineas.some((l) => !l.disponible)) {
+      return problem(res, 409, 'dsm:checkout/cart-not-purchasable', 'Conflict', {
+        detail: 'Hay líneas que ya no se pueden comprar',
+        errors: lineas
+          .filter((l) => !l.disponible)
+          .map((l) => ({ field: l.slug, message: 'sin stock' })),
+      });
+    }
+
+    const body = await readBody(req);
+    const buyer = body.buyer ?? {};
+    const errors = [];
+    const name = String(buyer.name ?? '');
+    if (name.length < 2 || name.length > 120) {
+      errors.push({ field: 'buyer.name', message: 'Ingresá tu nombre (al menos 2 caracteres).' });
+    }
+    const email = String(buyer.email ?? '');
+    if (!email.includes('@') || email.length === 0) {
+      errors.push({ field: 'buyer.email', message: 'Ingresá un email válido.' });
+    }
+    const phone = String(buyer.phone ?? '');
+    if (!BUYER_PHONE_RE.test(phone)) {
+      errors.push({ field: 'buyer.phone', message: 'Ingresá un teléfono válido.' });
+    }
+    if (body.consent !== true) {
+      errors.push({ field: 'consent', message: 'Tenés que aceptar los términos para continuar.' });
+    }
+    if (body.fulfillment !== 'pickup') {
+      errors.push({ field: 'fulfillment', message: 'Modo de entrega inválido.' });
+    }
+    if (errors.length > 0) {
+      return problem(res, 422, 'dsm:checkout/validation', 'Unprocessable Entity', {
+        detail: 'Revisá los campos marcados',
+        errors,
+      });
+    }
+
+    const totalArsCents = lineas.reduce((acc, l) => {
+      const p = products.get(l.slug) ?? browseProducts.get(l.slug);
+      return acc + (p?.price_ars_cents ?? 0) * l.quantity;
+    }, 0);
+    const order = {
+      order_token: `${randomUUID().replace(/-/g, '')}${randomUUID().replace(/-/g, '')}`.slice(0, 64),
+      order_number: ordenSecuencia++,
+      status: 'pending_payment',
+      total_ars_cents: totalArsCents,
+      items_count: lineas.length,
+    };
+    orders.push(order);
+    // El carrito persiste tras el checkout (OQ-BE-3 del backend): no se vacía acá.
+    return json(res, 201, order);
   }
 
   if (req.method === 'GET' && path === '/v1/categories') {

@@ -27,14 +27,15 @@ async function rewrites(): Promise<Rewrite[]> {
 }
 
 describe('rewrites same-origin (ADR-0013)', () => {
-  it('cubre la superficie de sesión Y la del carrito', async () => {
+  it('cubre la superficie de sesión, la del carrito Y la del checkout', async () => {
     const sources = (await rewrites()).map((r) => r.source);
 
     expect(sources).toContain('/v1/auth/:path*');
     expect(sources).toContain('/v1/cart/:path*');
+    expect(sources).toContain('/v1/checkout/:path*');
   });
 
-  it('deriva los dos destinos de API_INTERNAL_ORIGIN', async () => {
+  it('deriva los tres destinos de API_INTERNAL_ORIGIN', async () => {
     process.env.API_INTERNAL_ORIGIN = 'http://api-interno.test:9999';
 
     const rules = await rewrites();
@@ -44,6 +45,9 @@ describe('rewrites same-origin (ADR-0013)', () => {
     );
     expect(rules.find((r) => r.source === '/v1/cart/:path*')?.destination).toBe(
       'http://api-interno.test:9999/v1/cart/:path*',
+    );
+    expect(rules.find((r) => r.source === '/v1/checkout/:path*')?.destination).toBe(
+      'http://api-interno.test:9999/v1/checkout/:path*',
     );
   });
 
@@ -66,7 +70,7 @@ describe('rewrites same-origin (ADR-0013)', () => {
 
   it('no agrega superficies inesperadas al rewrite', async () => {
     // El rewrite es un puente hacia el API: cada entrada nueva amplía lo que el
-    // sitio proxea. Que sean exactamente dos es parte del contrato de este change.
-    expect(await rewrites()).toHaveLength(2);
+    // sitio proxea. Que sean exactamente tres es parte del contrato de este change.
+    expect(await rewrites()).toHaveLength(3);
   });
 });

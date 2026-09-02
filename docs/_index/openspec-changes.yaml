@@ -257,15 +257,16 @@
   us-id: US-002
   discipline: qa
   variant: null
-  status: in progress
+  status: in review   # regresión completa re-verificada 2026-08-30 (/develop-qa): 20/20 automatizados verdes; 2 diferidos (T2.5/T5.1) sin cambio
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 7
   assignee: sin-identificar  # idem US-003 qa
-  branch: null
-  pr-url: null
+  branch: feat/US-002-storefront-navegacion-categorias-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/21
+  pr-opened-at: 2026-08-30T12:30:00Z
   created: 2026-08-16
   completed-at: null
   archived-at: null
@@ -526,7 +527,7 @@
   # Dos fragilidades PREEXISTENTES de la suite de US-002 quedan diferidas en su
   # tasks.md (TC-204 por datos de otras sesiones, TC-208 por un assert que colisiona
   # con el teléfono del footer) y una interferencia entre specs del propio carrito.
-  status: in progress  # 15/22 cerradas 2026-08-23 (Fases 1-3, 6, 7 + 3 gates); 4-5 bloqueadas por el FE
+  status: archived
   parent-us: docs/user-stories/US-007-carrito-compra.md
   linear-task-id: null
   audit-baseline: null
@@ -554,12 +555,12 @@
   # un generador) bloquea la CORRIDA de carga hasta que se decida.
   estimate-hours: 4
   assignee: 9a385021
-  branch: null
-  pr-url: null
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-23  # 22/22 tasks; Fases 4/5 desbloqueadas el mismo día al cerrar el FE (25/25)
+  archived-at: 2026-08-30
+  archive-path: openspec/changes/archive/US-007-carrito-compra-qa
 
 - name: US-014-registro-login-frontend-web
   us-id: US-014
@@ -1487,6 +1488,58 @@
   archived-at: null
   archive-path: null
 
+- name: US-008-checkout-guest-frontend-web
+  us-id: US-008
+  discipline: frontend-web
+  variant: null
+  status: in review   # 39/39 tasks cerradas 2026-08-30, PR abierto (/commit)
+  parent-us: docs/user-stories/US-008-checkout-guest.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Backend hermano (US-008-checkout-guest-backend) ya en `main` vía PR #11, 20/20 tasks; el
+  # cliente generado (orval) ya está regenerado con createGuestCheckout/CreateGuestCheckoutBody/
+  # CheckoutCreated — no hay tarea de "wirear codegen", sólo de verificar que sigue fresco (T0.1/P2).
+  #
+  # ALCANCE: formulario de checkout (nombre/email/teléfono, retiro fijo — sucursal única,
+  # consentimiento wireado al seam YA CONSTRUIDO de US-017 — LEGAL_ROUTES/CONSENT_COPY, NO
+  # hand-written), resumen de orden, validación inline con el schema GENERADO del contrato
+  # (resolver custom que traduce mensajes, nunca un segundo schema — frontend-standards §3.2),
+  # manejo de 409/422/403/429/network, un-defer del CTA "Ir al pago" del carrito
+  # (CartSummary.tsx/CartPage.tsx, con excepción nombrada de CartSummary.test.tsx).
+  #
+  # DE LAS 8 AC DE LA US, este change prueba desde la UI: AC-1 (parcial — "avanza al pago" queda
+  # Deferred: US-009, sin plan de FE todavía), AC-3, AC-4 (mitad UX), AC-5, AC-8 (mitad FE). AC-2,
+  # AC-6, AC-7 son backend-verificados (ya cerrados en US-008-checkout-guest-backend T5.1/T5.2/T5.4);
+  # no observables desde esta UI.
+  #
+  # DECISIONES DE DISEÑO propias de este change (no ADR — documentadas en design.md, abiertas a
+  # ratificación PO/Arquitecto, ninguna bloquea el arranque): OQ-FE-19 order_token en sessionStorage
+  # (nunca la URL — es la credencial de la orden, mismo razonamiento que el backend aplicó al no
+  # exponer order_id) · OQ-FE-20 confirmación in-place en /checkout, sin ruta nueva (no precompromete
+  # a US-009 FE, que no tiene plan) · OQ-FE-21 retiro como información fija, sin checkbox redundante
+  # (fulfillment tiene un solo valor posible) · OQ-FE-22 reload() del carrito al montar /checkout.
+  #
+  # 23 tasks + 6 pre-requisitos. ~5,4 h AI-asistido / ~10,5 h tradicional (estimado por fase). US §7
+  # presupuesta FE-US-008 en 8-12 h tradicional: entra en el rango — a diferencia de otras US de este
+  # repo, acá el trabajo no presupuestado (un-defer del CTA, seam de consentimiento, resolver sobre
+  # schema generado) se compensa con que el contrato YA está publicado y regenerado, y con reusar
+  # patrones ya construidos (RegisterForm.tsx para RHF+Field, useCart.ts para la unión discriminada,
+  # csrf.ts/client.ts sin cambios — session:'cart' ya cubre exactamente lo que checkout necesita).
+  #
+  # DEPLOYMENT: no requiere /plan-deployment propio; coordinar con US-009 (orden no negociable:
+  # BE US-008 → FE US-008 → US-009). Hereda el gate legal de US-017: si /legales/* sigue con texto
+  # provisional, este checkout no debería salir a producción aunque el código esté completo.
+  estimate-hours: 5.4
+  assignee: claude-code
+  branch: feat/US-008-checkout-guest-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/23
+  pr-opened-at: 2026-08-30
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-012-panel-ordenes-dueno-backend
   us-id: US-012
   discipline: backend
@@ -1622,6 +1675,70 @@
   branch: feat/US-012-panel-ordenes-dueno-frontend-web
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
   pr-opened-at: 2026-08-30
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-021-retencion-datos-ordenes-backend
+  us-id: US-021
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
+  audit-baseline: null
+  audit-derived: false
+  # ~6,8 h AI-asistido / ~13,5 h tradicional (16 tasks, 7 fases). US §7 presupuesta
+  # BE-US-021 en 5-8 h tradicional: el tradicional excede el techo ~5,5 h por trabajo
+  # que la US da por resuelto al describirla como "transformación acotada sobre un
+  # esquema que ya existe" — no hay módulo de órdenes admin todavía (US-012 sigue
+  # Ready sin change de backend), así que este change construye DESDE CERO los dos
+  # endpoints admin + guards + rate-limit + contrato OpenAPI, el runner de arranque
+  # (mismo patrón que ADR-0012, con su propio ciclo de vida y tests) y el servicio de
+  # eventos dedicado (US §9 exige cero PII en el payload). La transformación en sí
+  # —dos columnas, un UPDATE guardado por WHERE— son ~2 h.
+  #
+  # DECISIÓN DE ARQUITECTURA (no es pregunta abierta): mismo patrón que ADR-0012
+  # (contrato asíncrono/on-demand con ejecutor in-process + barrido oportunista al
+  # arrancar) aplicado al barrido mensual de retención — Redis sigue sin aprovisionar
+  # (ADR-0004/US-019). Precedente citado por el propio ADR-0012:
+  # openspec/changes/US-014-registro-login-backend/design.md ("purga programada de
+  # tokens vencidos", Deferred: US-011/operaciones). `Deferred: operaciones / US-019`
+  # para el processor BullMQ real — el contrato HTTP no cambia cuando eso ocurra.
+  #
+  # ALCANCE: migración aditiva sobre `orders` (2 columnas + 2 CHECK, F40
+  # column-complete); OrdersRepository (checkout/) gana findById/anonymize/
+  # anonymizeRetentionEligible; POST /v1/admin/orders/:id/anonymize (AC-3/AC-9);
+  # POST /v1/admin/orders/retention-sweep (AC-1, síncrono — un solo UPDATE de
+  # conjunto, no batching tipo ImportRunner); OrdersRetentionRunner
+  # (onApplicationBootstrap, barrido oportunista); OrdersRetentionEventsService
+  # (cero PII, un evento por corrida + uno por acción a pedido). Extiende
+  # CheckoutModule — no abre un módulo `orders` nuevo, porque no hay dueño natural
+  # distinto todavía para la superficie admin de órdenes.
+  #
+  # DECISIÓN DECLARADA: `access_token_hash` queda FUERA de alcance (no es PII —
+  # es el hash del token de acceso del invitado, no derivado de datos personales; y
+  # revocarlo rompería la consulta de estado que ningún AC pide tocar). Placeholders
+  # de anonimización con dominio `.invalid` (RFC 2606) para el email — no resoluble
+  # aunque algún día un adapter de email lo intente.
+  #
+  # OPEN QUESTION dejada para quien planifique US-012 (panel de órdenes del dueño,
+  # Ready, sin change de backend todavía): el futuro DTO de lectura de una orden DEBE
+  # exponer `anonymized_at`/`anonymization_reason` para que el AC-5 de esta US se
+  # pueda renderizar. Documentada en design.md §Open questions, no bloquea este change.
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment — migración de esquema sobre `orders`
+  # (tabla ya en producción potencial de US-008/009/010), primera superficie admin
+  # que muta/suprime PII, y dependencia de un disparador externo (cron Railway o
+  # manual) para la cadencia mensual real de AC-1 que este change no provisiona.
+  #
+  # Capability nueva esperada en openspec/specs/ tras el primer /archive-change:
+  # `retencion-datos-personales` (CAP-13, partida de CAP-10 el 2026-08-23).
+  estimate-hours: 6.8
+  assignee: sin-asignar  # planificado; 0 tasks cerradas, nadie lo ejecuta todavía
+  branch: feat/US-021-retencion-datos-ordenes-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/25
   created: 2026-08-30
   completed-at: null
   archived-at: null
