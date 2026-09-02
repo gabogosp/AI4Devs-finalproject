@@ -185,7 +185,7 @@ language: es
 
 ## Fase 3: Servicio + runner de arranque — 1,3 h
 
-- [ ] T3.1 `OrdersRetentionService.anonymizeOnRequest` (AC-3, AC-4, AC-9 en
+- [x] T3.1 `OrdersRetentionService.anonymizeOnRequest` (AC-3, AC-4, AC-9 en
   espíritu — la autorización real la da el guard de Fase 4)
   - **Pattern**: ver `design.md` §Approach ("Servicio, endpoints y runner").
     `reason` fijo en `'requested'`, nunca parametrizable desde afuera del
@@ -196,7 +196,7 @@ language: es
     sobre un id inexistente, lanza `OrderNotFoundError`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.service` en 0, con los 3 casos (incluida la aserción de "no segundo evento" contando `events.count(...)` antes/después de la segunda llamada)
 
-- [ ] T3.2 `OrdersRetentionService.runRetentionSweep` (AC-1, AC-4)
+- [x] T3.2 `OrdersRetentionService.runRetentionSweep` (AC-1, AC-4)
   - **Pattern**: `cutoffDate()` con `ORDER_RETENTION_MONTHS` (default 12);
     `reason` fijo en `'retention_policy'`; emite `orders_retention.swept`
     **siempre**, incluso con `count=0` (US §9 — "cada corrida").
@@ -205,7 +205,7 @@ language: es
     lleva el conteo correcto en `fields.anonymized_count`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.service` en 0
 
-- [ ] T3.3 `OrdersRetentionRunner.onApplicationBootstrap` (barrido oportunista,
+- [x] T3.3 `OrdersRetentionRunner.onApplicationBootstrap` (barrido oportunista,
   ADR-0012)
   - **Pattern**: mismo patrón que `ImportRunner.onApplicationBootstrap` — ver
     `design.md` §Approach. `try/catch` — un fallo del barrido NUNCA impide que
