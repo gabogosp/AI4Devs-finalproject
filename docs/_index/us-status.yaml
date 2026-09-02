@@ -156,7 +156,7 @@
   blocked_by: [US-010, US-012]
 - id: US-012
   slug: panel-ordenes-dueno
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 5
   disciplines: [BE, FE, QA]
@@ -164,6 +164,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-08-31        # backend completo (PR #22); FE+QA en curso
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
