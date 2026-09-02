@@ -40,6 +40,14 @@ export type BusinessEvent =
   | 'cart_item_removed'
   | 'cart_viewed'
   | 'cart_blocked_checkout'
+  // Checkout del invitado (US-008). Superficie de invitado, sin `operator_id`
+  // (`design.md` D11). Sin PII y sin el `order_token`: `order_number` es un
+  // contador público, mismo criterio que en la respuesta del backend.
+  | 'checkout_started'
+  | 'checkout_blocked'
+  | 'checkout_submitted'
+  | 'checkout_succeeded'
+  | 'checkout_failed'
   // Import masivo (US-006). Eventos del TRABAJO, no de la fila: un import de 5.000
   // filas emite cuatro eventos como máximo, no 5.000. **Nunca** llevan el nombre
   // del archivo, un `sku` ni un motivo de rechazo: son datos del catálogo del
@@ -104,6 +112,13 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'search_result_clicked',
   'search_fallback_clicked',
   'search_rate_limited',
+  // Los emite un cliente sin cuenta, no el dueño — mismo criterio que los de
+  // auth: sin esto quedarían etiquetados como acción del dueño.
+  'checkout_started',
+  'checkout_blocked',
+  'checkout_submitted',
+  'checkout_succeeded',
+  'checkout_failed',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

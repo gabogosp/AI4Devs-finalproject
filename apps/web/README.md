@@ -14,6 +14,7 @@ heredan US-002/US-004/US-007/US-016 — no se re-decide por US.
 | Superficie | Rutas |
 |---|---|
 | Storefront (público, indexable) | `/` (home: rubros y subrubros), `/categorias/{slug}` (grilla paginada), `/productos/{slug}` (ficha), `/legales/privacidad`, `/legales/terminos`, `/sitemap.xml`, `/robots.txt` |
+| Storefront (público, `noindex` — vista de cliente) | `/carrito` (US-007), `/checkout` (US-008) |
 | Panel del dueño (privado, `noindex`) | `/admin/acceso`, `/admin/productos`, `/admin/productos/nuevo`, `/admin/productos/{id}`, `/admin/categorias` |
 
 El panel responde con `X-Robots-Tag: noindex, nofollow` sobre `/admin/:path*`.
@@ -178,13 +179,35 @@ ni `Domain` que lo arregle. Por eso `next.config.mjs` reescribe `/v1/auth/*`
 hacia `API_INTERNAL_ORIGIN` (server-only, sin `NEXT_PUBLIC_`) y el navegador ve
 un solo origen. `e2e/auth-topology.spec.ts` lo prueba contra la app construida.
 
-**Desde US-007 la variable gobierna DOS superficies same-origin**: `/v1/auth/*`
-(sesión, cookies `dsm_session`/`dsm_csrf`) y `/v1/cart/*` (carrito del invitado,
-cookies `dsm_cart`/`dsm_cart_csrf`). Consecuencia operativa: un deploy sin
-`API_INTERNAL_ORIGIN` rompe **el login y el carrito**, y con el mismo síntoma
-—404 en las rutas reescritas— que no dice nada sobre su causa. El arranque falla
-ruidoso a propósito, con un mensaje que nombra las dos. `e2e/cart-topology.spec.ts`
-cubre el carrito con el mismo método que el de auth.
+**Desde US-008 la variable gobierna TRES superficies same-origin**: `/v1/auth/*`
+(sesión, cookies `dsm_session`/`dsm_csrf`), `/v1/cart/*` (carrito del invitado,
+cookies `dsm_cart`/`dsm_cart_csrf`) y `/v1/checkout/*` (checkout del invitado,
+mismo sujeto de CSRF que el carrito — el checkout exige un carrito ya existente,
+nunca es la primera escritura). Consecuencia operativa: un deploy sin
+`API_INTERNAL_ORIGIN` rompe **el login, el carrito y el checkout**, y con el
+mismo síntoma —404 en las rutas reescritas— que no dice nada sobre su causa. El
+arranque falla ruidoso a propósito, con un mensaje que nombra las tres.
+`e2e/cart-topology.spec.ts` y `e2e/checkout-topology.spec.ts` cubren cada
+superficie con el mismo método que el de auth.
+
+### Checkout del invitado (US-008)
+
+`/checkout` construye la orden vía `POST /v1/checkout` a partir del carrito ya
+cargado (US-007). Tres decisiones que no son negociables:
+
+- **El checkbox de consentimiento consume `LEGAL_ROUTES`/`CONSENT_COPY`
+  (`features/legal/routes.ts`, seam de US-017) — nunca hardcodea `/legales/*`.**
+  Hay un guard (`features/legal/routes.test.ts`) que recorre `src`/`app` y falla
+  si el literal aparece fuera de ese módulo.
+- **El `order_token` del 201 se persiste en `sessionStorage`
+  (`features/checkout/orderToken.ts`, clave `dsm_order_token`), nunca en la
+  URL.** Es la credencial de la orden, no un identificador — un querystring
+  queda en el historial, en logs de proxies intermedios y en el `Referer`.
+  `Deferred: US-009 — owner: FE`: hoy nada lo lee todavía.
+- **La validación del formulario corre sobre el schema Zod generado**
+  (`CreateGuestCheckoutBody`, `@/api/generated/zod`), traducido a copy en
+  español por `checkoutResolver.ts`/`checkoutFieldMessages.ts` — nunca un
+  segundo schema hand-written que duplique las constraints del contrato.
 
 ### La marca `dsm.session`
 

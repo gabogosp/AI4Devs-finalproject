@@ -26,6 +26,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-16
+  in-review-at: 2026-08-30T12:30:00Z # PR #21 (qa) abierto; BE y FE siguen sin rama/PR propios (branch: null) — US-level se queda In Progress
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
@@ -89,10 +90,11 @@
   # Las TRES disciplinas con sus tasks al 100% el 2026-08-23 (backend 37/37,
   # frontend-web 36/37 — 1 gate humano de consola en dev sin cerrar, ver
   # openspec/specs/carrito/requirements.md D-6 —, qa 22/22), mergeadas a main vía PR #3
-  # (feature-entrega2-GOSP, 2026-08-29). Backend archivado 2026-08-29, frontend-web
-  # archivado 2026-08-30 (/archive-change). Sólo falta QA (US-007-carrito-compra-qa
-  # sigue activa). NO pasa a Done: el DoD de la US exige regresión verde en staging, AC
-  # manuales verificados por QA y firma del PO — ninguna la cierra un dev.
+  # (feature-entrega2-GOSP, 2026-08-29). Las TRES disciplinas ya archivaron
+  # (/archive-change): backend 2026-08-29, frontend-web 2026-08-30, qa 2026-08-30.
+  # NO pasa a Done: el DoD de la US (gate QA → Done) exige regresión verde en staging,
+  # AC manuales verificados por QA y firma del PO — ninguno tildado todavía; archivar
+  # las tres disciplinas cierra el código, no el gate humano.
   status: QA
   priority: High
   prd-capacity: 4
@@ -114,6 +116,8 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
+  in-review-at: 2026-08-30          # FE (PR #23); BE ya estaba en review (PR #11) sin este campo
+                                     # estampado — QA sin planificar, status US se queda en Progress
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
@@ -278,7 +282,7 @@
   blocked_by: [US-014]    # no hay cuenta que borrar hasta que exista el registro
 - id: US-021
   slug: retencion-datos-ordenes
-  status: Ready
+  status: In Progress
   priority: High
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
@@ -286,6 +290,7 @@
   linear-issue-id: null
   created: 2026-08-22
   ready-at: 2026-08-22
+  in-progress-at: 2026-08-30        # primera planificación (/plan-backend-ticket)
   # Origen: hueco detectado por el plan de backend de US-008 al modelar la PII del checkout
   # (su OQ-BE-5). El PO decidió el 2026-08-22 abrirla como CONDICIÓN PREVIA A PRODUCCIÓN.
   # US-020 cubre el borrado de CUENTAS; el comprador invitado no tiene cuenta que borrar, y

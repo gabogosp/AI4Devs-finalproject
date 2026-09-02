@@ -27,16 +27,16 @@ const securityHeaders = [
  * filtrar topología sin ganar nada (next-standards §8).
  *
  * Falla ruidoso si falta en producción: un rewrite que apunta a `undefined`
- * devuelve 404, y ese síntoma no dice nada sobre la causa. Desde US-007 gobierna
- * **dos** superficies (`/v1/auth/*` y `/v1/cart/*`), así que un deploy sin ella
- * rompe el login **y** el carrito.
+ * devuelve 404, y ese síntoma no dice nada sobre la causa. Desde US-008 gobierna
+ * **tres** superficies (`/v1/auth/*`, `/v1/cart/*` y `/v1/checkout/*`), así que
+ * un deploy sin ella rompe el login, el carrito **y** el checkout.
  */
 function apiOrigin() {
   const origin = process.env.API_INTERNAL_ORIGIN;
   if (origin) return origin;
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      'API_INTERNAL_ORIGIN es obligatoria: sin ella los rewrites de /v1/auth/* y /v1/cart/* apuntan a undefined, y el login y el carrito devuelven 404.',
+      'API_INTERNAL_ORIGIN es obligatoria: sin ella los rewrites de /v1/auth/*, /v1/cart/* y /v1/checkout/* apuntan a undefined, y el login, el carrito y el checkout devuelven 404.',
     );
   }
   return 'http://localhost:3000';
@@ -83,6 +83,10 @@ const nextConfig = {
       {
         source: '/v1/cart/:path*',
         destination: `${apiOrigin()}/v1/cart/:path*`,
+      },
+      {
+        source: '/v1/checkout/:path*',
+        destination: `${apiOrigin()}/v1/checkout/:path*`,
       },
     ];
   },
