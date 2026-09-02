@@ -30,6 +30,28 @@ de US-001 AC-10).
 201; en base sólo vive su SHA-256 (`orders.access_token_hash`).
 `OrderTokenService` no usa `newToken()` (base64url) — US-009 exige hex.
 
+## Retención y anonimización (US-021)
+
+`OrdersRetentionController` / `OrdersRetentionService` / `OrdersRetentionRunner`
+viven acá, y no en un módulo de órdenes admin dedicado, porque ese módulo
+todavía no existe (US-012, el panel de órdenes del dueño, sigue sin backend).
+
+- `POST /v1/admin/orders/:id/anonymize` — a pedido del comprador (AC-3, AC-9).
+- `POST /v1/admin/orders/retention-sweep` — barrido manual por plazo cumplido
+  (AC-1); `OrdersRetentionRunner.onApplicationBootstrap()` corre el mismo
+  barrido, best-effort, al arrancar la API (ADR-0012 aplicado a este dominio).
+- Anonimiza, no borra (AC-6): sólo sobrescribe `buyer_name`/`buyer_email`/
+  `buyer_phone` + marca `anonymized_at`/`anonymization_reason`. El
+  consentimiento (`consent_*`) no se toca (AC-7).
+- Guardado por `WHERE anonymized_at IS NULL` — la idempotencia (AC-8) es
+  estructural, no una excepción atrapada.
+
+**Open question para quien planifique US-012**: su DTO de lectura de orden
+todavía no expone `anonymized_at`/`anonymization_reason` (esas columnas nacen
+en este change). Sin eso, el panel no puede mostrar "datos anonimizados" en
+vez del nombre/email/teléfono real (AC-5) — agregarlos al DTO es tarea de esa
+US, no de esta.
+
 ## Qué NO hace este módulo
 
 - No cobra ni conoce MercadoPago — US-009.

@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /admin/orders/{id}/anonymize
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-021 (retención y anonimización de PII de órdenes, Ley
+    25.326). Al archivar el change extiende la capacidad `checkout/` que creó
+    US-008 — no hay módulo de órdenes admin dedicado todavía (US-012 sigue sin
+    backend).
+
+    ## Anonimizar, no borrar
+
+    La orden y sus ítems nunca se eliminan (AC-6, E2E §8): sólo se sobrescriben
+    las tres columnas de PII del comprador (`buyer_name`, `buyer_email`,
+    `buyer_phone`). El historial comercial y las métricas de US-016 quedan
+    intactos.
+
+    ## Idempotente por diseño, no por excepción atrapada
+
+    El `UPDATE` está guardado por `WHERE anonymized_at IS NULL`: repetir la
+    llamada sobre una orden ya anonimizada responde **200 idéntico**, nunca un
+    error (AC-8). No existe forma de recuperar la PII original desde el sistema.
+servers:
+  - url: /v1
+tags:
+  - name: admin-orders-retention
+    description: Retención y anonimización de PII de órdenes (US-021). Sólo admin.
+paths:
+  /admin/orders/{id}/anonymize:
+    post:
+      operationId: anonymizeOrder
+      tags: [admin-orders-retention]
+      summary: Anonimizar los datos personales de una orden a pedido del comprador (AC-3, AC-9)
+      description: |
+        El comprador invitado no tiene cuenta ni autoservicio: su pedido de
+        supresión llega por email o WhatsApp y lo ejecuta el dueño desde el
+        panel, golpeando esta ruta. `reason` queda fijo en `requested` — nunca
+        viene del body, así que no hay superficie de tampering sobre el motivo.
+      security:
+        - adminBearer: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+          description: UUID interno de la orden (no el `order_token` público del comprador).
+      responses:
+        '200':
+          description: |
+            Anonimizada (o ya lo estaba — misma respuesta, AC-8). El `200` en
+            vez de `204` porque el llamador necesita ver `anonymized_at` para
+            confirmar que la acción se aplicó (AC-3 — "el dueño ve una
+            confirmación").
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderAnonymizationResult' }
+              examples:
+                anonimizada:
+                  value:
+                    order_id: 6f9619ff-8b86-d011-b42d-00c04fc964ff
+                    anonymized_at: '2026-09-02T20:31:17.000Z'
+                    anonymization_reason: requested
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '404':
+          description: La orden no existe (`dsm:checkout/order-not-found`) — distinto de "ya anonimizada", que es 200.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:checkout/order-not-found'
+                title: Not Found
+                status: 404
+                detail: La orden no existe
+                instance: /v1/admin/orders/6f9619ff-8b86-d011-b42d-00c04fc964ff/anonymize
+        '422':
+          description: '`id` no es un UUID válido.'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: |
+        Presupuesto de la anonimización a pedido excedido: **30 por minuto por
+        IP** (`ORDER_ANONYMIZE_RATE_LIMIT_MAX` / `ORDER_ANONYMIZE_RATE_LIMIT_TTL_MS`,
+        `security-standards §7.3`). Cubo `auth` reusado, sin registrar uno nuevo.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    OrderAnonymizationResult:
+      type: object
+      required: [order_id, anonymized_at, anonymization_reason]
+      additionalProperties: false
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        anonymized_at:
+          type: string
+          format: date-time
+          description: Momento en que se anonimizó (AC-4 — queda registrado y es auditable).
+        anonymization_reason:
+          type: string
+          enum: [retention_policy, requested]
+          description: Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            Catálogo **cerrado** de esta superficie: `dsm:checkout/order-not-found`
+            (404), más `dsm:catalog/http-401` / `dsm:catalog/http-403` de la
+            frontera admin, el 422 del `ValidationPipe` y el 429 del throttler.
+          examples: ['dsm:checkout/order-not-found']
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }

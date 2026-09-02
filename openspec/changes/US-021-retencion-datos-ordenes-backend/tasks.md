@@ -319,7 +319,7 @@ language: es
 
 ## Fase 6: Contrato OpenAPI + docs — 0,7 h
 
-- [ ] T6.1 Contrato OpenAPI de los dos endpoints
+- [x] T6.1 Contrato OpenAPI de los dos endpoints
   - **Pattern**: `per api-contract-completeness` — 1 yaml por endpoint,
     `contracts/openapi/anonymize-order.yaml` y
     `contracts/openapi/retention-sweep.yaml` dentro de este change, con
@@ -330,8 +330,16 @@ language: es
   - **Exit criterion**: los dos yaml validan como OpenAPI 3.x (sin `$ref` roto)
     y declaran todo status code posible de la tabla de T4.1/T4.2.
   - **Verify**: `npx spectral lint openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml` en 0
+  - **Desviación documentada**: `spectral` no es un paquete instalado en el repo
+    (no está en `package.json`/`pnpm-lock.yaml`); el binario real es
+    `@stoplight/spectral-cli`, no `spectral`. Se corrió
+    `npx --yes @stoplight/spectral-cli lint ...` (el `--yes` evita el prompt
+    interactivo de instalación, que en este entorno no-TTY aborta sin él,
+    mismo tipo de deviación que T0.1 con `prisma migrate`). Resultado: "No
+    results with a severity of 'error' found!" — 0 errores contra
+    `.spectral.yaml` (`spectral:oas`).
 
-- [ ] T6.2 Nota en `checkout/README.md`
+- [x] T6.2 Nota en `checkout/README.md`
   - **Pattern**: agregar una sección breve "Retención y anonimización
     (US-021)" con el mismo estilo que las secciones existentes del README,
     señalando que `OrdersRetentionController`/`Service`/`Runner` viven en este
