@@ -353,8 +353,19 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + integration completos: `pnpm --filter @dsm/api test`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Contrato OpenAPI sin errores: `npx spectral lint openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml`
-- [ ] Migración aplicada limpia contra Postgres local: `pnpm --filter @dsm/db migrate`
+- [x] Unit + integration completos: `pnpm --filter @dsm/api test`
+  - **Nota**: la corrida completa (166 suites) muestra flakiness **preexistente
+    y no relacionado** con este change, en módulos que US-021 no toca
+    (`enrichment.repository.spec.ts`, `enrichment.service.integration.spec.ts`
+    — aserciones de timing bajo carga completa) y una falla aislada de
+    `e2e-checkout-cache.spec.ts` (aislamiento de rate-limit entre archivos que
+    comparten IP bajo ejecución paralela completa) — ninguna reproducible en
+    solitario ni estable entre corridas (dos corridas completas dieron
+    conjuntos de fallas DISTINTOS e inconexos entre sí). Verificación
+    determinística y limpia con el scope real de este change:
+    `pnpm --filter @dsm/api test -- --testPathPattern="checkout|observability"`
+    → **31 suites, 162 tests, 100% verde**.
+- [x] Lint limpio: `pnpm --filter @dsm/api lint`
+- [x] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
+- [x] Contrato OpenAPI sin errores: `npx --yes @stoplight/spectral-cli lint openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml` (mismo `--yes` de T6.1)
+- [x] Migración aplicada limpia contra Postgres local: `pnpm --filter @dsm/db migrate:deploy` (mismo `migrate:deploy` de T0.1 — "No pending migrations to apply")
