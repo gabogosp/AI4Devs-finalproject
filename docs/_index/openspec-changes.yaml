@@ -749,7 +749,7 @@
   us-id: US-008
   discipline: backend
   variant: null
-  status: in review   # 20/20 tasks cerradas 2026-08-29, PR abierto (/commit)
+  status: archived   # 20/20 tasks cerradas 2026-08-29; merged vía PR #11 2026-08-30; archivado 2026-09-02
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null
@@ -823,9 +823,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/11
   pr-opened-at: 2026-08-29
   created: 2026-08-22
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-30T11:37:17Z
+  archived-at: 2026-09-02
+  archive-path: openspec/changes/archive/US-008-checkout-guest-backend
 
 - name: US-017-paginas-legales-consentimiento-frontend-web
   us-id: US-017

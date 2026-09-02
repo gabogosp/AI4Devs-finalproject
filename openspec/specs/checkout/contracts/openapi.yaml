@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Checkout (CAP-10)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-008 (checkout del invitado) — capacidad 10 del PRD, con su propio
+    `CheckoutModule` en el E2E §6.1. No pertenece a `carrito` ni a `catalogo`.
+
+    **El carrito no viaja en el cuerpo.** Se identifica por la cookie `dsm_cart`
+    que emitió `carrito` (US-007). El cuerpo trae sólo los datos del comprador,
+    el consentimiento y el modo de entrega — sin `cart_id` en la URL ni en el
+    cuerpo, para que la superficie no tenga un identificador que enumerar.
+
+    **El cliente no propone precios.** El total y las líneas salen del carrito y
+    del catálogo leídos dentro de la transacción; `forbidNonWhitelisted` rechaza
+    con 422 cualquier intento de inyectar `total_ars_cents` o `items`.
+
+    **La orden nace inerte** (`status: pending_payment`): no retiene stock
+    (ADR-0008), no mueve plata y es invisible para el panel del dueño hasta que
+    el pago se apruebe y se confirme (US-009 → US-010).
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: checkout
+    description: Creación de la orden del invitado (US-008). Superficie pública, sin auth.
+security: []
+components:
+  schemas:
+    CheckoutCreated:
+      type: object
+      required: [order_token, order_number, status, total_ars_cents, items_count]
+      additionalProperties: false
+      properties:
+        order_token:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: |
+            Token opaco de 256 bits. **Se entrega una sola vez**; en base vive su
+            SHA-256. Es la entrada de `POST /v1/payments` (US-009) — el `pattern` es el
+            mismo que ese contrato declara.
+        order_number:
+          type: integer
+          minimum: 1000
+          description: |
+            Número **legible** del pedido, de una `SEQUENCE` que arranca en 1000
+            (OQ-BE-4). Es lo que el comprador y el dueño usan para hablar del mismo
+            pedido por teléfono; lo consumen el email de US-011 y el panel de US-012.
+
+            **No autoriza nada** — la autorización es el `order_token`. Que sea
+            enumerable es irrelevante precisamente por eso. El `order_id` UUID sigue sin
+            exponerse.
+          example: 1042
+        status:
+          type: string
+          enum: [pending_payment]
+          description: |
+            Primer estado de la FSM del E2E §12. La orden es inerte hasta que el pago se
+            apruebe y US-010 la confirme.
+        total_ars_cents:
+          type: integer
+          description: |
+            Total en **centavos ARS** (`api-standards.md` §5.5), IVA incluido
+            (PRD §11). Es la suma exacta de los subtotales del **snapshot**, no del
+            carrito: la orden queda aritméticamente cerrada sobre sus propias líneas.
+          example: 4560000
+        items_count:
+          type: integer
+          description: Líneas distintas de la orden.
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). `type` de esta capacidad:
+        `dsm:checkout/cart-empty`, `dsm:checkout/cart-not-purchasable`,
+        `dsm:checkout/validation`, `dsm:auth/csrf`.
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene PII del comprador ni el `order_token`.'
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+paths:
+  /checkout:
+    $ref: ./openapi/paths/checkout.yaml
