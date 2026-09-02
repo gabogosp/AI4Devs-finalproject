@@ -219,7 +219,7 @@ language: es
 
 ## Fase 4: Controller + DTOs + wiring del módulo — 1,1 h
 
-- [ ] T4.1 `POST /v1/admin/orders/:id/anonymize` (AC-3, AC-9)
+- [x] T4.1 `POST /v1/admin/orders/:id/anonymize` (AC-3, AC-9)
   - **Pattern**: ver `design.md` §Approach ("Controller"). `AdminGuard` +
     `AuthThrottlerGuard` (bucket `auth`, sin registrar uno nuevo) +
     `@SkipThrottle({ storefront: true, cart: true })`, mismo patrón que
@@ -232,7 +232,7 @@ language: es
     idéntico, sin error.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.controller` en 0
 
-- [ ] T4.2 `POST /v1/admin/orders/retention-sweep` (AC-1)
+- [x] T4.2 `POST /v1/admin/orders/retention-sweep` (AC-1)
   - **Pattern**: mismos guards que T4.1; `@Throttle` con el presupuesto propio
     (5/hora) — `per security-standards.md §7.3`.
   - **Exit criterion**: con JWT admin, anonimiza todo lo vencido y responde 200
@@ -240,7 +240,7 @@ language: es
     misma hora → 429 con `Retry-After`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.controller` en 0
 
-- [ ] T4.3 DTOs de respuesta
+- [x] T4.3 DTOs de respuesta
   - **Pattern**: `apps/api/src/checkout/dto/orders-retention.dto.ts`,
     `static from(...)` sin exponer la entidad ORM — `per
     backend-node-standards.md §4 — DTO de respuesta explícito`.
@@ -249,7 +249,7 @@ language: es
     `{anonymized_count, reason: 'retention_policy'}`.
   - **Verify**: cubierto por los tests de T4.1/T4.2 (aserción de forma del body)
 
-- [ ] T4.4 Wiring de `checkout.module.ts`
+- [x] T4.4 Wiring de `checkout.module.ts`
   - **Pattern**: agregar `OrdersRetentionController` a `controllers`;
     `OrdersRetentionService`, `OrdersRetentionRunner`,
     `OrdersRetentionEventsService` a `providers` — `per
