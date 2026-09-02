@@ -306,6 +306,7 @@ model Order {
   updated_at             DateTime  @default(now()) @updatedAt
   delivered_at           DateTime?
   items                  OrderItem[]
+  payments               Payment[]
 
   @@index([status, created_at])
   @@index([customer_id])
@@ -335,4 +336,32 @@ model OrderItem {
   @@unique([order_id, product_id])
   @@index([order_id])
   @@map("order_items")
+}
+
+/// Ledger de pagos (E2E §8 DER). Primera materialización de esta tabla —
+/// ni US-009 (MercadoPago) ni US-010 (webhook) la construyeron todavía. El
+/// `provider` incluye los tres valores del dominio (mercadopago/simulated_dsm/
+/// manual) aunque este change sólo escribe `manual`, para que la migración
+/// aditiva de US-009 no tenga que tocar el CHECK (design.md §Persistence,
+/// "Reconciliación con US-009"). `confirmed_by` guarda el claim `sub` del JWT
+/// admin que confirmó — uuid de `Customer` o el literal `'admin'` (sesión de
+/// bootstrap, sin fila propia) — por eso NO es FK. `created_at`/`updated_at`
+/// no están en el DER; se agregan por la convención universal del esquema.
+model Payment {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id          String    @db.Uuid
+  order             Order     @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  provider          String
+  external_id       String?
+  status            String
+  amount_ars_cents  Int
+  idempotency_key   String    @unique
+  processed_at      DateTime?
+  confirmed_by      String?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @default(now()) @updatedAt
+
+  @@index([external_id])
+  @@index([order_id])
+  @@map("payments")
 }

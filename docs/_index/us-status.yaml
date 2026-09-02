@@ -309,15 +309,30 @@
   blocked_by: []
 - id: US-023
   slug: pago-manual-offline
-  status: Backlog
+  status: In Progress
   priority: High
   prd-capacity: 4   # CAP-4 «Checkout y pago» — adaptador de pago sin MercadoPago
   disciplines: [BE, FE, QA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null
   created: 2026-08-30
+  ready-at: 2026-08-30
+  in-progress-at: 2026-08-30   # /plan-backend-ticket — primer plan de disciplina abierto
+  in-review-at: 2026-08-30     # backend PR #27 abierto (/commit); FE/QA todavía no arrancaron —
+                                # el status de la US queda en In Progress hasta que las tres tengan PR
+  t-shirt: M
   # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
-  # el pago y la orden pasa a `paid`. Nace de "puro modelo local" sin credenciales de MP.
+  # el pago y la orden pasa a `new` (FSM E2E §12, no "paid" — corregido en el enrich).
   # US-023 es DUEÑA del PaymentConfirmationPort (extraído de US-009); MercadoPago (US-009)
-  # queda como otro adaptador del mismo puerto, ON HOLD por dependencia externa (credenciales).
-  blocked_by: [US-008]    # necesita la orden en `pending_payment` que crea el checkout
+  # queda como otro adaptador del mismo puerto, `Blocked` por dependencia externa
+  # (credenciales) — confirmado 2026-08-30 por la sesión que planificó US-012 (ver su
+  # frontmatter + docs/user-stories/US-009-pago-mercadopago.md §10).
+  # AC-2 fija un requisito nuevo para US-012 (vista separada de pending_payment en el panel);
+  # US-012-panel-ordenes-dueno-backend (PR #22) se está re-planificando 2026-08-30 para
+  # depender de PaymentConfirmationPort/payments de esta US en vez de la cadena US-009→US-010.
+  # 2026-08-31: /plan-frontend-web-ticket US-023 NO abrió change — la Fase 12 de
+  # US-012-panel-ordenes-dueno-frontend-web (PR #22, `PendingPaymentsPanel.tsx`) ya construye
+  # el FE completo de esta US (confirmar pago + vista de pendientes), consumiendo sus dos
+  # endpoints. FE-US-023 queda sin change propio; no es una disciplina huérfana, está
+  # satisfecha por el change de US-012.
+  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción (FE, ya construida en su PR #22) y su AC-1/Fase 12 cubre AC-2 de esta US.
