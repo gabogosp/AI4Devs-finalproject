@@ -281,7 +281,7 @@ language: es
     modificar después del intento).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-orders-retention-auth` en 0 (spec nuevo)
 
-- [ ] T5.3 AC-2 — el valor comercial no cambia (invariante central de la US)
+- [x] T5.3 AC-2 — el valor comercial no cambia (invariante central de la US)
   - **Pattern**: sembrar N órdenes con ítems, importes y fechas conocidas;
     calcular agregados (`sum(total_ars_cents)`, `count(*)`, `sum(items.quantity)`
     por producto) antes de anonimizar; anonimizar todas; recalcular los mismos
@@ -290,14 +290,14 @@ language: es
     después de anonimizar el conjunto completo.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac2-order-metrics-preserved` en 0 (spec nuevo)
 
-- [ ] T5.4 AC-6 — ninguna orden ni ítem se borra (negative-space)
+- [x] T5.4 AC-6 — ninguna orden ni ítem se borra (negative-space)
   - **Pattern**: contar filas de `orders` y `order_items` antes y después del
     barrido sobre un conjunto con órdenes vencidas y no vencidas.
   - **Exit criterion**: el conteo de filas de ambas tablas es idéntico antes y
     después; ninguna fila desaparece.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac6-order-not-deleted` en 0 (spec nuevo)
 
-- [ ] T5.5 AC-7 — el consentimiento sobrevive (negative-space)
+- [x] T5.5 AC-7 — el consentimiento sobrevive (negative-space)
   - **Pattern**: sembrar una orden con `consent_accepted_at` y
     `consent_terms_version` conocidos; anonimizar; releer.
   - **Exit criterion**: los tres campos de consentimiento
