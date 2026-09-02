@@ -97,7 +97,7 @@ language: es
     columnas + los dos `CHECK` quedaron verificados directo contra la base
     (`\d orders`), ambos grep del Verify pasan (6 ≥ 4, 2 = 2).
 
-- [ ] T0.2 Config nueva validada al arranque (fail-fast, §7)
+- [x] T0.2 Config nueva validada al arranque (fail-fast, §7)
   - **Pattern**: agregar a `envSchema` en `apps/api/src/config/env.validation.ts`
     — `per backend-node-standards.md §7 — config validada al arranque,
     fail-fast`:

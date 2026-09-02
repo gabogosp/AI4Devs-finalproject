@@ -309,6 +309,30 @@ export const envSchema = z.object({
   /** §7.3 — presupuesto del endpoint público de búsqueda (ventana y máximo por IP). */
   SEARCH_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   SEARCH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+
+  /**
+   * US-021 — retención y anonimización de PII de órdenes (Ley 25.326). Defaults
+   * seguros; un valor inválido hace FALLAR el arranque (§7), nunca cae al
+   * default en silencio.
+   *
+   * PRD §6 fija 12 meses como plazo por defecto; queda como env var (no
+   * hardcodeado) porque el dueño o su asesor legal pueden pedir otro plazo sin
+   * un deploy de código.
+   */
+  ORDER_RETENTION_MONTHS: z.coerce.number().int().positive().default(12),
+  /** §7.3 — presupuesto de la anonimización a pedido (superficie admin, por IP). */
+  ORDER_ANONYMIZE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
+  ORDER_ANONYMIZE_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
+  /**
+   * §7.3 — presupuesto del barrido manual por plazo, deliberadamente chico:
+   * cada request recorre y anonimiza todo lo vencido.
+   */
+  ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  ORDER_RETENTION_SWEEP_RATE_LIMIT_TTL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(3_600_000), // 1 h
 }).superRefine((env, ctx) => {
   // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
   // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la
