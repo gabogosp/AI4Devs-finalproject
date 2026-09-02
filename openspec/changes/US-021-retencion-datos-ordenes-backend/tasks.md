@@ -116,7 +116,7 @@ language: es
 
 ## Fase 1: Constantes + `OrdersRepository` — 1,2 h
 
-- [ ] T1.1 Constantes de anonimización
+- [x] T1.1 Constantes de anonimización
   - **Pattern**: `apps/api/src/checkout/order-anonymization.ts` con
     `AnonymizationReason`, `ANONYMIZED_BUYER_NAME`, `ANONYMIZED_BUYER_EMAIL`
     (dominio `.invalid`, RFC 2606), `ANONYMIZED_BUYER_PHONE` — ver `design.md`
@@ -125,7 +125,7 @@ language: es
     parametrización; el email usa el TLD `.invalid`.
   - **Verify**: `grep -c "\.invalid" apps/api/src/checkout/order-anonymization.ts` ≥ 1
 
-- [ ] T1.2 `OrdersRepository.findById` + `anonymize` (guardado por `WHERE`)
+- [x] T1.2 `OrdersRepository.findById` + `anonymize` (guardado por `WHERE`)
   - **Pattern**: `per backend-node-standards.md §5 — el repositorio es el
     único punto de ORM`; ver el bloque completo en `design.md` §Approach
     ("OrdersRepository — dos escrituras + una lectura"). El `updateMany` con
@@ -138,7 +138,7 @@ language: es
     devuelve `null`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository` en 0, con 3 casos nuevos (anonimiza / no-op sobre ya anonimizada / null sobre inexistente)
 
-- [ ] T1.3 `OrdersRepository.anonymizeRetentionEligible` (barrido de conjunto)
+- [x] T1.3 `OrdersRepository.anonymizeRetentionEligible` (barrido de conjunto)
   - **Pattern**: un único `updateMany` con `where: { anonymized_at: null,
     created_at: { lt: cutoff } }` — sin bucle por fila (justificado en
     `design.md` §Trade-offs contra el batching de `ImportRunner`).

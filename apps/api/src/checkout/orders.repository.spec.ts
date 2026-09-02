@@ -187,4 +187,133 @@ describe('OrdersRepository (integration)', () => {
 
     expect(await repo.findByTokenHash('h-no-existe')).toBeNull();
   });
+
+  /**
+   * T1.2 — `anonymize` guardado por `WHERE anonymized_at IS NULL` (AC-8): la
+   * idempotencia es estructural, no una excepción atrapada.
+   */
+  describe('anonymize (US-021 T1.2)', () => {
+    it('sobre una orden sin anonimizar, escribe los placeholders + anonymized_at/reason', async () => {
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('anon-happy'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+
+      const resultado = await repo.anonymize(creada.id, 'requested');
+
+      expect(resultado?.anonymizationReason).toBe('requested');
+      expect(resultado?.anonymizedAt).toBeInstanceOf(Date);
+
+      const releida = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
+      expect(releida.buyer_name).toBe('Comprador anonimizado');
+      expect(releida.buyer_email).toBe('datos-suprimidos@anonimizado.dsm.invalid');
+      expect(releida.buyer_phone).toBe('+00 000-0000');
+      expect(releida.anonymized_at).not.toBeNull();
+      expect(releida.anonymization_reason).toBe('requested');
+    });
+
+    it('sobre una orden ya anonimizada, no vuelve a escribir (mismo anonymized_at, sin error)', async () => {
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('anon-noop'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+
+      const primera = await repo.anonymize(creada.id, 'requested');
+      const segunda = await repo.anonymize(creada.id, 'retention_policy');
+
+      expect(segunda?.anonymizedAt).toEqual(primera?.anonymizedAt);
+      expect(segunda?.anonymizationReason).toBe('requested'); // no lo pisó el segundo motivo
+    });
+
+    it('sobre un id inexistente, devuelve null', async () => {
+      const inexistente = '00000000-0000-0000-0000-000000000000';
+      expect(await repo.anonymize(inexistente, 'requested')).toBeNull();
+    });
+  });
+
+  /**
+   * T1.3 — barrido de conjunto, un único `updateMany` (sin bucle por fila).
+   */
+  describe('anonymizeRetentionEligible (US-021 T1.3)', () => {
+    it('anonimiza sólo las vencidas; segunda corrida con el mismo corte devuelve 0', async () => {
+      const vencida1 = await repo.createPendingOrder({
+        ...ordenBase('sweep-1'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      const vencida2 = await repo.createPendingOrder({
+        ...ordenBase('sweep-2'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      const noVencida = await repo.createPendingOrder({
+        ...ordenBase('sweep-3'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+
+      const hace13Meses = new Date();
+      hace13Meses.setMonth(hace13Meses.getMonth() - 13);
+      const hace6Meses = new Date();
+      hace6Meses.setMonth(hace6Meses.getMonth() - 6);
+
+      await prisma.order.update({ where: { id: vencida1.id }, data: { created_at: hace13Meses } });
+      await prisma.order.update({ where: { id: vencida2.id }, data: { created_at: hace13Meses } });
+      await prisma.order.update({ where: { id: noVencida.id }, data: { created_at: hace6Meses } });
+
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      const primeraCorrida = await repo.anonymizeRetentionEligible(cutoff, 'retention_policy');
+      expect(primeraCorrida).toBe(2);
+
+      const segundaCorrida = await repo.anonymizeRetentionEligible(cutoff, 'retention_policy');
+      expect(segundaCorrida).toBe(0);
+
+      const sinTocar = await prisma.order.findUniqueOrThrow({ where: { id: noVencida.id } });
+      expect(sinTocar.anonymized_at).toBeNull();
+    });
+  });
 });
