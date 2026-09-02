@@ -314,7 +314,7 @@
 
 ## Fase 10: Accesibilidad
 
-- [ ] **T10.1 — axe-core sobre `OrdersList` y `OrderDetail`**
+- [x] **T10.1 — axe-core sobre `OrdersList` y `OrderDetail`**
   - **Exit criterion**: 0 violaciones `serious`/`critical` reportadas por `axe-core` en
     ambos componentes renderizados con datos de ejemplo.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/a11y.test.tsx` — usa
