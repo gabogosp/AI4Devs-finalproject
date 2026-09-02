@@ -2,11 +2,21 @@
 
 > **Ticket**: US-008 — Checkout guest — datos, consentimiento y retiro
 > **Author**: qa-engineer agent
-> **Date**: 2026-08-23
+> **Date**: 2026-08-23 (regenerado 2026-08-30)
 > **Status**: Proposed
 > **Affected platform(s)**: backend
 > **Service tier(s)**: 1 (loop de compra — camino crítico)
 > **Companion files**: `proposal.md`, `tasks.md`, `design.md`
+
+> **Nota de regeneración (2026-08-30)**: este plan se escribió el 2026-08-23, cuando la disciplina
+> `US-008-checkout-guest-frontend-web` todavía no existía y dos ítems quedaron explícitamente
+> bloqueados a la espera de ella: `SC-008-X3` (§3, escenario `@cross-feature @frontend`) y
+> `QA-008-E2E-1` (§6, E2E Playwright cross-stack). Ese change ya está **planificado y construido**
+> (PR #23, mergeado a `main` — `bacffc5`, 39/39 tasks cerradas, suite verde). Esta regeneración
+> **un-diferra** ambos ítems contra el formulario real (`apps/web/src/features/checkout/`) y el
+> seam de consentimiento real (`apps/web/src/features/legal/routes.ts`). El resto del plan —
+> contract testing (§4), k6 (§5), exploratory (§8), y los escenarios BDD de AC-1/3/4/5/8 que no
+> dependían del FE— queda igual: seguía correcto y no requería el FE para ejecutarse.
 
 ---
 
@@ -31,7 +41,7 @@ Journeys críticas identificadas:
 | **Acceptance (BDD)** | ✅ Sí | Cucumber-js + supertest (`qa/acceptance/`) | AC-1..AC-8 |
 | **Contract** | ✅ Sí | Spectral + supertest vs OpenAPI | `POST /v1/checkout` responde conforme al spec |
 | **Performance (k6)** | ✅ Sí | k6 (`qa/performance/checkout.js`) | p95 escritura < 500 ms (PRD §4) |
-| **E2E cross-stack (Playwright)** | ✅ Sí | Playwright (`qa/e2e/`) | Formulario checkout → orden creada (con pago simulado en US-009/010) |
+| **E2E cross-stack (Playwright)** | ✅ Sí | Playwright (`qa/e2e/`) | Carrito → checkout → orden creada en `pending_payment` (FE+BE reales); el loop con pago queda en US-010 |
 | **Exploratory** | ✅ Sí | Charters | PII en logs, doble-submit, timezone del consentimiento |
 
 > **Nota dev-owned**: tasks.md cubre 20 tasks con unit de order-draft, integration de OrdersRepository, e2e-nest de validación/CSRF/rate-limit/PII/cache/esquema, y los 4 AC negativos como invariantes. No se duplica.
@@ -140,22 +150,35 @@ Característica: Checkout guest — datos, consentimiento y retiro (US-008)
     Cuando el cliente envía el checkout sin el header X-CSRF-Token
     Entonces recibe 403
 
-  # Hereda la MITAD FRONTEND de US-017 AC-4. Se escribe acá porque no se puede escribir
-  # antes: necesita que exista el formulario de checkout. La mitad backend de ese AC ya
-  # está arriba (SC-008-A3) y la de AC-8 en SC-008-N3. Ejecutor: el change
-  # `US-008-checkout-guest-frontend-web` cuando se planifique — este plan de backend NO lo
-  # implementa, sólo evita que el escenario se caiga entre las dos US.
+  # Hereda la MITAD FRONTEND de US-017 AC-4. La mitad backend de ese AC ya está arriba
+  # (SC-008-A3) y la de AC-8 en SC-008-N3. Un-deferido 2026-08-30: `US-008-checkout-guest-
+  # frontend-web` (PR #23, mergeado) construyó `ConsentCheckbox.tsx`, que consume
+  # `CONSENT_COPY`/`LEGAL_ROUTES` de `features/legal/routes.ts` tal cual — verificado
+  # leyendo el componente real, no especulado. Ejecutor: la mitad de renderizado/markup la
+  # prueba el componente del FE (`ConsentCheckbox.test.tsx`, dev-owned, Layer 2 — no se
+  # duplica acá); la aserción **cross-stack** (los href resuelven de verdad en el navegador,
+  # contra el build real) vive en `QA-008-E2E-1` (§6), que ahora la implementa.
   @cross-feature @frontend
   Escenario: SC-008-X3 — El consentimiento enlaza a las dos páginas legales (US-017 AC-4)
-    Dado el formulario de checkout renderizado
+    Dado el formulario de checkout renderizado con un carrito válido
     Cuando el cliente mira el checkbox de consentimiento
-    Entonces ve un enlace a /legales/privacidad y otro a /legales/terminos
-    Y ninguno de los dos es "#"
-    Y los href provienen de CONSENT_COPY (src/features/legal/routes.ts), no de literales
+    Entonces ve un enlace con el texto "política de privacidad" que apunta a /legales/privacidad
+    Y ve un enlace con el texto "términos" que apunta a /legales/terminos
+    Y ninguno de los dos href es "#"
+    Y ambos href provienen de CONSENT_COPY.links (src/features/legal/routes.ts) — el
+      componente ConsentCheckbox.tsx no declara ningún literal "/legales/"
 ```
 
-**Tooling**: Cucumber-js con `qa/acceptance/steps/checkout.steps.ts`.
-**Location**: `qa/acceptance/features/checkout.feature`.
+**Tooling**: Cucumber-js con `qa/acceptance/steps/checkout.steps.ts` para los escenarios
+API-level (`@happy`, `@alternative`, `@negative`, `SC-008-X1`, `SC-008-X2`) contra `supertest`.
+
+**Los escenarios `@frontend` (`SC-008-X3`) NO corren en Cucumber-js/supertest** — no hay UI que
+renderizar a ese nivel. Se ejecutan como aserciones dentro del spec Playwright cross-stack
+`qa/e2e/checkout.spec.ts` (§6, `QA-008-E2E-1`), que es quien tiene un navegador real montado
+contra el build real del FE.
+
+**Location**: `qa/acceptance/features/checkout.feature` (API-level) + `qa/e2e/checkout.spec.ts`
+(cross-stack, cubre `SC-008-X3`).
 **Reuses**: seed de `qa/support/seed-carrito.ts` + `qa/support/cart-client.ts`.
 
 ---
@@ -182,13 +205,62 @@ Característica: Checkout guest — datos, consentimiento y retiro (US-008)
 
 ## 6. E2E Playwright (cross-stack)
 
-> El E2E del **loop completo** (checkout → pago → confirmación) se planifica en el qa-plan de US-010, porque depende del pago simulado "DSM" (US-009) y del webhook (US-010). Acá se cubre el formulario de checkout en aislamiento.
+> El E2E del **loop completo** (checkout → pago → confirmación) sigue planificado en el qa-plan de
+> US-010 (`QA-010-E2E-1`), porque depende del pago simulado "DSM" (US-009) y del webhook (US-010) —
+> ninguno de los dos tiene todavía plan de frontend (`US-010/qa-plan.md` §12 lo sigue marcando
+> `Blocked-by: FE-US-009 + FE-US-012`). Lo que **este** ítem cubre ya no es "el formulario en
+> aislamiento" — desde que `US-008-checkout-guest-frontend-web` existe (PR #23, mergeado a `main`),
+> es el checkout **completo contra FE y BE reales**: agregar al carrito → `/carrito` → "Ir al
+> pago" → `/checkout` → completar → confirmar → orden creada de verdad en `pending_payment`. Se
+> detiene ahí porque no hay nada más que hacer con la orden hasta que exista la pantalla de pago
+> (US-009 FE, sin planificar).
 
-- [ ] **QA-008-E2E-1**: Spec Playwright — formulario de checkout con validación inline
-  - Exit criterion: `qa/e2e/checkout-form.spec.ts` navega al checkout con un carrito, deja campos vacíos, verifica mensajes de error por campo, luego completa correctamente y verifica que avanza al paso de pago.
-  - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "checkout-form" --reporter=list` (exit 0 cuando FE existe)
+- [ ] **QA-008-E2E-1**: Spec Playwright cross-stack — checkout completo (FE real + BE real)
 
-**Dependencia**: `Blocked-by: FE-US-008 (formulario de checkout construido)`.
+  ```yaml
+  id: QA-008-E2E-1
+  scenario: SC-008-H1, SC-008-A3, SC-008-X3
+  execution_mode: automated
+  test_layer: 3
+  target_tooling: Playwright
+  gherkin_scenario: SC-008-H1 — Checkout válido crea la orden en pending_payment
+  ```
+
+  - Exit criterion: `qa/e2e/checkout.spec.ts` (Layer 3 de `qa-three-layer-regression` — real
+    backend + real frontend, **sin** el stub de `apps/web/e2e/support/api-stub.mjs`) ejecuta,
+    contra un producto sembrado por `qa/support/seed-carrito.ts`:
+    1. Agrega el producto desde `/productos/{slug}` (`getByRole('button', { name: /agregar al
+       carrito/i })`), navega a `/carrito`.
+    2. Verifica que el botón `getByRole('button', { name: /ir al pago/i })` está habilitado (sin
+       `has_blocking_issues`) y hace click — navega a `/checkout` (URL real).
+    3. Completa nombre/email/teléfono válidos (`getByLabel(/nombre|email|teléfono/i)`).
+    4. Verifica **SC-008-X3**: el checkbox de consentimiento muestra un enlace con texto
+       `/política de privacidad/i` cuyo `href` resuelve `/legales/privacidad` y uno con texto
+       `/términos/i` cuyo `href` resuelve `/legales/terminos` — ninguno de los dos es `#` (contra
+       el build real, no el markup leído en el código).
+    5. Marca el checkbox, click en `getByRole('button', { name: /confirmar pedido/i })`.
+    6. Espera la respuesta real de `POST /v1/checkout` (`page.waitForResponse('**/v1/checkout')`),
+       status `201`.
+    7. Verifica el heading `/pedido quedó registrado/i` y que el `order_number` visible en pantalla
+       coincide con el del body de la respuesta real (SC-008-H1).
+    8. Segundo caso (SC-008-A3, mitad UI): mismo flujo sin marcar el consentimiento → el submit
+       **no** navega, el banner "Tenés que aceptar los términos…" queda visible, y no se dispara
+       ningún `POST /v1/checkout` (`page.waitForResponse` con timeout corto debe **no** resolver).
+  - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "checkout" --reporter=list` (exit 0)
+
+  **Nota de alcance (evita duplicar con el FE)**: este spec es el E2E **QA-owned** de Layer 3 —
+  corre contra API y UI reales, con datos sembrados por la API. **No** duplica el E2E dev-owned de
+  Layer 2 que ya vive en `apps/web/e2e/checkout-happy-path.spec.ts` y
+  `apps/web/e2e/checkout-topology.spec.ts`: esos son smoke del FE en aislamiento, corren contra el
+  stub `apps/web/e2e/support/api-stub.mjs` (sin backend real, sin base de datos) y prueban que la
+  app **compilada** llama a la ruta correcta y que el rewrite same-origin (ADR-0013) no se rompió
+  — cubren la topología, no el contrato con un backend vivo. `QA-008-E2E-1` es el único spec que
+  prueba el **acuerdo real** entre las tres capas (Postgres real, `POST /v1/checkout` real,
+  navegador real).
+
+  **Dependencia resuelta**: ~~`Blocked-by: FE-US-008 (formulario de checkout construido)`~~ — el
+  formulario existe y está mergeado. `/develop-qa` puede escribir y correr esta suite ahora mismo
+  contra el `main` actual sin esperar ningún merge adicional (ver §12).
 
 ---
 
@@ -245,9 +317,16 @@ Agregar a `qa/exploratory/charters.md`:
 
 | Dependencia | Estado | Efecto |
 |---|---|---|
-| US-007 backend (carrito) | In Progress (37/37, pending commit) | Necesario para crear carritos en los tests |
-| FE-US-008 (formulario checkout) | No planificado | **BLOQUEA** E2E Playwright |
-| OpenAPI de `/v1/checkout` publicado | En tasks.md T6.1 | Requerido para contract testing |
+| US-007 backend (carrito) | Mergeado a `main` | Necesario para crear carritos en los tests — resuelto |
+| FE-US-008 (formulario checkout) | **Mergeado a `main`** (PR #23, `bacffc5`; 39/39 tasks) | Ya no bloquea — desbloquea `QA-008-E2E-1` (§6) y `SC-008-X3` (§3) |
+| OpenAPI de `/v1/checkout` publicado | En tasks.md T6.1 (backend) | Requerido para contract testing |
+
+> **Nota sobre el estado de PR #23**: al momento de escribir esta regeneración (2026-08-30) PR #23
+> ya está **mergeado** a `main` (no "abierto" como se asumió al encargar esta regeneración) — se
+> verificó con `gh pr view 23` y `git log origin/main`. Esto no cambia el plan: los ítems
+> desbloqueados (§3, §6) ya eran ejecutables aun si el PR siguiera abierto contra una rama propia,
+> porque `/develop-qa` puede trabajar sobre esa rama; estando mergeado, simplemente no hace falta
+> ninguna coordinación adicional — la suite se escribe y corre directo contra `main`.
 
 ---
 
@@ -256,3 +335,10 @@ Agregar a `qa/exploratory/charters.md`:
 - `docs/quality/testing-standards.md` §2, §5, §12, §13
 - `docs/quality/qa-backend-standards.md` §2.1, §13, §21
 - `docs/product/design-e2e.md` §17 (p95 escritura < 500 ms), §19
+- Skill `qa-three-layer-regression` — modelo de capas aplicado en la regeneración de §6
+  (`QA-008-E2E-1` es Layer 3: real BE + real FE, no duplica el smoke Layer 2 dev-owned de
+  `apps/web/e2e/`) y frontmatter (`execution_mode`/`test_layer`/`target_tooling`/`gherkin_scenario`)
+  del ítem desbloqueado.
+- Skill `bdd-scenario-quality` — verificado que `SC-008-X3` un-deferido mantiene tense
+  declarativo/imperativo y no filtra detalle de implementación (asserta sobre `href` observable,
+  no sobre el árbol de componentes React).
