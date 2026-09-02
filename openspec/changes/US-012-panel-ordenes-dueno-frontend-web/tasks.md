@@ -321,12 +321,21 @@
     `vitest-axe` (o `jest-axe` equivalente ya usado en el resto del panel, ver
     `qa-frontend-standards.md` §23.6); el test falla si `results.violations` no está vacío
     para severidad `serious`/`critical`.
-- [ ] **T10.2 — Foco gestionado al navegar al detalle**
+- [x] **T10.2 — Foco gestionado al navegar al detalle**
   - **Exit criterion**: al montar `OrderDetail`, el foco se mueve al `<h1>` de la orden
     (design-system §11).
   - **Verify**: en `OrderDetail.test.tsx`, tras el render, `document.activeElement` es el
     `<h1>` (o el contenedor con `tabIndex={-1}` que lo recibe) — falla si el foco queda en
     `<body>`.
+  - **Nota de ejecución (2026-08-30)**: el título de la orden era `<h2>` desde T5.1 (la ruta
+    `[id]/page.tsx` no envuelve con ningún heading propio, a diferencia de `/admin/ordenes`) —
+    corregido a `<h1>`, único de la página. `tabIndex={-1}` + `ref.current?.focus()` en un
+    `useEffect` que corre cuando `state.status === 'success'`. También se encontró y corrigió
+    un gap de tipos preexistente en `a11y.test.tsx` (T10.1): `axe()` no está tipado por
+    `jest-axe` (sin `.d.ts`) y `axe-core` no es dependencia directa de `@dsm/web` (pnpm no
+    resuelve sus tipos aunque esté presente transitivamente) — se detectó recién ahora al
+    correr `tsc --noEmit` completo (el `Verify` de T10.1 sólo corría el test). Se definió un
+    tipo local mínimo (`AxeViolation { impact }`) en vez de importar de `axe-core`.
 
 ## Fase 11: Documentación
 

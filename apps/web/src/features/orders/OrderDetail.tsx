@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AsyncState } from '@/lib/async';
 import { AppErrorException, networkError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +18,7 @@ import { ordersService, type OrderDetail as Order, type OrderStatus } from './or
  */
 export function OrderDetail({ id }: { id: string }) {
   const [state, setState] = useState<AsyncState<Order>>({ status: 'idle' });
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   const load = useCallback(async () => {
     setState({ status: 'loading' });
@@ -35,6 +36,15 @@ export function OrderDetail({ id }: { id: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Foco gestionado al navegar al detalle (design-system §11): sin esto, un
+  // lector de pantalla se queda anunciando la página anterior mientras el
+  // contenido nuevo ya está en el DOM.
+  useEffect(() => {
+    if (state.status === 'success') {
+      headingRef.current?.focus();
+    }
+  }, [state.status]);
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -70,7 +80,13 @@ export function OrderDetail({ id }: { id: string }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <h2 className="text-xl font-semibold">Orden #{order.order_number}</h2>
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-xl font-semibold focus:outline-none focus-visible:shadow-focus"
+        >
+          Orden #{order.order_number}
+        </h1>
         <OrderStatusBadge status={order.status} />
       </div>
 

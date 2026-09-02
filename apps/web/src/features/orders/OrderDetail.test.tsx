@@ -41,6 +41,17 @@ function orden(over: Partial<Order> = {}): Order {
   };
 }
 
+describe('OrderDetail — T10.2 (foco gestionado al montar)', () => {
+  it('tras el render, document.activeElement es el <h1> de la orden', async () => {
+    server.use(http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(orden())));
+
+    render(<OrderDetail id={ID} />);
+
+    const h1 = await screen.findByRole('heading', { level: 1, name: /orden #1000/i });
+    expect(document.activeElement).toBe(h1);
+  });
+});
+
 describe('OrderDetail (T5.1, AC-2)', () => {
   it('renderiza AMBOS ítems (nombre+cantidad+subtotal), total y contacto', async () => {
     server.use(

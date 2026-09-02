@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
+
+// `axe-core` no es dependencia directa de este paquete (pnpm no resuelve sus
+// tipos acá aunque esté presente transitivamente) — forma mínima local de lo
+// que este archivo necesita, no el `Result` completo de axe-core.
+interface AxeViolation {
+  impact?: 'minor' | 'moderate' | 'serious' | 'critical' | null;
+}
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
 import { OrdersList } from './OrdersList';
@@ -14,8 +21,12 @@ const ID = '2f1c9a4e-1111-4111-8111-111111111111';
 
 // `region` desactivada: los componentes se montan sueltos, sin el landmark
 // que aporta el layout — mismo criterio que src/features/account/a11y.test.tsx.
-const auditar = async (container: HTMLElement) =>
-  axe(container, { rules: { region: { enabled: false } } });
+const auditar = async (
+  container: HTMLElement,
+): Promise<{ violations: AxeViolation[] }> =>
+  axe(container, { rules: { region: { enabled: false } } }) as Promise<{
+    violations: AxeViolation[];
+  }>;
 
 function summary(): OrderSummary {
   return {
