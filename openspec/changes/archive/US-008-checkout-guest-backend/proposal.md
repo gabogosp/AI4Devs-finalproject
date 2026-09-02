@@ -5,6 +5,10 @@ parent-us: US-008
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-02
+merged_commit: 6172654b0d55de4abf18d756a5ebf5fb09021b89
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/11
 ---
 
 # US-008 Backend — Checkout del invitado: orden pendiente, snapshot de precios y consentimiento
