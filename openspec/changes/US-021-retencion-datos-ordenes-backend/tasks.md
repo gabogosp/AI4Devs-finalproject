@@ -263,7 +263,7 @@ language: es
 
 ## Fase 5: Tests de invariantes cross-AC — 2,1 h
 
-- [ ] T5.1 AC-8 — idempotencia end-to-end (negative-space)
+- [x] T5.1 AC-8 — idempotencia end-to-end (negative-space)
   - **Pattern**: `per testing-standards.md §14.9 — negative-space: asertar lo
     que NO tiene que pasar`.
   - **Exit criterion**: llamar `anonymize` (repo) o `POST .../anonymize`
@@ -272,7 +272,7 @@ language: es
     la 2ª y la 3ª.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac8-order-anonymization-idempotent` en 0 (spec nuevo)
 
-- [ ] T5.2 AC-9 — autorización (negative-space)
+- [x] T5.2 AC-9 — autorización (negative-space)
   - **Pattern**: e2e contra `AdminGuard` real, mismo estilo que
     `e2e-admin-auth.spec.ts`.
   - **Exit criterion**: sin token, con token expirado, con token de rol
@@ -305,7 +305,7 @@ language: es
     idénticos antes y después de anonimizar.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac7-consent-preserved-after-anonymization` en 0 (spec nuevo)
 
-- [ ] T5.6 AC-8 — irreversibilidad (negative-space)
+- [x] T5.6 AC-8 — irreversibilidad (negative-space)
   - **Pattern**: tras anonimizar, no debe existir ningún camino de lectura
     (repo, servicio, log) que devuelva el `buyer_name`/`buyer_email`/
     `buyer_phone` original.
