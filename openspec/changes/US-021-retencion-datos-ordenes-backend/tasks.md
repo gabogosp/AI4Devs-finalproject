@@ -43,11 +43,11 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-008 backend construido** (crea `orders` con las columnas de PII que
+- [x] **US-008 backend construido** (crea `orders` con las columnas de PII que
   esta US anonimiza). Ya está: 20/20 tasks cerradas, en review (PR #11).
   **Verify**: `grep -c "buyer_name" packages/db/prisma/schema.prisma` ≥ 1
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
-- [ ] **Working tree limpio en `packages/db/prisma/schema.prisma` y
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
+- [x] **Working tree limpio en `packages/db/prisma/schema.prisma` y
   `apps/api/src/checkout/`** — este change migra el esquema y extiende el
   módulo del checkout; con otra tarea en vuelo sobre esos archivos se pisan
   (precedente: la colisión de sesiones de US-007).
