@@ -201,6 +201,13 @@
   # hoy: los 13 de aceptación se desbloquean con solo el backend, los 9 restantes (E2E,
   # a11y, exploratorio-FE) necesitan además el frontend. No se toca `in-progress-at` ni
   # `blocked_by` (propiedad de otro agente, mismo criterio que las notas anteriores).
+  #
+  # NOTA (2026-08-30, /develop-frontend-web + /commit): frontend-web pasó de 0/25 a 21/26
+  # tasks (Fase 12 creció en 1 durante la ejecución — T0.3 explícito). Las 5 restantes
+  # (T0.3, T12.1-T12.4) están genuinamente bloqueadas por `US-023-pago-manual-offline-backend`
+  # (contrato `pending-payment` todavía no publicado) — no es un stop, es el límite real de
+  # lo ejecutable hoy. `status` de la US se queda en `In Progress` (backend en-review, FE
+  # checkpoint sustancial pero no completo, QA todavía sin ejecutar).
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso

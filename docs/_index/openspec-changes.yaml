@@ -1437,6 +1437,12 @@
   discipline: frontend-web
   variant: null
   status: in-progress   # /develop-frontend-web, primer task cerrado 2026-08-30 (T0.1 desbloqueado)
+  # /commit 2026-08-30: 21/26 tasks cerradas (Fases 0-11 completas). Checkpoint consciente,
+  # no un stop real — las 5 restantes (T0.3, T12.1-T12.4, la Fase 12 de "pendientes de pago")
+  # están genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
+  # publicó su contrato (`pending-payment`/`confirm-payment` ausentes de openapi.yaml). status
+  # se queda en `in-progress` (no `in-review`) porque no todas las tasks están [x] — per
+  # /commit paso 9. 828/828 tests en @dsm/web, type-check y lint limpios.
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
