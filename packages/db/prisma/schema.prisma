@@ -305,6 +305,8 @@ model Order {
   created_at             DateTime  @default(now())
   updated_at             DateTime  @default(now()) @updatedAt
   delivered_at           DateTime?
+  anonymized_at          DateTime?
+  anonymization_reason   String?
   items                  OrderItem[]
 
   @@index([status, created_at])

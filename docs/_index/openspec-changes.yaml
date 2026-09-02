@@ -1489,7 +1489,7 @@
   us-id: US-021
   discipline: backend
   variant: null
-  status: draft
+  status: in progress
   parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
   audit-baseline: null

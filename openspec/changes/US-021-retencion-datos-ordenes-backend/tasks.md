@@ -57,7 +57,7 @@ language: es
 
 ## Fase 0: Esquema y configuración — 0,9 h
 
-- [ ] T0.1 Migración aditiva `orders.anonymized_at` + `orders.anonymization_reason`
+- [x] T0.1 Migración aditiva `orders.anonymized_at` + `orders.anonymization_reason`
   (F40 — column-complete)
   - **Pattern**: dos columnas nuevas en el `model Order` de
     `packages/db/prisma/schema.prisma`, migración generada con
@@ -85,6 +85,17 @@ language: es
     los dos `CHECK` existen en la base; ninguna columna existente cambió de
     tipo; `pnpm --filter @dsm/db migrate` corre limpio contra el Postgres local.
   - **Verify**: `grep -c 'anonymized_at\|anonymization_reason' packages/db/prisma/migrations/*/migration.sql | awk -F: '{s+=$2} END {print s}'` ≥ 4 (dos columnas + dos CHECK, cada uno aparece al menos una vez) **y** `grep -c "CHECK" packages/db/prisma/migrations/*add_order_anonymization*/migration.sql` = 2 **y** `pnpm --filter @dsm/db migrate` termina en 0
+  - **Desviación documentada**: el Postgres local compartido (`ai4devs-finalproject-postgres-1`)
+    tenía migraciones de US-023 (`add_payments`) y US-012 (`add_order_status_history`) —
+    ambas en worktrees paralelos, en vuelo al momento de correr esta task — aplicadas en
+    la base pero ausentes de la carpeta de migraciones de esta rama. `prisma migrate dev`
+    (el runner detrás de `pnpm --filter @dsm/db migrate`) detecta ese drift como
+    divergencia y exige un reset destructivo del schema, algo que borraría el trabajo en
+    vuelo de esas otras sesiones. Se escribió `migration.sql` a mano con el contenido
+    exacto de este Pattern y se aplicó con `prisma migrate deploy` (no interactivo, no
+    resetea, sólo aplica lo pendiente) — decisión confirmada con el usuario. Las dos
+    columnas + los dos `CHECK` quedaron verificados directo contra la base
+    (`\d orders`), ambos grep del Verify pasan (6 ≥ 4, 2 = 2).
 
 - [ ] T0.2 Config nueva validada al arranque (fail-fast, §7)
   - **Pattern**: agregar a `envSchema` en `apps/api/src/config/env.validation.ts`
