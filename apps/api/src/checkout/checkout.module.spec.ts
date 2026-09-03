@@ -2,23 +2,26 @@ import { CheckoutModule } from './checkout.module';
 import { OrdersRepository } from './orders.repository';
 
 /**
- * T2.2 (US-023) — `PaymentsModule` (Fase 3) necesita importar `CheckoutModule`
- * e inyectar `OrdersRepository` sin re-declararla. Compilar el grafo REAL de
- * `CheckoutModule` en aislamiento arrastra media app (`ProductsModule` ->
- * `CatalogEventsService`, etc. — no son parte de este contrato), así que se
- * verifica el contrato de Nest que importa: el decorador `@Module` declara
- * `OrdersRepository` en `exports`. Si alguien la saca de ahí, este test cae —
- * no es una lectura de texto del archivo, es la metadata que Nest usa en
- * runtime para resolver imports entre módulos.
+ * T3.2 (US-012) / T2.2 (US-023) — wiring de `exports`, sin bootear el DI
+ * container completo: compilar `CheckoutModule` de punta a punta (vía
+ * `Test.createTestingModule`) requiere config global (`ConfigService` para
+ * `ThrottlerModule`) que sólo existe en `AppModule`, y arrastra media app
+ * (`ProductsModule` -> `CatalogEventsService`, etc.) que no es parte de este
+ * contrato. Se lee la metadata real que Nest adjunta al decorator `@Module()`
+ * (la misma que el framework usa para resolver imports entre módulos) en vez
+ * de un `grep` de texto: falla si `OrdersRepository` falta en `exports`, o si
+ * aparece duplicado en cualquiera de los dos arrays. `OrdersModule` (US-012)
+ * y `PaymentsModule` (US-023) dependen ambos de este contrato para inyectar
+ * `OrdersRepository` sin re-declararla.
  */
-describe('CheckoutModule exporta OrdersRepository (US-023 T2.2)', () => {
-  it('declara OrdersRepository en @Module({ exports })', () => {
-    const exportados: unknown[] = Reflect.getMetadata('exports', CheckoutModule) ?? [];
-    expect(exportados).toContain(OrdersRepository);
+describe('CheckoutModule exporta OrdersRepository (US-012 T3.2 / US-023 T2.2)', () => {
+  it('OrdersRepository está en `exports` exactamente una vez', () => {
+    const exports: unknown[] = Reflect.getMetadata('exports', CheckoutModule) ?? [];
+    expect(exports.filter((e) => e === OrdersRepository)).toHaveLength(1);
   });
 
-  it('OrdersRepository también sigue en providers (Nest exige declarar antes de exportar)', () => {
-    const provistos: unknown[] = Reflect.getMetadata('providers', CheckoutModule) ?? [];
-    expect(provistos).toContain(OrdersRepository);
+  it('OrdersRepository está en `providers` exactamente una vez (no duplicado)', () => {
+    const providers: unknown[] = Reflect.getMetadata('providers', CheckoutModule) ?? [];
+    expect(providers.filter((p) => p === OrdersRepository)).toHaveLength(1);
   });
 });

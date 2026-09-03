@@ -1433,6 +1433,61 @@
   archived-at: null
   archive-path: null
 
+- name: US-012-panel-ordenes-dueno-frontend-web
+  us-id: US-012
+  discipline: frontend-web
+  variant: null
+  status: in-progress   # /develop-frontend-web, primer task cerrado 2026-08-30 (T0.1 desbloqueado)
+  # /commit 2026-08-30: 21/26 tasks cerradas (Fases 0-11 completas). Checkpoint consciente,
+  # no un stop real — las 5 restantes (T0.3, T12.1-T12.4, la Fase 12 de "pendientes de pago")
+  # están genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
+  # publicó su contrato (`pending-payment`/`confirm-payment` ausentes de openapi.yaml). status
+  # se queda en `in-progress` (no `in-review`) porque no todas las tasks están [x] — per
+  # /commit paso 9. 828/828 tests en @dsm/web, type-check y lint limpios.
+  parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # REALINEADO 2026-08-30: US-012-panel-ordenes-dueno-backend fue regenerado (columna real
+  # `created_at`, no `confirmed_at`; `sort` es un enum cerrado de 6 valores, no un param
+  # libre; `AdminOrderStatusChange` ganó `changed_by`). Este plan de FE se actualizó en
+  # proposal.md/design.md/tasks.md para reflejarlo, y ya NO depende de
+  # `US-010-orden-webhook-stock-backend` (el backend regenerado se desacopló de esa US: la
+  # tabla `orders`/`order_items` ya existe desde `US-008`, mergeado). El único bloqueante
+  # de las Fases 1-11 (fulfillment) es `US-012-panel-ordenes-dueno-backend`.
+  #
+  # AGREGADO en la realineación: Fase 12 — `PendingPaymentsPanel`, vista separada (segunda
+  # pestaña de /admin/ordenes, nunca mezclada con OrdersList/su filtro) para que el dueño
+  # confirme pagos manuales, reusando los endpoints ya planificados por
+  # `US-023-pago-manual-offline-backend` (`GET /admin/orders/pending-payment`,
+  # `POST /admin/orders/{orderId}/confirm-payment`) — decisión de coexistencia del backend
+  # regenerado (su proposal.md decisión 3). Bloqueada por T0.3 (gate independiente de T0.1).
+  # **Esta feature NO tiene un AC Gherkin formal en la US** — nace de una nota informal §10;
+  # ver proposal.md OQ-FE-4 (recomendación de CR/enmienda a la US para un AC-10 formal).
+  #
+  # ALCANCE (sin cambios): módulo admin/ordenes (listado TanStack con paginación/orden/filtro
+  # server-side, detalle con historial de estado, acciones de avance de estado con UI
+  # optimista + rollback + Idempotency-Key), reutilizando AdminGuard sin modificarlo. Cubre
+  # las 9 AC de la US desde la UI (AC-4 es trigger 100% backend; el FE solo emite el PATCH en
+  # el momento correcto).
+  #
+  # OQ-FE-1/2/3 resueltas (con revisión en la realineación); OQ-FE-4 nueva (ver arriba).
+  #
+  # 25 tasks (12 fases, +4 de la Fase 12 nueva). ~7-9 h AI-asistido / ~15-17 h tradicional
+  # (Fase 12 agrega ~1-2h sobre el rango original 12-16h de US §7 — feature aditiva sin AC,
+  # a revisar el estimado de la US si se formaliza un AC-10). Recomendación de
+  # deployment-planning: no todavía — no tiene sentido planificar despliegue de un change
+  # cuyo contrato de datos no existe.
+  estimate-hours: 8
+  assignee: sin-asignar
+  branch: feat/US-012-panel-ordenes-dueno-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
+  pr-opened-at: 2026-08-30
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-023-pago-manual-offline-backend
   us-id: US-023
   discipline: backend
@@ -1543,6 +1598,146 @@
   assignee: claude-code
   branch: feat/US-008-checkout-guest-frontend-web
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/23
+  pr-opened-at: 2026-08-30
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-012-panel-ordenes-dueno-backend
+  us-id: US-012
+  discipline: backend
+  variant: null
+  status: in-review   # /commit — 22/22 tasks cerradas, 2026-08-30
+  parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # REGENERADO 2026-08-30 (/plan-backend-ticket US-012 --regenerate). Versión anterior
+  # respaldada en openspec/changes/_backups/2026-08-30-US-012-panel-ordenes-dueno-backend/.
+  # MOTIVO: US-009 pasó a Blocked (sin credenciales MP) y US-010 queda pospuesta sin
+  # fecha — la dependencia de la versión anterior (`src/orders/`, `order-state.ts`,
+  # `confirmed_at`/`cancelled_at`, `NotificationPort`, `payments`, todo "de US-010") nunca
+  # se construyó y no hay señal de que se construya pronto. `US-023-pago-manual-offline`
+  # nace como camino interino de pago (backend planificado en worktree separado, 0 tasks
+  # ejecutadas, código sólo staged sin commitear) y decidió NO crear `src/orders/` —
+  # extiende `checkout/orders.repository.ts` en su lugar.
+  #
+  # DESBLOQUEADO, SIN GATE: este regenerate NO depende de ningún código que no exista hoy.
+  # `orders` (migrada por US-008) ya tiene el CHECK de los 6 estados de la FSM completa;
+  # eso alcanza para todo lo que este panel gestiona (las 4 fases activas). Ya no hay
+  # T0.1 en rojo — la Fase 0 sólo verifica working tree limpio.
+  #
+  # ALCANCE: módulo NUEVO `src/orders/` (controller/servicio/FSM propia de 4 estados/
+  # NotificationPort nuevo/repositorio de historial), extendiendo `checkout/orders.
+  # repository.ts` (no reemplazándolo) para `list`/`findById`/`updateStatusConditional` —
+  # mismo patrón que US-023 ya aplicó ahí mismo. Tabla nueva `order_status_history`
+  # (aditiva, con `changed_by` — agregado deliberado, OQ-BE-3, sin AC literal que lo pida).
+  #
+  # DECISIONES DEL REGENERATE (ver proposal.md "Decisiones de este regenerate"):
+  # (1) superficie admin en módulo nuevo `src/orders/`, acceso a `orders`/`order_items`
+  # extendiendo `checkout/orders.repository.ts` — igual que US-023 en el mismo archivo.
+  # (2) riesgo de reconciliación FLAGEADO, no resuelto: cuando se re-planifique US-010, su
+  # propio design.md §D9 todavía describe una FSM de 6 estados para `src/orders/`, que para
+  # entonces va a existir con sólo 4 — decisión que le toca a esa futura planificación.
+  # (3) vista de "pendientes de pago" (nota §10 de la US, staged sin commitear en el
+  # worktree de US-023): COEXISTENCIA — se reusa `GET /v1/admin/orders/pending-payment`
+  # de US-023 tal cual, sin duplicarlo ni absorberlo; el listado de este change sigue
+  # excluyendo `pending_payment` siempre (AC-8 literal intacto).
+  # (4) COLISIÓN DE RUTAS encontrada y resuelta: `GET /v1/admin/orders/:id` (este change)
+  # puede interceptar `GET /v1/admin/orders/pending-payment` (US-023) si los módulos se
+  # registran en el orden equivocado en app.module.ts — resuelto con un regex de forma
+  # UUID en `:id`, independiente del orden de merge de los dos changes hermanos.
+  # (5) 409 + idempotencia estructural: mismo criterio que la versión anterior, ahora con
+  # precedente real (no hipotético) en `OrderNotPendingPaymentError` de US-023.
+  #
+  # CORRECCIÓN AL CONTRATO ASUMIDO POR EL SIBLING FE: su design.md §D2 asume
+  # `confirmed_at` y `sort` default `-confirmed_at` — ninguno existe; la columna real es
+  # `created_at`. Anotado en proposal.md References para la sesión que retome el FE.
+  #
+  # 6,6 h AI-asistido / ~12,5 h tradicional (17 tasks, 9 fases) — dentro del rango 8-12h
+  # que presupuesta US §7 (la versión anterior lo excedía por la extensión fantasma).
+  #
+  # 3 preguntas abiertas propias (OQ-BE-1, OQ-BE-2, OQ-BE-3), ninguna bloquea el arranque.
+  #
+  # DEPLOYMENT: no amerita /plan-deployment propio (migración aditiva, sin secretos, sin
+  # flag, sin dependencia de orden con ningún otro change — a diferencia de la versión
+  # anterior).
+  estimate-hours: 6.6
+  assignee: sin-asignar  # /develop-backend lo ejecutó, pero el campo es de asignación humana
+  # Comparte rama con el sibling de FE (y con QA) por instrucción explícita del usuario
+  # (mismo worktree, mismo PR #22 de US-012 completo) — desviación deliberada del modelo
+  # 1 change = 1 rama, análoga a la ya declarada para US-001 bootstrap. check-pr-scope.sh
+  # marca ✗ por esto (bundling real, no falso positivo) — proceder conscientemente per
+  # /commit "Edge cases", documentado acá y en el body del PR.
+  branch: feat/US-012-panel-ordenes-dueno-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
+  pr-opened-at: 2026-08-30
+  created: 2026-08-30
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-012-panel-ordenes-dueno-qa
+  us-id: US-012
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # PLANIFICADO 2026-08-30 (/plan-qa US-012). ASIMETRIA respecto a todo change de QA
+  # anterior de este repo (US-002/US-007/US-014): acá NINGUNA de las dos capas dev
+  # hermanas existe todavía — backend y frontend-web están en 0 tasks ejecutadas cada
+  # uno, mismo PR (#22), mismo branch. Ningún test case de este plan es ejecutable hoy.
+  #
+  # ALCANCE: 24 test cases owned-by-QA — 13 de aceptación BDD API-level (Cucumber+
+  # Playwright: 5 happy + 2 corner + 3 negative-space + 3 cross-feature), 5 E2E de
+  # navegador (Playwright), 2 de accesibilidad (axe-core+Playwright), 2 de carga (k6) y
+  # 2 charters exploratorios. Las 9 AC de la US tienen ≥1 escenario definido; ninguno
+  # es ejecutable hoy — los 13 de aceptación se desbloquean con solo el backend, los 9
+  # restantes necesitan además el frontend.
+  #
+  # LO QUE AGREGA sobre la TDD dev-owned (ninguna capa unit/integration/e2e-nest/
+  # component se re-autora): que la orden que el dueño gestiona es la que un cliente
+  # compró de verdad vía checkout real (US-008, cross-feature X-1); que una sesión de
+  # cliente REAL (US-014, registro+login reales) no alcanza para entrar al panel
+  # (X-2, distinto de "sin token" o "JWT minteado con rol distinto", que ya cubre la
+  # capa dev); y que cada transición incrementa las métricas de /v1/admin/metrics, una
+  # superficie construida por otro change (X-3).
+  #
+  # PUENTE DE SIEMBRA (OQ-QA-1, design.md §D2): no existe ningún endpoint que mueva una
+  # orden de pending_payment a new (esa transición la escribe ConfirmOrderService de
+  # US-023-pago-manual-offline-backend, también en 0 tasks, worktree separado).
+  # seed-ordenes.ts hace el checkout real y puentea SOLO ese salto con un UPDATE directo
+  # vía @dsm/db (ya es devDependency de @dsm/qa) — deviación temporal, documentada y
+  # acotada a un único uso por archivo; a reemplazar por
+  # POST /v1/admin/orders/{orderId}/confirm-payment cuando US-023 aterrice (charter
+  # TC-1251).
+  #
+  # PendingPaymentsPanel (Fase 12 del FE) — SIN tratamiento de AC completo (qa-plan.md
+  # §6): no tiene AC Gherkin formal en la US (mismo hallazgo que ya dejó el proposal.md
+  # de FE, OQ-FE-4). Se documenta como boceto no comprometido (PP-1/2/3), sin Gherkin
+  # ni test-case stubs comprometidos, y se deja un punto de coordinación explícito
+  # (OQ-QA-2): su testing completo necesita el plan de QA de
+  # US-023-pago-manual-offline-backend, que no existe todavía (worktree/sesión distinta).
+  #
+  # NFR YA RATIFICADOS EN LA PROPIA US (a diferencia de US-007, donde el número de
+  # lectura del carrito estaba [propuesto — confirma Arquitecto]): US §9 fija
+  # p95 lectura < 300ms / p95 escritura (transición) < 500ms sin condicional — los dos
+  # se emiten (TC-1240, TC-1241), ninguno queda "sin threshold".
+  #
+  # Numeración TC-12NN (4 dígitos, a propósito: evita colisión con el rango de 3 dígitos
+  # que ya usan US-001..US-014).
+  #
+  # 3-4 h AI-asistido / ~6-8 h tradicional. La US §7 presupuesta QA-US-012 en 6-8 h.
+  estimate-hours: 3.5
+  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  # Comparte rama y PR con los dos hermanos dev de esta US, por el mismo criterio ya
+  # declarado en sus entradas (mismo worktree, mismo PR de US-012 completo).
+  branch: feat/US-012-panel-ordenes-dueno-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
   pr-opened-at: 2026-08-30
   created: 2026-08-30
   completed-at: null

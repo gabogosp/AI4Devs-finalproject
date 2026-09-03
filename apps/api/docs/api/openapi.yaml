@@ -38,6 +38,12 @@ tags:
       pending_payment con snapshot de precios. La orden es INERTE: no retiene
       stock (AC-6, ADR-0008), no mueve plata y es invisible para el panel del
       dueño hasta que US-009 aprueba el pago y US-010 la confirma.
+  - name: admin-orders
+    description: >-
+      Panel de fulfillment del dueño (US-012). Las 4 fases activas de la orden
+      (new/preparing/ready/delivered) — pending_payment y cancelled quedan
+      fuera (US-023/US-013 respectivamente). status=ready dispara el aviso al
+      cliente (US-011).
   - name: admin-payments
     description: >-
       Confirmación de pago manual/offline (US-023) — el dueño confirma que
@@ -386,6 +392,74 @@ paths:
             schema: { $ref: '#/components/schemas/UpdateProduct' }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Product' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin-orders]
+      summary: Listado del panel de fulfillment (US-012 AC-1, AC-5, AC-8)
+      description: >-
+        Sólo las 4 fases activas del fulfillment (new/preparing/ready/delivered)
+        — `pending_payment`/`cancelled` NUNCA son valores válidos de `status`
+        acá (AC-8, allowlist cerrada). `sort` es un enum cerrado de 6 valores
+        (comma-list con prefijo `-` para descendente, api-standards §7.2), no
+        un parser libre.
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [new, preparing, ready, delivered] }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [order_number, -order_number, created_at, -created_at, total_ars_cents, -total_ars_cents]
+            default: -created_at
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminOrderList' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+  /admin/orders/{id}:
+    get:
+      operationId: getAdminOrder
+      tags: [admin-orders]
+      summary: Detalle de una orden (US-012 AC-2, AC-9)
+      description: >-
+        404 si la orden no existe **o** está `pending_payment` (AC-8 — no
+        gestionable acá). `cancelled` sí se devuelve (defensivo, OQ-BE-1: no
+        hay hoy ningún flujo que la enumere, pero es trazable por id).
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminOrderDetail' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+    patch:
+      operationId: updateAdminOrderStatus
+      tags: [admin-orders]
+      summary: Avanzar el estado de fulfillment (US-012 AC-3, AC-4, AC-6, AC-9)
+      description: >-
+        `status` sólo admite `preparing|ready|delivered` — `cancelled` NUNCA
+        es un valor de tipo válido acá (US-013, ruta distinta). Idempotente
+        por estructura: si `status` ya es el pedido, 200 sin re-disparar nada
+        (no por `Idempotency-Key` almacenada — el header se acepta y se
+        ignora, ver `src/orders/README.md`). `status=ready` dispara el aviso
+        al cliente (US-011, async, fuera de esta respuesta).
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAdminOrderStatus' }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminOrderDetail' } } } }
+        '400': { $ref: '#/components/responses/Problem' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
         '404': { $ref: '#/components/responses/Problem' }
@@ -1645,6 +1719,74 @@ components:
             limit: { type: integer }
             offset: { type: integer }
             total: { type: integer }
+    AdminOrderSummary:
+      type: object
+      required: [id, order_number, buyer_name, total_ars_cents, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        order_number: { type: integer }
+        buyer_name: { type: string }
+        total_ars_cents: { type: integer }
+        status:
+          type: string
+          enum: [new, preparing, ready, delivered, cancelled]
+          description: >-
+            El listado (GET /admin/orders) NUNCA incluye cancelled/pending_payment
+            (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá
+            porque este mismo schema es la base (allOf) de AdminOrderDetail, y
+            GET /admin/orders/{id} devuelve 200 para una orden cancelled (defensivo,
+            OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real
+            al cliente generado.
+        created_at: { type: string, format: date-time }
+    AdminOrderList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/AdminOrderSummary' } }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    AdminOrderItem:
+      type: object
+      required: [product_name, product_sku, quantity, unit_price_ars_cents, subtotal_ars_cents]
+      properties:
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        subtotal_ars_cents: { type: integer }
+    AdminOrderStatusChange:
+      type: object
+      description: 'Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments/, US-023).'
+      required: [from_status, to_status, changed_by, changed_at]
+      properties:
+        from_status: { type: string, nullable: true }
+        to_status: { type: string }
+        changed_by:
+          type: string
+          nullable: true
+          description: 'sub del JWT admin (uuid) o el literal admin (bootstrap token).'
+        changed_at: { type: string, format: date-time }
+    AdminOrderDetail:
+      allOf:
+        - { $ref: '#/components/schemas/AdminOrderSummary' }
+        - type: object
+          required: [buyer_email, buyer_phone, fulfillment, items, status_history]
+          properties:
+            buyer_email: { type: string }
+            buyer_phone: { type: string }
+            fulfillment: { type: string, enum: [pickup] }
+            items: { type: array, items: { $ref: '#/components/schemas/AdminOrderItem' } }
+            status_history: { type: array, items: { $ref: '#/components/schemas/AdminOrderStatusChange' } }
+    UpdateAdminOrderStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [preparing, ready, delivered] }
     CreateCheckoutRequest:
       type: object
       description: >-

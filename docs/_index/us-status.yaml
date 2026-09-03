@@ -121,7 +121,13 @@
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
-  status: In Progress
+  status: Blocked        # 2026-08-30: confirmado por el usuario — sin credenciales de MP
+  # (us-status.schema.yaml no tiene "On Hold"; "Blocked" es el valor canónico per
+  # governance-state-machine.md §2.8 — "any state with dependency / issue").
+  # US-023-pago-manual-offline nace como "puro modelo local" independiente de este pago;
+  # extrae PaymentConfirmationPort de forma que MercadoPago quede como OTRO adaptador del
+  # mismo puerto cuando esta US se retome. No se cancela — retomar cuando existan las
+  # credenciales.
   priority: High
   prd-capacity: 4
   disciplines: [BE, QA, INFRA]
@@ -156,7 +162,7 @@
   blocked_by: [US-010, US-012]
 - id: US-012
   slug: panel-ordenes-dueno
-  status: In Progress
+  status: In Progress   # /develop-backend, primer task cerrado 2026-08-30 (index-conventions.md §30 — este comando SÍ es dueño de esta transición)
   priority: High
   prd-capacity: 5
   disciplines: [BE, FE, QA]
@@ -164,7 +170,56 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
-  in-progress-at: 2026-08-31        # backend completo (PR #22); FE+QA en curso
+  in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
+  in-review-at: 2026-08-30   # /commit — backend (primera disciplina) llega a in-review, 22/22 tasks
+  # `status` se queda en `In Progress` (no avanza a `In Review`): aunque las 3 disciplinas
+  # comparten PR #22, sólo backend tiene código implementado (FE y QA siguen 0/25 y 0/24
+  # tasks — sólo planificación). Avanzar el status de la US completa sería engañoso para
+  # quien lo lea esperando "lista para revisión holística".
+  # `status`/`blocked_by` sin tocar: propiedad de prd-decomposer/user-story-author
+  # (index-conventions.md §84). El bloqueo real sigue vigente — ver
+  # openspec/changes/US-012-panel-ordenes-dueno-frontend-web/proposal.md
+  # §"Dependencia cruzada": ni US-010-backend (Draft, 0 tasks) ni
+  # US-012-backend (sin planificar) existen todavía.
+  # NOTA (2026-08-30, /plan-backend-ticket): US-012-panel-ordenes-dueno-backend ya está
+  # planificado (openspec/changes/US-012-panel-ordenes-dueno-backend/, draft, 0 tasks
+  # cerradas). No se toca `in-progress-at` (ya lo puso la sesión de FE, primera disciplina
+  # en planificarse) ni `blocked_by` (sigue siendo propiedad de otro agente) — el bloqueo
+  # real de la US completa sigue siendo US-010, ahora con las tres disciplinas de US-012
+  # (FE, BE) planificadas y la de QA todavía pendiente.
+  #
+  # NOTA (2026-08-30, /plan-backend-ticket US-012 --regenerate): el backend se replanificó
+  # de cero (US-009 → Blocked, US-010 pospuesta sin fecha; ver US-023-pago-manual-offline
+  # como camino interino). El regenerate de US-012-backend YA NO depende de US-010 en
+  # código — `orders` (migrada por US-008) alcanza para las 4 transiciones de fulfillment
+  # que este panel gestiona; su tasks.md no tiene gate en rojo. Sigue sin tocarse
+  # `blocked_by` (propiedad de otro agente, mismo criterio que la nota de arriba) — pero
+  # el bloqueo real declarado en ese campo (US-010) ya no aplica al backend de esta US;
+  # sí puede seguir aplicando al sibling FE (su propio proposal.md lo declara — no editado
+  # por este agente). Quien posea `blocked_by` debería revisar si vale la pena bajarlo a
+  # `[]` o mantenerlo por el lado FE.
+  #
+  # NOTA (2026-08-30, /plan-qa): US-012-panel-ordenes-dueno-qa ya está planificado
+  # (openspec/changes/US-012-panel-ordenes-dueno-qa/, draft, 0 tasks cerradas) — las tres
+  # disciplinas de la US (FE, BE, QA) ya tienen plan. Ningún test case de QA es ejecutable
+  # hoy: los 13 de aceptación se desbloquean con solo el backend, los 9 restantes (E2E,
+  # a11y, exploratorio-FE) necesitan además el frontend. No se toca `in-progress-at` ni
+  # `blocked_by` (propiedad de otro agente, mismo criterio que las notas anteriores).
+  #
+  # NOTA (2026-08-30, /develop-frontend-web + /commit): frontend-web pasó de 0/25 a 21/26
+  # tasks (Fase 12 creció en 1 durante la ejecución — T0.3 explícito). Las 5 restantes
+  # (T0.3, T12.1-T12.4) están genuinamente bloqueadas por `US-023-pago-manual-offline-backend`
+  # (contrato `pending-payment` todavía no publicado) — no es un stop, es el límite real de
+  # lo ejecutable hoy. `status` de la US se queda en `In Progress` (backend en-review, FE
+  # checkpoint sustancial pero no completo, QA todavía sin ejecutar).
+  #
+  # NOTA (2026-09-02, merge de origin/main sobre esta rama): `main` traía un commit directo
+  # (`chore(index): US-012 -> In Progress`, 2026-08-31) que pisaba este bloque con una versión
+  # resumida y `in-progress-at: 2026-08-31`. Se conserva el historial de esta rama —es un
+  # superset informativo— y la fecha original 2026-08-30 (anterior, y la que corresponde a la
+  # PRIMERA transición a `In Progress`). PR #27 (US-023 backend, `pending-payment`) ya mergeó a
+  # `main` en este mismo merge — el bloqueo de T0.3/T12.1-T12.4 de la nota anterior debería
+  # revisarse en la próxima corrida de /develop-frontend-web.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso

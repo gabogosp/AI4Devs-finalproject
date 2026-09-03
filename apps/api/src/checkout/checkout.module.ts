@@ -28,10 +28,10 @@ import { CheckoutEventsService } from '../observability/checkout-events.service'
     CheckoutThrottlerGuard,
     CheckoutEventsService,
   ],
-  // US-023: `PaymentsModule` importa `CheckoutModule` para inyectar
-  // `OrdersRepository` (único ORM de `orders`/`order_items`, §5) — sin
-  // re-declararla como provider propio. No cambia el contrato público del
-  // módulo: `CheckoutController` sigue siendo el único endpoint expuesto.
+  // Exportado para que otros módulos (panel admin de US-012, pagos de US-023)
+  // inyecten el repositorio sin re-declararlo como provider propio (§5). No
+  // cambia el contrato público del módulo: `CheckoutController` sigue siendo
+  // el único endpoint expuesto.
   exports: [OrdersRepository],
 })
 export class CheckoutModule {}

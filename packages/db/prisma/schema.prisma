@@ -306,11 +306,28 @@ model Order {
   updated_at             DateTime  @default(now()) @updatedAt
   delivered_at           DateTime?
   items                  OrderItem[]
+  status_history         OrderStatusHistory[]
   payments               Payment[]
 
   @@index([status, created_at])
   @@index([customer_id])
   @@map("orders")
+}
+
+/// Historial de transición de estado del panel de fulfillment (US-012 AC-9).
+/// Aditiva y propia de este change — no reemplaza ni depende de columnas puntuales
+/// de `orders` (`delivered_at` sigue siendo el hito, esto es la traza completa).
+model OrderStatusHistory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id    String   @db.Uuid
+  order       Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  from_status String?
+  to_status   String
+  changed_by  String?
+  changed_at  DateTime @default(now())
+
+  @@index([order_id, changed_at])
+  @@map("order_status_history")
 }
 
 /// Línea de la orden. `unit_price_ars_cents` es el precio PACTADO (snapshot dentro

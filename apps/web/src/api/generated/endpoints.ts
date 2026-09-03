@@ -8,6 +8,8 @@
 import type {
   AdminLogin,
   AdminLoginResponse,
+  AdminOrderDetail,
+  AdminOrderList,
   CartEnvelope,
   CartRateLimitedResponse,
   Category,
@@ -27,6 +29,7 @@ import type {
   ImportCreated,
   ImportJob,
   ImportRateLimitedResponse,
+  ListAdminOrdersParams,
   ListProductsParams,
   LoginRequest,
   PaymentConfirmed,
@@ -48,6 +51,7 @@ import type {
   StorefrontListCategoryProductsParams,
   StorefrontProduct,
   StorefrontProductPage,
+  UpdateAdminOrderStatus,
   UpdateCategory,
   UpdateProduct
 } from './model';
@@ -886,6 +890,191 @@ export const updateProduct = async (id: string,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(updateProduct)
+  }
+);}
+
+
+
+export type listAdminOrdersResponse200 = {
+  data: AdminOrderList
+  status: 200
+}
+
+export type listAdminOrdersResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type listAdminOrdersResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type listAdminOrdersResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type listAdminOrdersResponseSuccess = (listAdminOrdersResponse200) & {
+  headers: Headers;
+};
+export type listAdminOrdersResponseError = (listAdminOrdersResponse401 | listAdminOrdersResponse403 | listAdminOrdersResponse422) & {
+  headers: Headers;
+};
+
+export type listAdminOrdersResponse = (listAdminOrdersResponseSuccess | listAdminOrdersResponseError)
+
+export const getListAdminOrdersUrl = (params?: ListAdminOrdersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/orders?${stringifiedParams}` : `/v1/admin/orders`
+}
+
+/**
+ * Sólo las 4 fases activas del fulfillment (new/preparing/ready/delivered) — `pending_payment`/`cancelled` NUNCA son valores válidos de `status` acá (AC-8, allowlist cerrada). `sort` es un enum cerrado de 6 valores (comma-list con prefijo `-` para descendente, api-standards §7.2), no un parser libre.
+ * @summary Listado del panel de fulfillment (US-012 AC-1, AC-5, AC-8)
+ */
+export const listAdminOrders = async (params?: ListAdminOrdersParams, options?: Parameters<typeof customFetch>[1]): Promise<listAdminOrdersResponse> => {
+
+  return customFetch<listAdminOrdersResponse>(getListAdminOrdersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getAdminOrderResponse200 = {
+  data: AdminOrderDetail
+  status: 200
+}
+
+export type getAdminOrderResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getAdminOrderResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getAdminOrderResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type getAdminOrderResponseSuccess = (getAdminOrderResponse200) & {
+  headers: Headers;
+};
+export type getAdminOrderResponseError = (getAdminOrderResponse401 | getAdminOrderResponse403 | getAdminOrderResponse404) & {
+  headers: Headers;
+};
+
+export type getAdminOrderResponse = (getAdminOrderResponseSuccess | getAdminOrderResponseError)
+
+export const getGetAdminOrderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/admin/orders/${id}`
+}
+
+/**
+ * 404 si la orden no existe **o** está `pending_payment` (AC-8 — no gestionable acá). `cancelled` sí se devuelve (defensivo, OQ-BE-1: no hay hoy ningún flujo que la enumere, pero es trazable por id).
+ * @summary Detalle de una orden (US-012 AC-2, AC-9)
+ */
+export const getAdminOrder = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<getAdminOrderResponse> => {
+
+  return customFetch<getAdminOrderResponse>(getGetAdminOrderUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type updateAdminOrderStatusResponse200 = {
+  data: AdminOrderDetail
+  status: 200
+}
+
+export type updateAdminOrderStatusResponse400 = {
+  data: ProblemResponse
+  status: 400
+}
+
+export type updateAdminOrderStatusResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type updateAdminOrderStatusResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type updateAdminOrderStatusResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type updateAdminOrderStatusResponse409 = {
+  data: ProblemResponse
+  status: 409
+}
+
+export type updateAdminOrderStatusResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type updateAdminOrderStatusResponseSuccess = (updateAdminOrderStatusResponse200) & {
+  headers: Headers;
+};
+export type updateAdminOrderStatusResponseError = (updateAdminOrderStatusResponse400 | updateAdminOrderStatusResponse401 | updateAdminOrderStatusResponse403 | updateAdminOrderStatusResponse404 | updateAdminOrderStatusResponse409 | updateAdminOrderStatusResponse422) & {
+  headers: Headers;
+};
+
+export type updateAdminOrderStatusResponse = (updateAdminOrderStatusResponseSuccess | updateAdminOrderStatusResponseError)
+
+export const getUpdateAdminOrderStatusUrl = (id: string,) => {
+
+
+
+
+  return `/v1/admin/orders/${id}`
+}
+
+/**
+ * `status` sólo admite `preparing|ready|delivered` — `cancelled` NUNCA es un valor de tipo válido acá (US-013, ruta distinta). Idempotente por estructura: si `status` ya es el pedido, 200 sin re-disparar nada (no por `Idempotency-Key` almacenada — el header se acepta y se ignora, ver `src/orders/README.md`). `status=ready` dispara el aviso al cliente (US-011, async, fuera de esta respuesta).
+ * @summary Avanzar el estado de fulfillment (US-012 AC-3, AC-4, AC-6, AC-9)
+ */
+export const updateAdminOrderStatus = async (id: string,
+    updateAdminOrderStatus: UpdateAdminOrderStatus, options?: Parameters<typeof customFetch>[1]): Promise<updateAdminOrderStatusResponse> => {
+
+  return customFetch<updateAdminOrderStatusResponse>(getUpdateAdminOrderStatusUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAdminOrderStatus)
   }
 );}
 
@@ -1831,6 +2020,12 @@ export const getGetProductResponseMock = (overrideResponse: Partial<Extract<Prod
 
 export const getUpdateProductResponseMock = (overrideResponse: Partial<Extract<Product, object>> = {}): Product => ({id: faker.string.uuid(), sku: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description_raw: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), stock: faker.number.int(), status: faker.helpers.arrayElement(['draft','published','archived'] as const), category_id: faker.string.uuid(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
+export const getListAdminOrdersResponseMock = (overrideResponse: Partial<Extract<AdminOrderList, object>> = {}): AdminOrderList => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
+
+export const getGetAdminOrderResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}))},})
+
+export const getUpdateAdminOrderStatusResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}))},})
+
 export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
 
 export const getStorefrontListCategoriesResponseMock = (overrideResponse: Partial<Extract<CategoryTree, object>> = {}): CategoryTree => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), children: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})}))})), ...overrideResponse})
@@ -2033,6 +2228,42 @@ export const getUpdateProductMockHandler = (overrideResponse?: Product | ((info:
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getUpdateProductResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListAdminOrdersMockHandler = (overrideResponse?: AdminOrderList | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<AdminOrderList> | AdminOrderList), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/orders', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListAdminOrdersResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetAdminOrderMockHandler = (overrideResponse?: AdminOrderDetail | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<AdminOrderDetail> | AdminOrderDetail), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/orders/:id', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetAdminOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpdateAdminOrderStatusMockHandler = (overrideResponse?: AdminOrderDetail | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<AdminOrderDetail> | AdminOrderDetail), options?: RequestHandlerOptions) => {
+  return http.patch('*/admin/orders/:id', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateAdminOrderStatusResponseMock(),
       { status: 200
       })
   }, options)
@@ -2246,6 +2477,9 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getListProductsMockHandler(),
   getGetProductMockHandler(),
   getUpdateProductMockHandler(),
+  getListAdminOrdersMockHandler(),
+  getGetAdminOrderMockHandler(),
+  getUpdateAdminOrderStatusMockHandler(),
   getStorefrontGetProductMockHandler(),
   getStorefrontListCategoriesMockHandler(),
   getStorefrontGetCategoryMockHandler(),
