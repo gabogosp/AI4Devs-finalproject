@@ -32,6 +32,8 @@ import type {
   ListAdminOrdersParams,
   ListProductsParams,
   LoginRequest,
+  PaymentConfirmed,
+  PendingPaymentOrder,
   Problem,
   ProblemResponse,
   Product,
@@ -1500,6 +1502,114 @@ export const createGuestCheckout = async (createCheckoutRequest: CreateCheckoutR
 
 
 
+export type confirmManualPaymentResponse200 = {
+  data: PaymentConfirmed
+  status: 200
+}
+
+export type confirmManualPaymentResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type confirmManualPaymentResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type confirmManualPaymentResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type confirmManualPaymentResponse409 = {
+  data: ProblemResponse
+  status: 409
+}
+
+export type confirmManualPaymentResponseSuccess = (confirmManualPaymentResponse200) & {
+  headers: Headers;
+};
+export type confirmManualPaymentResponseError = (confirmManualPaymentResponse401 | confirmManualPaymentResponse403 | confirmManualPaymentResponse404 | confirmManualPaymentResponse409) & {
+  headers: Headers;
+};
+
+export type confirmManualPaymentResponse = (confirmManualPaymentResponseSuccess | confirmManualPaymentResponseError)
+
+export const getConfirmManualPaymentUrl = (orderId: string,) => {
+
+
+
+
+  return `/v1/admin/orders/${orderId}/confirm-payment`
+}
+
+/**
+ * Transiciona pending_payment -> new, decrementa el stock de cada línea de forma atómica (ADR-0008) y registra un pago provider=manual con quién confirmó y cuándo — las tres escrituras en una sola transacción. Sin body: el monto y las líneas salen de la orden, el provider es siempre manual, y quién confirma sale del JWT (sub), nunca de un campo que el cliente pudiera falsificar. AC-4 (la orden ya no está pending_payment) y AC-5 (doble confirmación) devuelven el MISMO 409 dsm:payments/order-not-pending-payment.
+ * @summary Confirmar el pago manual/offline de una orden pendiente (US-023 AC-1/AC-3/AC-4/AC-5/AC-6)
+ */
+export const confirmManualPayment = async (orderId: string, options?: Parameters<typeof customFetch>[1]): Promise<confirmManualPaymentResponse> => {
+
+  return customFetch<confirmManualPaymentResponse>(getConfirmManualPaymentUrl(orderId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type listPendingPaymentOrdersResponse200 = {
+  data: PendingPaymentOrder[]
+  status: 200
+}
+
+export type listPendingPaymentOrdersResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type listPendingPaymentOrdersResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type listPendingPaymentOrdersResponseSuccess = (listPendingPaymentOrdersResponse200) & {
+  headers: Headers;
+};
+export type listPendingPaymentOrdersResponseError = (listPendingPaymentOrdersResponse401 | listPendingPaymentOrdersResponse403) & {
+  headers: Headers;
+};
+
+export type listPendingPaymentOrdersResponse = (listPendingPaymentOrdersResponseSuccess | listPendingPaymentOrdersResponseError)
+
+export const getListPendingPaymentOrdersUrl = () => {
+
+
+
+
+  return `/v1/admin/orders/pending-payment`
+}
+
+/**
+ * El E2E §12 dice que el panel del dueño no muestra pending_payment — esta ruta es la excepción declarada por US-023: sin verla, no hay forma de llegar a POST .../confirm-payment. Lista angosta a propósito (sin buyer_email/buyer_phone, sin paginación — volumen de un solo local): NO reemplaza el listado general de US-012.
+ * @summary Listar órdenes pendientes de confirmar pago (US-023 AC-2)
+ */
+export const listPendingPaymentOrders = async ( options?: Parameters<typeof customFetch>[1]): Promise<listPendingPaymentOrdersResponse> => {
+
+  return customFetch<listPendingPaymentOrdersResponse>(getListPendingPaymentOrdersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export type createImportResponse200 = {
   data: ImportCreated
   status: 200
@@ -1932,6 +2042,10 @@ export const getRemoveCartItemResponseMock = (overrideResponse: Partial<Extract<
 
 export const getCreateGuestCheckoutResponseMock = (overrideResponse: Partial<Extract<CheckoutCreated, object>> = {}): CheckoutCreated => ({order_token: faker.helpers.fromRegExp("^[0-9a-f]{64}$"), order_number: faker.number.int({min: 1000}), status: faker.helpers.arrayElement(['pending_payment'] as const), total_ars_cents: faker.number.int(), items_count: faker.number.int(), ...overrideResponse})
 
+export const getConfirmManualPaymentResponseMock = (overrideResponse: Partial<Extract<PaymentConfirmed, object>> = {}): PaymentConfirmed => ({order_number: faker.number.int(), status: faker.helpers.arrayElement(['new'] as const), ...overrideResponse})
+
+export const getListPendingPaymentOrdersResponseMock = (): PendingPaymentOrder[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
+
 export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
 
 export const getGetImportResponseMock = (overrideResponse: Partial<Extract<ImportJob, object>> = {}): ImportJob => ({id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), filename: faker.string.alpha({length: {min: 10, max: 20}}), source_format: faker.helpers.arrayElement(['csv','xlsx'] as const), total_rows: faker.helpers.arrayElement([faker.number.int(), null]), processed_rows: faker.number.int(), created_count: faker.number.int(), updated_count: faker.number.int(), failed_count: faker.number.int(), categories_created_count: faker.number.int(), error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_message: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), report_truncated: faker.datatype.boolean(), started_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), finished_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', errors: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row_number: faker.number.int(), sku: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), field: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_code: faker.string.alpha({length: {min: 10, max: 20}}), error_message: faker.string.alpha({length: {min: 10, max: 20}})})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
@@ -2251,6 +2365,30 @@ export const getCreateGuestCheckoutMockHandler = (overrideResponse?: CheckoutCre
   }, options)
 }
 
+export const getConfirmManualPaymentMockHandler = (overrideResponse?: PaymentConfirmed | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<PaymentConfirmed> | PaymentConfirmed), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/orders/:orderId/confirm-payment', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getConfirmManualPaymentResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getListPendingPaymentOrdersMockHandler = (overrideResponse?: PendingPaymentOrder[] | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PendingPaymentOrder[]> | PendingPaymentOrder[]), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/orders/pending-payment', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListPendingPaymentOrdersResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
   return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -2350,6 +2488,8 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getSetCartItemMockHandler(),
   getRemoveCartItemMockHandler(),
   getCreateGuestCheckoutMockHandler(),
+  getConfirmManualPaymentMockHandler(),
+  getListPendingPaymentOrdersMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),

@@ -5,7 +5,7 @@ status: Skeleton
 owner: dev de guardia (equipo DSM)
 source: US-019 platform-cloud (T0.2) — E2E §18, §18.5
 language: es
-last-updated: 2026-08-16
+last-updated: 2026-08-30
 ---
 
 # Runbook — dsm-ecommerce
@@ -49,6 +49,20 @@ Cloudflare (DNS + CDN + R2)
 ### 3.1 Qué hace el operador de negocio (sin soporte técnico)
 
 Todo desde el panel: cargar/actualizar catálogo (CSV/Excel + progreso de enriquecimiento), procesar venta (`new` → preparar → `ready` → `delivered`), cancelar/reembolsar (reintegra stock + refund MP), ver métricas, y producto sin stock (editar stock o `status=archived`). **Si el pedido del operador es uno de estos, no es un incidente técnico.**
+
+> **Mientras US-009 (MercadoPago) esté `Blocked`** (sin credenciales — decisión
+> 2026-08-30): **toda** orden llega a `pending_payment` por el checkout y se
+> queda ahí — no hay webhook que la confirme sola. El dueño la confirma
+> manualmente cuando cobra por transferencia/efectivo (coordinado por
+> WhatsApp, US-018): `POST /v1/admin/orders/{orderId}/confirm-payment`
+> (US-023) transiciona `pending_payment → new` y decrementa stock, el mismo
+> camino que seguiría un pago de MercadoPago aprobado. `GET
+> /v1/admin/orders/pending-payment` es, mientras el panel de US-012 no
+> absorba esta vista, el único punto de verdad de qué orden quedó
+> pendiente de confirmar — el listado general del panel **no** las muestra
+> (E2E §12).
+
+
 
 ### 3.2 Deploy
 
@@ -207,6 +221,10 @@ Revisar consumo en Railway / Neon / Cloudflare / Gemini. Sospechosos habituales:
 **On-call**: `[pendiente — equipo de una persona; rotación formal se define en /plan-deployment]`.
 
 ## 8. Última actualización
+
+**2026-08-30** — US-023 (pago manual/offline): con US-009 `Blocked`, el §3.1
+documenta que toda orden requiere confirmación manual del dueño
+(`POST .../confirm-payment`) en vez de esperar el webhook de MercadoPago.
 
 **2026-08-22** — US-007 (carrito del invitado): filas de day-2 «se me borró el
 carrito» y «tabla `carts` creciendo» en §4, y la deuda del job de purga en §5. La

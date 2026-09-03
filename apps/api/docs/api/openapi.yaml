@@ -44,6 +44,12 @@ tags:
       (new/preparing/ready/delivered) — pending_payment y cancelled quedan
       fuera (US-023/US-013 respectivamente). status=ready dispara el aviso al
       cliente (US-011).
+  - name: admin-payments
+    description: >-
+      Confirmación de pago manual/offline (US-023) — el dueño confirma que
+      cobró por transferencia o efectivo, sin depender de MercadoPago
+      (US-009, Blocked). Transiciona pending_payment -> new y decrementa
+      stock atómicamente en la misma transacción (ADR-0008).
   - name: admin-imports
     description: >-
       Importación masiva del catálogo desde CSV/XLSX (US-006). Sólo admin. El POST
@@ -716,6 +722,59 @@ paths:
         '409': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/CheckoutRateLimited' }
+  /admin/orders/{orderId}/confirm-payment:
+    post:
+      operationId: confirmManualPayment
+      tags: [admin-payments]
+      summary: Confirmar el pago manual/offline de una orden pendiente (US-023 AC-1/AC-3/AC-4/AC-5/AC-6)
+      description: >-
+        Transiciona pending_payment -> new, decrementa el stock de cada línea
+        de forma atómica (ADR-0008) y registra un pago provider=manual con
+        quién confirmó y cuándo — las tres escrituras en una sola transacción.
+        Sin body: el monto y las líneas salen de la orden, el provider es
+        siempre manual, y quién confirma sale del JWT (sub), nunca de un
+        campo que el cliente pudiera falsificar. AC-4 (la orden ya no está
+        pending_payment) y AC-5 (doble confirmación) devuelven el MISMO 409
+        dsm:payments/order-not-pending-payment.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Pago confirmado; la orden pasa a new.
+          headers:
+            Cache-Control: { schema: { type: string } }
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/PaymentConfirmed' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /admin/orders/pending-payment:
+    get:
+      operationId: listPendingPaymentOrders
+      tags: [admin-payments]
+      summary: Listar órdenes pendientes de confirmar pago (US-023 AC-2)
+      description: >-
+        El E2E §12 dice que el panel del dueño no muestra pending_payment —
+        esta ruta es la excepción declarada por US-023: sin verla, no hay
+        forma de llegar a POST .../confirm-payment. Lista angosta a
+        propósito (sin buyer_email/buyer_phone, sin paginación — volumen de
+        un solo local): NO reemplaza el listado general de US-012.
+      responses:
+        '200':
+          description: Órdenes pending_payment, más nuevas primero (puede ser vacía).
+          headers:
+            Cache-Control: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PendingPaymentOrder' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
   /admin/imports:
     post:
       operationId: createImport
@@ -1802,6 +1861,29 @@ components:
         items_count:
           type: integer
           description: Líneas distintas de la orden.
+    PaymentConfirmed:
+      type: object
+      required: [order_number, status]
+      additionalProperties: false
+      properties:
+        order_number: { type: integer, example: 1042 }
+        status: { type: string, enum: [new] }
+    PendingPaymentOrder:
+      type: object
+      required: [id, order_number, buyer_name, total_ars_cents, created_at]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            UUID interno de la orden — el que espera el path de
+            POST /admin/orders/{orderId}/confirm-payment. Obligatorio: sin
+            él ningún consumidor puede construir esa URL desde este listado.
+        order_number: { type: integer, example: 1042 }
+        buyer_name: { type: string, example: Juana Pérez }
+        total_ars_cents: { type: integer, example: 4560000 }
+        created_at: { type: string, format: date-time }
     SetCartItemRequest:
       type: object
       description: >-

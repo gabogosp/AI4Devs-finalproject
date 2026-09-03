@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /admin/orders/{orderId}/confirm-payment
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-023 (pago manual / offline). Al archivar el change,
+    este endpoint forma la capacidad nueva `openspec/specs/pagos/`.
+
+    ## Por qué no hay body
+
+    El monto y las líneas salen de la orden (leída server-side); el `provider`
+    es siempre `manual` en este endpoint (US-010 agrega el camino del webhook,
+    que no pasa por acá); quién confirma sale del JWT (`sub`), no de un campo
+    que el cliente pudiera falsificar. No hay nada que el llamador deba (o
+    pueda) declarar.
+
+    ## Un solo camino de error para "no se puede confirmar por el estado"
+
+    AC-4 (la orden ya no está `pending_payment`) y AC-5 (ya se confirmó antes,
+    doble click) devuelven el **mismo** `409 dsm:payments/order-not-pending-payment`
+    — la orden dejó de estar pendiente por cualquier motivo, y desde la
+    perspectiva del dueño el resultado observable es idéntico: "no hay nada que
+    confirmar".
+servers:
+  - url: /v1
+tags:
+  - name: admin-payments
+    description: Confirmación de pago manual / offline (US-023).
+paths:
+  /admin/orders/{orderId}/confirm-payment:
+    post:
+      operationId: confirmManualPayment
+      tags: [admin-payments]
+      summary: Confirmar el pago manual/offline de una orden pendiente (AC-1, AC-3, AC-4, AC-5, AC-6)
+      description: |
+        Transiciona la orden de `pending_payment` a `new`, decrementa el stock
+        de cada línea de forma atómica (ADR-0008) y registra un pago
+        `provider: manual` con quién confirmó y cuándo — las tres escrituras
+        en una sola transacción.
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema: { type: string, format: uuid }
+          description: |
+            UUID interno de la orden. A diferencia del `order_token` que ve el
+            comprador (US-008), acá el llamador es el panel del dueño, que
+            trabaja con el identificador interno.
+      responses:
+        '200':
+          description: Pago confirmado; la orden pasa a `new`.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentConfirmed' }
+              example:
+                order_number: 1042
+                status: new
+        '401':
+          description: JWT admin ausente o inválido (AC-3).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '403':
+          description: JWT válido sin `role=admin` (AC-3).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404':
+          description: No existe una orden con ese `orderId`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              example:
+                type: 'dsm:payments/order-not-found'
+                title: Orden no encontrada
+                status: 404
+        '409':
+          description: |
+            La orden no está `pending_payment` (ya confirmada, cancelada, o
+            cualquier otro estado — AC-4/AC-5), o algún ítem se quedó sin stock
+            entre el checkout y la confirmación.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+              examples:
+                noPendiente:
+                  value:
+                    type: 'dsm:payments/order-not-pending-payment'
+                    title: La orden no está pendiente de pago
+                    status: 409
+                    detail: 'La orden ya está en estado "new".'
+                sinStock:
+                  value:
+                    type: 'dsm:payments/insufficient-stock'
+                    title: Stock insuficiente
+                    status: 409
+                    detail: 'Uno o más productos de la orden se quedaron sin stock suficiente.'
+components:
+  schemas:
+    PaymentConfirmed:
+      type: object
+      required: [order_number, status]
+      additionalProperties: false
+      properties:
+        order_number:
+          type: integer
+          description: Número legible de la orden (US-008).
+          example: 1042
+        status:
+          type: string
+          enum: [new]
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

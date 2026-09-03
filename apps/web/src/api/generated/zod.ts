@@ -726,6 +726,34 @@ export const CreateGuestCheckoutResponse = zod.object({
 
 
 /**
+ * Transiciona pending_payment -> new, decrementa el stock de cada línea de forma atómica (ADR-0008) y registra un pago provider=manual con quién confirmó y cuándo — las tres escrituras en una sola transacción. Sin body: el monto y las líneas salen de la orden, el provider es siempre manual, y quién confirma sale del JWT (sub), nunca de un campo que el cliente pudiera falsificar. AC-4 (la orden ya no está pending_payment) y AC-5 (doble confirmación) devuelven el MISMO 409 dsm:payments/order-not-pending-payment.
+ * @summary Confirmar el pago manual/offline de una orden pendiente (US-023 AC-1/AC-3/AC-4/AC-5/AC-6)
+ */
+export const ConfirmManualPaymentParams = zod.object({
+  "orderId": zod.string().uuid()
+})
+
+export const ConfirmManualPaymentResponse = zod.object({
+  "order_number": zod.number().int(),
+  "status": zod.enum(['new'])
+})
+
+
+/**
+ * El E2E §12 dice que el panel del dueño no muestra pending_payment — esta ruta es la excepción declarada por US-023: sin verla, no hay forma de llegar a POST .../confirm-payment. Lista angosta a propósito (sin buyer_email/buyer_phone, sin paginación — volumen de un solo local): NO reemplaza el listado general de US-012.
+ * @summary Listar órdenes pendientes de confirmar pago (US-023 AC-2)
+ */
+export const ListPendingPaymentOrdersResponseItem = zod.object({
+  "id": zod.string().uuid().describe('UUID interno de la orden — el que espera el path de POST \/admin\/orders\/{orderId}\/confirm-payment. Obligatorio: sin él ningún consumidor puede construir esa URL desde este listado.'),
+  "order_number": zod.number().int(),
+  "buyer_name": zod.string(),
+  "total_ars_cents": zod.number().int(),
+  "created_at": zod.string().datetime({"offset":true})
+})
+export const ListPendingPaymentOrdersResponse = zod.array(ListPendingPaymentOrdersResponseItem)
+
+
+/**
  * Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo `file`. El formato se decide por CONTENIDO (magic bytes), no por la extensión ni por el Content-Type. El archivo se valida ANTES de crear el trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1: requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías en una actualización: vacío significa "no cambiar ese campo" (así funciona el archivo de ajuste de precios). En una fila de alta, una celda requerida vacía la rechaza con missing_required. El precio va en ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un import vigente a la vez (409); un reintento con la misma `Idempotency-Key` devuelve 200 con el mismo trabajo.
  * @summary Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
  */

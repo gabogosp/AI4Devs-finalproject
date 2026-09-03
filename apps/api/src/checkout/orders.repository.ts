@@ -111,13 +111,16 @@ export class OrdersRepository {
   }
 
   /**
-   * Detalle admin (US-012 AC-2). Devuelve la orden para CUALQUIER `status`
-   * existente — el filtro de AC-8 sobre `pending_payment` es responsabilidad
-   * del service, no de este método (mismas capas que `list`). Sin
-   * `status_history` (T4.1 — `OrderStatusHistoryRepository` es el único punto
-   * de ORM de esa tabla, no este archivo). `tx` opcional: se re-lee dentro de
-   * la misma transacción cuando `updateStatusConditional` pierde la carrera
-   * (design.md §D4).
+   * Detalle admin (US-012 AC-2) / por id interno (US-023): `ConfirmOrderService`
+   * la usa para distinguir 404 (orden inexistente) de 409 (existe pero no está
+   * `pending_payment`), algo que `transitionToNewIfPending` por sí sola no puede
+   * — su `updateMany` guardado devuelve 0 filas afectadas en ambos casos por
+   * igual. Devuelve la orden para CUALQUIER `status` existente — el filtro de
+   * AC-8 sobre `pending_payment` es responsabilidad del service, no de este
+   * método (mismas capas que `list`). Sin `status_history` (T4.1 —
+   * `OrderStatusHistoryRepository` es el único punto de ORM de esa tabla, no
+   * este archivo). `tx` opcional: se re-lee dentro de la misma transacción
+   * cuando `updateStatusConditional` pierde la carrera (design.md §D4).
    */
   findById(
     id: string,
@@ -153,6 +156,40 @@ export class OrdersRepository {
     });
     if (result.count === 0) return null;
     return tx.order.findUniqueOrThrow({ where: { id } });
+  }
+
+  /**
+   * Transiciona `pending_payment -> new` (US-023 AC-1), guardada por
+   * `WHERE status = 'pending_payment'` — devuelve `null` si la orden ya no
+   * estaba en ese estado (idempotencia/concurrencia, AC-4/AC-5). No lanza:
+   * `ConfirmOrderService` decide el error (`design.md` §Approach). Recibe
+   * el `tx` de esa transacción — nunca corre suelta cuando confirma un pago,
+   * porque tiene que revertir junto con el decremento de stock si algo falla.
+   */
+  async transitionToNewIfPending(
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<OrderWithItems | null> {
+    const { count } = await tx.order.updateMany({
+      where: { id: orderId, status: 'pending_payment' },
+      data: { status: 'new' },
+    });
+    if (count === 0) return null;
+    return tx.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: { items: true },
+    });
+  }
+
+  /**
+   * Lectura simple por estado, más nuevas primero (US-023 AC-2). Fuera de
+   * cualquier transacción de escritura — nunca recibe `tx`.
+   */
+  listByStatus(status: string): Promise<Order[]> {
+    return this.prisma.order.findMany({
+      where: { status },
+      orderBy: { created_at: 'desc' },
+    });
   }
 
   private translate(error: unknown): unknown {
