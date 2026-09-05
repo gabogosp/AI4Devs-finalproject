@@ -1437,7 +1437,7 @@
   us-id: US-012
   discipline: frontend-web
   variant: null
-  status: in-review   # /commit 2026-09-05: 26/26 tasks, PR #31 abierto contra main
+  status: archived   # /archive-change 2026-09-05 — PR #31 mergeado a main, movido a changes/archive/
   # /commit 2026-08-30: 21/26 tasks cerradas (Fases 0-11 completas). Checkpoint consciente,
   # no un stop real — las 5 restantes (T0.3, T12.1-T12.4, la Fase 12 de "pendientes de pago")
   # estaban genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
@@ -1454,6 +1454,17 @@
   # fork-point limpio). Rama nueva `feat/US-012-pendientes-pago-frontend-web` — la original
   # (`feat/US-012-panel-ordenes-dueno-frontend-web`, PR #22) ya estaba mergeada. status →
   # `in-review`.
+  #
+  # /archive-change 2026-09-05 (worktree aislado `.claude/worktrees/archive-US-012-frontend-web`,
+  # rama `chore/archive-US-012-frontend-web`): PR #31 confirmado MERGED (mergeCommit
+  # 2472325960ff972251083c038e64f404f8d0d8fe) — movido a `changes/archive/`. Spec-sync (paso
+  # 6/7) es NO-OP para esta disciplina: `design.md` de este change no declara ningún Spec
+  # delta propio (no tiene `contracts/`) — es puro consumidor de `GET/PATCH /admin/orders`
+  # (`US-012-panel-ordenes-dueno-backend`) y `GET pending-payment`/`POST confirm-payment`
+  # (`US-023-pago-manual-offline-backend`), ninguno de los dos archivado todavía. La
+  # creación de la capability `openspec/specs/` le corresponde al archive de esos backends,
+  # no a este. US-012 (la US completa) NO avanza a `Done`: backend (`in review`) y qa
+  # (`in review`) siguen sin archivar.
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1494,9 +1505,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/31
   pr-opened-at: 2026-09-05
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T19:55:39Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-frontend-web
 
 - name: US-023-pago-manual-offline-backend
   us-id: US-023

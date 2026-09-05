@@ -6,6 +6,10 @@ discipline: frontend-web
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-05
+merged_commit: 2472325960ff972251083c038e64f404f8d0d8fe
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/31
 realigned-at: 2026-08-30
 realigned-reason: >
   `US-012-panel-ordenes-dueno-backend` fue regenerado (ver su proposal.md,
