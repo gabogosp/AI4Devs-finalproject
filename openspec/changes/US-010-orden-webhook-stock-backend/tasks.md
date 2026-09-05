@@ -104,7 +104,7 @@
     `transitionToNewIfPending` — se usó `tx` explícito en los tests para poder aislar la
     escritura, mismo patrón que `updateStatusConditional`.
 
-- [ ] T2.3 `payments.repository.ts`: agregar `createApprovedPayment` (provider
+- [x] T2.3 `payments.repository.ts`: agregar `createApprovedPayment` (provider
   `mercadopago`/`simulated_dsm`, `status='approved'`, `idempotency_key='{provider}:{externalId}'`),
   `createRefundPendingPayment` (mismos campos, `status='refund_pending'`,
   `idempotency_key='{provider}:{externalId}:refund'`) y `markRefunded(paymentId, tx?)`
@@ -115,6 +115,7 @@
     `OrderNotPendingPaymentError` en el segundo intento, nunca un error crudo de Prisma;
     `markRefunded` sobre una fila que NO está `refund_pending` no la toca (guardado).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payments.repository`
+  - **Nota de ejecución (2026-09-05)**: 7/7 tests verdes (2 preexistentes + 5 nuevos).
 
 ## Phase 3: Cliente de MercadoPago (alcance mínimo: `getPayment`, `searchByExternalReference`, `refund` — sin `createPreference`)
 
