@@ -7,12 +7,15 @@
 > `qa-frontend-standards.md` §2.1).
 > **Numeración**: `TC-12NN` — 4 dígitos a propósito (evita colisión con el rango de 3
 > dígitos que ya usan US-001..US-014: `TC-0NN`, `TC-2NN`, `TC-3NN`, `TC-7NN`, `TC-14N`).
-> **Estado del stack**: backend **0/17** tasks y frontend **0/25** tasks, ambos
-> planificados en el mismo PR #22. **Ningún test case de este plan es ejecutable hoy** —
-> los 13 de aceptación se desbloquean con solo el backend; los 9 restantes (E2E, a11y,
-> exploratorio-FE) necesitan además el frontend. Se escriben igual, completos, para que
-> ambos changes se construyan contra criterios observables — mismo criterio que
-> `US-007-carrito-compra-qa` aplicó a su propia capa de navegador.
+> **Estado del stack (actualizado 2026-09-05)**: backend y frontend mergearon completos
+> vía PR #22. Los **22 test cases automatizados de este plan corrieron y están verdes**
+> (13 aceptación + 5 E2E + 2 a11y + 2 k6) — ver `tasks.md` para los números exactos por
+> fase. Los 2 charters (TC-1250/TC-1251) quedaron documentados; TC-1251 sigue
+> `blocked_by: US-023` (declarado, no ejecutado). Nota histórica preservada abajo: al
+> escribir este plan (2026-08-30), backend **0/17** tasks y frontend **0/25** tasks —
+> se escribieron completos igual, para que ambos changes se construyeran contra
+> criterios observables, mismo criterio que `US-007-carrito-compra-qa` aplicó a su
+> propia capa de navegador.
 
 ## 1. Perfil de riesgo
 

@@ -328,20 +328,40 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Verification (suite-level)
 
-- [ ] **Aceptación del panel verde — 13/13 escenarios** (`@ordenes`), **desde que exista
+- [x] **Aceptación del panel verde — 13/13 escenarios** (`@ordenes`), **desde que exista
   el backend**
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@ordenes" --format summary 2>&1 | grep -qE '^13 scenarios \(13 passed\)$'`
-- [ ] **No se rompió lo que esta US toca** — suites del backend que tocan checkout y
+  - **Cerrado 2026-09-05**: `13 scenarios (13 passed)`, `59 steps (59 passed)`.
+- [x] **No se rompió lo que esta US toca** — suites del backend que tocan checkout y
   órdenes siguen verdes
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern='checkout|e2e-admin-orders|e2e-rbac'`
-- [ ] **Carga bajo presupuesto** (lectura p95 < 300ms, escritura p95 < 500ms)
+  - **Cerrado 2026-09-05**: 125/126 verdes (`e2e-admin-orders.spec.ts` y
+    `e2e-rbac.spec.ts` — las dos suites que este panel toca directo — 100%
+    verdes). La única falla (`order-schema.spec.ts` F40) es **contaminación
+    cruzada del Postgres compartido**, no una regresión de este change: otro
+    worktree de esta misma sesión (`US-021-retencion-datos-backend`) aplicó su
+    migración (`orders.anonymized_at`/`anonymization_reason`) contra la MISMA
+    base física; `main` en este worktree (US-012-qa) todavía no tiene esa
+    migración mergeada, así que su guardián F40 ve columnas que su propio
+    `schema.prisma` no declara. No se toca `order-schema.spec.ts` acá — no es
+    código de esta US, y "corregirlo" significaría o revertir la migración de
+    otra sesión (destructivo, no es mío) o adelantar un merge que no depende de
+    este change.
+- [x] **Carga bajo presupuesto** (lectura p95 < 300ms, escritura p95 < 500ms)
   - **Verify**: `k6 run --vus 2 --duration 20s qa/performance/orders-read.js && k6 run --vus 2 --duration 20s qa/performance/orders-write.js`
-- [ ] **E2E de navegador y a11y** — bloqueados hasta que `/develop-backend US-012` y
+  - **Cerrado 2026-09-05**: lectura p95=1.81ms, escritura p95=3.11ms — ambos muy
+    por debajo del presupuesto.
+- [x] **E2E de navegador y a11y** — bloqueados hasta que `/develop-backend US-012` y
   `/develop-frontend-web US-012` cierren. Los criterios ya están escritos (Fases 5-6): se
   desbloquean solos cuando `apps/web/app/(admin)/admin/ordenes/page.tsx` exista y hable
   contra un backend real.
-- [ ] **Las 9 AC tienen ≥1 test-case definido**: AC-1 TC-1201/1220/1240 · AC-2
+  - **Cerrado 2026-09-05**: ambos changes hermanos mergearon (PR #22) — T5.1-T5.3
+    y T6.1-T6.2 corridos y verdes (10/10 tests).
+- [x] **Las 9 AC tienen ≥1 test-case definido**: AC-1 TC-1201/1220/1240 · AC-2
   TC-1202/1206/1211/1221 · AC-3 TC-1203/1207/1222/1241 · AC-4 TC-1204/1222 · AC-5
   TC-1205/1220 · AC-6 TC-1208/1223 · AC-7 TC-1209/1212/1224 · AC-8 TC-1206/1210 · AC-9
   TC-1203/1207/1213/1221. Ninguna cobertura es ejecutable hoy — declarado, no dado por
   cubierto (ver `qa-plan.md` §5.0).
+  - **Cerrado 2026-09-05**: las 9 AC tienen cobertura EJECUTADA y verde (no sólo
+    declarada) — 22/22 test cases automatizados corridos, 2/2 charters
+    documentados (uno bloqueado por US-023, declarado como tal).
