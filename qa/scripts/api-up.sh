@@ -37,7 +37,13 @@
 #                          aceptación. El presupuesto de producción (10, `CHECKOUT_RATE_LIMIT_MAX`
 #                          default) se agota antes de terminar y el resto de los escenarios ve un
 #                          429 que no tiene nada que ver con el guard de idempotencia que están
-#                          probando (`qa/support/seed-pending-payment-order.ts`).
+#                          probando (`qa/support/seed-pending-payment-order.ts`). Mismo motivo en
+#                          US-012: `seed-ordenes.ts` hace UN checkout real por orden sembrada, y
+#                          casi todos los escenarios de `ordenes.feature` siembran al menos una —
+#                          el mismo presupuesto de producción autobloquea esa suite a partir del
+#                          tercer o cuarto escenario. Mismo criterio que `AUTH_RATE_LIMIT_MAX`: el
+#                          límite real se sigue probando en la capa que sí lo ejercita (dev-owned,
+#                          `e2e-checkout-ratelimit.spec.ts`).
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009

@@ -1,0 +1,47 @@
+get:
+  operationId: listAdminOrders
+  tags: [admin-orders]
+  summary: Listado del panel de fulfillment (AC-1, AC-5, AC-8)
+  description: |
+    Sólo las 4 fases activas del fulfillment (`new`/`preparing`/`ready`/
+    `delivered`) — `pending_payment`/`cancelled` NUNCA son valores válidos
+    de `status` acá (AC-8, allowlist cerrada). `sort` es un enum cerrado de
+    6 valores (comma-list con prefijo `-` para descendente, `api-standards`
+    §7.2), no un parser libre.
+  parameters:
+    - name: status
+      in: query
+      schema: { type: string, enum: [new, preparing, ready, delivered] }
+    - name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    - name: offset
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    - name: sort
+      in: query
+      schema:
+        type: string
+        enum: [order_number, -order_number, created_at, -created_at, total_ars_cents, -total_ars_cents]
+        default: -created_at
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AdminOrderList' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: '`sort`/`status` fuera del enum cerrado, o `limit`/`offset` fuera de rango.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

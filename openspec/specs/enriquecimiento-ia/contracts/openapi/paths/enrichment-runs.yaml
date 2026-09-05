@@ -1,0 +1,62 @@
+post:
+  operationId: startEnrichmentRun
+  tags: [admin-enrichment]
+  summary: Disparar una corrida de enriquecimiento (AC-1, AC-5)
+  description: |
+    Arranca una corrida sobre todo lo pendiente, o sobre un subconjunto con
+    `product_ids`. Responde 202 de inmediato: una corrida sobre miles de productos no
+    cabe en el tiempo de un request (api-standards §10) y el progreso se consulta en
+    GET /admin/enrichment/status. `force: true` devuelve a la cola los productos
+    ABANDONADOS (los que agotaron ENRICHMENT_MAX_ATTEMPTS) y es explícito a propósito:
+    si fuera automático, el tope de intentos no serviría para nada. Un campo desconocido
+    en el cuerpo es 422 y no un valor ignorado, porque {"forced": true} es un typo
+    plausible de force y aceptarlo en silencio haría una corrida que el dueño cree que
+    rehabilita abandonados y no lo hace. El trabajo pendiente es durable en
+    products.enrichment_done: no hay tabla de corridas y el `run_id` es sólo
+    correlación para los logs.
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/StartEnrichmentRun' }
+  responses:
+    '202':
+      description: Corrida aceptada y arrancada (no terminada).
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/EnrichmentRunAccepted' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '409':
+      description: |
+        `dsm:enrichment/run-in-progress` (ya hay una corrida) o `dsm:enrichment/cooldown`
+        (breaker abierto tras fallos consecutivos del proveedor). Son types distintos
+        porque se resuelven distinto: en el segundo no hay progreso que esperar, hay un
+        problema con el proveedor. Las dos llevan `runner_state` como extension member
+        de RFC 7807 §3.2.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: '`product_ids` fuera de forma UUID, más de 500 elementos, o campo desconocido en el cuerpo (`ValidationPipe` global).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/EnrichmentRateLimited'
+    '503':
+      description: |
+        `dsm:enrichment/disabled` — no hay proveedor configurado (GEMINI_API_KEY
+        ausente) o ENRICHMENT_ENABLED=false. No es "ocupado": no hay con qué trabajar,
+        y por eso es 5xx y no 409.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

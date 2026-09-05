@@ -257,7 +257,7 @@
   us-id: US-002
   discipline: qa
   variant: null
-  status: in review   # regresión completa re-verificada 2026-08-30 (/develop-qa): 20/20 automatizados verdes; 2 diferidos (T2.5/T5.1) sin cambio
+  status: archived   # 20/20 automatizados verdes + 2 Deferred (T2.5/T5.1, decisión PO 2026-08-20) — no bloquean el archive (F53)
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null
@@ -268,9 +268,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/21
   pr-opened-at: 2026-08-30T12:30:00Z
   created: 2026-08-16
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-30T12:49:49Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-002-storefront-navegacion-categorias-qa/
 
 - name: US-002-storefront-navegacion-categorias-frontend-web
   us-id: US-002
@@ -686,7 +686,7 @@
   # `completed` es el valor del enum del schema (draft|ready|approved|in-progress|completed|
   # archived). Nota: otras 12 entradas de este archivo usan `in progress` con espacio, que NO
   # está en el enum — deriva preexistente, no se toca acá para no pisar trabajo ajeno.
-  status: completed
+  status: archived   # /archive-change 2026-09-05 — 28/28 tasks (AS-BUILT), PR #3 mergeado 2026-08-29. Crea openspec/specs/enriquecimiento-ia/ (CAP-3)
   parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
   linear-task-id: null
   audit-baseline: null
@@ -720,8 +720,8 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
   completed-at: 2026-08-23  # 28/28 tasks cerradas con su Verify; AS-BUILT en tasks.md
-  archived-at: null
-  archive-path: null
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/
   # AS-BUILT (2026-08-23): las 28 tasks cerraron con su `Verify` en verde. Suite completa de
   # apps/api en 1246 tests / 123 suites; `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test`
   # en 0. Cuatro hallazgos que la ejecución destapó y que el plan no anticipaba:
@@ -1437,13 +1437,34 @@
   us-id: US-012
   discipline: frontend-web
   variant: null
-  status: in-progress   # /develop-frontend-web, primer task cerrado 2026-08-30 (T0.1 desbloqueado)
+  status: archived   # /archive-change 2026-09-05 — PR #31 mergeado a main, movido a changes/archive/
   # /commit 2026-08-30: 21/26 tasks cerradas (Fases 0-11 completas). Checkpoint consciente,
   # no un stop real — las 5 restantes (T0.3, T12.1-T12.4, la Fase 12 de "pendientes de pago")
-  # están genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
-  # publicó su contrato (`pending-payment`/`confirm-payment` ausentes de openapi.yaml). status
-  # se queda en `in-progress` (no `in-review`) porque no todas las tasks están [x] — per
-  # /commit paso 9. 828/828 tests en @dsm/web, type-check y lint limpios.
+  # estaban genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
+  # publicaba su contrato (`pending-payment`/`confirm-payment` ausentes de openapi.yaml).
+  # 828/828 tests en @dsm/web, type-check y lint limpios.
+  #
+  # /develop-frontend-web 2026-09-05 (worktree aislado `.claude/worktrees/
+  # US-012-pendientes-pago-frontend-web`, rama `feat/US-012-pendientes-pago-frontend-web`
+  # — no se reusó `feat/US-012-panel-ordenes-dueno-frontend-web`, ya mergeada por PR #22):
+  # `US-023-pago-manual-offline-backend` mergeó (PR #27, 2026-09-02) y publicó el contrato.
+  # T0.3 desbloqueada, T12.1-T12.4 (PendingPaymentsPanel) cerradas. 26/26 tasks. Suite
+  # completa 138/138 archivos, 886/886 tests, tsc y lint limpios, gate de codegen sin diff.
+  # /commit 2026-09-05: PR #31 abierto contra main (check-pr-scope.sh ✓, 12 files en scope,
+  # fork-point limpio). Rama nueva `feat/US-012-pendientes-pago-frontend-web` — la original
+  # (`feat/US-012-panel-ordenes-dueno-frontend-web`, PR #22) ya estaba mergeada. status →
+  # `in-review`.
+  #
+  # /archive-change 2026-09-05 (worktree aislado `.claude/worktrees/archive-US-012-frontend-web`,
+  # rama `chore/archive-US-012-frontend-web`): PR #31 confirmado MERGED (mergeCommit
+  # 2472325960ff972251083c038e64f404f8d0d8fe) — movido a `changes/archive/`. Spec-sync (paso
+  # 6/7) es NO-OP para esta disciplina: `design.md` de este change no declara ningún Spec
+  # delta propio (no tiene `contracts/`) — es puro consumidor de `GET/PATCH /admin/orders`
+  # (`US-012-panel-ordenes-dueno-backend`) y `GET pending-payment`/`POST confirm-payment`
+  # (`US-023-pago-manual-offline-backend`), ninguno de los dos archivado todavía. La
+  # creación de la capability `openspec/specs/` le corresponde al archive de esos backends,
+  # no a este. US-012 (la US completa) NO avanza a `Done`: backend (`in review`) y qa
+  # (`in review`) siguen sin archivar.
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1480,19 +1501,19 @@
   # cuyo contrato de datos no existe.
   estimate-hours: 8
   assignee: sin-asignar
-  branch: feat/US-012-panel-ordenes-dueno-frontend-web
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
-  pr-opened-at: 2026-08-30
+  branch: feat/US-012-pendientes-pago-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/31
+  pr-opened-at: 2026-09-05
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T19:55:39Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-frontend-web
 
 - name: US-023-pago-manual-offline-backend
   us-id: US-023
   discipline: backend
   variant: null
-  status: in review   # 19/19 tasks + 5 checks de verificación cerrados 2026-08-30, PR #27 abierto
+  status: archived   # /archive-change 2026-09-05 — 28/28 tasks, PR #27 mergeado 2026-09-02. Crea openspec/specs/pagos/ (CAP-4, camino manual/offline)
   parent-us: docs/user-stories/US-023-pago-manual-offline.md
   linear-task-id: null
   audit-baseline: null
@@ -1548,14 +1569,17 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/27
   pr-opened-at: 2026-08-30
   created: 2026-08-30
-  # NOTA (2026-09-05, /plan-qa Mode A): qa-plan.md agregado a este mismo change
-  # (openspec/changes/US-023-pago-manual-offline-backend/qa-plan.md). No se toca
-  # `status`/`branch` (ownership de /develop-backend, /commit, /archive-change) — este
-  # comentario es solo trazabilidad, no un campo nuevo. El `status: in review` de arriba
-  # es drift conocido: PR #27 ya está mergeado a main (ver qa-plan.md, nota de cabecera).
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  # NOTA (2026-09-05, /plan-qa Mode A, superada por el archive de abajo): qa-plan.md se
+  # agregó originalmente a este mismo change
+  # (openspec/changes/US-023-pago-manual-offline-backend/qa-plan.md, sin tocar
+  # `status`/`branch`). El `/archive-change` de este mismo día movió TODO el directorio
+  # (proposal/design/tasks/contracts + qa-plan.md) a `archive/` — ver entrada hermana
+  # `US-023-pago-manual-offline-qa` más abajo para el estado real de la disciplina QA
+  # (su PR #38 sigue abierto, no archivado; sólo el archivo físico se movió porque vivía
+  # dentro del directorio del backend).
+  completed-at: 2026-09-02T23:37:32Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-023-pago-manual-offline-backend/
 
 - name: US-023-pago-manual-offline-qa
   us-id: US-023
@@ -1618,7 +1642,7 @@
   us-id: US-008
   discipline: frontend-web
   variant: null
-  status: in review   # 39/39 tasks cerradas 2026-08-30, PR abierto (/commit)
+  status: archived   # /archive-change 2026-09-05 — 39/39 tasks, PR #23 mergeado 2026-08-30. Extiende openspec/specs/checkout/ (CAP-10)
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null
@@ -1662,15 +1686,15 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/23
   pr-opened-at: 2026-08-30
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-30T14:02:02Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-008-checkout-guest-frontend-web/
 
 - name: US-012-panel-ordenes-dueno-backend
   us-id: US-012
   discipline: backend
   variant: null
-  status: in-review   # /commit — 22/22 tasks cerradas, 2026-08-30
+  status: archived   # /archive-change 2026-09-05 — 29/29 tasks (contando la reconciliación F40/F51 post-regenerate), PR #22 mergeado 2026-09-03
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1736,15 +1760,15 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
   pr-opened-at: 2026-08-30
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-03T00:07:57Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-backend/
 
 - name: US-012-panel-ordenes-dueno-qa
   us-id: US-012
   discipline: qa
   variant: null
-  status: draft
+  status: archived
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1795,22 +1819,24 @@
   #
   # 3-4 h AI-asistido / ~6-8 h tradicional. La US §7 presupuesta QA-US-012 en 6-8 h.
   estimate-hours: 3.5
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  # Comparte rama y PR con los dos hermanos dev de esta US, por el mismo criterio ya
-  # declarado en sus entradas (mismo worktree, mismo PR de US-012 completo).
-  branch: feat/US-012-panel-ordenes-dueno-frontend-web
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
-  pr-opened-at: 2026-08-30
+  # 2026-09-05: ejecutado (/develop-qa) — 24/24 tasks cerradas. PR #22 (los dos
+  # hermanos dev) ya había mergeado a `main` cuando esto se desarrolló, así que
+  # QA abrió su PROPIA rama/PR en vez de compartir la de #22 (que ya no existía
+  # como rama abierta) — corrige la nota de plan-time de arriba, que asumía
+  # que las tres disciplinas compartirían PR.
+  branch: feat/US-012-panel-ordenes-dueno-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/30
+  pr-opened-at: 2026-09-05
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T19:55:30Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-qa/
 
 - name: US-021-retencion-datos-ordenes-backend
   us-id: US-021
   discipline: backend
   variant: null
-  status: draft
+  status: in review   # /commit 2026-09-05 — 30/30 tasks, PR #41 abierto. El código estaba completo localmente desde 2026-08-23 pero nunca se había pusheado — sólo la planificación (PR #25) había mergeado; publicado durante un barrido de changes pendientes de archivar.
   parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
   audit-baseline: null
@@ -1862,9 +1888,10 @@
   # Capability nueva esperada en openspec/specs/ tras el primer /archive-change:
   # `retencion-datos-personales` (CAP-13, partida de CAP-10 el 2026-08-23).
   estimate-hours: 6.8
-  assignee: sin-asignar  # planificado; 0 tasks cerradas, nadie lo ejecuta todavía
+  assignee: claude-code
   branch: feat/US-021-retencion-datos-ordenes-backend
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/25
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/41
+  pr-opened-at: 2026-09-05
   created: 2026-08-30
   completed-at: null
   archived-at: null

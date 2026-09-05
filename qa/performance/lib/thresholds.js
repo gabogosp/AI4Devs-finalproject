@@ -63,9 +63,16 @@ export const cart_write = {
 };
 
 /**
- * Login de cuenta de cliente de US-014 (TC-160). Mismo presupuesto que
- * `cart_write` porque es el MISMO NFR: PRD §4 fija «p95 de escritura
- * (carrito/orden) < 500 ms» y la US-014 §9 lo repite para login.
+ * Login de cuenta de cliente de US-014 (TC-160). **Presupuesto NO ratificado**
+ * (OQ-QA-5, `openspec/changes/US-014-registro-login-qa/proposal.md`): el PRD
+ * §4 fija «p95 de escritura (carrito/orden) < 500 ms», pero esa fila dice
+ * literalmente "carrito/orden" — no cubre login — y US-014 §9 no fija ningún
+ * número de latencia para esta ruta, sólo NFRs cualitativos. Se copia el
+ * mismo valor que `cart_write` como placeholder hasta que PO/Arquitecto
+ * ratifiquen un budget propio de login (o confirmen que no aplica); medido
+ * contra la API real da p95 ≈ 621,93 ms, con bcrypt cost 12 costando ~250 ms
+ * **por diseño** (mitigación de fuerza bruta) — así que con este valor el
+ * threshold falla a propósito y no debe tomarse como gate cerrado.
  *
  * `rate_limited` con `count<1` es la misma guarda de honestidad que
  * `cart_write`: `/v1/auth/login` tiene su propio `@Throttle` de **10 intentos
@@ -100,9 +107,36 @@ export const confirm_payment = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * Listado del panel de fulfillment de US-012 (TC-1240). El número sale de la
+ * US §9 ("Latencia p95 lectura < 300ms"), que hereda el PRD §4 — sin
+ * condicional, a diferencia de la lectura del carrito de US-007.
+ */
+export const list_orders = {
+  'http_req_duration{endpoint:list_orders}': ['p(95)<300'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
+/**
+ * Transición de estado del panel de fulfillment de US-012 (TC-1241). US §9
+ * ("Latencia p95 escritura (transición) < 500ms"), mismo NFR que
+ * `cart_write`/`auth_login` (PRD §4 — "p95 escritura (carrito/orden) < 500 ms").
+ *
+ * `rate_limited` con `count<1`: la superficie admin no tiene un throttler
+ * dedicado propio distinto del resto de `/v1/admin/*`, pero la corrida real
+ * usa una API arrancada para QA (`api:up`) con los presupuestos elevados —
+ * misma guarda de honestidad que `cart_write`.
+ */
+export const order_transition = {
+  'http_req_duration{endpoint:order_transition}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
-// (`auth_login`) y US-023 (`confirm_payment`): las suites QA extienden el
-// mismo archivo compartido.
+// (`auth_login`), US-023 (`confirm_payment`) y US-012 (`list_orders`/
+// `order_transition`): las suites QA extienden el mismo archivo compartido.
 export default {
   list_products,
   storefront_product,
@@ -110,5 +144,7 @@ export default {
   auth_login,
   search,
   confirm_payment,
+  list_orders,
+  order_transition,
   MIN_SKUS,
 };

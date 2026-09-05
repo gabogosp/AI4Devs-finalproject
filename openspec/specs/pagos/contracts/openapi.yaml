@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Pagos (CAP-4, camino manual/offline)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-023-pago-manual-offline-backend — la primera implementación real del
+    `PaymentConfirmationPort` (adaptador `manual`), independiente de
+    MercadoPago (US-009, `Blocked` sin credenciales) y del webhook async
+    (US-010, sin planificar).
+
+    **Colisión de rutas con la capacidad `ordenes`** (US-012): ambos
+    controllers comparten el prefijo `/admin/orders`. Resuelto del lado de
+    `ordenes` (su `:id` restringido a forma UUID) — sin cambio de este lado.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-payments
+    description: Confirmación de pago manual/offline (US-023). Superficie admin, gateada por AdminGuard.
+security:
+  - adminBearer: []
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  schemas:
+    PaymentConfirmed:
+      type: object
+      required: [order_number, status]
+      additionalProperties: false
+      properties:
+        order_number: { type: integer, example: 1042 }
+        status: { type: string, enum: [new] }
+    PendingPaymentOrder:
+      type: object
+      required: [id, order_number, buyer_name, total_ars_cents, created_at]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: |
+            UUID interno de la orden — el que espera el path de
+            POST /admin/orders/{orderId}/confirm-payment. Obligatorio: sin
+            él ningún consumidor puede construir esa URL desde este listado.
+        order_number: { type: integer, example: 1042 }
+        buyer_name: { type: string, example: Juana Pérez }
+        total_ars_cents: { type: integer, example: 4560000 }
+        created_at: { type: string, format: date-time }
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). Types de esta capacidad:
+        `dsm:payments/order-not-pending-payment` (409),
+        `dsm:payments/insufficient-stock` (409).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene PII del comprador.'
+paths:
+  /admin/orders/{orderId}/confirm-payment:
+    $ref: ./openapi/paths/confirm-payment.yaml
+  /admin/orders/pending-payment:
+    $ref: ./openapi/paths/pending-payment.yaml
