@@ -311,6 +311,14 @@
   # (NFR de latencia de login sin ratificar por PO/Arquitecto) que bloquea su
   # cierre. Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro
   # agente).
+  #
+  # NOTA (2026-09-05, /archive-change US-014-registro-login-frontend-web): también
+  # archivada, 33/33 tasks. Extiende openspec/specs/cuentas/ con la UI de sesión —
+  # rewrite same-origin (ADR-0013 nuevo), refresh single-flight cross-tab, AC-5
+  # protegido en el cliente. BE + FE de US-014 ya están archivados (2/3
+  # disciplinas). `status` SIGUE sin avanzar a `Done`: QA tiene el `[Open]` real
+  # descripto arriba y no se puede cerrar hasta que el PO/Arquitecto ratifique el
+  # NFR de latencia de login. Se queda en `In Progress`.
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras
