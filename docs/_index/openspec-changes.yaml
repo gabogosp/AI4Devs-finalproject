@@ -1607,8 +1607,8 @@
   estimate-hours: 5
   assignee: claude-code
   branch: feat/US-023-pago-manual-offline-qa
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/38
+  pr-opened-at: 2026-09-05
   created: 2026-09-05
   completed-at: null
   archived-at: null
