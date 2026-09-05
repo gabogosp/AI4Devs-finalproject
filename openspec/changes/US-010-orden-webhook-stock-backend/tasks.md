@@ -406,7 +406,7 @@
 
 ## Phase 12: Observabilidad
 
-- [ ] T12.1 `payments-events.service.ts`: agregar `emitProviderConfirmed(orderId, provider)`,
+- [x] T12.1 `payments-events.service.ts`: agregar `emitProviderConfirmed(orderId, provider)`,
   `emitAutoCancelled(orderId)`, `emitRefundFailed(orderId, paymentId)`,
   `emitWebhookReceived(paymentId)`, `emitSignatureRejected()`,
   `emitReconcileRecovered(orderId)`, `emitCleanupCancelled(count)` — sin renombrar ni tocar
@@ -416,6 +416,9 @@
   - **Exit criterion**: cada evento nuevo incrementa su propio contador en `MetricsService`
     (`GET /v1/admin/metrics`), distinguible de `payments.manual_confirmed`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payments-events`
+  - **Nota de ejecución (2026-09-05, adelantada desde Phase 12)**: T5.2/T5.5/T5.6 (Phase 5)
+    necesitan `emitProviderConfirmed`/`emitRefundFailed`/`emitAutoCancelled` para compilar
+    — mismo motivo que T8.1/T8.2. 14/14 tests verdes (6 preexistentes + 8 nuevos).
 
 ## Phase 13: Wiring final del módulo
 
