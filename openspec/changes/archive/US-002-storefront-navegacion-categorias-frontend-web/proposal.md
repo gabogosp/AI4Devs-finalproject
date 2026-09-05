@@ -5,6 +5,10 @@ parent-us: US-002
 discipline: frontend-web
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-05
+merged_commit: 9a9fc53
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
 ---
 
 # US-002 Frontend Web — Navegación pública por categorías (SSR/SEO)

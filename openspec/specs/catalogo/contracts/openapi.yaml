@@ -19,6 +19,8 @@ tags:
   description: Gestión de productos (AC-2..AC-9)
 - name: storefront-products
   description: Superficie pública de lectura del storefront (ficha de producto, US-003)
+- name: storefront-categories
+  description: Navegación pública por categorías (árbol, detalle, listado paginado, US-002)
 - name: admin-imports
   description: Importación masiva del catálogo por CSV/Excel (US-006). Sólo admin.
 - name: health
@@ -118,22 +120,76 @@ components:
               type: string
             slug:
               type: string
-    AdminLogin:
+    CategoryRef:
       type: object
-      required:
-      - bootstrapToken
+      required: [slug, name]
       properties:
-        bootstrapToken:
-          type: string
-          minLength: 1
-    AdminLoginResponse:
+        slug: { type: string }
+        name: { type: string }
+    CategoryTreeNode:
       type: object
-      required:
-      - token
+      description: 'Rubro con sus subrubros; sin `parent` (la jerarquía la da el anidamiento).'
+      required: [slug, name, children]
       properties:
-        token:
+        slug: { type: string }
+        name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    CategoryTree:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryTreeNode' }
+    StorefrontCategory:
+      type: object
+      description: 'Categoría pública (US-002): sin id, parent_id ni timestamps.'
+      required: [slug, name, parent, children]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        parent:
+          type: object
+          nullable: true
+          description: 'Rubro padre para el breadcrumb; null si ya es raíz.'
+          required: [slug, name]
+          properties:
+            slug: { type: string }
+            name: { type: string }
+        children:
+          type: array
+          items: { $ref: '#/components/schemas/CategoryRef' }
+    StorefrontProductListItem:
+      type: object
+      description: 'Item de grilla (US-002): sin id, stock numérico, status ni timestamps.'
+      required: [slug, name, price_ars_cents, currency, image_url, in_stock]
+      properties:
+        slug:
           type: string
-          description: JWT con claim role=admin
+          description: 'Enlaza a la ficha `/v1/products/{slug}`.'
+        name: { type: string }
+        price_ars_cents: { type: integer }
+        currency: { type: string, enum: [ARS] }
+        image_url: { type: string, nullable: true }
+        in_stock: { type: boolean }
+    StorefrontProductPage:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/StorefrontProductListItem' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total:
+              type: integer
+              description: 'Publicados que matchean el filtro, no los de la página.'
     CreateCategory:
       type: object
       required:
@@ -498,6 +554,12 @@ paths:
     $ref: ./openapi/paths/admin-products-id.yaml
   /products/{slug}:
     $ref: ./openapi/paths/storefront-products-slug.yaml
+  /categories:
+    $ref: ./openapi/paths/storefront-categories.yaml
+  /categories/{slug}:
+    $ref: ./openapi/paths/storefront-categories-slug.yaml
+  /categories/{slug}/products:
+    $ref: ./openapi/paths/storefront-categories-slug-products.yaml
   /admin/imports:
     $ref: ./openapi/paths/admin-imports.yaml
   /admin/imports/{id}:
