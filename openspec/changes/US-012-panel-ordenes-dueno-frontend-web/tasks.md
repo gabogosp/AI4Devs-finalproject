@@ -360,7 +360,7 @@
 > Bloqueada por T0.3, no por T0.1 — puede ejecutarse en paralelo a las Fases 1-11 o después,
 > según cuándo `US-023-pago-manual-offline-backend` publique su contrato.
 
-- [ ] **T12.1 — Regenerar el cliente/Zod/MSW con los endpoints de pendientes de pago**
+- [x] **T12.1 — Regenerar el cliente/Zod/MSW con los endpoints de pendientes de pago**
   - **Pattern**: mismo `orval.config.ts` que T1.1 (un solo `dsmCatalog`/`dsmCatalogZod` sobre
     el contrato completo) — re-ejecutar codegen una vez `US-023-pago-manual-offline-backend`
     publique `GET /admin/orders/pending-payment` y `POST /admin/orders/{orderId}/confirm-payment`.
@@ -371,6 +371,13 @@
   - **Verify**: `pnpm --filter @dsm/web codegen` sale con código 0, y
     `grep -ril "pending.payment\|confirm.payment" apps/web/src/api/generated/ | wc -l` → mayor
     que `0`.
+  - **Nota de ejecución (2026-09-05)**: `pnpm --filter @dsm/web codegen` sale con código 0;
+    `grep -ril` imprime `7` archivos (`zod.ts`, `endpoints.ts`,
+    `model/{pendingPaymentOrder,adminOrderSummary,checkoutCreatedStatus,
+    adminOrderStatusChange,adminOrderSummaryStatus}.ts`). `git status` no muestra diff — el
+    cliente ya estaba generado contra este contrato (quedó committeado junto con T1.1/el
+    merge de PR #22, adelantado a la publicación real del gate T0.3). Sin cambios que
+    commitear en `apps/web/src/api/generated/`.
 - [ ] **T12.2 — `pendingPaymentsService.ts`**
   - **Pattern**: `design.md` §D9 — servicio separado de `ordersService.ts` (concern distinto,
     backend hermano), `parseContract` sobre las operaciones generadas (nunca `fetch` crudo,
