@@ -45,6 +45,6 @@ Superficie cubierta: `GET /v1/admin/orders`, `GET /v1/admin/orders/{id}`,
 | D-1 | Entrega real del aviso "lista para retirar" (el seam ya dispara; el adaptador es un log local). | US-011. |
 | D-2 | Cancelación / reintegro de stock. | US-013. |
 | D-3 | Métricas agregadas / gráficos del panel. | US-016. |
-| D-4 | Reconciliación con `US-010-orden-webhook-stock-backend` (FSM de 6 estados, ports genéricos) si esa US se retoma. | US-010 — indefinidamente pospuesta. |
+| D-4 | ~~Reconciliación con `US-010-orden-webhook-stock-backend`~~ | **Resuelta** (archivada 2026-09-05): US-010 vivió del lado de la capacidad hermana `pagos`, sin tocar `OrdersModule`/FSM de fulfillment de esta capacidad. |
 | D-5 | `PendingPaymentsPanel` (confirmar pagos manuales desde el panel) — endpoints propios de `pagos` (US-023), consumidos por el FE de esta US. | `US-012-panel-ordenes-dueno-frontend-web` (PR #31). |
 | D-6 | Tests de carga adicionales bajo volumen realista prod-shaped. | `/plan-qa` de un ciclo futuro. |

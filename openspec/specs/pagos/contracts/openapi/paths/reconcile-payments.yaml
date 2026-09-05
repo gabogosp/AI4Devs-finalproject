@@ -1,0 +1,32 @@
+post:
+  operationId: reconcilePayments
+  tags: [admin-payments]
+  summary: Disparar la reconciliación de pagos pendientes contra MercadoPago (US-010 AC-10)
+  description: |
+    Toma hasta `RECONCILE_BATCH_SIZE` órdenes `pending_payment` con más de
+    `RECONCILE_MIN_AGE_MS` de antigüedad, consulta su estado a MercadoPago por
+    `external_reference` y procesa las aprobadas por el mismo `ConfirmOrderService` que
+    usa el webhook — idempotente por construcción. Sin scheduler in-process: un cron
+    externo (Railway/GitHub Actions) le pega a este endpoint.
+  responses:
+    '200':
+      description: Resumen de la corrida.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [scanned, confirmed, stillPending]
+            properties:
+              scanned: { type: integer }
+              confirmed: { type: integer }
+              stillPending: { type: integer }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

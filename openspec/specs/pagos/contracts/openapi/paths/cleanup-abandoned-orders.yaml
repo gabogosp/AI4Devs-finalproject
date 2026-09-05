@@ -1,0 +1,29 @@
+post:
+  operationId: cleanupAbandonedOrders
+  tags: [admin-payments]
+  summary: Cancelar órdenes pending_payment abandonadas (US-010 AC-11)
+  description: |
+    Cancela, en un único `updateMany` guardado por `created_at`, las órdenes
+    `pending_payment` más viejas que `ORDER_ABANDON_HOURS` (default 48h). No reembolsa
+    nada (nunca se cobró). Sin scheduler in-process: un cron externo le pega a este
+    endpoint.
+  responses:
+    '200':
+      description: Cantidad de órdenes canceladas.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [cancelled]
+            properties:
+              cancelled: { type: integer }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
