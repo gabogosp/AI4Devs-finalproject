@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
@@ -48,7 +48,10 @@ describe('OrderDetail — T10.2 (foco gestionado al montar)', () => {
     render(<OrderDetail id={ID} />);
 
     const h1 = await screen.findByRole('heading', { level: 1, name: /orden #1000/i });
-    expect(document.activeElement).toBe(h1);
+    // El foco lo mueve un useEffect que corre un tick DESPUÉS de que el h1 aparece;
+    // findByRole resuelve con el h1 ya en el DOM pero el foco aún en <body> → se re-evalúa
+    // con waitFor en vez de asertar una sola vez (flaky en CI).
+    await waitFor(() => expect(document.activeElement).toBe(h1));
   });
 });
 

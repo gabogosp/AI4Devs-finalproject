@@ -43,11 +43,11 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-008 backend construido** (crea `orders` con las columnas de PII que
+- [x] **US-008 backend construido** (crea `orders` con las columnas de PII que
   esta US anonimiza). Ya está: 20/20 tasks cerradas, en review (PR #11).
   **Verify**: `grep -c "buyer_name" packages/db/prisma/schema.prisma` ≥ 1
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
-- [ ] **Working tree limpio en `packages/db/prisma/schema.prisma` y
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
+- [x] **Working tree limpio en `packages/db/prisma/schema.prisma` y
   `apps/api/src/checkout/`** — este change migra el esquema y extiende el
   módulo del checkout; con otra tarea en vuelo sobre esos archivos se pisan
   (precedente: la colisión de sesiones de US-007).
@@ -57,7 +57,7 @@ language: es
 
 ## Fase 0: Esquema y configuración — 0,9 h
 
-- [ ] T0.1 Migración aditiva `orders.anonymized_at` + `orders.anonymization_reason`
+- [x] T0.1 Migración aditiva `orders.anonymized_at` + `orders.anonymization_reason`
   (F40 — column-complete)
   - **Pattern**: dos columnas nuevas en el `model Order` de
     `packages/db/prisma/schema.prisma`, migración generada con
@@ -85,8 +85,19 @@ language: es
     los dos `CHECK` existen en la base; ninguna columna existente cambió de
     tipo; `pnpm --filter @dsm/db migrate` corre limpio contra el Postgres local.
   - **Verify**: `grep -c 'anonymized_at\|anonymization_reason' packages/db/prisma/migrations/*/migration.sql | awk -F: '{s+=$2} END {print s}'` ≥ 4 (dos columnas + dos CHECK, cada uno aparece al menos una vez) **y** `grep -c "CHECK" packages/db/prisma/migrations/*add_order_anonymization*/migration.sql` = 2 **y** `pnpm --filter @dsm/db migrate` termina en 0
+  - **Desviación documentada**: el Postgres local compartido (`ai4devs-finalproject-postgres-1`)
+    tenía migraciones de US-023 (`add_payments`) y US-012 (`add_order_status_history`) —
+    ambas en worktrees paralelos, en vuelo al momento de correr esta task — aplicadas en
+    la base pero ausentes de la carpeta de migraciones de esta rama. `prisma migrate dev`
+    (el runner detrás de `pnpm --filter @dsm/db migrate`) detecta ese drift como
+    divergencia y exige un reset destructivo del schema, algo que borraría el trabajo en
+    vuelo de esas otras sesiones. Se escribió `migration.sql` a mano con el contenido
+    exacto de este Pattern y se aplicó con `prisma migrate deploy` (no interactivo, no
+    resetea, sólo aplica lo pendiente) — decisión confirmada con el usuario. Las dos
+    columnas + los dos `CHECK` quedaron verificados directo contra la base
+    (`\d orders`), ambos grep del Verify pasan (6 ≥ 4, 2 = 2).
 
-- [ ] T0.2 Config nueva validada al arranque (fail-fast, §7)
+- [x] T0.2 Config nueva validada al arranque (fail-fast, §7)
   - **Pattern**: agregar a `envSchema` en `apps/api/src/config/env.validation.ts`
     — `per backend-node-standards.md §7 — config validada al arranque,
     fail-fast`:
@@ -105,7 +116,7 @@ language: es
 
 ## Fase 1: Constantes + `OrdersRepository` — 1,2 h
 
-- [ ] T1.1 Constantes de anonimización
+- [x] T1.1 Constantes de anonimización
   - **Pattern**: `apps/api/src/checkout/order-anonymization.ts` con
     `AnonymizationReason`, `ANONYMIZED_BUYER_NAME`, `ANONYMIZED_BUYER_EMAIL`
     (dominio `.invalid`, RFC 2606), `ANONYMIZED_BUYER_PHONE` — ver `design.md`
@@ -114,7 +125,7 @@ language: es
     parametrización; el email usa el TLD `.invalid`.
   - **Verify**: `grep -c "\.invalid" apps/api/src/checkout/order-anonymization.ts` ≥ 1
 
-- [ ] T1.2 `OrdersRepository.findById` + `anonymize` (guardado por `WHERE`)
+- [x] T1.2 `OrdersRepository.findById` + `anonymize` (guardado por `WHERE`)
   - **Pattern**: `per backend-node-standards.md §5 — el repositorio es el
     único punto de ORM`; ver el bloque completo en `design.md` §Approach
     ("OrdersRepository — dos escrituras + una lectura"). El `updateMany` con
@@ -127,7 +138,7 @@ language: es
     devuelve `null`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository` en 0, con 3 casos nuevos (anonimiza / no-op sobre ya anonimizada / null sobre inexistente)
 
-- [ ] T1.3 `OrdersRepository.anonymizeRetentionEligible` (barrido de conjunto)
+- [x] T1.3 `OrdersRepository.anonymizeRetentionEligible` (barrido de conjunto)
   - **Pattern**: un único `updateMany` con `where: { anonymized_at: null,
     created_at: { lt: cutoff } }` — sin bucle por fila (justificado en
     `design.md` §Trade-offs contra el batching de `ImportRunner`).
@@ -141,7 +152,7 @@ language: es
 
 ## Fase 2: Errores + eventos — 0,9 h
 
-- [ ] T2.1 `OrderNotFoundError` (404 RFC 7807)
+- [x] T2.1 `OrderNotFoundError` (404 RFC 7807)
   - **Pattern**: en `apps/api/src/checkout/checkout-errors.ts`, espejando
     `CartEmptyError` — `per backend-node-standards.md §6 — errores de dominio
     en TS plano, mapeados por el filtro global a RFC 7807`.
@@ -156,7 +167,7 @@ language: es
     `type: 'dsm:checkout/order-not-found'` en el envelope RFC 7807.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=checkout-errors` en 0
 
-- [ ] T2.2 `OrdersRetentionEventsService` (cero PII)
+- [x] T2.2 `OrdersRetentionEventsService` (cero PII)
   - **Pattern**: `apps/api/src/observability/orders-retention-events.service.ts`,
     mismo esqueleto que `CheckoutEventsService` (delega el contador en
     `MetricsService`, `@Optional()`) — ver `design.md` §Approach
@@ -174,7 +185,7 @@ language: es
 
 ## Fase 3: Servicio + runner de arranque — 1,3 h
 
-- [ ] T3.1 `OrdersRetentionService.anonymizeOnRequest` (AC-3, AC-4, AC-9 en
+- [x] T3.1 `OrdersRetentionService.anonymizeOnRequest` (AC-3, AC-4, AC-9 en
   espíritu — la autorización real la da el guard de Fase 4)
   - **Pattern**: ver `design.md` §Approach ("Servicio, endpoints y runner").
     `reason` fijo en `'requested'`, nunca parametrizable desde afuera del
@@ -185,7 +196,7 @@ language: es
     sobre un id inexistente, lanza `OrderNotFoundError`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.service` en 0, con los 3 casos (incluida la aserción de "no segundo evento" contando `events.count(...)` antes/después de la segunda llamada)
 
-- [ ] T3.2 `OrdersRetentionService.runRetentionSweep` (AC-1, AC-4)
+- [x] T3.2 `OrdersRetentionService.runRetentionSweep` (AC-1, AC-4)
   - **Pattern**: `cutoffDate()` con `ORDER_RETENTION_MONTHS` (default 12);
     `reason` fijo en `'retention_policy'`; emite `orders_retention.swept`
     **siempre**, incluso con `count=0` (US §9 — "cada corrida").
@@ -194,7 +205,7 @@ language: es
     lleva el conteo correcto en `fields.anonymized_count`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.service` en 0
 
-- [ ] T3.3 `OrdersRetentionRunner.onApplicationBootstrap` (barrido oportunista,
+- [x] T3.3 `OrdersRetentionRunner.onApplicationBootstrap` (barrido oportunista,
   ADR-0012)
   - **Pattern**: mismo patrón que `ImportRunner.onApplicationBootstrap` — ver
     `design.md` §Approach. `try/catch` — un fallo del barrido NUNCA impide que
@@ -208,7 +219,7 @@ language: es
 
 ## Fase 4: Controller + DTOs + wiring del módulo — 1,1 h
 
-- [ ] T4.1 `POST /v1/admin/orders/:id/anonymize` (AC-3, AC-9)
+- [x] T4.1 `POST /v1/admin/orders/:id/anonymize` (AC-3, AC-9)
   - **Pattern**: ver `design.md` §Approach ("Controller"). `AdminGuard` +
     `AuthThrottlerGuard` (bucket `auth`, sin registrar uno nuevo) +
     `@SkipThrottle({ storefront: true, cart: true })`, mismo patrón que
@@ -221,7 +232,7 @@ language: es
     idéntico, sin error.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.controller` en 0
 
-- [ ] T4.2 `POST /v1/admin/orders/retention-sweep` (AC-1)
+- [x] T4.2 `POST /v1/admin/orders/retention-sweep` (AC-1)
   - **Pattern**: mismos guards que T4.1; `@Throttle` con el presupuesto propio
     (5/hora) — `per security-standards.md §7.3`.
   - **Exit criterion**: con JWT admin, anonimiza todo lo vencido y responde 200
@@ -229,7 +240,7 @@ language: es
     misma hora → 429 con `Retry-After`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-retention.controller` en 0
 
-- [ ] T4.3 DTOs de respuesta
+- [x] T4.3 DTOs de respuesta
   - **Pattern**: `apps/api/src/checkout/dto/orders-retention.dto.ts`,
     `static from(...)` sin exponer la entidad ORM — `per
     backend-node-standards.md §4 — DTO de respuesta explícito`.
@@ -238,7 +249,7 @@ language: es
     `{anonymized_count, reason: 'retention_policy'}`.
   - **Verify**: cubierto por los tests de T4.1/T4.2 (aserción de forma del body)
 
-- [ ] T4.4 Wiring de `checkout.module.ts`
+- [x] T4.4 Wiring de `checkout.module.ts`
   - **Pattern**: agregar `OrdersRetentionController` a `controllers`;
     `OrdersRetentionService`, `OrdersRetentionRunner`,
     `OrdersRetentionEventsService` a `providers` — `per
@@ -252,7 +263,7 @@ language: es
 
 ## Fase 5: Tests de invariantes cross-AC — 2,1 h
 
-- [ ] T5.1 AC-8 — idempotencia end-to-end (negative-space)
+- [x] T5.1 AC-8 — idempotencia end-to-end (negative-space)
   - **Pattern**: `per testing-standards.md §14.9 — negative-space: asertar lo
     que NO tiene que pasar`.
   - **Exit criterion**: llamar `anonymize` (repo) o `POST .../anonymize`
@@ -261,7 +272,7 @@ language: es
     la 2ª y la 3ª.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac8-order-anonymization-idempotent` en 0 (spec nuevo)
 
-- [ ] T5.2 AC-9 — autorización (negative-space)
+- [x] T5.2 AC-9 — autorización (negative-space)
   - **Pattern**: e2e contra `AdminGuard` real, mismo estilo que
     `e2e-admin-auth.spec.ts`.
   - **Exit criterion**: sin token, con token expirado, con token de rol
@@ -270,7 +281,7 @@ language: es
     modificar después del intento).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-orders-retention-auth` en 0 (spec nuevo)
 
-- [ ] T5.3 AC-2 — el valor comercial no cambia (invariante central de la US)
+- [x] T5.3 AC-2 — el valor comercial no cambia (invariante central de la US)
   - **Pattern**: sembrar N órdenes con ítems, importes y fechas conocidas;
     calcular agregados (`sum(total_ars_cents)`, `count(*)`, `sum(items.quantity)`
     por producto) antes de anonimizar; anonimizar todas; recalcular los mismos
@@ -279,14 +290,14 @@ language: es
     después de anonimizar el conjunto completo.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac2-order-metrics-preserved` en 0 (spec nuevo)
 
-- [ ] T5.4 AC-6 — ninguna orden ni ítem se borra (negative-space)
+- [x] T5.4 AC-6 — ninguna orden ni ítem se borra (negative-space)
   - **Pattern**: contar filas de `orders` y `order_items` antes y después del
     barrido sobre un conjunto con órdenes vencidas y no vencidas.
   - **Exit criterion**: el conteo de filas de ambas tablas es idéntico antes y
     después; ninguna fila desaparece.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac6-order-not-deleted` en 0 (spec nuevo)
 
-- [ ] T5.5 AC-7 — el consentimiento sobrevive (negative-space)
+- [x] T5.5 AC-7 — el consentimiento sobrevive (negative-space)
   - **Pattern**: sembrar una orden con `consent_accepted_at` y
     `consent_terms_version` conocidos; anonimizar; releer.
   - **Exit criterion**: los tres campos de consentimiento
@@ -294,7 +305,7 @@ language: es
     idénticos antes y después de anonimizar.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac7-consent-preserved-after-anonymization` en 0 (spec nuevo)
 
-- [ ] T5.6 AC-8 — irreversibilidad (negative-space)
+- [x] T5.6 AC-8 — irreversibilidad (negative-space)
   - **Pattern**: tras anonimizar, no debe existir ningún camino de lectura
     (repo, servicio, log) que devuelva el `buyer_name`/`buyer_email`/
     `buyer_phone` original.
@@ -308,7 +319,7 @@ language: es
 
 ## Fase 6: Contrato OpenAPI + docs — 0,7 h
 
-- [ ] T6.1 Contrato OpenAPI de los dos endpoints
+- [x] T6.1 Contrato OpenAPI de los dos endpoints
   - **Pattern**: `per api-contract-completeness` — 1 yaml por endpoint,
     `contracts/openapi/anonymize-order.yaml` y
     `contracts/openapi/retention-sweep.yaml` dentro de este change, con
@@ -319,8 +330,16 @@ language: es
   - **Exit criterion**: los dos yaml validan como OpenAPI 3.x (sin `$ref` roto)
     y declaran todo status code posible de la tabla de T4.1/T4.2.
   - **Verify**: `npx spectral lint openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml` en 0
+  - **Desviación documentada**: `spectral` no es un paquete instalado en el repo
+    (no está en `package.json`/`pnpm-lock.yaml`); el binario real es
+    `@stoplight/spectral-cli`, no `spectral`. Se corrió
+    `npx --yes @stoplight/spectral-cli lint ...` (el `--yes` evita el prompt
+    interactivo de instalación, que en este entorno no-TTY aborta sin él,
+    mismo tipo de deviación que T0.1 con `prisma migrate`). Resultado: "No
+    results with a severity of 'error' found!" — 0 errores contra
+    `.spectral.yaml` (`spectral:oas`).
 
-- [ ] T6.2 Nota en `checkout/README.md`
+- [x] T6.2 Nota en `checkout/README.md`
   - **Pattern**: agregar una sección breve "Retención y anonimización
     (US-021)" con el mismo estilo que las secciones existentes del README,
     señalando que `OrdersRetentionController`/`Service`/`Runner` viven en este
@@ -334,8 +353,19 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + integration completos: `pnpm --filter @dsm/api test`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Contrato OpenAPI sin errores: `npx spectral lint openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml`
-- [ ] Migración aplicada limpia contra Postgres local: `pnpm --filter @dsm/db migrate`
+- [x] Unit + integration completos: `pnpm --filter @dsm/api test`
+  - **Nota**: la corrida completa (166 suites) muestra flakiness **preexistente
+    y no relacionado** con este change, en módulos que US-021 no toca
+    (`enrichment.repository.spec.ts`, `enrichment.service.integration.spec.ts`
+    — aserciones de timing bajo carga completa) y una falla aislada de
+    `e2e-checkout-cache.spec.ts` (aislamiento de rate-limit entre archivos que
+    comparten IP bajo ejecución paralela completa) — ninguna reproducible en
+    solitario ni estable entre corridas (dos corridas completas dieron
+    conjuntos de fallas DISTINTOS e inconexos entre sí). Verificación
+    determinística y limpia con el scope real de este change:
+    `pnpm --filter @dsm/api test -- --testPathPattern="checkout|observability"`
+    → **31 suites, 162 tests, 100% verde**.
+- [x] Lint limpio: `pnpm --filter @dsm/api lint`
+- [x] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
+- [x] Contrato OpenAPI sin errores: `npx --yes @stoplight/spectral-cli lint openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml` (mismo `--yes` de T6.1)
+- [x] Migración aplicada limpia contra Postgres local: `pnpm --filter @dsm/db migrate:deploy` (mismo `migrate:deploy` de T0.1 — "No pending migrations to apply")
