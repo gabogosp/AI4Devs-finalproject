@@ -194,7 +194,7 @@
 
 ## Phase 5: `ConfirmOrderService` ampliado (el corazón del change — AC-1, AC-4, AC-9 estructural)
 
-- [ ] T5.1 `confirm-order.service.ts`: extraer la creación del pago a un método privado
+- [x] T5.1 `confirm-order.service.ts`: extraer la creación del pago a un método privado
   `crearPago(input, confirmada, tx)` que despacha por `input.provider` — `'manual'` llama
   `createManualPayment` (sin cambios de comportamiento), `'mercadopago'`/`'simulated_dsm'`
   llaman `createApprovedPayment` (T2.3). El resto del método (`findById`, guard de status,
@@ -205,7 +205,7 @@
     el mismo resultado que antes de este change.
   - **Verify**: `git diff --stat apps/api/src/payments/confirm-order.service.spec.ts | wc -l` da `0`, y `pnpm --filter @dsm/api test -- --testPathPattern=confirm-order.service`
 
-- [ ] T5.2 Extender `confirm()`: para `provider !== 'manual'`, tras el `$transaction` exitoso,
+- [x] T5.2 Extender `confirm()`: para `provider !== 'manual'`, tras el `$transaction` exitoso,
   invocar `PaymentsEventsService.emitProviderConfirmed(orderId, provider)` (nuevo método,
   Phase 12) en vez de `emitConfirmed` (que queda exclusivo de `manual` — evita mal-etiquetar
   el evento, `design.md` §D1).
@@ -214,7 +214,7 @@
     `payments.manual_confirmed`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=confirm-order.service`
 
-- [ ] T5.3 Tras el commit exitoso (fuera de la transacción), para `provider !== 'manual'`:
+- [x] T5.3 Tras el commit exitoso (fuera de la transacción), para `provider !== 'manual'`:
   invocar `NotificationPort.orderConfirmed(...)` y `.ownerNewOrder(...)` (puerto ampliado en
   Phase 8). Un fallo del puerto se loguea pero NO revierte la confirmación ya comiteada.
   - **Exit criterion**: con un `NotificationPort` mockeado que lanza, `confirm()` igual
@@ -222,7 +222,7 @@
     logueado, no propagado.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=confirm-order.service`
 
-- [ ] T5.4 AC-4: en el `catch` de `InsufficientStockError`, para `provider !== 'manual'`,
+- [x] T5.4 AC-4: en el `catch` de `InsufficientStockError`, para `provider !== 'manual'`,
   invocar un nuevo método privado `compensarSinStock(input)` en vez de simplemente
   re-lanzar (la rama `manual` conserva el re-lanzamiento sin cambios).
   `compensarSinStock` abre una NUEVA transacción: `transitionToCancelledIfPending(orderId, tx)`
@@ -237,7 +237,7 @@
     transacción lo garantiza).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=confirm-order.service`
 
-- [ ] T5.5 Dentro de `compensarSinStock`, fuera de toda transacción: si `provider ===
+- [x] T5.5 Dentro de `compensarSinStock`, fuera de toda transacción: si `provider ===
   'simulated_dsm'`, llamar `markRefunded` directamente (no-op externo, E2E §9.5); si
   `provider === 'mercadopago'`, llamar `MercadoPagoClient.refund(externalId, amountArsCents)`
   — éxito → `markRefunded`; fallo → loguear `payments.refund_failed` (Phase 12) y dejar la
@@ -247,7 +247,7 @@
     se emite el evento de fallo; con el mock devolviendo éxito, la fila pasa a `refunded`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=confirm-order.service`
 
-- [ ] T5.6 Al final de `compensarSinStock` (tras el intento de reembolso, exitoso o no):
+- [x] T5.6 Al final de `compensarSinStock` (tras el intento de reembolso, exitoso o no):
   invocar `NotificationPort.orderCancelledNoStock(...)`, y hacer que `confirm()` termine
   lanzando `OrderAutoCancelledInsufficientStockError` (409, `dsm:payments/auto-cancelled-insufficient-stock`
   — nuevo, en `payment-confirmation-errors.ts`) en vez de `InsufficientStockError` cruda,
@@ -258,6 +258,28 @@
     sin envolver; el `NotificationPort` recibe exactamente un llamado a
     `orderCancelledNoStock` con `orderId`/`orderNumber`/`buyerName`/`buyerEmail`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=confirm-order.service`
+  - **Nota de ejecución conjunta T5.1-T5.6 (2026-09-05)**: implementadas en una sola pasada
+    (están todas en el mismo método). Nueva cobertura en
+    `confirm-order.service.provider.spec.ts` (archivo separado — `confirm-order.service.spec.ts`,
+    US-023, queda con 0 diffs per T5.1 Exit criterion): 8/8 tests nuevos verdes cubriendo
+    happy path mercadopago/simulated_dsm, el evento `provider_confirmed` (nunca
+    `manual_confirmed`), notificación post-commit + resiliencia a que el puerto lance,
+    compensación completa (cancelled + refund_pending + refund real + notificación) y el
+    caso de fallo de reembolso (queda `refund_pending`, nunca terminal). `NOTIFICATION_PORT`
+    y `MercadoPagoClient` se inyectan como parámetros OPCIONALES del constructor (ver nota de
+    T8.2) — los tests los pasan como mocks explícitos. `crearPago` usa `input.amountArsCents`
+    (lo que MP reportó) para el pago del provider automático, no `confirmada.total_ars_cents`
+    (validado igual en el happy path porque ambos coinciden en los fixtures). Suite combinada
+    de ambos archivos: 14/14 tests verdes, typecheck limpio.
+  - **Fix de wiring detectado al correr la suite completa**: `payments.module.ts` registraba
+    `MercadoPagoClient` como provider directo (`providers: [..., MercadoPagoClient]`) — Nest
+    no puede resolver por reflexión de tipos los parámetros `baseUrl: string` / `seams:
+    object` de su constructor (mismo problema que `GeminiHttpClient`, que por eso nunca se
+    registra directo — ver `ai.providers.ts`). Corregido a un provider factory
+    (`{ provide: MercadoPagoClient, inject: [ConfigService], useFactory: (config) => new
+    MercadoPagoClient(config) }`). Confirmado con `e2e-payments-bootstrap.spec.ts` (antes
+    fallaba con `Nest can't resolve dependencies... MercadoPagoClient at index [6]`).
+    Regresión completa (188/188 suites, 1676/1676 tests) verde tras el fix.
 
 ## Phase 6: `POST /v1/webhooks/mercadopago`
 

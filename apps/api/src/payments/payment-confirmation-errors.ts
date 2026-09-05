@@ -28,3 +28,21 @@ export class OrderNotFoundError extends DomainError {
     super('Orden no encontrada');
   }
 }
+
+/**
+ * 409 — un pago automático (`mercadopago`/`simulated_dsm`) se aprobó pero la
+ * orden se canceló y compensó por falta de stock (US-010 AC-4). Distinto de
+ * `InsufficientStockError` cruda: el llamador (controller) necesita saber
+ * que la compensación YA CORRIÓ (reembolso disparado o `refund_pending`),
+ * no que el intento simplemente falló como en el camino `manual`.
+ */
+export class OrderAutoCancelledInsufficientStockError extends DomainError {
+  readonly status = 409;
+  readonly type = 'dsm:payments/auto-cancelled-insufficient-stock';
+
+  constructor() {
+    super(
+      'El pago se aprobó pero no había stock suficiente: la orden se canceló y el pago se reembolsó',
+    );
+  }
+}
