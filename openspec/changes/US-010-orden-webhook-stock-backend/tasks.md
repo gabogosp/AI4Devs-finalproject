@@ -607,25 +607,47 @@
 
 ## Phase 16: Pre-merge
 
-- [ ] T16.1 Lint + typecheck limpios en todo `apps/api`.
+- [x] T16.1 Lint + typecheck limpios en todo `apps/api`.
   - **Exit criterion**: cero errores.
   - **Verify**: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+  - **Nota de ejecución (2026-09-05)**: ambos comandos corren limpio, cero errores/warnings.
 
-- [ ] T16.2 Suite completa de `apps/api` verde, incluyendo TODA la de `payments/`,
+- [x] T16.2 Suite completa de `apps/api` verde, incluyendo TODA la de `payments/`,
   `checkout/`, `orders/`, `stock/` sin ninguna regresión respecto al baseline de T0.1.
   - **Exit criterion**: 100% verde; ningún spec de US-023/US-012/US-008 modificado salvo los
     explícitamente listados en este plan (T1.2, T2.2 no toca specs existentes de más).
   - **Verify**: `pnpm --filter @dsm/api test`
+  - **Nota de ejecución (2026-09-05)**: 200/200 suites, 1720/1720 tests verdes (corrida
+    completa sin filtro, Postgres aislado del worktree). Los únicos specs fuera de
+    `payments/` tocados son los dos ancla actualizados con confirmación explícita del
+    usuario (`checkout/order-schema.spec.ts`, `orders/order-status-history-schema.spec.ts`
+    — ver Phase 1), no los dos frozen de US-023/US-008 verificados en el ítem de
+    Verification suite-level de abajo.
 
-- [ ] T16.3 Cobertura diff ≥ 80% sobre los archivos nuevos/modificados de este change (`qa-backend-standards.md`).
+- [x] T16.3 Cobertura diff ≥ 80% sobre los archivos nuevos/modificados de este change (`qa-backend-standards.md`).
   - **Exit criterion**: el reporte de cobertura de Jest para `src/payments/**` cumple el
     umbral.
   - **Verify**: `pnpm --filter @dsm/api test -- --coverage --testPathPattern=payments`
+  - **Nota de ejecución (2026-09-05)**: `src/payments` 96.66% stmts / 76.92% branch / 100%
+    funcs / 97.09% lines; `src/payments/dto` 100%; `src/payments/mercadopago` 93.16/81.35/
+    85/95.95; `src/payments/webhooks` 94.28/75/100/93.93. Archivo más bajo en stmts:
+    `payments.repository.ts` con 82.14% — todos por encima del umbral de 80%.
 
 ## Verification (suite-level)
 
-- [ ] Todos los tests unitarios pasan: `pnpm --filter @dsm/api test`
-- [ ] Migración aplica limpio contra una base nueva: `pnpm --filter @dsm/db migrate:deploy`
-- [ ] Lint / type-check limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] Contratos OpenAPI válidos: `npx @redocly/cli lint openspec/changes/US-010-orden-webhook-stock-backend/contracts/openapi/*.yaml`
-- [ ] Ningún spec de US-023/US-012/US-008 quedó modificado fuera de lo declarado en T1.2/T2.2: `git diff --stat apps/api/src/checkout/orders.repository.spec.ts apps/api/src/payments/confirm-order.service.spec.ts`
+- [x] Todos los tests unitarios pasan: `pnpm --filter @dsm/api test`
+  - **Nota (2026-09-05)**: cubierto por T16.2 (200/200 suites, 1720/1720 tests).
+- [x] Migración aplica limpio contra una base nueva: `pnpm --filter @dsm/db migrate:deploy`
+  - **Nota (2026-09-05)**: verificado contra `dsm_migrate_check`, una base Postgres
+    recién creada (vacía) en el mismo contenedor aislado del worktree — las 13
+    migraciones (incluida `20260905201343_add_order_confirmed_cancelled_at`) aplicaron
+    limpio. Base temporal eliminada después de verificar.
+- [x] Lint / type-check limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+  - **Nota (2026-09-05)**: cubierto por T16.1.
+- [x] Contratos OpenAPI válidos: `npx @redocly/cli lint openspec/changes/US-010-orden-webhook-stock-backend/contracts/openapi/*.yaml`
+  - **Nota (2026-09-05)**: los 5 contratos de este change validan sin errores (12
+    warnings — `info-license` + `no-server-example.com` sobre los placeholders
+    `*.example.com`, consistentes con el resto de contratos del repo).
+- [x] Ningún spec de US-023/US-012/US-008 quedó modificado fuera de lo declarado en T1.2/T2.2: `git diff --stat apps/api/src/checkout/orders.repository.spec.ts apps/api/src/payments/confirm-order.service.spec.ts`
+  - **Nota (2026-09-05)**: `git diff --stat` sobre ambos archivos devuelve vacío — cero
+    diff, confirmado.
