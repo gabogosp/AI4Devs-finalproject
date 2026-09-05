@@ -260,11 +260,11 @@
   # primera disciplina) ni el `status` de la US (se queda en `In Progress` — QA sigue en
   # `draft`, 0/24 tasks, ninguna PR abierta todavía).
   #
-  # NOTA (2026-09-05, /archive-change US-012-panel-ordenes-dueno-frontend-web): PR #31
-  # mergeado, change movido a `changes/archive/`. La US NO avanza a `Done`: backend
-  # (`in review`, PR sin archivar) y qa (`in review` — otra sesión mergeó su PR #30,
-  # 24/24 tasks, en el mismo lapso, pero tampoco corrió `/archive-change` todavía) siguen
-  # activos. `status` se queda en `In Progress`.
+  # NOTA (2026-09-05, barrido de archives): backend (este change, 29/29 tasks) y
+  # frontend-web (PR #32) YA archivados a openspec/changes/archive/. El backend creó la
+  # capacidad nueva `openspec/specs/ordenes/` (CAP-5, panel de fulfillment) con su
+  # contrato vivo. Falta archivar la disciplina qa (PR #33) para que la US pase a Done —
+  # hasta entonces `status` se queda en `In Progress`. `blocked_by` sin tocar.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
