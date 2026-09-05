@@ -3,7 +3,10 @@
 > **Ticket**: US-021 — Retención y anonimización de los datos personales de las órdenes (Ley 25.326)
 > **Author**: qa-engineer agent (assisted by @gosp)
 > **Date**: 2026-09-05
-> **Status**: Proposed
+> **Status**: Executed — 9/9 TC automatizados verde (`/develop-qa`, PR #41 ya
+> mergeado); QA-021-CT-1 verde (11/11 casos); QA-021-CT-2 gap reportado (no
+> existe contract test de US-012 para cerrar); TC-021-004b `blocked` y
+> TC-021-007 `manual` quedan como estaban (§4, §5).
 > **Affected platform(s)**: backend (los dos endpoints admin + el runner de arranque de
 > `openspec/changes/US-021-retencion-datos-ordenes-backend/`). Sin superficie frontend
 > propia todavía — ver §0 "Corrección de contexto" y §1 "Gap FE".
@@ -447,40 +450,76 @@ gherkin_scenario: SC-021-N5 — Sólo el dueño autenticado puede anonimizar a p
 
 #### Estado de ejecución (actualizado por `/develop-qa`, rama `feat/US-021-retencion-datos-ordenes-qa`)
 
-**Scaffolded, ejecución `blocked-on-impl`** — el harness de aceptación de las 9
-TC arriba marcadas `execution_mode: automated` (TC-021-001, 002, 003, 004a, 005,
-006, 008, 009, 010) está escrito y commiteado:
+**Ejecutado, 9/9 verde** — el backend mergeó a `main` como PR #41 (commit
+`c9bb229`, 30/30 tasks) y este mismo `/develop-qa` corrió la suite completa
+contra la implementación REAL (no un mock), con el build de `@dsm/api` y la
+migración de `packages/db` aplicados en este worktree. Las 9 TC marcadas
+`execution_mode: automated` (TC-021-001, 002, 003, 004a, 005, 006, 008, 009,
+010 — escenarios SC-021-H1/H2/H3/H4/A1/N1/N3/N4/N5) están **cerradas,
+pasando**, confirmado con **3 corridas consecutivas** sin flakiness
+(`qa/acceptance/features/retencion-ordenes.feature`, tag `@retencion-ordenes`,
+11 escenarios Gherkin incluido `@deferred` de TC-021-007 que no corre):
 
+```
+QA_API_BASE_URL=http://localhost:3009 pnpm --filter @dsm/qa test:acceptance -- --tags "@retencion-ordenes"
+→ 11 scenarios (11 passed), 74 steps (74 passed)
+```
+
+Artefactos reales (no stubs):
 - `qa/acceptance/features/retencion-ordenes.feature` — los 9 escenarios Gherkin
-  (`@retencion-ordenes`), verbatim de §4.
+  (`@retencion-ordenes`), sin cambios respecto a §4.
 - `qa/acceptance/steps/retencion-ordenes.steps.ts` — step defs reales contra
   `POST /v1/admin/orders/:id/anonymize`, `POST /v1/admin/orders/retention-sweep`,
-  `GET /v1/admin/orders`, `GET /v1/admin/orders/:id` (no stubs/pending).
+  `GET /v1/admin/orders`, `GET /v1/admin/orders/:id`. Corregidos 3 bugs de test
+  detectados corriendo por primera vez contra la implementación real (ninguno
+  es defecto del backend — ver detalle abajo):
+  1. Colisión de step: `Given('un catálogo sembrado con productos disponibles')`
+     estaba registrado dos veces (acá y en `pago-manual.steps.ts`, mismo texto
+     literal) — Cucumber carga TODO el glob de `acceptance/steps/**` junto, así
+     que era "Multiple step definitions match" en toda corrida completa de la
+     suite. Se eliminó el duplicado de este archivo (el de `pago-manual.steps.ts`
+     ya era un no-op compartible).
+  2. `dispararAnonimizacion(w, id, token)` tiene `token = w.token` como default
+     — en JS eso se activa con `undefined`, que es exactamente lo que
+     `credencialPara('sin Authorization')` devolvía para decir "sin header".
+     SC-021-N5 pasaba por el wrapper y terminaba re-sustituyendo el token admin
+     real (200 en vez de 401). Se cambió esa llamada a `llamarComoAdmin`
+     directo, que sí distingue "sin token" de "con token".
+  3. `esComparadorOriginal` comparaba `buyer_email` case-sensitive; el checkout
+     normaliza el email a minúsculas al persistir
+     (`apps/api/src/auth/email/normalize-email.ts`, usado desde
+     `checkout.service.ts`) — comportamiento real esperado, no anonimización.
+     El fixture de seed generaba el email con el prefijo de corrida en
+     mayúsculas, así que la comparación fallaba siempre para la orden
+     "reciente" de SC-021-H1. Se cambió la comparación de email a
+     case-insensitive.
 - `qa/support/seed-orders-retention.ts` + `buildOrderRetentionFixture` en
   `qa/support/builders.ts` — siembra vía checkout real + `confirm-payment`
-  (US-023) + backdate de `created_at` vía `@dsm/db` (§7).
+  (US-023) + backdate de `created_at` vía `@dsm/db` (§7). Sin cambios: el
+  seed ya funcionaba correctamente contra la API real la primera vez.
+- `qa/scripts/api-up.sh` — se agregaron `ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX`
+  y `ORDER_ANONYMIZE_RATE_LIMIT_MAX` (elevados a 100000, mismo criterio que las
+  variables ya existentes) — gap real del script: no conocía los dos
+  presupuestos nuevos de US-021, y sin elevarlos la suite se autobloqueaba con
+  429 a partir del 5º `POST retention-sweep` de una corrida completa (5/hora en
+  producción). El límite real sigue probado por la capa dev-owned
+  (`orders-retention.controller.spec.ts` T4.2) y por el contract test (§5,
+  contra una instancia efímera con el límite bajo).
 
-**No corren hoy** — verificado, no asumido: `tasks.md` de este mismo change
-tiene **0/16 tasks cerradas**; no existen `OrdersRetentionController`/`Service`/
-`Runner` en `apps/api/src/checkout/` ni las columnas `anonymized_at`/
-`anonymization_reason` en `packages/db/prisma/schema.prisma`. Cada llamada a los
-dos endpoints nuevos devuelve 404 de ruta inexistente. La única dependencia que
-desbloquea las 9 a la vez es **`/develop-backend US-021`** (0/16 tasks). Ningún
-`execution_mode` se cambió — siguen `automated`, porque son automatizables tal
-como están escritas; sólo la ejecución está pendiente de la implementación.
-
-TC-021-004b (`blocked`) y TC-021-007 (`manual`) se dejan exactamente como están
-— no se scaffoldean (el primero no tiene superficie API que cubrir todavía, el
-segundo es checklist humano por diseño, §1.3/§4). TC-021-007 sí tiene su
-escenario Gherkin (SC-021-N2) copiado al `.feature`, tageado `@deferred`
-(mismo criterio que `catalogo.feature` AC-10) para que Cucumber no lo ejecute
-ni falle por steps sin definir.
+TC-021-004b (`blocked`) y TC-021-007 (`manual`) se dejan exactamente como
+están. Se verificó explícitamente si PR #41 cerró el gap de §1.3 como bonus:
+`apps/api/src/orders/dto/order.dto.ts` (`AdminOrderSummaryDto`/
+`AdminOrderDetailDto`) sigue sin `anonymized_at`/`anonymization_reason` — el
+gap sigue abierto, TC-021-004b sigue `blocked` (no ejecutable), TC-021-007
+sigue `manual` (sin superficie API, checklist humano cruzado con T5.5
+dev-owned). TC-021-007 mantiene su escenario `@deferred` en el `.feature`, sin
+step defs.
 
 ---
 
 ## 5. Contract testing
 
-- [ ] **QA-021-CT-1**: Script standalone (mismo patrón que `qa/contract/search.contract.ts`)
+- [x] **QA-021-CT-1**: Script standalone (mismo patrón que `qa/contract/search.contract.ts`)
   contra servidor real, valida los dos endpoints nuevos vs
   `openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/*.yaml`
   - Exit criterion: valida que 200 de `anonymize` matchee
@@ -488,18 +527,27 @@ ni falle por steps sin definir.
     `additionalProperties: false`), que 200 de `retention-sweep` matchee
     `{anonymized_count}`, que 401/403/404/422/429 respondan `application/problem+json`
     con el `type` declarado en el yaml (`dsm:checkout/order-not-found` para el 404).
-  - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=retencion-ordenes` (exit 0)
+  - Verify real: `pnpm --filter @dsm/qa test:contract:retencion-ordenes` (exit 0) —
+    **desviación documentada** respecto al `Verify:` original de este plan
+    (`test:contract -- --testPathPattern=...`, que asume un runner jest-style): el
+    único contract test previo del repo (`search.contract.ts`) ya es un script `tsx`
+    standalone sin `--testPathPattern` (mismo precedente que
+    `pago-manual.contract.ts` documentó para QA-023-CT-1) — este script sigue esa
+    misma convención real, con su propio comando `test:contract:retencion-ordenes`
+    en `qa/package.json`, sin tocar `test:contract` (search).
   - Location: `qa/contract/retencion-ordenes.contract.ts`
-  - **Estado (`/develop-qa`)**: `blocked-on-impl` — NO se escribió
-    `qa/contract/retencion-ordenes.contract.ts`. `contracts/openapi/anonymize-order.yaml`
-    y `contracts/openapi/retention-sweep.yaml` **no existen todavía** en este change
-    (T6.1, 0/16 — verificado: `openspec/changes/US-021-retencion-datos-ordenes-backend/`
-    no tiene ni siquiera un directorio `contracts/` todavía). Escribir un script de
-    contrato contra un yaml que no existe simularía cobertura que no hay; se deja
-    como blocker explícito en vez de fingir el test. Desbloquea: T6.1 de `tasks.md`
-    (contrato OpenAPI de los dos endpoints).
+  - **Estado (`/develop-qa`, ejecutado)**: **11/11 casos verde**, 2 corridas
+    consecutivas sin flakiness, contra `http://localhost:3009` (API real, build
+    de `apps/api` + migración aplicada). Cubre: 200 + shape de `anonymize` (dos
+    veces — inicial e idempotente), 401/403/404/422 de `anonymize`, 200 + shape
+    de `retention-sweep`, 401/403 de `retention-sweep`, y **429 de ambos
+    endpoints** (el único caso que el `Verify` original no podía cubrir contra
+    la instancia compartida de la suite, elevada a propósito — ver §Estado de
+    ejecución arriba — así que el script levanta y apaga una instancia efímera
+    propia con el rate-limit bajo, mismo criterio que TC-613/`importar.steps.ts`,
+    y valida el `Retry-After` + el envelope RFC 7807 de ese 429).
 
-- [ ] **QA-021-CT-2**: Confirmar (no re-probar) que `GET /v1/admin/orders/:id` sigue sin
+- [~] **QA-021-CT-2**: Confirmar (no re-probar) que `GET /v1/admin/orders/:id` sigue sin
   romper el contrato existente de US-012 (`AdminOrderDetailDto`) tras el merge de este
   change — es una guarda de regresión de contrato cruzado, no un test nuevo de US-021: si
   alguien agrega `anonymized_at` al DTO (§1.3, fast-follow recomendado) sin actualizar
@@ -509,6 +557,13 @@ ni falle por steps sin definir.
     change).
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=admin-orders` (exit 0
     si el test existe; si no existe, reportar el gap en vez de fingir que corrió)
+  - **Estado (`/develop-qa`, verificado)**: **gap confirmado, no cerrado acá** — no
+    existe ningún `qa/contract/*.ts` que valide `GET /v1/admin/orders[/:id]`
+    (`AdminOrderSummaryDto`/`AdminOrderDetailDto`, US-012) contra un OpenAPI real
+    (`grep -rl "AdminOrderDetail\|AdminOrderSummary\|admin-orders" qa/contract/`
+    → 0 archivos). No se crea uno acá — fuera de alcance de este change, per el
+    propio Exit criterion. Reportado como gap de US-012, no fabricado como test
+    que corrió.
 
 ---
 
