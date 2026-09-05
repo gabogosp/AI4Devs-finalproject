@@ -119,7 +119,7 @@
 
 ## Phase 3: Cliente de MercadoPago (alcance mínimo: `getPayment`, `searchByExternalReference`, `refund` — sin `createPreference`)
 
-- [ ] T3.1 `payments/mercadopago/backoff.ts`: función pura de backoff exponencial + jitter y
+- [x] T3.1 `payments/mercadopago/backoff.ts`: función pura de backoff exponencial + jitter y
   `withRetry`, con su propio `MercadoPagoTransientError`/`MercadoPagoPermanentError` (NO
   reusar `AiTransientError` de `enrichment/` — duplicación chica y deliberada, `design.md`
   Trade-offs).
@@ -130,6 +130,10 @@
     `retryAfterSeconds` sobre el backoff calculado, y NO reintenta
     `MercadoPagoPermanentError`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payments/mercadopago/backoff`
+  - **Nota de ejecución (2026-09-05)**: 9/9 tests verdes. Duplicación deliberada de
+    `enrichment/ai/backoff.ts` con `MercadoPagoTransientError`/`MercadoPagoPermanentError`
+    propios (`dsm:payments/mercadopago-{transient,permanent}`), sin tocar el módulo de
+    enrichment.
 
 - [ ] T3.2 `payments/mercadopago/mercadopago-client.ts`: `getPayment(paymentId)`,
   `searchByExternalReference(orderId)`, `refund(paymentId, amountArsCents?)`. `fetch` con
