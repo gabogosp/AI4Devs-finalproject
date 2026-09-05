@@ -1,0 +1,22 @@
+get:
+  tags: [customer-auth]
+  operationId: getCurrentCustomer
+  summary: Cliente de la sesión en curso
+  description: |
+    Lee el access de la cookie dsm_access, no del header Authorization. Un
+    token con role=admin NO abre esta ruta.
+  security:
+    - sessionCookie: []
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Customer' }
+    '401':
+      description: '`dsm:auth/unauthenticated`.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

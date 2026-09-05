@@ -299,6 +299,18 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-17
+  #
+  # NOTA (2026-09-05, /archive-change US-014-registro-login-backend, barrido de
+  # archivos pendientes — PR #3 mergeado 2026-08-29): disciplina backend archivada
+  # (openspec/changes/archive/US-014-registro-login-backend/), 44/44 tasks. Crea la
+  # capacidad nueva `openspec/specs/cuentas/` (CAP-6) — README + requirements +
+  # decisions + contratos vivos (8 endpoints: 7 de /auth/* + /admin/auth/login
+  # mudado desde catalogo). `status` de la US NO avanza a `Done` ni a `QA`: FE
+  # (US-014-registro-login-frontend-web) también está mergeado pero sin archivar
+  # todavía, y QA (US-014-registro-login-qa, PR #9 mergeado) tiene un `[Open]` real
+  # (NFR de latencia de login sin ratificar por PO/Arquitecto) que bloquea su
+  # cierre. Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro
+  # agente).
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras

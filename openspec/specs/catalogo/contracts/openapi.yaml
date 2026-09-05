@@ -13,8 +13,6 @@ servers:
 - url: /v1
   description: Base URL versionada
 tags:
-- name: admin-auth
-  description: Seam de login admin (AC-8, ADR-0009)
 - name: admin-categories
   description: Gestión de categorías (AC-1)
 - name: admin-products
@@ -490,8 +488,6 @@ components:
               message:
                 type: string
 paths:
-  /admin/auth/login:
-    $ref: ./openapi/paths/admin-auth-login.yaml
   /admin/categories:
     $ref: ./openapi/paths/admin-categories.yaml
   /admin/categories/{id}:

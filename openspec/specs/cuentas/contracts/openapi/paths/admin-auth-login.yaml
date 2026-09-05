@@ -1,0 +1,39 @@
+post:
+  tags: [admin-auth]
+  operationId: loginAdmin
+  summary: Login admin — intercambia el bootstrap token o credenciales por un JWT (AC-8, ADR-0009)
+  description: |
+    Costura HTTP del seam de auth admin (ADR-0009). Única ruta bajo
+    `/v1/admin/*` SIN `adminBearer`: es la que emite el token, exigirlo
+    sería circular. US-014 (Fase 8) la endurece aceptando `{email,
+    password}` además del `bootstrapToken` interino de US-001, sin tocar
+    `AdminGuard` ni el contrato `role=admin`.
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/AdminLogin' }
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AdminLoginResponse' }
+    '401':
+      description: Credenciales o bootstrap token inválidos.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: Body fuera de las dos formas admitidas.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
+    '503':
+      description: Sin proveedor/configuración disponible para validar.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

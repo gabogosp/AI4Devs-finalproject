@@ -1,0 +1,33 @@
+post:
+  tags: [customer-auth]
+  operationId: loginCustomer
+  summary: Login por credenciales (AC-2)
+  description: |
+    Contraseña incorrecta, cuenta inexistente y cuenta bloqueada devuelven
+    respuestas idénticas y con latencias del mismo orden (AC-5).
+  security: []
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/LoginRequest' }
+  responses:
+    '200':
+      description: Sesión abierta.
+      headers:
+        Set-Cookie: { $ref: '../../openapi.yaml#/components/headers/SessionCookies' }
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/CustomerEnvelope' }
+    '401':
+      description: '`dsm:auth/invalid-credentials` — igual para email inexistente, contraseña incorrecta o cuenta bloqueada.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: Body inválido.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
