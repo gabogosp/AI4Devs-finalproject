@@ -17,7 +17,7 @@
   blocked_by: []
 - id: US-002
   slug: storefront-navegacion-categorias
-  status: In Progress
+  status: Done
   priority: High
   prd-capacity: 1
   disciplines: [BE, FE, QA]
@@ -27,6 +27,18 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-16
   in-review-at: 2026-08-30T12:30:00Z # PR #21 (qa) abierto; BE y FE siguen sin rama/PR propios (branch: null) — US-level se queda In Progress
+  # NOTA (2026-09-05, /archive-change): QA archivó (PR #21 mergeado 2026-08-30). `status`
+  # NO avanza — BE y FE siguen sin plan/rama/PR (branch: null en ambos), no sólo sin
+  # archivar.
+  #
+  # NOTA (2026-09-05, /archive-change US-002-storefront-navegacion-categorias-{backend,
+  # frontend-web}, barrido de changes pendientes — PR #3 mergeado 2026-08-29): la nota
+  # anterior quedó vieja — BE (18/18 tasks) y FE (33/33 tasks) SÍ estaban mergeados
+  # (mismo PR #3 bundled que US-004/005/007/014), sólo sin branch propio (modelo de
+  # rama de integración previo a la política de una rama por change). Ambas
+  # disciplinas archivadas ahora. Con QA ya archivado también, las 3/3 disciplinas
+  # están resueltas → `status` avanza a `Done`.
+  done-at: 2026-09-05
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
@@ -69,6 +81,16 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (backend-node-developer)
+  #
+  # NOTA (2026-09-05, /archive-change US-005-enriquecimiento-ia-embeddings-backend, barrido
+  # de archivos pendientes — PR #3 mergeado 2026-08-29): disciplina backend archivada
+  # (openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/), 28/28 tasks
+  # AS-BUILT. Crea la capacidad nueva `openspec/specs/enriquecimiento-ia/` (CAP-3, puente
+  # entre catálogo y búsqueda semántica) — README + requirements + decisions + contratos
+  # vivos (2 endpoints admin: GET /admin/enrichment/status, POST /admin/enrichment/runs).
+  # `status` de la US NO avanza a `Done`: QA e INFRA (las otras dos disciplinas declaradas)
+  # nunca se planificaron — no hay `openspec/changes/US-005-*-qa/` ni `-infrastructure/`.
+  # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
@@ -118,6 +140,16 @@
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
   in-review-at: 2026-08-30          # FE (PR #23); BE ya estaba en review (PR #11) sin este campo
                                      # estampado — QA sin planificar, status US se queda en Progress
+  #
+  # NOTA (2026-09-05, /archive-change US-008-checkout-guest-frontend-web, barrido de
+  # archivos pendientes — PR #23 mergeado 2026-08-30): disciplina frontend-web archivada
+  # (openspec/changes/archive/US-008-checkout-guest-frontend-web/), 39/39 tasks. Extiende
+  # openspec/specs/checkout/ (CAP-10, ya existente desde el backend) con la sección "Desde
+  # US-008 frontend-web" en requirements.md + decisions.md (resolver de validación sobre
+  # schema generado, order_token en sessionStorage, confirmación in-place). BE también ya
+  # está archivado. `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca
+  # se planificó (no existe openspec/changes/US-008-*-qa/ en ningún estado). Se queda en
+  # `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
@@ -170,7 +202,7 @@
   blocked_by: [US-010, US-012]
 - id: US-012
   slug: panel-ordenes-dueno
-  status: In Review   # /commit — QA (última disciplina) abre PR #30, 24/24 tasks. BE+FE ya mergeados vía PR #22.
+  status: Done   # 3/3 disciplinas archivadas (BE PR #35, FE PR #32, QA PR #33). Cerrada por el coordinador tras el archive sweep 2026-09-05.
   priority: High
   prd-capacity: 5
   disciplines: [BE, FE, QA]
@@ -180,6 +212,17 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
   in-review-at: 2026-08-30   # /commit — backend (primera disciplina) llega a in-review, 22/22 tasks
+  done-at: 2026-09-05        # 3/3 disciplinas archivadas (BE+FE+QA); flip de status hecho en el archive sweep
+  # NOTA (2026-09-05, /archive-change US-012-panel-ordenes-dueno-qa): la disciplina QA
+  # archivó (PR #30 mergeado, openspec/changes/archive/US-012-panel-ordenes-dueno-qa/).
+  # `status` NO avanza a `Done` — backend y frontend-web siguen SIN archivar
+  # (openspec/changes/US-012-panel-ordenes-dueno-{backend,frontend-web}/, todavía en
+  # `changes/`, no en `changes/archive/`), aunque sus PRs (#22, #31) ya están
+  # mergeados — sus entradas en openspec-changes.yaml quedaron en `in-review`, stale
+  # respecto al merge real. No se tocan esas dos entradas ni sus directorios desde
+  # este comando (fuera del alcance pedido: sólo QA); parece haber otra sesión
+  # trabajando ese archive en paralelo (worktree `archive-US-012-frontend-web` visto
+  # en `git worktree list`).
   # NOTA (2026-09-05, /commit US-012-panel-ordenes-dueno-qa): las 3 disciplinas ya
   # alcanzaron PR abierta — BE+FE mergearon vía PR #22 (confirmado: commit 1a90fe7 en
   # `main`, "feat: US-012 panel de órdenes del dueño — backend + frontend (QA pendiente)
@@ -244,6 +287,12 @@
   # (backend ya lo estaba desde 2026-08-30). No se toca `in-review-at` (ya lo puso backend,
   # primera disciplina) ni el `status` de la US (se queda en `In Progress` — QA sigue en
   # `draft`, 0/24 tasks, ninguna PR abierta todavía).
+  #
+  # NOTA (2026-09-05, barrido de archives): backend (este change, 29/29 tasks) y
+  # frontend-web (PR #32) YA archivados a openspec/changes/archive/. El backend creó la
+  # capacidad nueva `openspec/specs/ordenes/` (CAP-5, panel de fulfillment) con su
+  # contrato vivo. Falta archivar la disciplina qa (PR #33) para que la US pase a Done —
+  # hasta entonces `status` se queda en `In Progress`. `blocked_by` sin tocar.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
@@ -267,6 +316,26 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-17
+  #
+  # NOTA (2026-09-05, /archive-change US-014-registro-login-backend, barrido de
+  # archivos pendientes — PR #3 mergeado 2026-08-29): disciplina backend archivada
+  # (openspec/changes/archive/US-014-registro-login-backend/), 44/44 tasks. Crea la
+  # capacidad nueva `openspec/specs/cuentas/` (CAP-6) — README + requirements +
+  # decisions + contratos vivos (8 endpoints: 7 de /auth/* + /admin/auth/login
+  # mudado desde catalogo). `status` de la US NO avanza a `Done` ni a `QA`: FE
+  # (US-014-registro-login-frontend-web) también está mergeado pero sin archivar
+  # todavía, y QA (US-014-registro-login-qa, PR #9 mergeado) tiene un `[Open]` real
+  # (NFR de latencia de login sin ratificar por PO/Arquitecto) que bloquea su
+  # cierre. Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro
+  # agente).
+  #
+  # NOTA (2026-09-05, /archive-change US-014-registro-login-frontend-web): también
+  # archivada, 33/33 tasks. Extiende openspec/specs/cuentas/ con la UI de sesión —
+  # rewrite same-origin (ADR-0013 nuevo), refresh single-flight cross-tab, AC-5
+  # protegido en el cliente. BE + FE de US-014 ya están archivados (2/3
+  # disciplinas). `status` SIGUE sin avanzar a `Done`: QA tiene el `[Open]` real
+  # descripto arriba y no se puede cerrar hasta que el PO/Arquitecto ratifique el
+  # NFR de latencia de login. Se queda en `In Progress`.
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras
@@ -376,6 +445,27 @@
   # US-020 cubre el borrado de CUENTAS; el comprador invitado no tiene cuenta que borrar, y
   # es el camino principal del PRD §2.1 cap. 4. Anonimiza, NO borra: el E2E §8 fija que las
   # órdenes no se borran (historial 12 meses + métricas de US-016).
+  #
+  # NOTA (2026-09-05, /commit US-021-retencion-datos-ordenes-backend, barrido de changes
+  # pendientes de archivar): la disciplina backend estaba 30/30 tasks cerrada desde
+  # 2026-08-23 pero nunca se había pusheado (sólo la planificación había mergeado, PR #25).
+  # Publicado ahora — PR #41 abierto contra main. `status` de la US NO avanza: falta
+  # merge + archive del backend, y hay un worktree/rama `feat/US-021-retencion-datos-ordenes-qa`
+  # en curso (otra sesión) para la disciplina QA. `blocked_by` sin tocar.
+  #
+  # NOTA (2026-09-05, /archive-change US-021-retencion-datos-ordenes-backend, PR #41
+  # mergeado): disciplina backend archivada (openspec/changes/archive/US-021-...
+  # -backend/), 30/30 tasks. Crea la capacidad nueva
+  # `openspec/specs/retencion-datos-personales/` (CAP-13) — README + requirements +
+  # decisions + contratos vivos (2 endpoints admin, seedeados desde los yaml draft
+  # del change porque nunca llegaron al spec publicado del servicio). `status` de la
+  # US NO avanza: QA sigue en curso (otra sesión, worktree
+  # `feat/US-021-retencion-datos-ordenes-qa`) y FE NO existe como change ni parece
+  # absorbido por US-012 (a diferencia de US-023, cuyo FE sí quedó cubierto por
+  # PendingPaymentsPanel — acá no hay referencia a anonimización en
+  # apps/web/src/features/orders/). Falta confirmar con el PO/Arquitecto si la
+  # acción "anonimizar" en el panel es un change FE propio o se agrega a US-012 FE.
+  # `blocked_by` sin tocar.
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
@@ -389,7 +479,9 @@
   blocked_by: []
 - id: US-023
   slug: pago-manual-offline
-  status: In Progress
+  status: Done   # /archive-change 2026-09-05 — 3/3 disciplinas resueltas: BE archivado (PR #27/#40),
+                 # FE satisfecho por US-012-pendientes-pago-frontend-web (PR #31, archivado),
+                 # QA archivado (PR #38). Ver notas de abajo por el detalle de cada una.
   priority: High
   prd-capacity: 4   # CAP-4 «Checkout y pago» — adaptador de pago sin MercadoPago
   disciplines: [BE, FE, QA]
@@ -398,8 +490,10 @@
   created: 2026-08-30
   ready-at: 2026-08-30
   in-progress-at: 2026-08-30   # /plan-backend-ticket — primer plan de disciplina abierto
-  in-review-at: 2026-08-30     # backend PR #27 abierto (/commit); FE/QA todavía no arrancaron —
-                                # el status de la US queda en In Progress hasta que las tres tengan PR
+  in-review-at: 2026-08-30     # backend PR #27 (mergeado 2026-09-02, archivado 2026-09-05) + QA
+                                # PR #38 (mergeado y archivado 2026-09-05, ver nota final) — FE
+                                # quedó satisfecho el 2026-09-05 vía PR #31 (ver nota abajo)
+  done-at: 2026-09-05
   t-shirt: M
   # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
   # el pago y la orden pasa a `new` (FSM E2E §12, no "paid" — corregido en el enrich).
@@ -415,4 +509,32 @@
   # el FE completo de esta US (confirmar pago + vista de pendientes), consumiendo sus dos
   # endpoints. FE-US-023 queda sin change propio; no es una disciplina huérfana, está
   # satisfecha por el change de US-012.
-  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción (FE, ya construida en su PR #22) y su AC-1/Fase 12 cubre AC-2 de esta US.
+  # 2026-09-05 (hallazgo de /develop-qa US-023, verificado leyendo código — no asumido, EN
+  # SU MOMENTO): la afirmación de la nota de 2026-08-31 ("Fase 12 ya construye el FE
+  # completo") era INCORRECTA en ese punto — `find`/`git log --all` no encontraban
+  # `PendingPaymentsPanel` en ningún lado, y T12.1-T12.4 seguían `- [ ]` en
+  # `US-012-panel-ordenes-dueno-frontend-web/tasks.md`. Efecto en ese momento: la mitad UI
+  # de AC-2 y `QA-023-E2E-1` quedaron genuinamente bloqueados en el qa-plan.md de esta US
+  # (manual/blocked, no inventado) — hallazgo correcto para su fecha, ya no vigente (ver
+  # nota siguiente).
+  #
+  # NOTA (2026-09-05, /archive-change US-023-pago-manual-offline-backend, barrido de
+  # archivos pendientes — PR #27 mergeado 2026-09-02): disciplina backend archivada
+  # (openspec/changes/archive/US-023-pago-manual-offline-backend/), 28/28 tasks. Crea la
+  # capacidad nueva `openspec/specs/pagos/` (CAP-4, camino manual/offline) — README +
+  # requirements + decisions + contratos vivos (POST .../confirm-payment,
+  # GET .../pending-payment).
+  #
+  # RESUELTO más tarde el mismo 2026-09-05: `PendingPaymentsPanel.tsx` +
+  # `pendingPaymentsService.ts` se construyeron en un change dedicado
+  # (`US-012-pendientes-pago-frontend-web`, PR #31, archivado 2026-09-05) — verificado que
+  # ambos archivos existen en el árbol real post-merge. FE-US-023 SÍ está satisfecho ahora.
+  #
+  # NOTA FINAL (2026-09-05, /archive-change US-023-pago-manual-offline-qa, PR #38 mergeado):
+  # las 3 disciplinas quedan resueltas — BE archivado (PR #27/#40), FE satisfecho por
+  # US-012-pendientes-pago-frontend-web (PR #31, archivado), QA archivado (PR #38, 4/4
+  # stubs automatizados verdes). `status` de la US avanza a `Done`. Pendiente (no
+  # bloqueante, follow-up sugerido): `QA-023-E2E-1` en el qa-plan.md quedó scaffoldeado
+  # como manual/blocked antes de que PR #31 aterrizara — ahora que el componente existe,
+  # alguien puede des-diferirlo y automatizarlo.
+  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment` (satisfecho). US-012: el panel donde vive la acción — Fase 12 (FE) construida vía PR #31, cubre AC-2 de esta US (satisfecho).

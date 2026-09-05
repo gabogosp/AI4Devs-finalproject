@@ -1,0 +1,29 @@
+get:
+  operationId: storefrontGetCategory
+  tags: [storefront-categories]
+  summary: Detalle público de una categoría (US-002 AC-1/AC-2/AC-9)
+  description: |
+    Ruta PÚBLICA SIN auth. Trae `parent` para el breadcrumb y `children`
+    para los subrubros. Slug inexistente → 404 (nunca un 200 vacío, que
+    sería una página fantasma indexable). Único endpoint que emite el
+    evento `category.viewed` (D4, insumo del panel US-016).
+  security: []
+  parameters:
+    - name: slug
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+  responses:
+    '200':
+      description: Categoría con su padre y sus subrubros
+      headers:
+        Cache-Control:
+          schema: { type: string }
+          description: 'public, max-age=60, stale-while-revalidate=30'
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/StorefrontCategory' }
+    '404':
+      $ref: '../../openapi.yaml#/components/responses/Problem'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

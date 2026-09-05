@@ -1,5 +1,5 @@
 import { mapErrorToProblem } from '../common/filters/http-problem.filter';
-import { CartEmptyError, CartNotPurchasableError } from './checkout-errors';
+import { CartEmptyError, CartNotPurchasableError, OrderNotFoundError } from './checkout-errors';
 
 /**
  * T1.1 — los dos errores del checkout, ejercidos a través del filtro REAL
@@ -53,6 +53,24 @@ describe('errores del checkout (dsm:checkout/*)', () => {
       expect(problem.detail).not.toContain('Error:');
       expect(problem.detail).not.toContain('at ');
       expect(problem.detail).not.toContain('CartNotPurchasableError');
+    });
+  });
+
+  describe('OrderNotFoundError (US-021)', () => {
+    it('es 404 con el type dsm:checkout/order-not-found, en application/problem+json', () => {
+      const problem = mapErrorToProblem(new OrderNotFoundError(), INSTANCE);
+
+      expect(problem.status).toBe(404);
+      expect(problem.type).toBe('dsm:checkout/order-not-found');
+      expect(problem.title).toBe('Not Found');
+      expect(problem.instance).toBe(INSTANCE);
+    });
+
+    it('el detail no contiene el nombre de la clase ni un stack', () => {
+      const problem = mapErrorToProblem(new OrderNotFoundError(), INSTANCE);
+      expect(problem.detail).not.toContain('Error:');
+      expect(problem.detail).not.toContain('at ');
+      expect(problem.detail).not.toContain('OrderNotFoundError');
     });
   });
 });

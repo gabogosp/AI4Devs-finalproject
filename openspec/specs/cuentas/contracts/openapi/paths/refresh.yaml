@@ -1,0 +1,34 @@
+post:
+  tags: [customer-auth]
+  operationId: refreshSession
+  summary: Rota el refresh y renueva la sesión (ADR-0011)
+  description: |
+    El refresh es de un solo uso. Presentar uno ya rotado se trata como
+    robo: revoca la familia entera y devuelve el MISMO 401 que un token
+    inexistente — distinguirlos le confirmaría al atacante que su réplica
+    llegó. No exige access válido: ya venció, que es el motivo de llamar a
+    esta ruta.
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../../openapi.yaml#/components/parameters/CsrfToken'
+  responses:
+    '200':
+      description: Sesión renovada.
+      headers:
+        Set-Cookie: { $ref: '../../openapi.yaml#/components/headers/SessionCookies' }
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/CustomerEnvelope' }
+    '401':
+      description: '`dsm:auth/invalid-refresh` — token inexistente o ya rotado (reuso).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: '`dsm:auth/csrf` — header ausente/incorrecto u `Origin` fuera de la allowlist.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

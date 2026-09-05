@@ -3,6 +3,12 @@ import { Order, OrderItem, Prisma } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValidationError } from '../common/errors/domain-errors';
 import { isPrismaError, PRISMA_FK_VIOLATION } from '../common/prisma-errors';
+import {
+  ANONYMIZED_BUYER_EMAIL,
+  ANONYMIZED_BUYER_NAME,
+  ANONYMIZED_BUYER_PHONE,
+  AnonymizationReason,
+} from './order-anonymization';
 
 export interface ListOrdersFilter {
   statusIn: string[];
@@ -111,16 +117,17 @@ export class OrdersRepository {
   }
 
   /**
-   * Detalle admin (US-012 AC-2) / por id interno (US-023): `ConfirmOrderService`
-   * la usa para distinguir 404 (orden inexistente) de 409 (existe pero no está
-   * `pending_payment`), algo que `transitionToNewIfPending` por sí sola no puede
-   * — su `updateMany` guardado devuelve 0 filas afectadas en ambos casos por
-   * igual. Devuelve la orden para CUALQUIER `status` existente — el filtro de
-   * AC-8 sobre `pending_payment` es responsabilidad del service, no de este
-   * método (mismas capas que `list`). Sin `status_history` (T4.1 —
-   * `OrderStatusHistoryRepository` es el único punto de ORM de esa tabla, no
-   * este archivo). `tx` opcional: se re-lee dentro de la misma transacción
-   * cuando `updateStatusConditional` pierde la carrera (design.md §D4).
+   * Detalle admin (US-012 AC-2 / US-021 retención) / por id interno (US-023):
+   * `ConfirmOrderService` la usa para distinguir 404 (orden inexistente) de 409
+   * (existe pero no está `pending_payment`), algo que `transitionToNewIfPending`
+   * por sí sola no puede — su `updateMany` guardado devuelve 0 filas afectadas
+   * en ambos casos por igual. Devuelve la orden para CUALQUIER `status`
+   * existente — el filtro de AC-8 sobre `pending_payment` es responsabilidad
+   * del service, no de este método (mismas capas que `list`). Sin
+   * `status_history` (T4.1 — `OrderStatusHistoryRepository` es el único punto
+   * de ORM de esa tabla, no este archivo). `tx` opcional: se re-lee dentro de
+   * la misma transacción cuando `updateStatusConditional` pierde la carrera
+   * (design.md §D4).
    */
   findById(
     id: string,
@@ -130,6 +137,61 @@ export class OrdersRepository {
       where: { id },
       include: { items: true },
     });
+  }
+
+  /**
+   * Guardado por `anonymized_at: null` en el WHERE — atómico: dos llamadas
+   * concurrentes sobre la misma orden serializan en Postgres; la segunda no
+   * matchea nada (count 0), ninguna hace un segundo `UPDATE` ni dispara un
+   * segundo evento (AC-8, y la parte de "Repudiation"/carrera de la superficie 2
+   * de `threat-modeling-lite`).
+   */
+  async anonymize(
+    id: string,
+    reason: AnonymizationReason,
+  ): Promise<{ anonymizedAt: Date; anonymizationReason: AnonymizationReason } | null> {
+    await this.prisma.order.updateMany({
+      where: { id, anonymized_at: null },
+      data: {
+        buyer_name: ANONYMIZED_BUYER_NAME,
+        buyer_email: ANONYMIZED_BUYER_EMAIL,
+        buyer_phone: ANONYMIZED_BUYER_PHONE,
+        anonymized_at: new Date(),
+        anonymization_reason: reason,
+      },
+    });
+    const row = await this.prisma.order.findUnique({
+      where: { id },
+      select: { anonymized_at: true, anonymization_reason: true },
+    });
+    if (!row || !row.anonymized_at) return null;
+    return {
+      anonymizedAt: row.anonymized_at,
+      anonymizationReason: row.anonymization_reason as AnonymizationReason,
+    };
+  }
+
+  /**
+   * Un único `UPDATE` de conjunto — sin bucle por fila (a diferencia del batch
+   * de `ImportRunner`, acá no hay transformación por fila que justifique
+   * `await` incremental: es un `SET` con los mismos tres valores para todo el
+   * conjunto). Devuelve cuántas filas tocó ESTA corrida.
+   */
+  async anonymizeRetentionEligible(
+    cutoff: Date,
+    reason: AnonymizationReason,
+  ): Promise<number> {
+    const { count } = await this.prisma.order.updateMany({
+      where: { anonymized_at: null, created_at: { lt: cutoff } },
+      data: {
+        buyer_name: ANONYMIZED_BUYER_NAME,
+        buyer_email: ANONYMIZED_BUYER_EMAIL,
+        buyer_phone: ANONYMIZED_BUYER_PHONE,
+        anonymized_at: new Date(),
+        anonymization_reason: reason,
+      },
+    });
+    return count;
   }
 
   /**

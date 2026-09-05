@@ -36,3 +36,13 @@ export class CartNotPurchasableError extends DomainError {
     super('El carrito tiene productos que ya no se pueden comprar', fieldErrors);
   }
 }
+
+/** 404 — la orden no existe (US-021 — retención/anonimización, superficie admin). */
+export class OrderNotFoundError extends DomainError {
+  readonly status = 404;
+  readonly type = 'dsm:checkout/order-not-found';
+
+  constructor() {
+    super('La orden no existe');
+  }
+}

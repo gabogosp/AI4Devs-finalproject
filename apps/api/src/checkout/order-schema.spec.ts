@@ -39,6 +39,9 @@ const ESPERADO: Record<string, string[]> = {
     // aprobado). `cancelled_at` es su contraparte para AC-4/AC-11.
     'confirmed_at',
     'cancelled_at',
+    // US-021 — retención/anonimización de PII (F40 column-complete).
+    'anonymized_at',
+    'anonymization_reason',
   ],
   order_items: [
     'id',
@@ -68,6 +71,9 @@ const CHECKS_ESPERADOS: Record<string, string[]> = {
     'orders_fulfillment_check',
     'orders_total_check',
     'orders_consent_check',
+    // US-021 — retención/anonimización de PII (F40 column-complete).
+    'orders_anonymization_reason_check',
+    'orders_anonymization_consistency_check',
   ],
   order_items: ['order_items_quantity_check', 'order_items_price_check'],
 };

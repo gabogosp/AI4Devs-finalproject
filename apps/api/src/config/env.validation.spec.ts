@@ -575,3 +575,44 @@ describe('Jobs admin de US-010 (T9.1/T10/T11) — defaults y fail-fast', () => {
     );
   });
 });
+
+describe('Retención y anonimización de órdenes (US-021 T0.2) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin las variables, aplica los 5 defaults seguros literales', () => {
+    const env = validateEnv({ ...base });
+    expect(env.ORDER_RETENTION_MONTHS).toBe(12);
+    expect(env.ORDER_ANONYMIZE_RATE_LIMIT_MAX).toBe(30);
+    expect(env.ORDER_ANONYMIZE_RATE_LIMIT_TTL_MS).toBe(60_000);
+    expect(env.ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX).toBe(5);
+    expect(env.ORDER_RETENTION_SWEEP_RATE_LIMIT_TTL_MS).toBe(3_600_000);
+  });
+
+  it('ORDER_RETENTION_MONTHS=abc hace fallar el arranque, no cae al default', () => {
+    // Un plazo que se degrada a su default por un typo es un plazo que nadie eligió.
+    expect(() =>
+      validateEnv({ ...base, ORDER_RETENTION_MONTHS: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ORDER_RETENTION_MONTHS=-1 hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDER_RETENTION_MONTHS: '-1' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ORDER_ANONYMIZE_RATE_LIMIT_MAX=-1 hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDER_ANONYMIZE_RATE_LIMIT_MAX: '-1' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ORDER_RETENTION_SWEEP_RATE_LIMIT_TTL_MS=abc hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDER_RETENTION_SWEEP_RATE_LIMIT_TTL_MS: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+});

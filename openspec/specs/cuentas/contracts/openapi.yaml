@@ -1,0 +1,172 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Cuentas de cliente (CAP-6)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-014-registro-login-backend — registro, login, sesión por cookie con
+    refresh rotado (ADR-0011) y recuperación de contraseña con entrega real
+    de email (adapter Resend, adelantado desde US-011).
+
+    `POST /admin/auth/login` se mudó acá desde `catalogo` (decisión del PO,
+    2026-08-19): es un endpoint de autenticación, no de catálogo. El
+    `AdminGuard` (ADR-0009) no se toca — este change sólo extiende la EMISIÓN
+    del token admin, aceptando `{email, password}` además del bootstrap token.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: customer-auth
+    description: Registro, login y sesión del cliente (US-014). Superficie pública.
+  - name: admin-auth
+    description: Emisión del token admin (US-001, endurecida por US-014). Única ruta bajo /admin/* sin adminBearer.
+security: []
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: |
+        Access token de cliente, corto y HttpOnly (US-014). La API NO lo
+        acepta por header `Authorization`: aceptarlo permitiría a un XSS usar
+        un token robado y anularía la protección de HttpOnly.
+  headers:
+    SessionCookies:
+      description: |
+        Tres cookies (`security-standards §7.4`): `dsm_access` (HttpOnly,
+        SameSite=Lax, Path=/), `dsm_refresh` (HttpOnly, SameSite=Lax,
+        Path=/v1/auth) y `dsm_csrf` (SIN HttpOnly — el frontend la lee para
+        armar el header `X-CSRF-Token`). `Secure` sale de `AUTH_COOKIE_SECURE`.
+      schema: { type: string }
+  parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: |
+        Double-submit firmado (§7.5): el valor de la cookie `dsm_csrf`. Se
+        exige además de un `Origin` de la allowlist; la ausencia de `Origin`
+        se rechaza.
+      schema: { type: string }
+  responses:
+    RateLimited:
+      description: |
+        Presupuesto de la superficie de auth excedido (§7.3). Incluye
+        `Retry-After` y las cabeceras `RateLimit-*` (api-standards §12).
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Customer:
+      type: object
+      description: |
+        Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca
+        password_hash, role, failed_login_attempts, lockout_count,
+        locked_until ni deleted_at.
+      required: [id, email, name, phone, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        phone: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    CustomerEnvelope:
+      type: object
+      required: [customer]
+      properties:
+        customer: { $ref: '#/components/schemas/Customer' }
+    RegisterRequest:
+      type: object
+      required: [email, name, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        password:
+          type: string
+          description: |
+            Mínimo 8 caracteres, máximo 72 BYTES (límite de bcrypt: se
+            rechaza, no se trunca) y fuera del corpus de filtradas. Sin
+            reglas de composición.
+        phone: { type: string, maxLength: 40, nullable: true }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    ResetRequest:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email }
+    ResetConfirm:
+      type: object
+      required: [token, password]
+      additionalProperties: false
+      properties:
+        token: { type: string }
+        password: { type: string }
+    AdminLogin:
+      type: object
+      description: |
+        Dos formas admitidas y ninguna más: `{bootstrapToken}` (camino
+        interino de US-001) o `{email, password}` (US-014). La validación es
+        condicional sobre el mismo objeto para no cambiar la ruta ni la
+        forma de la respuesta.
+      properties:
+        bootstrapToken: { type: string }
+        email: { type: string, format: email }
+        password: { type: string }
+      oneOf:
+        - required: [bootstrapToken]
+        - required: [email, password]
+    AdminLoginResponse:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, description: JWT con claim role=admin }
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). Types de esta capacidad:
+        `dsm:auth/invalid-credentials` (401), `dsm:auth/unauthenticated`
+        (401), `dsm:auth/invalid-refresh` (401), `dsm:auth/csrf` (403),
+        `dsm:auth/registration-failed` (409), `dsm:auth/invalid-reset-token`
+        (400).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene la contraseña, un hash, un token en claro, ni el email.'
+paths:
+  /auth/register:
+    $ref: ./openapi/paths/register.yaml
+  /auth/login:
+    $ref: ./openapi/paths/login.yaml
+  /auth/refresh:
+    $ref: ./openapi/paths/refresh.yaml
+  /auth/logout:
+    $ref: ./openapi/paths/logout.yaml
+  /auth/me:
+    $ref: ./openapi/paths/me.yaml
+  /auth/password-reset/request:
+    $ref: ./openapi/paths/password-reset-request.yaml
+  /auth/password-reset/confirm:
+    $ref: ./openapi/paths/password-reset-confirm.yaml
+  /admin/auth/login:
+    $ref: ./openapi/paths/admin-auth-login.yaml

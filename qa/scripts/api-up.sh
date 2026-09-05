@@ -31,13 +31,19 @@
 #                          la cuarta corrida. El límite real IGUAL se prueba — TC-613 lo baja
 #                          por su propia variable de proceso, sólo para ese escenario — así
 #                          que elevarlo acá no deja el límite sin cobertura en ningún lado.
-#   CHECKOUT_RATE_LIMIT_MAX  US-012: `seed-ordenes.ts` hace UN checkout real (`POST
-#                          /v1/checkout`) por orden sembrada, y casi todos los escenarios
-#                          de `ordenes.feature` siembran al menos una — el presupuesto de
-#                          producción (10/10min/IP) autobloquea la suite completa a partir
-#                          del tercer o cuarto escenario. Mismo criterio que
-#                          `AUTH_RATE_LIMIT_MAX`: el límite real se sigue probando en la
-#                          capa que sí lo ejercita (dev-owned, `e2e-checkout-ratelimit.spec.ts`).
+#   CHECKOUT_RATE_LIMIT_MAX  US-023 (`@pagos`): cada escenario de `pago-manual.feature` siembra
+#                          su propia orden `pending_payment` vía `POST /v1/checkout` real (nunca
+#                          INSERT directo) — 10+ checkouts en una sola corrida de la suite de
+#                          aceptación. El presupuesto de producción (10, `CHECKOUT_RATE_LIMIT_MAX`
+#                          default) se agota antes de terminar y el resto de los escenarios ve un
+#                          429 que no tiene nada que ver con el guard de idempotencia que están
+#                          probando (`qa/support/seed-pending-payment-order.ts`). Mismo motivo en
+#                          US-012: `seed-ordenes.ts` hace UN checkout real por orden sembrada, y
+#                          casi todos los escenarios de `ordenes.feature` siembran al menos una —
+#                          el mismo presupuesto de producción autobloquea esa suite a partir del
+#                          tercer o cuarto escenario. Mismo criterio que `AUTH_RATE_LIMIT_MAX`: el
+#                          límite real se sigue probando en la capa que sí lo ejercita (dev-owned,
+#                          `e2e-checkout-ratelimit.spec.ts`).
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009

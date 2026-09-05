@@ -307,6 +307,8 @@ model Order {
   delivered_at           DateTime?
   confirmed_at           DateTime?
   cancelled_at           DateTime?
+  anonymized_at          DateTime?
+  anonymization_reason   String?
   items                  OrderItem[]
   status_history         OrderStatusHistory[]
   payments               Payment[]
