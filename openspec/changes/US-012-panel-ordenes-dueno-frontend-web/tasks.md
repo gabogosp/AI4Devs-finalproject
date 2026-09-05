@@ -392,7 +392,7 @@
   - **Nota de ejecución (2026-09-05)**: la operación generada real se llama
     `confirmManualPayment(orderId)` (no `confirmOrderPayment`, nombre ilustrativo del
     `design.md`) — usa el `operationId` real del contrato. 3/3 tests verdes.
-- [ ] **T12.3 — `PendingPaymentsPanel`: listado + confirmación por fila**
+- [x] **T12.3 — `PendingPaymentsPanel`: listado + confirmación por fila**
   - **Pattern**: `design.md` §D9 — estados explícitos (`idle`/`loading`/`success`/`error` a
     nivel panel, `confirming` por fila vía `Set<orderId>`), refetch-on-success (NO UI
     optimista — deviación explícita de D7, documentada en Trade-offs), botón "Confirmar pago"
@@ -419,6 +419,11 @@
        un fallo confirmado, o si el botón queda deshabilitado para siempre).
     4. con MSW devolviendo `[]`, renderiza el texto "No hay pagos pendientes de confirmar" (no
        una tabla vacía muda).
+  - **Nota de ejecución (2026-09-05)**: 4/4 tests verdes. Se agregó `pending_payment_confirmed`
+    a `BusinessEvent` (`events.ts`) — el pseudocódigo de `design.md` §D9 lo emite y no estaba
+    declarado (T9.1 sólo cubrió los eventos de fulfillment, Fases 1-11); sin operator_id manual
+    (lo agrega `track()` automáticamente, no está en `PUBLIC_EVENTS`). `confirmManualPayment`
+    (nombre real del operationId) en vez de `confirmOrderPayment`, igual que T12.2.
 - [ ] **T12.4 — Segunda pestaña en `/admin/ordenes`, mutuamente excluyente con `OrdersList`**
   - **Pattern**: `design.md` §D9 — `?tab=pendientes-de-pago` leído por el Server Component de
     `page.tsx`; nunca `OrdersList` y `PendingPaymentsPanel` montados a la vez.
