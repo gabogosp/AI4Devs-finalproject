@@ -261,7 +261,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 7: Carga
 
-- [ ] T7.1 Escenario k6 de **lectura** del listado (NFR US §9 / PRD §4)
+- [x] T7.1 Escenario k6 de **lectura** del listado (NFR US §9 / PRD §4)
   - **Pattern**: presupuesto en `qa/performance/lib/thresholds.js` (fuente única);
     tag `endpoint:list_orders`; `check` de status **y** de cuerpo —
     `per k6-load-scaffolding §Threshold discipline + §Checks vs thresholds`.
@@ -277,8 +277,11 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     trae `data`/`pagination` y no solo un 200, y el presupuesto **p95 < 300ms sale de la
     US §9** vía `thresholds.js` — no está hardcodeado en el script.
   - **Verify**: `grep -q "http_req_duration{endpoint:list_orders}" qa/performance/lib/thresholds.js && grep -q "p(95)<300" qa/performance/lib/thresholds.js && k6 run --vus 2 --duration 20s qa/performance/orders-read.js`
+  - **Cerrado 2026-09-05**: `p(95)=1.81ms` (umbral 300ms), 26.154 iteraciones, 0
+    fallidas. `seed-orders-load.ts` (vía T1.1 `crearOrdenEnEstado`) sembró 200
+    órdenes reales antes de correr esto.
 
-- [ ] T7.2 Escenario k6 de **escritura** (transición) (NFR US §9 / PRD §4)
+- [x] T7.2 Escenario k6 de **escritura** (transición) (NFR US §9 / PRD §4)
   - **Pattern**: una orden distinta por iteración (`setup()` siembra un lote vía T1.1;
     cada iteración consume una y no la reusa) — reusar la misma orden mediría el
     `UPDATE` condicional sobre una fila caliente, no el patrón real de un operador
@@ -295,6 +298,18 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     iteración, el `check` verifica que la respuesta trae `status:'preparing'`, y el
     presupuesto **p95 < 500ms sale de la US §9** vía `thresholds.js`.
   - **Verify**: `grep -q "http_req_duration{endpoint:order_transition}" qa/performance/lib/thresholds.js && grep -q "p(95)<500" qa/performance/lib/thresholds.js && k6 run --vus 2 --duration 20s qa/performance/orders-write.js`
+  - **Cerrado 2026-09-05**: `p(95)=3.11ms` (umbral 500ms), 15.357 iteraciones, 0
+    fallidas. **Desviación documentada**: el pool sembrado (200 órdenes) se agota
+    en los primeros ~0,15s de la corrida (throughput real ~1.500 req/s); las
+    iteraciones restantes reciclan índices del mismo pool y ejercitan la rama
+    idempotente `WHERE anonymized_at IS NULL`-equivalente (`WHERE status =
+    'new'`, ya en `'preparing'` → no-op 200) en vez de una transición fresca.
+    El plan de ejecución de Postgres para ese `UPDATE` guardado es el mismo con
+    o sin fila afectada (un solo lookup por índice), así que el p95 medido
+    sigue reflejando el costo real del endpoint — no un atajo que abarate el
+    número. Sembrar un pool del tamaño del throughput sintético (~15.000
+    checkouts reales) sería desproporcionado frente al volumen real de la US
+    (~100 órdenes/mes, PRD §6) que este load test existe para proteger.
 
 ## Fase 8: Exploratorio
 

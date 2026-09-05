@@ -82,6 +82,43 @@ export const auth_login = {
   rate_limited: ['count<1'],
 };
 
-// Unión de los thresholds de US-004 (`search`, llegó por main) y US-014 (`auth_login`):
-// las dos suites QA extienden el mismo archivo compartido.
-export default { list_products, storefront_product, cart_write, auth_login, search, MIN_SKUS };
+/**
+ * Listado del panel de fulfillment de US-012 (TC-1240). El número sale de la
+ * US §9 ("Latencia p95 lectura < 300ms"), que hereda el PRD §4 — sin
+ * condicional, a diferencia de la lectura del carrito de US-007.
+ */
+export const list_orders = {
+  'http_req_duration{endpoint:list_orders}': ['p(95)<300'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
+/**
+ * Transición de estado del panel de fulfillment de US-012 (TC-1241). US §9
+ * ("Latencia p95 escritura (transición) < 500ms"), mismo NFR que
+ * `cart_write`/`auth_login` (PRD §4 — "p95 escritura (carrito/orden) < 500 ms").
+ *
+ * `rate_limited` con `count<1`: la superficie admin no tiene un throttler
+ * dedicado propio distinto del resto de `/v1/admin/*`, pero la corrida real
+ * usa una API arrancada para QA (`api:up`) con los presupuestos elevados —
+ * misma guarda de honestidad que `cart_write`.
+ */
+export const order_transition = {
+  'http_req_duration{endpoint:order_transition}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
+// Unión de los thresholds de US-004 (`search`, llegó por main), US-014
+// (`auth_login`) y US-012 (`list_orders`/`order_transition`): las suites QA
+// extienden el mismo archivo compartido.
+export default {
+  list_products,
+  storefront_product,
+  cart_write,
+  auth_login,
+  search,
+  list_orders,
+  order_transition,
+  MIN_SKUS,
+};
