@@ -58,7 +58,7 @@
     plan de FE que fijó /admin/ordenes..."). No es un change *distinto* construyendo el
     mismo feature — la intención del gate (evitar dos FE compitiendo por la misma
     superficie) está satisfecha.
-- [ ] **T0.3 — Gate de contrato (pendientes de pago): `pending-payment`/`confirm-payment` deben
+- [x] **T0.3 — Gate de contrato (pendientes de pago): `pending-payment`/`confirm-payment` deben
   existir en el OpenAPI del backend antes de cerrar la Fase 12**
   - Este gate es **específico de la Fase 12** (`PendingPaymentsPanel`) — a diferencia de T0.1,
     NO bloquea las Fases 1-11 (fulfillment), que solo dependen de
@@ -70,6 +70,9 @@
     mayor que `0`. Hoy imprime `0` — esta task falla a propósito hasta que
     `US-023-pago-manual-offline-backend` publique su contrato; T12.1-T12.4 no pueden cerrarse
     mientras esta falle (T1.1-T11.1 sí pueden, son independientes).
+  - **Nota de ejecución (2026-09-05)**: `US-023-pago-manual-offline-backend` mergeó (PR #27,
+    2026-09-02) y publicó el contrato. `grep -c "pending-payment\|confirm-payment"
+    apps/api/docs/api/openapi.yaml` imprime `5`. Gate desbloqueado — Fase 12 ejecutable.
 
 ## Fase 1: Codegen (contract-derived artifacts)
 
