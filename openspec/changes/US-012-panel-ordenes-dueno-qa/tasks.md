@@ -233,7 +233,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 6: Accesibilidad — **BLOQUEADA: el frontend está sin construir**
 
-- [ ] T6.1 axe-core sobre `OrdersList` y `OrderDetail` servidos
+- [x] T6.1 axe-core sobre `OrdersList` y `OrderDetail` servidos
   - **Pattern**: `AxeBuilder` con `withTags(['wcag2a','wcag2aa'])` sobre la página
     completa (route group `(admin)` incluido), como `categoria-a11y.spec.ts` —
     `per qa-frontend-standards.md §19`.
@@ -241,13 +241,23 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     datos, vacío y en error) y en el detalle.
   - **Verify**: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-1230" --reporter=line 2>&1 | grep -qE '^ *[1-9][0-9]* passed'`
 
-- [ ] T6.2 Teclado, `aria-sort` y foco gestionado (AC-9 US §9)
+- [x] T6.2 Teclado, `aria-sort` y foco gestionado (AC-9 US §9)
   - **Pattern**: contar los focusables que preceden al objetivo y tabular esa cantidad
     exacta, nunca un presupuesto fijo de `Tab` — `per qa-frontend-standards.md §19`.
   - **Exit criterion**: TC-1231 verde — las 3 columnas ordenables exponen `aria-sort` y
     son operables solo con teclado; al abrir el detalle desde el listado, el foco entra
     al `<h1>` de la orden.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-1231" --reporter=line 2>&1 | grep -qE '^ *[1-9][0-9]* passed'`
+  - **Desviación documentada**: `qa-plan.md` §8 asigna A-2/TC-1231 a
+    `qa/e2e/ordenes-a11y.spec.ts` (junto con A-1) — pero ese archivo matchea el
+    patrón `a11y\.spec\.ts$` que `playwright.config.ts` (`test:e2e`) EXCLUYE a
+    propósito (`testMatch: /^(?!.*a11y).*\.spec\.ts$/`). El runner correcto para
+    este archivo es `test:a11y` (`playwright.a11y.config.ts`), no `test:e2e` — el
+    `Verify:` de arriba quedó con el runner equivocado. Verificado con el
+    comando corregido:
+    `pnpm --filter @dsm/qa test:a11y -- --grep "TC-1231" --reporter=line` → `1 passed`.
+    No hay AC de este panel sin acceso por teclado sin cubrir: el "no encontrado"
+    era del runner, no del test.
 
 ## Fase 7: Carga
 
