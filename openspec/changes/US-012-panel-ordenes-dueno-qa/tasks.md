@@ -63,7 +63,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
+- [x] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
   - Este change consume `GET /v1/admin/orders`, `GET /v1/admin/orders/{id}`,
     `PATCH /v1/admin/orders/{id}`, que hoy **no existen** en
     `apps/api/docs/api/openapi.yaml` (`US-012-panel-ordenes-dueno-backend`, 0 tasks
@@ -75,7 +75,15 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
   - **Verify**: `grep -E "^  /admin/orders" apps/api/docs/api/openapi.yaml | wc -l` →
     debe imprimir `2`. Hoy imprime `0` — esta task **falla a propósito** hasta que el
     backend publique el contrato.
-- [ ] **T0.2 — Gate de ruta: `/admin/ordenes` debe existir en el frontend**
+  - **Cerrado 2026-09-05**: backend + frontend de US-012 (PR #22) y US-023 ya mergeados
+    a `main`. El grep imprime `4`, no `2` — **superset legítimo**, no una regresión: las
+    dos líneas extra son `/admin/orders/{orderId}/confirm-payment` y
+    `/admin/orders/pending-payment`, publicadas por `US-023-pago-manual-offline-backend`
+    (mergeada junto con US-012), que este plan no anticipaba. Los dos paths que el
+    Exit criterion pide (`/admin/orders`, `/admin/orders/{id}`) están, con el `status`
+    enum `[new, preparing, ready, delivered]` y `created_at` en el sort enum —
+    verificado línea por línea.
+- [x] **T0.2 — Gate de ruta: `/admin/ordenes` debe existir en el frontend**
   - Este gate es **específico de las Fases 5-6** (E2E de navegador + a11y) — no bloquea
     la aceptación API-level (Fases 2-4) ni la carga (Fase 7), que sólo dependen del
     backend.
@@ -84,7 +92,8 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     esta task **falla a propósito** hasta que `US-012-panel-ordenes-dueno-frontend-web`
     la construya; T5.x/T6.x no pueden cerrarse mientras esta falle (T1.x-T4.x y T7.x-T8.1
     parcial sí pueden avanzar en su forma de autoría).
-- [ ] **T0.3 — Confirmar que no hay otro change en curso que colisione**
+  - **Cerrado 2026-09-05**: el archivo existe (PR #22 mergeada).
+- [x] **T0.3 — Confirmar que no hay otro change en curso que colisione**
   - **Exit criterion**: no existe otro directorio en `openspec/changes/` (fuera de los
     dos hermanos de esta US) que declare `qa/acceptance/features/ordenes.feature`,
     `qa/support/seed-ordenes.ts` o `qa/e2e/ordenes*.spec.ts`.
@@ -93,7 +102,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 1: Soporte — datos y bridge de siembra
 
-- [ ] T1.1 Seed **hermano** del panel de órdenes (`seed-ordenes.ts`), no una extensión
+- [x] T1.1 Seed **hermano** del panel de órdenes (`seed-ordenes.ts`), no una extensión
   de `seed-carrito.ts`
   - **Pattern**: checkout real (`POST /v1/checkout`, US-008) para todo lo que la API
     real puede producir; un único `UPDATE` vía `@dsm/db` para el salto
@@ -129,7 +138,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 2: Aceptación BDD — happy path
 
-- [ ] T2.1 Escenarios happy del panel (AC-1, AC-2, AC-3, AC-4, AC-5, AC-9)
+- [x] T2.1 Escenarios happy del panel (AC-1, AC-2, AC-3, AC-4, AC-5, AC-9)
   - **Pattern**: feature en español con `# language: es` y tag de feature `@ordenes`,
     escenarios titulados igual que `qa-plan.md` §4.1 — `per bdd-scenario-quality
     §Gherkin grammar`. Steps que reusan `this.admin` del world existente para las
@@ -147,7 +156,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 3: Aceptación BDD — corner y negative-space
 
-- [ ] T3.1 Escenarios corner (C-1, C-2)
+- [x] T3.1 Escenarios corner (C-1, C-2)
   - **Pattern**: el estado previo se arma con `ordenEnEstado()` (T1.1), nunca con datos
     dejados por otro escenario — `per qa-three-layer-regression §Cross-layer rules`.
   - **Exit criterion**: TC-1206 verde — el detalle de una orden `cancelled` responde 200
@@ -157,7 +166,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     llamada (no gana una fila extra), y el log del aviso no gana una segunda línea.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@ordenes and @corner" --format summary 2>&1 | grep -qE '^2 scenarios \(2 passed\)$'`
 
-- [ ] T3.2 Escenarios negative-space (N-1, N-2, N-3 — AC-6, AC-7, AC-8)
+- [x] T3.2 Escenarios negative-space (N-1, N-2, N-3 — AC-6, AC-7, AC-8)
   - **Pattern**: `per testing-standards.md §14.9 — negative-space: asertar lo que NO
     tiene que pasar`. `this.anon` del world existente para N-2.
   - **Exit criterion**: TC-1208 verde — `PATCH {status:'delivered'}` sobre una orden
@@ -171,7 +180,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 4: Aceptación BDD — cross-feature
 
-- [ ] T4.1 Cross-feature: la costura con el checkout real (US-008), con una cuenta de
+- [x] T4.1 Cross-feature: la costura con el checkout real (US-008), con una cuenta de
   cliente real (US-014) y con las métricas de observabilidad
   - **Pattern**: `per qa-three-layer-regression §Layer 3 — flujos que cruzan changes de
     disciplinas`. X-2 reusa `customer-auth.ts` (`nuevaCuenta()`) sin modificarlo.
@@ -288,6 +297,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
   - **Verify**: `grep -q "TC-1250" qa/exploratory/charters.md && grep -q "TC-1251" qa/exploratory/charters.md && grep -q "Charters de testing exploratorio" qa/exploratory/charters.md`
     *(el tercer grep es el ancla anti-sobrescritura: falla si el apéndice reemplazó el
     archivo en vez de agregarse)*
+
 
 ---
 
