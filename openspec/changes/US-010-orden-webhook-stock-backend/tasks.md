@@ -156,7 +156,7 @@
 
 ## Phase 4: Verificación de firma del webhook (pura, sin cuenta real)
 
-- [ ] T4.1 `payments/mercadopago/webhook-signature.ts`: `parseSignatureHeader(raw)` (formato
+- [x] T4.1 `payments/mercadopago/webhook-signature.ts`: `parseSignatureHeader(raw)` (formato
   `ts=...,v1=...`) y `verifyWebhookSignature({ dataId, requestId, ts, v1, secret, toleranceSec, now })`
   — recalcula HMAC-SHA256 sobre `id:{dataId};request-id:{requestId};ts:{ts};` y compara en
   tiempo constante.
@@ -167,6 +167,7 @@
     fuera de la ventana de tolerancia → `false`; firma recalculada con secreto distinto →
     `false`; header malformado → `false` sin lanzar.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=webhook-signature`
+  - **Nota de ejecución (2026-09-05)**: 10/10 tests verdes.
 
 - [ ] T4.2 `env.validation.ts`: agregar `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` (opcionales a
   nivel de campo, requeridas en producción vía `superRefine`), `MP_HTTP_TIMEOUT_MS` (4000),
