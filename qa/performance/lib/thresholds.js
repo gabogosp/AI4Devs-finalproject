@@ -63,9 +63,16 @@ export const cart_write = {
 };
 
 /**
- * Login de cuenta de cliente de US-014 (TC-160). Mismo presupuesto que
- * `cart_write` porque es el MISMO NFR: PRD §4 fija «p95 de escritura
- * (carrito/orden) < 500 ms» y la US-014 §9 lo repite para login.
+ * Login de cuenta de cliente de US-014 (TC-160). **Presupuesto NO ratificado**
+ * (OQ-QA-5, `openspec/changes/US-014-registro-login-qa/proposal.md`): el PRD
+ * §4 fija «p95 de escritura (carrito/orden) < 500 ms», pero esa fila dice
+ * literalmente "carrito/orden" — no cubre login — y US-014 §9 no fija ningún
+ * número de latencia para esta ruta, sólo NFRs cualitativos. Se copia el
+ * mismo valor que `cart_write` como placeholder hasta que PO/Arquitecto
+ * ratifiquen un budget propio de login (o confirmen que no aplica); medido
+ * contra la API real da p95 ≈ 621,93 ms, con bcrypt cost 12 costando ~250 ms
+ * **por diseño** (mitigación de fuerza bruta) — así que con este valor el
+ * threshold falla a propósito y no debe tomarse como gate cerrado.
  *
  * `rate_limited` con `count<1` es la misma guarda de honestidad que
  * `cart_write`: `/v1/auth/login` tiene su propio `@Throttle` de **10 intentos
