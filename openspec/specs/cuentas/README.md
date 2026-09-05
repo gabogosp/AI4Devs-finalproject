@@ -1,9 +1,8 @@
 # Capacidad: Cuentas de cliente — registro, login y sesión (CAP-6)
 
-**Estado**: entregada — backend completo, incluida la entrega real del email de
-recuperación (adapter Resend, adelantado desde US-011 por decisión del PO
-2026-08-19). Sin UI propia todavía: las pantallas de registro/login/reset son
-`US-014-registro-login-frontend-web` (mergeado, pendiente de su propio archive).
+**Estado**: entregada — backend + UI de cliente vivos, incluida la entrega
+real del email de recuperación (adapter Resend, adelantado desde US-011 por
+decisión del PO 2026-08-19).
 
 Estado declarado del sistema para la capacidad CAP-6 del PRD §2.1. Este
 directorio es el **acumulado** de los changes archivados: se extiende en cada
@@ -62,6 +61,41 @@ identidad (`customers` con `role: customer|admin`):
   created_at}` — nunca `password_hash`, `role`, contadores de lockout ni
   `deleted_at` (AC-8).
 
+Una **UI de cliente** sobre esta superficie (US-014 frontend-web, rutas
+`/ingresar`, `/crear-cuenta`, `/recuperar`, `/recuperar/confirmar`,
+`/mi-cuenta`, todas en `(storefront)` — públicas, con el chrome del sitio):
+
+- **Rewrite same-origin** (`ADR-0013`) para `/v1/auth/*`: el despliegue vive
+  en `*.up.railway.app`, que está en la Public Suffix List — sin el rewrite,
+  web y API son sitios distintos para el navegador y las cookies
+  `SameSite=Lax` nunca viajan. Acotado a `/v1/auth/*` para no tocar el
+  catálogo/panel ya entregados.
+- **Todo el contenido con sesión es Client Component** — el servidor sólo
+  produce el shell anónimo, siempre, para todo el mundo. Ninguna página
+  personalizada puede filtrar a una caché compartida porque nunca se genera
+  en el servidor; el mutator **lanza** si algo intenta `session: 'customer'`
+  desde el servidor.
+- **Refresh single-flight cross-tab** (Web Locks API,
+  `navigator.locks.request`, con fallback a promesa de módulo): un solo
+  refresh a la vez por origen, no por pestaña — sin esto, dos pestañas que
+  expiran a la vez se desloguean mutuamente al pisarse la rotación de un
+  solo uso (ADR-0011).
+- **CSRF**: lee `dsm_csrf` y reenvía `X-CSRF-Token` sólo en los métodos no
+  seguros que el backend exige (`logout`, `refresh`) — nunca en
+  `register`/`login`/`reset`, que no tienen sesión que secuestrar.
+- **`CustomerGuard`** propio (no reutiliza el `AdminGuard` del panel): UX,
+  no autoridad — la autoridad es el guard del backend.
+- **AC-5 protegido también desde el frontend**: ante cualquier `401` de
+  login, un solo copy fijo, sin `setError` por campo, sin redirect
+  diferenciado, sin propiedad de telemetría derivada de la respuesta — un
+  test de igualdad de `innerHTML` entre los tres casos (contraseña
+  incorrecta / cuenta inexistente / cuenta bloqueada) falla si algo los
+  distingue.
+- **Observabilidad sin PII**: 7 eventos públicos, ninguno lleva `customer_id`
+  ni ninguna propiedad derivada de la respuesta del servidor.
+- `/recuperar/confirmar` no es indexable y borra el token de la URL
+  (`history.replaceState`) apenas lo lee.
+
 ## Qué NO está vivo todavía
 
 - **2FA** (cliente y admin) — `Deferred: follow-up de ADR-0009 — owner: Arquitecto`.
@@ -75,9 +109,16 @@ identidad (`customers` con `role: customer|admin`):
 - **Regla de rate-limit de borde (Cloudflare/WAF) sobre `/v1/auth/*`** —
   `Deferred: US-019 (infraestructura) — owner: Arquitecto`, defensa en
   profundidad adicional al throttler de aplicación.
-- **UI** (formularios de registro/login/reset) — construida y mergeada
-  (`US-014-registro-login-frontend-web`), pendiente de su propio
-  `/archive-change`.
+- **SSR de contenido personalizado** (p. ej. historial en `/mi-cuenta`) —
+  `Deferred: US-015`, con la decisión D3 (todo cliente) explícitamente
+  reabierta para cuando eso llegue.
+- **Área de cuenta e historial de compras** — `Deferred: US-015`. Hoy
+  `/mi-cuenta` es un placeholder honesto ("Tus compras — próximamente").
+- **Endurecimiento del panel admin a cookies** — `Deferred: change de
+  endurecimiento del panel — owner: Arquitecto`. El panel sigue con
+  `Bearer` + `sessionStorage`.
+- **`@axe-core/playwright`** — `Deferred:` si QA lo pide (hoy `jest-axe`
+  cubre `frontend-standards §19.2`).
 
 ## Contratos
 
@@ -106,11 +147,10 @@ apunta acá; no se declara en las dos (dos copias driftean).
 | Change | Disciplina | Aporte |
 |---|---|---|
 | [`US-014-registro-login-backend`](../../changes/archive/US-014-registro-login-backend/) | BE | Módulo de auth de cliente completo: registro/login/logout/refresh/me/reset, sesión por cookie + refresh rotado, CSRF double-submit, lockout, endurecimiento del seam admin |
+| [`US-014-registro-login-frontend-web`](../../changes/archive/US-014-registro-login-frontend-web/) | FE | Rewrite same-origin (ADR-0013), refresh single-flight cross-tab, `SessionProvider`/`CustomerGuard`, AC-5 protegido en el cliente, 5 rutas públicas sin SSR de contenido personalizado |
 
-Pendiente de archivar sobre esta misma capacidad: `US-014-registro-login-frontend-web`
-(pantallas de registro/login/reset, mergeado). `US-014-registro-login-qa` tiene
-un `[Open]` real (NFR de latencia de login sin ratificar) y no puede cerrarse
-hasta esa decisión del PO/Arquitecto.
+`US-014-registro-login-qa` tiene un `[Open]` real (NFR de latencia de login
+sin ratificar) y no puede cerrarse hasta esa decisión del PO/Arquitecto.
 
 ## Estado de la provisión
 

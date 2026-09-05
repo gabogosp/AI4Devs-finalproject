@@ -60,3 +60,46 @@ Superficie cubierta: `POST /auth/register`, `POST /auth/login`,
 | D-6 | Rate-limit de borde (Cloudflare/WAF) sobre `/v1/auth/*`, defensa en profundidad adicional al throttler de aplicación. | Owner: Arquitecto — US-019 (infraestructura). |
 | D-7 | Ratificar los 3 NFR de latencia (`[propuesto]`) con datos reales de producción. | Owner: Arquitecto/PO. |
 | D-8 | Prefijos `__Host-`/`__Secure-` en las cookies. | Decisión de ingeniería consciente (OQ-BE-6) — no un placeholder. |
+
+## Desde US-014 frontend-web — UI de registro, login y sesión (archivada 2026-09-05)
+
+Superficie cubierta: `/ingresar`, `/crear-cuenta`, `/recuperar`,
+`/recuperar/confirmar`, `/mi-cuenta` (todas en `(storefront)`).
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-13 | Todas las llamadas a `/v1/auth/*` desde el navegador pasan por un rewrite same-origin (ADR-0013) — sin él, las cookies `SameSite=Lax` no viajan bajo el dominio de despliegue actual (`*.up.railway.app`, en la Public Suffix List). | Design §D1 |
+| R-14 | Un solo refresh en curso por origen (Web Locks API, cross-tab) — dos pestañas que expiran a la vez nunca se desloguean mutuamente al pisar la rotación de un solo uso. | AC-9 (G-2) |
+| R-15 | Toda UI que depende de la sesión es Client Component; el HTML servido por el servidor es siempre el shell anónimo — ninguna página personalizada puede filtrar a una caché compartida porque nunca se genera en el servidor. | G-1 |
+| R-16 | El header muestra "Ingresar" desde el primer frame para el anónimo (mayoría), sin parpadeo; el autenticado ve un placeholder del mismo ancho durante la hidratación — sin CLS. | Design §D3 |
+| R-17 | `X-CSRF-Token` se adjunta sólo en los métodos no seguros de `logout`/`refresh` — nunca en `register`/`login`/`reset`. | Design §D5 |
+| R-18 | `/recuperar/confirmar` borra el token de la URL (`history.replaceState`) apenas lo lee. | Design §D11 |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-8 | Ante cualquiera de los tres `401` de login (contraseña incorrecta / cuenta inexistente / cuenta bloqueada), la UI renderiza el MISMO `innerHTML` — nunca un `setError` por campo, redirect diferenciado, ni propiedad de telemetría derivada de la respuesta (verificado por un test de igualdad, no de texto). |
+| N-9 | Ninguna página de `(storefront)` con contenido de cuenta llama `cookies()` ni `headers()` — el mutator lanza si algo intenta `session: 'customer'` desde el servidor. |
+| N-10 | `POST /auth/refresh` nunca se reintenta ante error de red — reintentar un token de un solo uso dispara la detección de reuso del backend. |
+| N-11 | Ningún evento de observabilidad (`account_registered`, `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `session_expired`) lleva `customer_id`, email, contraseña, ni valor de cookie. |
+| N-12 | El `next` de `/ingresar?next=…` se sanea a ruta relativa del mismo origen — nunca un open redirect. |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-5 | Cero `loading.tsx` en el route group `(storefront)` (F59 — evita que Next confirme un 200 antes de poder emitir un 404 real). | Suite dev-owned. |
+| NFR-6 | `429` de cualquier ruta de auth honra `Retry-After` — muestra el tiempo de espera, nunca reintenta solo. | Suite dev-owned. |
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-9 | SSR de contenido personalizado (p. ej. historial en `/mi-cuenta`). | US-015 — con la decisión "todo cliente" (D3) explícitamente reabierta cuando llegue. |
+| D-10 | Área de cuenta e historial de compras (hoy placeholder honesto). | US-015. |
+| D-11 | Endurecimiento del panel admin a cookies (sigue con `Bearer` + `sessionStorage`). | Owner: Arquitecto — change de endurecimiento del panel. |
+| D-12 | `@axe-core/playwright` (hoy `jest-axe` cubre `frontend-standards §19.2`). | Si QA lo pide. |
+| D-13 | Fusión del carrito guest con la cuenta. | Fuera de v1 (US §4) — mismo diferido que el backend (D-3). |

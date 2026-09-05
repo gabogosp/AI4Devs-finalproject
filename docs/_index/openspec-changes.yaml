@@ -566,7 +566,7 @@
   us-id: US-014
   discipline: frontend-web
   variant: null
-  status: in progress  # 33/33 cerradas 2026-08-22; suite-level verde. Pendiente /commit (PR)
+  status: archived   # /archive-change 2026-09-05 — 33/33 tasks, mergeado vía PR #3 (2026-08-29, feature-entrega2-GOSP). Extiende openspec/specs/cuentas/ (CAP-6) con la UI de sesión (ADR-0013)
   parent-us: docs/user-stories/US-014-registro-login.md
   linear-task-id: null
   audit-baseline: null
@@ -593,12 +593,12 @@
   # ADR-0013 propuesto en T0.3 (condicionado a que OQ-FE-1 se ratifique como opción (a)).
   estimate-hours: 10.1
   assignee: bce7ffb7  # 9a385021 escribió el plan; bce7ffb7 lo ejecutó 33/33 — la convención dice quien EJECUTA
-  branch: null
-  pr-url: null
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-20
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-014-registro-login-frontend-web/
 
 # qa-plan.md agregado 2026-08-23 por /plan-qa (BDD + contract + E2E pago simulado)
 - name: US-009-pago-mercadopago-backend

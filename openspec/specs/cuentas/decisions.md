@@ -10,7 +10,8 @@ fuente de verdad; acá se registra **cuál aplica a esta capacidad y por qué**.
 | ADR-0005 | Auth propia (JWT + bcrypt), sin proveedor externo de identidad. | Fija el modelo completo: access JWT + refresh + bcrypt. |
 | ADR-0009 | Seam de auth admin (`AdminGuard`, `role=admin`). | Se preserva íntegro — `AdminGuard` no se toca; la Fase 8 sólo extiende la EMISIÓN (`POST /admin/auth/login` acepta credenciales además del bootstrap token). |
 | ADR-0010 | Namespace: raíz pública / `/admin/*` panel. | El cliente es público ⇒ `/v1/auth/*`, nunca bajo `/admin`. |
-| ADR-0011 (nuevo, materializado por este change) | Almacén server-side de refresh tokens con rotación, detección de reuso y revocación. | **Enmienda** una nota `Neutral` de ADR-0005 que descartaba el almacén server-side — AC-3 (logout real) y `security-standards §3.3` (revocación real) lo exigen. |
+| ADR-0011 (nuevo, materializado por el backend) | Almacén server-side de refresh tokens con rotación, detección de reuso y revocación. | **Enmienda** una nota `Neutral` de ADR-0005 que descartaba el almacén server-side — AC-3 (logout real) y `security-standards §3.3` (revocación real) lo exigen. |
+| ADR-0013 (nuevo, materializado por el frontend-web) | El navegador sólo habla con el origen del sitio para la superficie de sesión (rewrite same-origin de Next). | Transversal — US-007 y US-015 lo heredan; ver §Desde US-014 frontend-web. |
 
 ## Decisiones de implementación
 
@@ -31,6 +32,19 @@ fuente de verdad; acá se registra **cuál aplica a esta capacidad y por qué**.
 | Puerto `PasswordResetMailer` con dos adapters seleccionados por `RESEND_API_KEY` (presente → Resend; ausente → log). | En producción, si falta la key, el arranque FALLA (fail-fast) — mismo criterio que `GEMINI_API_KEY` de US-005; no degrada en silencio a un adapter que no envía nada. |
 | `409` genérico en registro duplicado, no indistinguibilidad total (OQ-BE-5). | AC-1 exige sesión inmediata al registrarse — eso hace imposible ocultar por completo que el email ya existe sin cambiar el flujo a uno mediado por confirmación de email. |
 | Sin prefijos `__Host-`/`__Secure-` en las cookies (OQ-BE-6). | Decisión de ingeniería consciente, no un placeholder — nombres fijos + `Secure` gobernado por config (`AUTH_COOKIE_SECURE`) para no romper el loop local en HTTP. |
+
+## Desde US-014 frontend-web
+
+| Decisión | Motivo |
+|---|---|
+| **ADR-0013** (nuevo, materializado por este change): el navegador sólo habla con el origen del sitio para la superficie de sesión, vía rewrite de Next acotado a `/v1/auth/*`. | El despliegue vive en `*.up.railway.app` (Public Suffix List) — web y API son sitios distintos para el navegador; `SameSite=Lax` no viaja en XHR sin esto. `credentials: 'include'` + CORS no alcanza: CORS autoriza al servidor a responder, no convierte una cookie cross-site en enviable. Transversal — US-007 y US-015 lo heredan. |
+| Rewrite acotado a `/v1/auth/*`, no a todo el tráfico. | Extenderlo a todo tocaría US-001/002/003 y el harness E2E que inyecta `NEXT_PUBLIC_API_BASE_URL` en build — el radio de impacto en lo ya entregado queda en cero. |
+| Refresh single-flight con Web Locks API (`navigator.locks`), no sólo una promesa de módulo. | Una promesa de módulo resuelve una pestaña; dos pestañas siguen matándose entre sí (caso normal de un e-commerce) al pisar la rotación de un solo uso de ADR-0011. Web Locks es cross-tab por definición; sin la API (navegador viejo, jsdom) degrada a promesa de módulo. |
+| Todo el contenido con sesión es Client Component; el servidor sólo produce el shell anónimo — reforzado con un `throw` en el mutator, no sólo disciplina. | Un `/mi-cuenta` renderizado en servidor y servido desde una caché compartida a otro visitante es una fuga de PII, no un bug de performance. Confiar en que "nadie se olvide" el flag `dynamic='force-dynamic'` es una garantía débil; el mutator lanza si algo intenta `session: 'customer'` desde el servidor. |
+| `CustomerGuard` nuevo, no una generalización de `AdminGuard`. | Los dos modelos de auth son demasiado distintos (token síncrono en `sessionStorage` vs cookie asíncrona) — generalizar produciría un componente con dos ramas que nadie entiende, a costa de tocar la superficie del panel ya entregada. |
+| AC-5 (indistinguibilidad) se protege también en el frontend, con copy fijo + sin `setError` + sin redirect diferenciado + sin propiedad de telemetría derivada. | El backend garantiza respuesta/latencia idénticas, pero el frontend tiene cuatro formas de romperlo igual (renderizar `detail` crudo, marcar un campo, redirigir distinto, emitir telemetría distintiva). Probado con un test de IGUALDAD de `innerHTML` entre los tres 401, no con asserts de texto sueltos. |
+| Sin retry/backoff en `login`/`register`/`reset`/`refresh`; deduplicación in-flight sí (es D4); sin UI optimista en credenciales. | Los primeros no son idempotentes y cada intento consume presupuesto de rate-limit/lockout; `refresh` es de un solo uso y reintentarlo dispara la detección de reuso. |
+| `AppError` con `kind: 'rateLimited'` — decisión CANCELADA como diferimiento propio. | Otra sesión landeó el caso en el sustrato compartido (`src/lib/http/errors.ts`/`client.ts`) el 2026-08-20, mientras se escribía este `design.md`. AC-10 se resuelve consumiendo el `kind` ya existente, sin ampliar nada — ejemplo de reconciliación entre sesiones concurrentes documentado en el propio change. |
 
 ## Riesgo de reconciliación con `catalogo`
 
