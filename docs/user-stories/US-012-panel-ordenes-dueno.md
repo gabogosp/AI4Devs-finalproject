@@ -4,7 +4,7 @@ id: US-012
 slug: panel-ordenes-dueno
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: M
 story_points_traditional: 8
@@ -12,8 +12,9 @@ story_points_ai_assisted: 4
 estimation_basis: "FE panel de órdenes con TanStack Table + acciones de estado (Cohn 2005 §9 backoffice, 8) + BE listado/detalle + transiciones FSM validadas (Cohn 2005 §8, 5), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-09-05
 ready-at: 2026-06-15
+in-progress-at: 2026-08-30
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
