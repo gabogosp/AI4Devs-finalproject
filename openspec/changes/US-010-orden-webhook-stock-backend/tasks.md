@@ -520,7 +520,7 @@
 
 ## Phase 14: Tests de integración cross-cutting (Postgres real — AC-1, AC-4, AC-5, AC-6, AC-8, AC-9)
 
-- [ ] T14.1 `e2e-payments-mercadopago-happy.spec.ts`: webhook con firma válida + `getPayment`
+- [x] T14.1 `e2e-payments-mercadopago-happy.spec.ts`: webhook con firma válida + `getPayment`
   mockeado `approved` sobre una orden real `pending_payment` con stock suficiente → 200,
   orden `new` con `confirmed_at`, stock decrementado, pago `approved` con
   `idempotency_key='mercadopago:{externalId}'`.
@@ -528,7 +528,7 @@
     (Testcontainers), no mocks de repositorio.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-mercadopago-happy`
 
-- [ ] T14.2 `e2e-payments-insufficient-stock-auto.spec.ts`: mismo flujo pero con stock
+- [x] T14.2 `e2e-payments-insufficient-stock-auto.spec.ts`: mismo flujo pero con stock
   insuficiente en un ítem → orden `cancelled` con `cancelled_at`, pago `refund_pending` →
   `refunded` (mock de `refund` exitoso), `NotificationPort.orderCancelledNoStock` invocado
   una vez, stock del producto sin cambios (nunca bajó de 0 ni quedó decrementado a medias).
@@ -536,7 +536,7 @@
     (no sólo el que falló) — el rollback fue completo.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-insufficient-stock-auto`
 
-- [ ] T14.3 `e2e-payments-webhook-duplicate.spec.ts`: el mismo webhook (mismo `data.id`)
+- [x] T14.3 `e2e-payments-webhook-duplicate.spec.ts`: el mismo webhook (mismo `data.id`)
   enviado dos veces, y también enviado con una versión "vieja"/reordenada tras uno más
   nuevo (AC-6) — en ambos casos, sólo la PRIMERA aplicación efectiva cambia el estado; las
   siguientes responden 200 sin modificar nada.
@@ -544,7 +544,7 @@
     para ese `external_id`, y `products.stock` decrementó **una sola vez**.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-webhook-duplicate`
 
-- [ ] T14.4 `e2e-payments-concurrency.spec.ts`: `Promise.all` con 10 llamadas concurrentes a
+- [x] T14.4 `e2e-payments-concurrency.spec.ts`: `Promise.all` con 10 llamadas concurrentes a
   `confirm()` para 10 órdenes distintas que comparten un producto con stock=1 — exactamente
   UNA de las 10 confirma, las otras 9 reciben `InsufficientStockError` o quedan
   `refund_pending`+`cancelled` según el `provider`, y `products.stock` termina en 0 (nunca
@@ -556,7 +556,7 @@
     orden termina `new` habiendo un solo producto en stock.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-concurrency`
 
-- [ ] T14.5 `e2e-payments-simulated-parity.spec.ts`: correr el MISMO caso (happy path e
+- [x] T14.5 `e2e-payments-simulated-parity.spec.ts`: correr el MISMO caso (happy path e
   insuficiente-stock) una vez con `provider: 'mercadopago'` (mock de `MercadoPagoClient`) y
   otra con `provider: 'simulated_dsm'` (sin ningún mock de red — el simulado nunca llama a
   MercadoPago) y comparar el resultado final en `orders`/`payments`/`products.stock` — deben
@@ -564,6 +564,13 @@
   - **Exit criterion**: prueba, no supone, que AC-9 es real y no sólo estructural —
     ejercita `POST /v1/checkout/simulate-payment` end-to-end.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-simulated-parity`
+  - **Nota de ejecución conjunta T14.1-T14.5 (2026-09-05)**: 7/7 tests verdes en 5 archivos.
+    T14.4 (concurrencia) construye `ConfirmOrderService` directo (no vía HTTP) — 10 llamadas
+    reales en paralelo con `Promise.allSettled` contra Postgres real, exactamente 1 confirma
+    y `products.stock` termina en 0. T14.5 ejercita AMBOS caminos por HTTP real
+    (`POST /v1/webhooks/mercadopago` y `POST /v1/checkout/simulate-payment`, este último
+    con el truco `_PROCESS_ENV_VALIDATED` de T7 para el feature flag) y compara
+    `orders`/`payments`/`products.stock` — idénticos salvo `provider`.
 
 ## Phase 15: Contratos + documentación
 
