@@ -1844,7 +1844,7 @@
   us-id: US-021
   discipline: backend
   variant: null
-  status: in review   # /commit 2026-09-05 — 30/30 tasks, PR #41 abierto. El código estaba completo localmente desde 2026-08-23 pero nunca se había pusheado — sólo la planificación (PR #25) había mergeado; publicado durante un barrido de changes pendientes de archivar.
+  status: archived   # /archive-change 2026-09-05 — 30/30 tasks, PR #41 mergeado 2026-09-05. Crea openspec/specs/retencion-datos-personales/ (CAP-13)
   parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
   audit-baseline: null
@@ -1901,6 +1901,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/41
   pr-opened-at: 2026-09-05
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T21:15:53Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-backend/
