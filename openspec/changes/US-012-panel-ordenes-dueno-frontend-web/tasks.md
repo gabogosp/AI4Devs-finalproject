@@ -424,7 +424,7 @@
     declarado (T9.1 sólo cubrió los eventos de fulfillment, Fases 1-11); sin operator_id manual
     (lo agrega `track()` automáticamente, no está en `PUBLIC_EVENTS`). `confirmManualPayment`
     (nombre real del operationId) en vez de `confirmOrderPayment`, igual que T12.2.
-- [ ] **T12.4 — Segunda pestaña en `/admin/ordenes`, mutuamente excluyente con `OrdersList`**
+- [x] **T12.4 — Segunda pestaña en `/admin/ordenes`, mutuamente excluyente con `OrdersList`**
   - **Pattern**: `design.md` §D9 — `?tab=pendientes-de-pago` leído por el Server Component de
     `page.tsx`; nunca `OrdersList` y `PendingPaymentsPanel` montados a la vez.
   - **Exit criterion**: `apps/web/app/(admin)/admin/ordenes/page.tsx` renderiza
@@ -436,19 +436,39 @@
     `searchParams: { tab: 'pendientes-de-pago' }` renderiza `PendingPaymentsPanel` y NO
     `OrdersList` — falla si ambos aparecen en el DOM simultáneamente en cualquiera de los dos
     casos.
+  - **Nota de ejecución (2026-09-05)**: la ruta real vive en `app/(admin)/admin/ordenes/`
+    (no `src/app/`, que no existe en este proyecto) — `vitest.config.ts` sólo escanea
+    `src/**`, así que el test quedó en `apps/web/src/app/admin/ordenes/page.test.tsx`
+    importando el page real por ruta relativa (única forma de que `pnpm --filter @dsm/web
+    test` lo levante). Se agregó `data-testid="orders-list"`/`"pending-payments-panel"` en
+    los `<div>` wrapper del propio `page.tsx` (sin tocar `OrdersList`/`PendingPaymentsPanel`,
+    ya cerrados) para el assert de exclusión mutua. Se agregó también una nav de 2 tabs
+    (`Fulfillment`/`Pendientes de pago`, `aria-current="page"`) — el pseudocódigo de
+    `design.md` no la incluía pero sin ella no había forma real de navegar a la vista nueva.
+    2/2 tests verdes; suite completa 138/138 archivos, 886/886 tests, tsc y lint limpios.
 
 ## Verification (suite-level)
 
-- [ ] Toda la suite de `apps/web` sigue verde: `pnpm --filter @dsm/web test` (`vitest run`,
+- [x] Toda la suite de `apps/web` sigue verde: `pnpm --filter @dsm/web test` (`vitest run`,
       forma terminante — nunca `vitest` a secas).
-- [ ] Type-check limpio: `pnpm --filter @dsm/web exec tsc --noEmit`.
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`.
-- [ ] Gate de contrato: `pnpm --filter @dsm/web codegen` no produce diff sin commitear
+  - **Nota de ejecución (2026-09-05)**: 138/138 archivos, 886/886 tests.
+- [x] Type-check limpio: `pnpm --filter @dsm/web exec tsc --noEmit`.
+  - **Nota de ejecución (2026-09-05)**: limpio.
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`.
+  - **Nota de ejecución (2026-09-05)**: limpio.
+- [x] Gate de contrato: `pnpm --filter @dsm/web codegen` no produce diff sin commitear
       (`git diff --exit-code apps/web/src/api/generated`) — el gate `frontend-codegen-fresh`
       de CI hace exactamente esto.
-- [ ] Gate de choke-point de red (F48): `./scripts/check-consumer-contract.sh` (o el gate
+  - **Nota de ejecución (2026-09-05)**: sin diff.
+- [x] Gate de choke-point de red (F48): `./scripts/check-consumer-contract.sh` (o el gate
       `consumer-contract-check` de CI) no reporta ningún `fetch`/`axios` crudo nuevo fuera de
       `src/lib/http/client.ts` en los archivos de `src/features/orders/`.
-- [ ] `OrderStatusActions` NUNCA deja el estado optimista aplicado sin confirmación del
+  - **Nota de ejecución (2026-09-05)**: `spekode/scripts/check-consumer-contract.sh` reporta
+    31 violaciones preexistentes (todas en `apps/web/e2e/support/api-stub.selftest.mjs` y en
+    `apps/api/src/enrichment/ai/gemini-http.client.ts`, ninguna nueva de este change) — cero
+    hits en `src/features/orders/`. Deuda preexistente fuera de alcance de esta task.
+- [x] `OrderStatusActions` NUNCA deja el estado optimista aplicado sin confirmación del
       backend — cubierto por T6.1 caso 3; si ese test se borra o se debilita, este ítem de
       suite-level debe volver a agregarlo.
+  - **Nota de ejecución (2026-09-05)**: `OrderStatusActions.test.tsx` sin tocar, el caso de
+    rollback (línea 99) sigue verde.
