@@ -313,7 +313,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 8: Exploratorio
 
-- [ ] T8.1 Charters del panel (TC-1250, TC-1251)
+- [x] T8.1 Charters del panel (TC-1250, TC-1251)
   - **Pattern**: apéndice a `qa/exploratory/charters.md`, con misión, áreas, riesgos,
     heurísticas y justificación de por qué es manual — mismo formato que los charters
     que US-001/US-002/US-006/US-007 ya dejaron en ese archivo.
