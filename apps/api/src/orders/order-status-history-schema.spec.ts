@@ -108,9 +108,14 @@ describe('Esquema de order_status_history materializado (F40 — reconciliación
     ]) {
       expect(presentes).toContain(columna);
     }
-    // Ancla negativa: confirmed_at/cancelled_at nunca existieron (design.md §D3
-    // "Corrección respecto al contrato que asumió el sibling FE").
-    expect(presentes).not.toContain('confirmed_at');
-    expect(presentes).not.toContain('cancelled_at');
+    // NOTA (2026-09-05, US-010 T1.1): el ancla negativa de más abajo (`confirmed_at`/
+    // `cancelled_at` "nunca existieron") reflejaba el estado del 2026-08-30, cuando
+    // `US-010-orden-webhook-stock-backend` todavía no estaba construido — no era una
+    // prohibición permanente, sino "no existen TODAVÍA" (design.md §D3 de este change).
+    // US-010 las agregó a propósito, de forma aditiva (migración
+    // `20260905201343_add_order_confirmed_cancelled_at`): la FSM necesita distinguir
+    // "orden creada" de "orden confirmada" (el pago puede aprobarse horas después),
+    // y "orden cancelada" (AC-4/AC-11) de cualquier otro estado. El resto de esta
+    // aserción (las 5 columnas de arriba) sigue vigente sin cambios.
   });
 });

@@ -311,6 +311,46 @@ export const envSchema = z.object({
   SEARCH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
 
   /**
+   * US-010 — MercadoPago (webhook + medio simulado). Opcionales a nivel de
+   * campo, pero NO en producción: el refinement de abajo hace fallar el
+   * arranque si faltan con `NODE_ENV=production` — mismo precedente de
+   * `RESEND_API_KEY`/`GEMINI_API_KEY` (D6/D7 del design).
+   */
+  MP_ACCESS_TOKEN: z.string().min(1).optional(),
+  MP_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /** Timeout por llamada saliente a MercadoPago, en ms. */
+  MP_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(4_000),
+  /** Ventana de tolerancia sobre el `ts` de la firma del webhook, en segundos. */
+  MP_WEBHOOK_TOLERANCE_SEC: z.coerce.number().int().positive().default(300),
+  /** Reintentos además del intento inicial, sobre 429/5xx/timeout. */
+  MP_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
+
+  /**
+   * US-010 D7 — medio simulado (`POST /v1/checkout/simulate-payment`, ADR-0006).
+   * Apagado por default; el refinement de abajo hace fallar el arranque si
+   * queda prendido en producción — es un gate de arranque, no sólo un
+   * checklist de release.
+   */
+  PAYMENTS_SIMULATED_ENABLED: z.enum(['true', 'false']).default('false'),
+  /** §7.3 — presupuesto propio del medio simulado, mismo criterio que checkout. */
+  PAYMENTS_SIMULATE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(600_000),
+
+  /**
+   * US-010 D8 — jobs admin sin scheduler in-process (ADR-0012/0014): un cron
+   * externo (Railway/GitHub Actions) los dispara cada N minutos pegándole al
+   * endpoint. Todos con default seguro.
+   */
+  /** Antigüedad mínima de una `pending_payment` para que la reconciliación la considere. */
+  RECONCILE_MIN_AGE_MS: z.coerce.number().int().positive().default(300_000),
+  /** Tope de órdenes por corrida de reconciliación. */
+  RECONCILE_BATCH_SIZE: z.coerce.number().int().positive().default(50),
+  /** Horas de antigüedad para que una `pending_payment` se considere abandonada (AC-11). */
+  ORDER_ABANDON_HOURS: z.coerce.number().int().positive().default(48),
+  /** Tope de reembolsos por corrida de reintento (AC-4 durable). */
+  REFUND_RETRY_BATCH_SIZE: z.coerce.number().int().positive().default(50),
+
+  /**
    * US-021 — retención y anonimización de PII de órdenes (Ley 25.326). Defaults
    * seguros; un valor inválido hace FALLAR el arranque (§7), nunca cae al
    * default en silencio.
@@ -369,6 +409,33 @@ export const envSchema = z.object({
           'requerida en producción: sin ella el reset caería al adapter de log y no se enviaría ningún email',
       });
     }
+  }
+
+  // US-010 — sin credenciales de MercadoPago en producción, el webhook no puede
+  // verificar firmas ni re-consultar pagos: los cobros reales quedarían sin
+  // confirmar en el sistema.
+  for (const campo of ['MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET'] as const) {
+    if (!env[campo]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [campo],
+        message:
+          'requerida en producción: sin ella el webhook de MercadoPago no puede verificar firmas ni confirmar pagos',
+      });
+    }
+  }
+
+  // US-010 D7 (ADR-0006) — condición INVERTIDA respecto a las de arriba: acá se
+  // rechaza el `true`, no se exige. El medio simulado saltea MercadoPago por
+  // completo; dejarlo prendido en producción permitiría "pagar" órdenes reales
+  // sin plata de por medio.
+  if (env.PAYMENTS_SIMULATED_ENABLED === 'true') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['PAYMENTS_SIMULATED_ENABLED'],
+      message:
+        'no puede quedar en `true` en producción (ADR-0006): el medio simulado saltea MercadoPago por completo',
+    });
   }
 
   // US-005 D6 — mismo razonamiento, otra feature: sin clave el enriquecimiento

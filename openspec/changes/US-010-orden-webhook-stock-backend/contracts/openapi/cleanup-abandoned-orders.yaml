@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: "cleanup-abandoned-orders — cancelar órdenes pending_payment abandonadas (AC-11)"
+  version: v1
+  description: |
+    Cancela, en un único `updateMany` guardado por `created_at`, las órdenes
+    `pending_payment` más viejas que `ORDER_ABANDON_HOURS` (default 48h). No reembolsa
+    nada (nunca se cobró). Superficie admin de bajo volumen, sin throttler dedicado.
+servers:
+  - url: https://api.dsm-ferreteria.example.com
+    description: PROD
+paths:
+  /v1/admin/orders/cleanup-abandoned:
+    post:
+      operationId: cleanupAbandonedOrders
+      tags: [orders, admin]
+      summary: Cancelar órdenes pending_payment abandonadas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cantidad de órdenes canceladas.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cancelled]
+                properties:
+                  cancelled: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+  responses:
+    Unauthorized:
+      description: Falta o es inválido el JWT admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }

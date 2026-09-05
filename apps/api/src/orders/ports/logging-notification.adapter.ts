@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificationPort, OrderReadyForPickupPayload } from './notification.port';
+import {
+  NotificationPort,
+  OrderCancelledNoStockPayload,
+  OrderConfirmedPayload,
+  OrderReadyForPickupPayload,
+  OwnerNewOrderPayload,
+} from './notification.port';
 
 /**
  * Adapter de **desarrollo y test** del `NotificationPort` — no manda ningún
@@ -22,6 +28,24 @@ export class LoggingNotificationAdapter implements NotificationPort {
   async orderReadyForPickup(payload: OrderReadyForPickupPayload): Promise<void> {
     this.logger.log(
       `order.ready_for_pickup order_id=${payload.orderId} order_number=${payload.orderNumber}`,
+    );
+  }
+
+  async orderConfirmed(payload: OrderConfirmedPayload): Promise<void> {
+    this.logger.log(
+      `order.confirmed order_id=${payload.orderId} order_number=${payload.orderNumber}`,
+    );
+  }
+
+  async ownerNewOrder(payload: OwnerNewOrderPayload): Promise<void> {
+    this.logger.log(
+      `order.owner_new_order order_id=${payload.orderId} order_number=${payload.orderNumber}`,
+    );
+  }
+
+  async orderCancelledNoStock(payload: OrderCancelledNoStockPayload): Promise<void> {
+    this.logger.log(
+      `order.cancelled_no_stock order_id=${payload.orderId} order_number=${payload.orderNumber}`,
     );
   }
 }

@@ -99,4 +99,128 @@ describe('PaymentsRepository.createManualPayment', () => {
 
     expect(await prisma.payment.count({ where: { order_id: ordenId } })).toBe(1);
   });
+
+  describe('createApprovedPayment (US-010 T2.3)', () => {
+    it('crea una fila approved con idempotency_key {provider}:{externalId}', async () => {
+      const pago = await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-123',
+        amountArsCents: 100_000,
+      });
+
+      expect(pago.provider).toBe('mercadopago');
+      expect(pago.status).toBe('approved');
+      expect(pago.external_id).toBe('mp-123');
+      expect(pago.idempotency_key).toBe('mercadopago:mp-123');
+      expect(pago.confirmed_by).toBeNull();
+    });
+
+    it('un segundo pago con el mismo {provider, externalId} lanza OrderNotPendingPaymentError (AC-5/AC-6)', async () => {
+      await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-dup',
+        amountArsCents: 100_000,
+      });
+
+      await expect(
+        payments.createApprovedPayment({
+          orderId: ordenId,
+          provider: 'mercadopago',
+          externalId: 'mp-dup',
+          amountArsCents: 100_000,
+        }),
+      ).rejects.toBeInstanceOf(OrderNotPendingPaymentError);
+    });
+  });
+
+  describe('createRefundPendingPayment (US-010 T2.3)', () => {
+    it('crea una fila refund_pending con idempotency_key {provider}:{externalId}:refund', async () => {
+      const pago = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-refund-1',
+        amountArsCents: 100_000,
+      });
+
+      expect(pago.status).toBe('refund_pending');
+      expect(pago.idempotency_key).toBe('mercadopago:mp-refund-1:refund');
+    });
+  });
+
+  describe('markRefunded (US-010 T2.3)', () => {
+    it('sobre una fila refund_pending, la marca refunded', async () => {
+      const pago = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-refund-2',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.markRefunded(pago.id);
+
+      expect(resultado?.status).toBe('refunded');
+    });
+
+    it('sobre una fila que NO está refund_pending, devuelve null y no la toca (guardado)', async () => {
+      const pago = await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-not-pending',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.markRefunded(pago.id);
+
+      expect(resultado).toBeNull();
+      const enBase = await prisma.payment.findUniqueOrThrow({ where: { id: pago.id } });
+      expect(enBase.status).toBe('approved');
+    });
+  });
+
+  describe('listRefundPending (US-010 T11.1)', () => {
+    it('sólo trae provider=mercadopago en refund_pending, más viejas primero', async () => {
+      const mp = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-list-1',
+        amountArsCents: 100_000,
+      });
+      // simulated_dsm nunca se atasca — no debe aparecer en la lista.
+      await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'simulated_dsm',
+        externalId: 'sim-list-1',
+        amountArsCents: 100_000,
+      });
+      // ya refunded — no debe aparecer.
+      const yaRefunded = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-list-2',
+        amountArsCents: 100_000,
+      });
+      await payments.markRefunded(yaRefunded.id);
+
+      const lista = await payments.listRefundPending(10);
+
+      expect(lista.map((p) => p.id)).toEqual([mp.id]);
+    });
+
+    it('respeta el límite', async () => {
+      for (let i = 0; i < 3; i += 1) {
+        await payments.createRefundPendingPayment({
+          orderId: ordenId,
+          provider: 'mercadopago',
+          externalId: `mp-limit-${i}`,
+          amountArsCents: 100_000,
+        });
+      }
+
+      const lista = await payments.listRefundPending(2);
+
+      expect(lista).toHaveLength(2);
+    });
+  });
 });

@@ -135,7 +135,7 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     });
   });
 
-  it('existen exactamente SEIS throttlers nombrados: uno por superficie, no uno por ruta', () => {
+  it('existen exactamente SIETE throttlers nombrados: uno por superficie, no uno por ruta', () => {
     // El plan de US-014 lo pedía explícito con dos: registrar un throttler por
     // ruta habría sido la salida fácil y habría dejado cada presupuesto sin
     // gobierno central; los límites por ruta van como `@Throttle` sobre el
@@ -160,6 +160,10 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
     // techo inalcanzable en el registro global, presupuesto real (10/10min) en el
     // `@Throttle` del único handler del checkout.
     //
+    // US-010 (T7.3) suma el séptimo, `payments_simulate` — mismo criterio: techo
+    // inalcanzable acá, presupuesto real (10/10min) en el `@Throttle` del único
+    // handler de `POST /v1/checkout/simulate-payment`.
+    //
     // Se lee la configuración REAL que resolvió el contenedor, no el archivo
     // fuente: lo que gobierna en runtime es esto.
     const opciones = app.get<Array<{ name?: string }>>(getOptionsToken());
@@ -169,6 +173,7 @@ describe('Rate-limit del seam de auth (e2e-auth-ratelimit)', () => {
       'cart',
       'checkout',
       'enrichment',
+      'payments_simulate',
       'search',
       'storefront',
     ]);

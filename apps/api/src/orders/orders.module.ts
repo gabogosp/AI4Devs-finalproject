@@ -24,5 +24,8 @@ import { LoggingNotificationAdapter } from './ports/logging-notification.adapter
     OrderEventsService,
     { provide: NOTIFICATION_PORT, useClass: LoggingNotificationAdapter },
   ],
+  // US-010 T8.1: PaymentsModule inyecta NOTIFICATION_PORT (nuevo edge
+  // payments → orders, acíclico — orders no importa payments).
+  exports: [NOTIFICATION_PORT],
 })
 export class OrdersModule {}
