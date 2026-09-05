@@ -32,11 +32,15 @@ El **panel del dueño** para gestionar el catálogo (US-001):
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml):
 raíz con `info`/`servers`/`security` y los `components/schemas` compartidos una sola vez, más un
 archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/) referenciado por
-`$ref`. Ocho endpoints vivos:
+`$ref`. Siete endpoints vivos:
+
+> `/admin/auth/login` (emisión del token admin, AC-8) se mudó a la capacidad
+> [`cuentas`](../cuentas/) al archivar `US-014-registro-login-backend`
+> (decisión del PO, 2026-08-19): es un endpoint de autenticación, no de
+> catálogo. Su hogar vivo es `openspec/specs/cuentas/contracts/openapi.yaml`.
 
 | Endpoint | Métodos | AC |
 |---|---|---|
-| `/admin/auth/login` | POST | AC-8 (emisión del token; única ruta admin sin bearer) |
 | `/admin/categories` | POST, GET | AC-1 |
 | `/admin/categories/{id}` | PATCH | AC-1 |
 | `/admin/products` | POST, GET | AC-2, AC-5, AC-9 |

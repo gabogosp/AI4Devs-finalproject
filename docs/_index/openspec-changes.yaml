@@ -237,7 +237,7 @@
   us-id: US-014
   discipline: backend
   variant: null
-  status: in progress
+  status: archived   # /archive-change 2026-09-05 — 44/44 tasks, mergeado vía PR #3 (2026-08-29, feature-entrega2-GOSP). Crea openspec/specs/cuentas/ (CAP-6); muda /admin/auth/login desde catalogo
   parent-us: docs/user-stories/US-014-registro-login.md
   linear-task-id: null
   audit-baseline: null
@@ -245,13 +245,13 @@
   # 15 h tradicional / 7,5 h AI-asistido (US §7 estima BE-US-014 en 12-16 h).
   # El peso está en la superficie de credenciales, no en el CRUD de la cuenta.
   estimate-hours: 15
-  assignee: sin-identificar  # plan escrito por bce7ffb7; lo ejecuta una sesion abierta por el PO (candidata c767d410, sin confirmar)
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-17
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-014-registro-login-backend/
 
 - name: US-002-storefront-navegacion-categorias-qa
   us-id: US-002

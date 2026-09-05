@@ -1,0 +1,33 @@
+post:
+  tags: [customer-auth]
+  operationId: logoutCustomer
+  summary: Cierra la sesión y revoca la familia de refresh (AC-3)
+  description: |
+    Revocación inmediata del refresh. Cierra la familia del dispositivo
+    actual; las otras sesiones del cliente siguen vivas. Límite declarado:
+    el access ya emitido sigue siendo válido hasta que vence (≤
+    AUTH_ACCESS_TTL_MIN), consecuencia aceptada de un access stateless.
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../../openapi.yaml#/components/parameters/CsrfToken'
+  responses:
+    '204':
+      description: |
+        Sesión cerrada. Emite las tres cookies vencidas con el MISMO Path de
+        emisión — dsm_refresh con Path=/v1/auth, porque con otro path el
+        navegador la conservaría.
+      headers:
+        Set-Cookie: { $ref: '../../openapi.yaml#/components/headers/SessionCookies' }
+    '401':
+      description: '`dsm:auth/unauthenticated` — sin cookie de sesión válida.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: '`dsm:auth/csrf`.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
