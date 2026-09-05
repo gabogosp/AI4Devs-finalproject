@@ -3,18 +3,24 @@
 > **Ticket**: US-023 — Pago manual / offline (confirmación del dueño)
 > **Author**: qa-engineer agent
 > **Date**: 2026-09-05
-> **Status**: Proposed
+> **Status**: Archived — `archived: true`, `archived_at: 2026-09-05`,
+> `merged_commit: 5d769aa73edf915c450b50973ecd30aea614c2e9`,
+> `pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/38`. Los 4 stubs
+> automatizados (§4-§6) están `[x]`; `QA-023-E2E-1` (§7) sigue `manual`/`blocked` como
+> checklist humano — no bloqueó el archive (sin spec delta, QA no declara contratos).
 > **Affected platform(s)**: backend (superficie HTTP admin). El consumidor de frontend
-> (`PendingPaymentsPanel`, US-012 Fase 12) **todavía no existe en código** — ver §7.
+> (`PendingPaymentsPanel`, US-012 Fase 12) **no existía en código** al momento de escribir
+> este plan — resuelto después, el mismo 2026-09-05, vía `US-012-pendientes-pago-frontend-web`
+> (PR #31, archivado). §7 queda como constancia histórica del hallazgo; `QA-023-E2E-1` puede
+> des-diferirse y automatizarse en un follow-up ahora que el componente existe.
 > **Service tier(s)**: 1 (derivado — ver más abajo, no hay `service-catalog.yaml` en el repo)
-> **Companion files**: `proposal.md`, `tasks.md`, `design.md` (los tres ya cerrados, PR #27
-> mergeado a `main`, 8/8 fases y verificaciones de suite en `[x]`)
+> **Companion files**: `proposal.md`, `tasks.md`, `design.md` (los tres archivados junto con
+> este plan — PR #27 mergeado a `main` el 2026-09-02, archivado el 2026-09-05 vía PR #40)
 
-> **Nota de contexto (2026-09-05)**: el índice `docs/_index/openspec-changes.yaml` todavía
-> marca `US-023-pago-manual-offline-backend` como `status: in review` — es drift entre el
-> índice y la realidad (el PR #27 está mergeado, las 8 fases de `tasks.md` están `[x]`). Este
-> plan trata el backend como **terminado**, no como trabajo en curso; no le corresponde a este
-> agente corregir el índice (fuera de su ownership — ver "Index ownership" del agente).
+> **Nota de contexto (2026-09-05, histórica)**: al escribir este plan, el índice
+> `docs/_index/openspec-changes.yaml` todavía marcaba `US-023-pago-manual-offline-backend`
+> como `status: in review` pese a que el PR #27 ya estaba mergeado — drift ya corregido por
+> `/archive-change` (PR #40, backend) y por este mismo archive (QA).
 
 ---
 

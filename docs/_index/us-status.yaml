@@ -428,7 +428,9 @@
   blocked_by: []
 - id: US-023
   slug: pago-manual-offline
-  status: In Progress
+  status: Done   # /archive-change 2026-09-05 — 3/3 disciplinas resueltas: BE archivado (PR #27/#40),
+                 # FE satisfecho por US-012-pendientes-pago-frontend-web (PR #31, archivado),
+                 # QA archivado (PR #38). Ver notas de abajo por el detalle de cada una.
   priority: High
   prd-capacity: 4   # CAP-4 «Checkout y pago» — adaptador de pago sin MercadoPago
   disciplines: [BE, FE, QA]
@@ -438,9 +440,9 @@
   ready-at: 2026-08-30
   in-progress-at: 2026-08-30   # /plan-backend-ticket — primer plan de disciplina abierto
   in-review-at: 2026-08-30     # backend PR #27 (mergeado 2026-09-02, archivado 2026-09-05) + QA
-                                # PR #38 abierto 2026-09-05 (/commit) — FE quedó satisfecho recién
-                                # el 2026-09-05 vía PR #31 (ver nota abajo); el status de la US se
-                                # queda en In Progress hasta que QA (PR #38) también archive
+                                # PR #38 (mergeado y archivado 2026-09-05, ver nota final) — FE
+                                # quedó satisfecho el 2026-09-05 vía PR #31 (ver nota abajo)
+  done-at: 2026-09-05
   t-shirt: M
   # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
   # el pago y la orden pasa a `new` (FSM E2E §12, no "paid" — corregido en el enrich).
@@ -476,9 +478,12 @@
   # `pendingPaymentsService.ts` se construyeron en un change dedicado
   # (`US-012-pendientes-pago-frontend-web`, PR #31, archivado 2026-09-05) — verificado que
   # ambos archivos existen en el árbol real post-merge. FE-US-023 SÍ está satisfecho ahora.
-  # `status` de la US NO avanza a `Done`: QA sigue en curso (PR #38). Se queda en
-  # `In Progress`, pendiente del merge/archive de QA. Sigue pendiente (no bloqueante):
-  # `QA-023-E2E-1` en el qa-plan.md de esta US quedó scaffoldeado como manual/blocked antes
-  # de que PR #31 aterrizara — ahora que el componente existe, alguien puede
-  # des-diferirlo y automatizarlo en un follow-up.
-  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción — Fase 12 (FE) construida vía PR #31 (ver nota 2026-09-05), cubre AC-2 de esta US.
+  #
+  # NOTA FINAL (2026-09-05, /archive-change US-023-pago-manual-offline-qa, PR #38 mergeado):
+  # las 3 disciplinas quedan resueltas — BE archivado (PR #27/#40), FE satisfecho por
+  # US-012-pendientes-pago-frontend-web (PR #31, archivado), QA archivado (PR #38, 4/4
+  # stubs automatizados verdes). `status` de la US avanza a `Done`. Pendiente (no
+  # bloqueante, follow-up sugerido): `QA-023-E2E-1` en el qa-plan.md quedó scaffoldeado
+  # como manual/blocked antes de que PR #31 aterrizara — ahora que el componente existe,
+  # alguien puede des-diferirlo y automatizarlo.
+  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment` (satisfecho). US-012: el panel donde vive la acción — Fase 12 (FE) construida vía PR #31, cubre AC-2 de esta US (satisfecho).
