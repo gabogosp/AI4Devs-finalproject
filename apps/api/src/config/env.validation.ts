@@ -335,6 +335,20 @@ export const envSchema = z.object({
   /** §7.3 — presupuesto propio del medio simulado, mismo criterio que checkout. */
   PAYMENTS_SIMULATE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
   PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(600_000),
+
+  /**
+   * US-010 D8 — jobs admin sin scheduler in-process (ADR-0012/0014): un cron
+   * externo (Railway/GitHub Actions) los dispara cada N minutos pegándole al
+   * endpoint. Todos con default seguro.
+   */
+  /** Antigüedad mínima de una `pending_payment` para que la reconciliación la considere. */
+  RECONCILE_MIN_AGE_MS: z.coerce.number().int().positive().default(300_000),
+  /** Tope de órdenes por corrida de reconciliación. */
+  RECONCILE_BATCH_SIZE: z.coerce.number().int().positive().default(50),
+  /** Horas de antigüedad para que una `pending_payment` se considere abandonada (AC-11). */
+  ORDER_ABANDON_HOURS: z.coerce.number().int().positive().default(48),
+  /** Tope de reembolsos por corrida de reintento (AC-4 durable). */
+  REFUND_RETRY_BATCH_SIZE: z.coerce.number().int().positive().default(50),
 }).superRefine((env, ctx) => {
   // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
   // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la

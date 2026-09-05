@@ -550,3 +550,28 @@ describe('Medio simulado (US-010 T7.2, ADR-0006) — defaults y fail-fast', () =
     ).toThrow(/fail-fast|Config de entorno inválida/);
   });
 });
+
+describe('Jobs admin de US-010 (T9.1/T10/T11) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin ninguna variable, aplica los defaults exactos', () => {
+    const env = validateEnv({ ...base });
+
+    expect(env.RECONCILE_MIN_AGE_MS).toBe(300_000);
+    expect(env.RECONCILE_BATCH_SIZE).toBe(50);
+    expect(env.ORDER_ABANDON_HOURS).toBe(48);
+    expect(env.REFUND_RETRY_BATCH_SIZE).toBe(50);
+  });
+
+  it('un valor no numérico hace fallar el arranque, no cae al default', () => {
+    expect(() => validateEnv({ ...base, RECONCILE_BATCH_SIZE: 'abc' })).toThrow(
+      /Config de entorno inválida/,
+    );
+    expect(() => validateEnv({ ...base, ORDER_ABANDON_HOURS: 'abc' })).toThrow(
+      /Config de entorno inválida/,
+    );
+  });
+});

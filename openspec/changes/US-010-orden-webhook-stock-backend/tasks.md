@@ -412,7 +412,7 @@
 
 ## Phase 9: Reconciliación (AC-10)
 
-- [ ] T9.1 `reconcile-payments.service.ts`: `reconcile()` toma hasta `RECONCILE_BATCH_SIZE`
+- [x] T9.1 `reconcile-payments.service.ts`: `reconcile()` toma hasta `RECONCILE_BATCH_SIZE`
   órdenes `pending_payment` con `created_at` anterior a `now() - RECONCILE_MIN_AGE_MS`,
   llama `MercadoPagoClient.searchByExternalReference(order.id)`; si devuelve un pago
   `approved`, llama `ConfirmOrderService.confirm({ orderId, provider: 'mercadopago', externalId, amountArsCents })`
@@ -422,13 +422,24 @@
     una orden `pending_payment` sin webhook recibido nunca, tras `reconcile()` la orden queda
     `new` con stock decrementado — idéntico resultado a si el webhook hubiera llegado.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=reconcile-payments.service`
+  - **Nota de ejecución (2026-09-05)**: 4/4 tests verdes. `listByStatus('pending_payment')`
+    filtrada/paginada en el SERVICE (no se agregó un método nuevo a `orders.repository.ts` —
+    el design no lo declara, y el volumen es bajo por criterio del propio design D12).
+    Agregadas `RECONCILE_MIN_AGE_MS`/`RECONCILE_BATCH_SIZE`/`ORDER_ABANDON_HOURS`/
+    `REFUND_RETRY_BATCH_SIZE` a `env.validation.ts` en un solo bloque (las 4 juntas, para
+    Phase 9-11).
 
-- [ ] T9.2 `admin-jobs.controller.ts`: `POST /v1/admin/payments/reconcile` (AdminGuard, sin
+- [x] T9.2 `admin-jobs.controller.ts`: `POST /v1/admin/payments/reconcile` (AdminGuard, sin
   throttler dedicado — mismo criterio que `PaymentConfirmationController`, superficie admin
   de bajo volumen).
   - **Exit criterion**: sin token admin, 401; con token admin, dispara `reconcile()` y
     devuelve un resumen (`{ scanned, confirmed, stillPending }`).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=admin-jobs.controller`
+  - **Nota de ejecución (2026-09-05)**: 2/2 tests verdes. `@Controller()` sin prefijo de
+    clase — las 3 rutas de este controller (reconcile/cleanup-abandoned/retry-refunds, T10.2
+    y T11.2) NO comparten base (`v1/admin/payments/*` los dos primeros y último, pero
+    cleanup-abandoned vive en `v1/admin/orders/*` — `design.md` §D8), cada handler declara
+    su path completo.
 
 ## Phase 10: Limpieza de abandonadas (AC-11)
 
