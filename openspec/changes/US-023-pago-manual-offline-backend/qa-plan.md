@@ -259,8 +259,9 @@ alcanzar esta precondición concreta que el sistema no expone por ninguna otra v
 
 ## 5. Contract testing
 
-- [ ] **QA-023-CT-1**: Contract test (Spectral + supertest) para las dos rutas de `admin-payments`
-  contra `apps/api/docs/api/openapi.yaml`
+- [x] **QA-023-CT-1**: Contract test (Spectral + supertest) para las dos rutas de `admin-payments`
+  contra `apps/api/docs/api/openapi.yaml` — **ejecutado (`/develop-qa`, 2026-09-05)**, 7/7 casos
+  verdes contra la API real.
 
   ```yaml
   id: QA-023-CT-1
@@ -268,7 +269,20 @@ alcanzar esta precondición concreta que el sistema no expone por ninguna otra v
   test_layer: 1
   target_tooling: Spectral + supertest
   gherkin_scenario: N/A (contract test, no BDD)
+  status: done
   ```
+
+  **Deviación de convención registrada (tooling y Verify)**: este `Verify:` original —
+  `pnpm --filter @dsm/qa test:contract -- --testPathPattern=pago-manual` — asume un runner
+  jest-style (`--testPathPattern`) que este repo no usa para contract tests. El único precedente
+  real (`qa/contract/search.contract.ts`) es un script `tsx` standalone registrado como su propio
+  script de npm — sin jest, sin `--testPathPattern`, y sin `supertest` (usa `fetch` contra el
+  servidor real). Se siguió esa convención REAL en vez de la letra del plan:
+  `qa/contract/pago-manual.contract.ts` (mismo estilo que `search.contract.ts`), registrado como
+  **script nuevo** `test:contract:pago-manual` en `qa/package.json` (no se tocó el `test:contract`
+  existente de `search.contract.ts`). El `Verify:` real y ejecutable es:
+  `QA_API_BASE_URL=http://localhost:3009 ADMIN_BOOTSTRAP_TOKEN=<mismo valor de la API>
+  JWT_SECRET=dev-secret pnpm --filter @dsm/qa test:contract:pago-manual` (exit 0).
 
   - Exit criterion: un spec valida que `POST /v1/admin/orders/{orderId}/confirm-payment` responde
     200 con el schema `PaymentConfirmed` (`order_number`, `status: "new"`, sin propiedades extra
