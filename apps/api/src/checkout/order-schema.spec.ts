@@ -34,6 +34,11 @@ const ESPERADO: Record<string, string[]> = {
     'created_at',
     'updated_at',
     'delivered_at',
+    // US-010 T1.1 (migración aditiva): distingue "orden creada" (`created_at`,
+    // puede quedar en `pending_payment` hasta 48h) de "orden confirmada" (pago
+    // aprobado). `cancelled_at` es su contraparte para AC-4/AC-11.
+    'confirmed_at',
+    'cancelled_at',
   ],
   order_items: [
     'id',

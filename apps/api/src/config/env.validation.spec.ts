@@ -212,6 +212,8 @@ describe('Enriquecimiento IA + embeddings (US-005 T0.3) — defaults y fail-fast
       RESEND_API_KEY: 'k',
       PASSWORD_RESET_FROM: 'a@b.com',
       PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+      MP_ACCESS_TOKEN: 'mp-clave-real',
+      MP_WEBHOOK_SECRET: 'mp-secreto-real',
     });
     expect(env.GEMINI_API_KEY).toBe('clave-real');
   });
@@ -416,5 +418,79 @@ describe('envSchema — búsqueda semántica (US-004)', () => {
     // alguien presupuestó mal la superficie que gasta dinero.
     const env = validateEnv({ ...base });
     expect(env.SEARCH_RATE_LIMIT_MAX).toBeLessThan(env.STOREFRONT_RATE_LIMIT_MAX);
+  });
+});
+
+describe('MercadoPago (US-010 T4.2) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin ninguna de las variables, aplica los defaults exactos', () => {
+    const env = validateEnv({ ...base });
+
+    expect(env.MP_ACCESS_TOKEN).toBeUndefined();
+    expect(env.MP_WEBHOOK_SECRET).toBeUndefined();
+    expect(env.MP_HTTP_TIMEOUT_MS).toBe(4_000);
+    expect(env.MP_WEBHOOK_TOLERANCE_SEC).toBe(300);
+    expect(env.MP_MAX_RETRIES).toBe(2);
+  });
+
+  it('en DESARROLLO sin MP_ACCESS_TOKEN/MP_WEBHOOK_SECRET parsea OK', () => {
+    const env = validateEnv({ ...base, NODE_ENV: 'development' });
+    expect(env.MP_ACCESS_TOKEN).toBeUndefined();
+  });
+
+  it('en PRODUCCIÓN sin MP_ACCESS_TOKEN lanza, y el mensaje nombra la variable', () => {
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        RESEND_API_KEY: 'k',
+        PASSWORD_RESET_FROM: 'a@b.com',
+        PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+        MP_WEBHOOK_SECRET: 'secreto',
+      }),
+    ).toThrow(/MP_ACCESS_TOKEN/);
+  });
+
+  it('en PRODUCCIÓN sin MP_WEBHOOK_SECRET lanza, y el mensaje nombra la variable', () => {
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        RESEND_API_KEY: 'k',
+        PASSWORD_RESET_FROM: 'a@b.com',
+        PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+        MP_ACCESS_TOKEN: 'token',
+      }),
+    ).toThrow(/MP_WEBHOOK_SECRET/);
+  });
+
+  it('en PRODUCCIÓN con las dos presentes, arranca', () => {
+    const env = validateEnv({
+      ...base,
+      NODE_ENV: 'production',
+      RESEND_API_KEY: 'k',
+      PASSWORD_RESET_FROM: 'a@b.com',
+      PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+      GEMINI_API_KEY: 'g_x',
+      MP_ACCESS_TOKEN: 'token',
+      MP_WEBHOOK_SECRET: 'secreto',
+    });
+    expect(env.MP_ACCESS_TOKEN).toBe('token');
+  });
+
+  it('MP_HTTP_TIMEOUT_MS no numérico hace fallar el arranque', () => {
+    expect(() => validateEnv({ ...base, MP_HTTP_TIMEOUT_MS: 'abc' })).toThrow(
+      /Config de entorno inválida/,
+    );
+  });
+
+  it('una MP_ACCESS_TOKEN vacía NO cuenta como presente', () => {
+    expect(() => validateEnv({ ...base, MP_ACCESS_TOKEN: '' })).toThrow(
+      /Config de entorno inválida/,
+    );
   });
 });

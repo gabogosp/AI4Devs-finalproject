@@ -169,7 +169,7 @@
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=webhook-signature`
   - **Nota de ejecución (2026-09-05)**: 10/10 tests verdes.
 
-- [ ] T4.2 `env.validation.ts`: agregar `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` (opcionales a
+- [x] T4.2 `env.validation.ts`: agregar `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` (opcionales a
   nivel de campo, requeridas en producción vía `superRefine`), `MP_HTTP_TIMEOUT_MS` (4000),
   `MP_WEBHOOK_TOLERANCE_SEC` (300), `MP_MAX_RETRIES` (2).
   - **Pattern**: mismo bloque que `RESEND_API_KEY`/`GEMINI_API_KEY` — opcional + `for (const
@@ -179,6 +179,18 @@
     `MP_WEBHOOK_SECRET`, `validateEnv` lanza; con `NODE_ENV=development` sin ninguno de los
     dos, `validateEnv` NO lanza.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=env.validation`
+  - **Nota de ejecución (2026-09-05)**: 48/48 tests verdes. Se actualizaron también 2 tests
+    de producción preexistentes (`resend-mailer.spec.ts`, `env.validation.spec.ts` — el caso
+    "arranca" de cada uno) para incluir `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET`, igual que ya
+    incluían `GEMINI_API_KEY` — un entorno de producción válido las incluye todas.
+  - **Hallazgo F40 al correr la suite completa (fuera de esta task, documentado acá porque se
+    resolvió en el mismo momento)**: `order-schema.spec.ts` (US-008) y
+    `order-status-history-schema.spec.ts` (US-012-backend, ya mergeado) tenían un ancla
+    negativa — "`confirmed_at`/`cancelled_at` nunca existieron" — que reflejaba el estado del
+    2026-08-30 (US-010 todavía no construido), no una prohibición permanente. Con
+    confirmación del usuario, se actualizaron esos 2 tests para reflejar que T1.1 las agrega
+    a propósito (26/26 tests de ambos archivos verdes). Detalle completo en el historial de
+    `git log` de esos 2 archivos.
 
 ## Phase 5: `ConfirmOrderService` ampliado (el corazón del change — AC-1, AC-4, AC-9 estructural)
 

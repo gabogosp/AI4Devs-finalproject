@@ -309,6 +309,21 @@ export const envSchema = z.object({
   /** §7.3 — presupuesto del endpoint público de búsqueda (ventana y máximo por IP). */
   SEARCH_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000),
   SEARCH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+
+  /**
+   * US-010 — MercadoPago (webhook + medio simulado). Opcionales a nivel de
+   * campo, pero NO en producción: el refinement de abajo hace fallar el
+   * arranque si faltan con `NODE_ENV=production` — mismo precedente de
+   * `RESEND_API_KEY`/`GEMINI_API_KEY` (D6/D7 del design).
+   */
+  MP_ACCESS_TOKEN: z.string().min(1).optional(),
+  MP_WEBHOOK_SECRET: z.string().min(1).optional(),
+  /** Timeout por llamada saliente a MercadoPago, en ms. */
+  MP_HTTP_TIMEOUT_MS: z.coerce.number().int().positive().default(4_000),
+  /** Ventana de tolerancia sobre el `ts` de la firma del webhook, en segundos. */
+  MP_WEBHOOK_TOLERANCE_SEC: z.coerce.number().int().positive().default(300),
+  /** Reintentos además del intento inicial, sobre 429/5xx/timeout. */
+  MP_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
 }).superRefine((env, ctx) => {
   // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
   // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la
@@ -343,6 +358,20 @@ export const envSchema = z.object({
         path: [campo],
         message:
           'requerida en producción: sin ella el reset caería al adapter de log y no se enviaría ningún email',
+      });
+    }
+  }
+
+  // US-010 — sin credenciales de MercadoPago en producción, el webhook no puede
+  // verificar firmas ni re-consultar pagos: los cobros reales quedarían sin
+  // confirmar en el sistema.
+  for (const campo of ['MP_ACCESS_TOKEN', 'MP_WEBHOOK_SECRET'] as const) {
+    if (!env[campo]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [campo],
+        message:
+          'requerida en producción: sin ella el webhook de MercadoPago no puede verificar firmas ni confirmar pagos',
       });
     }
   }
