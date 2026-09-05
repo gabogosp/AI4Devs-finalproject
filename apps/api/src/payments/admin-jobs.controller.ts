@@ -1,5 +1,6 @@
 import { Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
+import { CleanupAbandonedOrdersService } from './cleanup-abandoned-orders.service';
 import { ReconcilePaymentsService, ReconcileResult } from './reconcile-payments.service';
 
 /**
@@ -17,11 +18,20 @@ import { ReconcilePaymentsService, ReconcileResult } from './reconcile-payments.
 @Controller()
 @UseGuards(AdminGuard)
 export class AdminJobsController {
-  constructor(private readonly reconcilePayments: ReconcilePaymentsService) {}
+  constructor(
+    private readonly reconcilePayments: ReconcilePaymentsService,
+    private readonly cleanupAbandonedOrders: CleanupAbandonedOrdersService,
+  ) {}
 
   @Post('v1/admin/payments/reconcile')
   @HttpCode(200)
   async reconcile(): Promise<ReconcileResult> {
     return this.reconcilePayments.reconcile();
+  }
+
+  @Post('v1/admin/orders/cleanup-abandoned')
+  @HttpCode(200)
+  async cleanupAbandoned(): Promise<{ cancelled: number }> {
+    return this.cleanupAbandonedOrders.cleanupAbandoned();
   }
 }

@@ -7,6 +7,7 @@ import { PaymentsEventsService } from '../observability/payments-events.service'
 import { PrismaModule } from '../prisma/prisma.module';
 import { StockModule } from '../stock/stock.module';
 import { AdminJobsController } from './admin-jobs.controller';
+import { CleanupAbandonedOrdersService } from './cleanup-abandoned-orders.service';
 import { ConfirmOrderService } from './confirm-order.service';
 import { MercadoPagoClient } from './mercadopago/mercadopago-client';
 import { PaymentConfirmationController } from './payment-confirmation.controller';
@@ -38,6 +39,7 @@ import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.con
     PaymentsEventsService,
     PaymentsSimulateThrottlerGuard,
     ReconcilePaymentsService,
+    CleanupAbandonedOrdersService,
     // Factory (no `providers: [MercadoPagoClient]` directo): el constructor tiene
     // `baseUrl`/`seams` con default — Nest no puede resolverlos por reflexión de
     // tipos (string/object no son tokens), mismo patrón que `ai.providers.ts`

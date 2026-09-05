@@ -443,17 +443,21 @@
 
 ## Phase 10: Limpieza de abandonadas (AC-11)
 
-- [ ] T10.1 `cleanup-abandoned-orders.service.ts`: `cleanupAbandoned()` llama
+- [x] T10.1 `cleanup-abandoned-orders.service.ts`: `cleanupAbandoned()` llama
   `OrdersRepository.cancelAbandonedPending(new Date(Date.now() - ORDER_ABANDON_HOURS * 3_600_000))`
   (T2.2).
   - **Exit criterion**: una orden `pending_payment` con `created_at` de hace 49h (con
     `ORDER_ABANDON_HOURS=48`) queda `cancelled`; una de hace 47h no se toca.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=cleanup-abandoned-orders.service`
+  - **Nota de ejecución (2026-09-05)**: 3/3 tests verdes.
 
-- [ ] T10.2 `admin-jobs.controller.ts`: agregar `POST /v1/admin/orders/cleanup-abandoned`
+- [x] T10.2 `admin-jobs.controller.ts`: agregar `POST /v1/admin/orders/cleanup-abandoned`
   (AdminGuard).
   - **Exit criterion**: devuelve `{ cancelled: N }` con el conteo real de filas afectadas.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=admin-jobs.controller`
+  - **Nota de ejecución (2026-09-05)**: 4/4 tests verdes (2 preexistentes + 2 nuevos). Sin
+    conflicto de ruta con `orders.controller.ts` (US-012, `v1/admin/orders/:id` restringido
+    a forma UUID vía regex) — `cleanup-abandoned` nunca matchea ese `:id`.
 
 ## Phase 11: Reintento de reembolsos (AC-4 durable)
 
