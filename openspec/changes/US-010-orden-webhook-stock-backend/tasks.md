@@ -135,7 +135,7 @@
     propios (`dsm:payments/mercadopago-{transient,permanent}`), sin tocar el módulo de
     enrichment.
 
-- [ ] T3.2 `payments/mercadopago/mercadopago-client.ts`: `getPayment(paymentId)`,
+- [x] T3.2 `payments/mercadopago/mercadopago-client.ts`: `getPayment(paymentId)`,
   `searchByExternalReference(orderId)`, `refund(paymentId, amountArsCents?)`. `fetch` con
   `AbortSignal.timeout(MP_HTTP_TIMEOUT_MS)`, `Authorization: Bearer {MP_ACCESS_TOKEN}`
   (nunca en la URL), `withRetry` sobre 429/5xx/timeout, y un circuit-breaker in-process
@@ -149,6 +149,10 @@
     consecutivos configurables, una llamada siguiente falla rápido sin llamar a `fetch`
     (breaker abierto); ningún mensaje de error incluye el `MP_ACCESS_TOKEN`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=mercadopago-client`
+  - **Nota de ejecución (2026-09-05)**: 12/12 tests verdes. Breaker con umbral y cooldown
+    configurables por constructor (seams), no por env — no hay una var `MP_BREAKER_*`
+    declarada en el plan (T4.2 no la lista); el umbral por defecto es 5 fallos
+    consecutivos / 60s de cooldown.
 
 ## Phase 4: Verificación de firma del webhook (pura, sin cuenta real)
 
