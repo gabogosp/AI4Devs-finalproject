@@ -138,4 +138,18 @@ export class PaymentsRepository {
     if (count === 0) return null;
     return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
   }
+
+  /**
+   * Reembolsos pendientes de reintentar (US-010 AC-4 durable, T11.1) — sólo
+   * `provider='mercadopago'`: el simulado nunca se atasca acá (no hay
+   * llamada externa que pueda fallar, `markRefunded` corre directo). Más
+   * viejas primero — son las que más esperaron.
+   */
+  listRefundPending(limit: number): Promise<Payment[]> {
+    return this.prisma.payment.findMany({
+      where: { status: 'refund_pending', provider: 'mercadopago' },
+      orderBy: { created_at: 'asc' },
+      take: limit,
+    });
+  }
 }

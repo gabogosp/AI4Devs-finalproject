@@ -461,7 +461,7 @@
 
 ## Phase 11: Reintento de reembolsos (AC-4 durable)
 
-- [ ] T11.1 `refund-retry.service.ts`: `retryPending()` toma hasta
+- [x] T11.1 `refund-retry.service.ts`: `retryPending()` toma hasta
   `REFUND_RETRY_BATCH_SIZE` pagos `refund_pending` con `provider='mercadopago'` (el
   simulado nunca se atasca — no hay llamada externa), reintenta
   `MercadoPagoClient.refund(external_id, amount_ars_cents)` por cada uno; éxito →
@@ -470,12 +470,19 @@
     segundo, el primero y el tercero quedan `refunded` y el segundo sigue `refund_pending`
     tras `retryPending()`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=refund-retry.service`
+  - **Nota de ejecución (2026-09-05)**: 2/2 tests verdes. Se agregó `PaymentsRepository.
+    listRefundPending(limit)` (no declarado explícitamente en el design, pero necesario —
+    único punto de ORM de `payments`, mismo criterio que las demás queries de esta tabla),
+    filtrando `status='refund_pending' AND provider='mercadopago'`, más viejas primero.
+    2 tests nuevos en `payments.repository.spec.ts` para el método.
 
-- [ ] T11.2 `admin-jobs.controller.ts`: agregar `POST /v1/admin/payments/retry-refunds`
+- [x] T11.2 `admin-jobs.controller.ts`: agregar `POST /v1/admin/payments/retry-refunds`
   (AdminGuard).
   - **Exit criterion**: devuelve `{ attempted, succeeded, failed }` reflejando el resultado
     real de `retryPending()`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=admin-jobs.controller`
+  - **Nota de ejecución (2026-09-05)**: 6/6 tests verdes (2+2 preexistentes + 2 nuevos).
+    `admin-jobs.controller.ts` completo: los 3 endpoints de `design.md` §D8.
 
 ## Phase 12: Observabilidad
 

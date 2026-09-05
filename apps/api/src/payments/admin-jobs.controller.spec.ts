@@ -116,3 +116,34 @@ describe('POST /v1/admin/orders/cleanup-abandoned (admin-jobs.controller, T10.2)
     expect(ordenEnBase.status).toBe('cancelled');
   });
 });
+
+describe('POST /v1/admin/payments/retry-refunds (admin-jobs.controller, T11.2)', () => {
+  let app: INestApplication;
+  let prisma: PrismaService;
+
+  beforeAll(async () => {
+    app = await bootTestApp([CheckoutModule, StockModule, PaymentsModule]);
+    prisma = app.get(PrismaService);
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+  beforeEach(async () => {
+    await prisma.$executeRawUnsafe(
+      'TRUNCATE TABLE payments, orders, order_items, products, categories RESTART IDENTITY CASCADE',
+    );
+  });
+
+  it('sin token admin → 401', async () => {
+    await request(app.getHttpServer()).post('/v1/admin/payments/retry-refunds').expect(401);
+  });
+
+  it('con token admin → 200, {attempted, succeeded, failed} reflejando el resultado real (sin candidatos)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/v1/admin/payments/retry-refunds')
+      .set('Authorization', `Bearer ${adminToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ attempted: 0, succeeded: 0, failed: 0 });
+  });
+});

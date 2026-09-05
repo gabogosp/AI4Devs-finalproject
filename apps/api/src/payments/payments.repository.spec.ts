@@ -178,4 +178,49 @@ describe('PaymentsRepository.createManualPayment', () => {
       expect(enBase.status).toBe('approved');
     });
   });
+
+  describe('listRefundPending (US-010 T11.1)', () => {
+    it('sólo trae provider=mercadopago en refund_pending, más viejas primero', async () => {
+      const mp = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-list-1',
+        amountArsCents: 100_000,
+      });
+      // simulated_dsm nunca se atasca — no debe aparecer en la lista.
+      await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'simulated_dsm',
+        externalId: 'sim-list-1',
+        amountArsCents: 100_000,
+      });
+      // ya refunded — no debe aparecer.
+      const yaRefunded = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-list-2',
+        amountArsCents: 100_000,
+      });
+      await payments.markRefunded(yaRefunded.id);
+
+      const lista = await payments.listRefundPending(10);
+
+      expect(lista.map((p) => p.id)).toEqual([mp.id]);
+    });
+
+    it('respeta el límite', async () => {
+      for (let i = 0; i < 3; i += 1) {
+        await payments.createRefundPendingPayment({
+          orderId: ordenId,
+          provider: 'mercadopago',
+          externalId: `mp-limit-${i}`,
+          amountArsCents: 100_000,
+        });
+      }
+
+      const lista = await payments.listRefundPending(2);
+
+      expect(lista).toHaveLength(2);
+    });
+  });
 });

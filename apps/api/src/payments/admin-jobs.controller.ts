@@ -2,6 +2,7 @@ import { Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { CleanupAbandonedOrdersService } from './cleanup-abandoned-orders.service';
 import { ReconcilePaymentsService, ReconcileResult } from './reconcile-payments.service';
+import { RefundRetryResult, RefundRetryService } from './refund-retry.service';
 
 /**
  * Jobs admin de US-010 (`design.md` §D8): sin scheduler in-process
@@ -21,6 +22,7 @@ export class AdminJobsController {
   constructor(
     private readonly reconcilePayments: ReconcilePaymentsService,
     private readonly cleanupAbandonedOrders: CleanupAbandonedOrdersService,
+    private readonly refundRetry: RefundRetryService,
   ) {}
 
   @Post('v1/admin/payments/reconcile')
@@ -33,5 +35,11 @@ export class AdminJobsController {
   @HttpCode(200)
   async cleanupAbandoned(): Promise<{ cancelled: number }> {
     return this.cleanupAbandonedOrders.cleanupAbandoned();
+  }
+
+  @Post('v1/admin/payments/retry-refunds')
+  @HttpCode(200)
+  async retryRefunds(): Promise<RefundRetryResult> {
+    return this.refundRetry.retryPending();
   }
 }

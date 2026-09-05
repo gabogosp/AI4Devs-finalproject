@@ -14,6 +14,7 @@ import { PaymentConfirmationController } from './payment-confirmation.controller
 import { PaymentsRepository } from './payments.repository';
 import { PaymentsSimulateThrottlerGuard } from './payments-simulate-throttler.guard';
 import { ReconcilePaymentsService } from './reconcile-payments.service';
+import { RefundRetryService } from './refund-retry.service';
 import { SimulatePaymentController } from './simulate-payment.controller';
 import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.controller';
 
@@ -40,6 +41,7 @@ import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.con
     PaymentsSimulateThrottlerGuard,
     ReconcilePaymentsService,
     CleanupAbandonedOrdersService,
+    RefundRetryService,
     // Factory (no `providers: [MercadoPagoClient]` directo): el constructor tiene
     // `baseUrl`/`seams` con default — Nest no puede resolverlos por reflexión de
     // tipos (string/object no son tokens), mismo patrón que `ai.providers.ts`
