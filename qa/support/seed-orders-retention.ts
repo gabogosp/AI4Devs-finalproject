@@ -19,7 +19,7 @@ const API = QA_API_BASE_URL;
 const WEB = QA_WEB_BASE_URL;
 
 /**
- * `openspec/changes/US-021-retencion-datos-ordenes-backend/qa-plan.md` §7 —
+ * `openspec/changes/archive/US-021-retencion-datos-ordenes-backend/qa-plan.md` §7 —
  * seed **específico de este change**, distinto de `seed-carrito.ts`/
  * `seed-checkout.ts` (este último **no existe todavía** en el repo — gap
  * compartido, ver la nota en `qa-plan.md`/el reporte de esta corrida; no se

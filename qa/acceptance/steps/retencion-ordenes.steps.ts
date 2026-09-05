@@ -13,7 +13,7 @@ import type { CatalogWorld } from './world';
  * US-021 — Retención y anonimización de los datos personales de las órdenes.
  *
  * BLOQUEADO POR IMPLEMENTACIÓN (verificado, no asumido): al escribir estos
- * step defs, `openspec/changes/US-021-retencion-datos-ordenes-backend/tasks.md`
+ * step defs, `openspec/changes/archive/US-021-retencion-datos-ordenes-backend/tasks.md`
  * tiene 0/16 tasks cerradas — ni `OrdersRetentionController`/`Service`/`Runner`
  * ni las columnas `anonymized_at`/`anonymization_reason` existen todavía en
  * `packages/db/prisma/schema.prisma`. Cada llamada de este archivo a

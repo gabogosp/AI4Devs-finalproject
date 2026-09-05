@@ -1,7 +1,7 @@
 /**
  * QA-021-CT-1 — contrato de `POST /v1/admin/orders/{id}/anonymize` y
  * `POST /v1/admin/orders/retention-sweep` contra los dos yaml de
- * `openspec/changes/US-021-retencion-datos-ordenes-backend/contracts/openapi/`
+ * `openspec/changes/archive/US-021-retencion-datos-ordenes-backend/contracts/openapi/`
  * (`OrderAnonymizationResult` / `RetentionSweepResult`, ambos con
  * `additionalProperties: false`), y contra las respuestas RFC 7807
  * (401/403/404/422/429) que esos mismos yaml declaran.
