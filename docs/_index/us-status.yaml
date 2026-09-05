@@ -181,6 +181,17 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
   in-review-at: 2026-09-05   # /commit — backend (primera disciplina) llega a in-review, PR #49, 42/42 tasks. QA todavía no arrancó — US-level se queda In Progress.
+  #
+  # NOTA (2026-09-05, /archive-change US-010-orden-webhook-stock-backend, PR #49 mergeado
+  # dea4f25): disciplina backend archivada (openspec/changes/archive/US-010-orden-webhook-stock-backend/).
+  # Extiende la capacidad `pagos` (CAP-4, ya existente desde US-023) con "Desde US-010
+  # backend" en requirements.md/decisions.md/README.md/contracts — webhook de MercadoPago,
+  # medio simulado «DSM», MercadoPagoClient, 3 jobs admin. Resuelve D-2/D-3 de
+  # `pagos/requirements.md` (antes diferidos). Reconciliación con la capacidad `ordenes`
+  # (CAP-5, US-012) confirmada sin conflicto — US-010 no la toca, vive del lado de `pagos`.
+  # `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca se planificó (no
+  # existe `openspec/changes/US-010-*-qa/` en ningún estado, pese a `disciplines: [BE, QA]`).
+  # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate): desacoplado de US-009.
   # US-008 y payments (US-023) ya existen y son lo único que este change necesita; construye
   # su propio MercadoPagoClient de alcance mínimo (getPayment/searchByExternalReference/

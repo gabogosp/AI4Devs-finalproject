@@ -1,0 +1,49 @@
+post:
+  operationId: handleMercadoPagoWebhook
+  tags: [webhooks]
+  summary: Procesar notificación de pago de MercadoPago (US-010 AC-1/AC-3/AC-5/AC-6/AC-7/AC-8)
+  description: |
+    Confianza cero en el cuerpo: sólo se usa `data.id`; la verdad del pago sale de
+    `GET /v1/payments/{id}` contra la API de MercadoPago (ADR-0006), nunca del payload
+    recibido. Firma `x-signature` verificada con HMAC en tiempo constante + ventana de
+    tolerancia sobre `ts` (`MP_WEBHOOK_TOLERANCE_SEC`). Idempotente por el guard de
+    `orders.status='pending_payment'` (US-023) — un webhook duplicado/tardío/fuera de
+    orden es un no-op. Siempre responde 200 salvo firma inválida (401): MercadoPago
+    reintenta ante cualquier no-2xx, y un 500 propio desataría una tormenta de
+    reintentos justo cuando el sistema está mal. Sin rate-limit ni CSRF, a propósito.
+  security: []
+  parameters:
+    - name: x-signature
+      in: header
+      required: true
+      description: "Formato `ts=...,v1=...`. `v1` es el HMAC-SHA256 sobre `id:{data.id};request-id:{x-request-id};ts:{ts};` con MP_WEBHOOK_SECRET."
+      schema: { type: string }
+    - name: x-request-id
+      in: header
+      required: true
+      description: Parte del manifiesto firmado.
+      schema: { type: string }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/MercadoPagoWebhookBody' }
+        examples:
+          payment_updated:
+            value: { type: payment, action: payment.updated, data: { id: "1234567890" } }
+  responses:
+    '200':
+      description: |
+        Procesado, ignorado por idempotencia, o dejado para la reconciliación admin —
+        los tres casos devuelven 200 porque un reintento de MercadoPago no aportaría
+        nada distinto.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [received]
+            additionalProperties: false
+            properties:
+              received: { type: boolean, enum: [true] }
+    '401':
+      $ref: '../../openapi.yaml#/components/responses/WebhookUnverified'

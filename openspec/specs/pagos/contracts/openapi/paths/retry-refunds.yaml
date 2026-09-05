@@ -1,0 +1,31 @@
+post:
+  operationId: retryRefunds
+  tags: [admin-payments]
+  summary: Reintentar reembolsos que quedaron refund_pending (US-010 AC-4, durabilidad)
+  description: |
+    Reintenta hasta `REFUND_RETRY_BATCH_SIZE` pagos en `refund_pending` (provider
+    `mercadopago` — el simulado nunca se atasca, no hay llamada externa) contra
+    `MercadoPagoClient.refund`. Un fallo nunca cierra la fila como fallido definitivo:
+    es plata de un cliente.
+  responses:
+    '200':
+      description: Resumen del reintento.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [attempted, succeeded, failed]
+            properties:
+              attempted: { type: integer }
+              succeeded: { type: integer }
+              failed: { type: integer }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

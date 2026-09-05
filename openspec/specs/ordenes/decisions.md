@@ -28,15 +28,18 @@ nuevo (verificado contra los ADR vigentes y el E2E §20).
 | `NotificationPort.orderReadyForPickup` — nuevo, un solo método (no una extensión de un puerto de US-010 que no existe). | Es el primer puerto de notificación del repo; `LoggingNotificationAdapter` registra una línea sin PII (sólo `order_id`/`order_number`). US-011 reemplaza el adaptador completo cuando exista un proveedor real, sin tocar el contrato del puerto. |
 | Sin índice nuevo sobre `orders(created_at)` en solitario. | El compuesto `orders(status, created_at)` ya existente (de US-008) cubre el filtro por `status` + orden por fecha, que es el caso por defecto — un índice adicional sería redundante. |
 
-## Riesgo de reconciliación con US-010 (nota para quien la retome)
+## Riesgo de reconciliación con US-010 — RESUELTO (archivada 2026-09-05)
 
-`US-010-orden-webhook-stock-backend` está indefinidamente pospuesta (US-009 `Blocked`,
-sin credenciales de MercadoPago) y **no** inauguró esta capacidad como su diseño
-original preveía. Si se retoma, su plan tendrá que reconciliarse contra lo que este
-change ya construyó (`OrdersModule`, FSM de 4 estados propia, `order_status_history`),
-en vez de asumir un árbol `src/orders/` vacío — ver `design.md` archivado de US-012
-backend, sección Context, para el detalle de qué verificó y descartó de la versión
-anterior del diseño.
+**Resuelto, sin conflicto.** `US-010-orden-webhook-stock-backend` se retomó y su
+`design.md` fue regenerado (2026-09-05) exactamente con la reconciliación que esta
+nota pedía: verificó que `src/orders/` ya existía (esta capacidad, `OrdersModule`, FSM
+propia de 4 estados) y que **no** la inaugura ni la reescribe. US-010 vive del lado de
+la capacidad hermana `pagos` — amplía `ConfirmOrderService`/`orders.repository.ts`
+(gana `confirmed_at`/`cancelled_at` + 2 métodos: `transitionToCancelledIfPending`,
+`cancelAbandonedPending`, sin tocar la FSM de fulfillment de 4 estados de esta
+capacidad ni sus 3 endpoints). Cero cambio en `OrdersController`/`order-state.ts`. Ver
+[`../pagos/requirements.md`](../pagos/requirements.md) sección "Desde US-010" para el
+detalle completo.
 
 ## Desviaciones conscientes registradas
 

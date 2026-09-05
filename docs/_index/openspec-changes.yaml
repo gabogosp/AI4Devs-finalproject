@@ -1124,7 +1124,7 @@
   us-id: US-010
   discipline: backend
   variant: null
-  status: in-review   # /commit 2026-09-05: 42/42 tasks, PR #49 abierto contra main
+  status: archived   # /archive-change 2026-09-05: PR #49 mergeado (dea4f25), capacidad `pagos` extendida
   parent-us: docs/user-stories/US-010-orden-webhook-stock.md
   linear-task-id: null
   audit-baseline: null
@@ -1209,9 +1209,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/49
   pr-opened-at: 2026-09-05
   created: 2026-08-22
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T22:22:53Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-010-orden-webhook-stock-backend/
 
 - name: AUDIT-dsm-web-007-endurecimiento-panel-backend
   us-id: null
