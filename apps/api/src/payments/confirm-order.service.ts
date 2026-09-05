@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../checkout/orders.repository';
+import { NOTIFICATION_PORT, NotificationPort } from '../orders/ports/notification.port';
 import { PaymentsEventsService } from '../observability/payments-events.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockRepository } from '../stock/stock.repository';
@@ -35,6 +36,11 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
     private readonly stock: StockRepository,
     private readonly payments: PaymentsRepository,
     private readonly events: PaymentsEventsService,
+    // Opcional: `confirm-order.service.spec.ts` (US-023) construye la clase con 5
+    // argumentos, sin DI — no debe romperse (T5.1 Exit criterion, cero modificación).
+    // Nest siempre lo provee en producción (`payments.module.ts` T8.2); sólo la rama
+    // `provider !== 'manual'` (T5.3/T5.6) lo usa, guardado con `?.`.
+    @Inject(NOTIFICATION_PORT) private readonly notifications?: NotificationPort,
   ) {}
 
   async confirm(input: ConfirmManualPaymentInput): Promise<ConfirmedPayment> {

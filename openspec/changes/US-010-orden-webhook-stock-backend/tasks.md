@@ -324,7 +324,7 @@
 
 ## Phase 8: `NotificationPort` ampliado (reusa el de `orders/`, no crea uno paralelo)
 
-- [ ] T8.1 `orders/ports/notification.port.ts`: agregar `orderConfirmed`,
+- [x] T8.1 `orders/ports/notification.port.ts`: agregar `orderConfirmed`,
   `orderCancelledNoStock`, `ownerNewOrder` a la interfaz `NotificationPort`, con sus
   payloads (`orderId`, `orderNumber`, `buyerName`, `buyerEmail`, `totalArsCents` según
   corresponda). `orders.module.ts` agrega `NOTIFICATION_PORT` a su array `exports` (hoy
@@ -333,13 +333,24 @@
     métodos nuevos, logueando sólo `order_id`/`order_number` — nunca `buyerName`/
     `buyerEmail` (mismo criterio ya documentado ahí para `orderReadyForPickup`).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=notification.port`
+  - **Nota de ejecución (2026-09-05, adelantada desde Phase 8)**: T5.3 (Phase 5) necesita
+    estos 3 métodos para compilar — se ejecutó T8.1 antes en la secuencia real, aunque
+    tasks.md la liste después. 4/4 tests verdes (1 preexistente + 3 nuevos).
 
-- [ ] T8.2 `payments.module.ts`: importar `OrdersModule` (nuevo edge `payments → orders`,
+- [x] T8.2 `payments.module.ts`: importar `OrdersModule` (nuevo edge `payments → orders`,
   acíclico — `orders` no importa `payments`, verificado). Inyectar `NOTIFICATION_PORT` en
   `ConfirmOrderService`.
   - **Exit criterion**: `pnpm --filter @dsm/api typecheck` no reporta dependencia circular
     de módulos; `ConfirmOrderService` resuelve `NOTIFICATION_PORT` sin `forwardRef`.
   - **Verify**: `pnpm --filter @dsm/api typecheck && pnpm --filter @dsm/api test -- --testPathPattern='payments.module|confirm-order.service'`
+  - **Nota de ejecución (2026-09-05, adelantada desde Phase 8)**: mismo motivo que T8.1.
+    `NOTIFICATION_PORT` se inyectó como parámetro OPCIONAL del constructor
+    (`notifications?: NotificationPort`) — `confirm-order.service.spec.ts` (US-023, T5.1)
+    construye la clase con 5 argumentos sin DI, y el Exit criterion de T5.1 exige cero
+    modificación a ese archivo. Nest siempre lo provee en producción (`payments.module.ts`);
+    sólo la rama `provider !== 'manual'` lo usa (guardado con `?.`). No existe
+    `payments.module.spec.ts` (nunca existió); typecheck limpio, 6/6 tests de
+    `confirm-order.service` verdes sin diff.
 
 ## Phase 9: Reconciliación (AC-10)
 
