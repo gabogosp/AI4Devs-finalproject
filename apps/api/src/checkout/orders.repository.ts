@@ -172,7 +172,7 @@ export class OrdersRepository {
   ): Promise<OrderWithItems | null> {
     const { count } = await tx.order.updateMany({
       where: { id: orderId, status: 'pending_payment' },
-      data: { status: 'new' },
+      data: { status: 'new', confirmed_at: new Date() },
     });
     if (count === 0) return null;
     return tx.order.findUniqueOrThrow({
@@ -190,6 +190,41 @@ export class OrdersRepository {
       where: { status },
       orderBy: { created_at: 'desc' },
     });
+  }
+
+  /**
+   * Cancelación condicional (US-010 AC-4/AC-11, `design.md` §D2): mismo
+   * compare-and-set que `transitionToNewIfPending` — `WHERE status =
+   * 'pending_payment'`, `null` si otra transición ya ganó la carrera. Recibe
+   * `tx` porque siempre corre junto con `createRefundPendingPayment` (T2.3)
+   * dentro de la MISMA transacción de compensación (`design.md` §D2 — nunca
+   * dentro de la transacción original, que ya revirtió).
+   */
+  async transitionToCancelledIfPending(
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Order | null> {
+    const { count } = await tx.order.updateMany({
+      where: { id: orderId, status: 'pending_payment' },
+      data: { status: 'cancelled', cancelled_at: new Date() },
+    });
+    if (count === 0) return null;
+    return tx.order.findUniqueOrThrow({ where: { id: orderId } });
+  }
+
+  /**
+   * Limpieza de abandonadas (US-010 AC-11): `updateMany` en bloque por
+   * antigüedad — no es condicional por fila (no hay carrera que cuidar,
+   * sólo un corte de tiempo), a diferencia de las transiciones de una sola
+   * orden de arriba. Nunca recibe `tx`: corre sola, fuera de cualquier otra
+   * escritura.
+   */
+  async cancelAbandonedPending(cutoff: Date): Promise<number> {
+    const { count } = await this.prisma.order.updateMany({
+      where: { status: 'pending_payment', created_at: { lt: cutoff } },
+      data: { status: 'cancelled', cancelled_at: new Date() },
+    });
+    return count;
   }
 
   private translate(error: unknown): unknown {

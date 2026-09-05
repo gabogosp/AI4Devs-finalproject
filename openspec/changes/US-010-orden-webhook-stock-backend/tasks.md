@@ -87,7 +87,7 @@
     en sintaxis de método) sin necesitar ensanchar `confirm-order.service.ts` todavía —
     ese ensanche es T5.1. `payment-confirmation.controller.ts` sin tocar, typecheck limpio.
 
-- [ ] T2.2 `checkout/orders.repository.ts`: agregar `transitionToCancelledIfPending(orderId, tx)`
+- [x] T2.2 `checkout/orders.repository.ts`: agregar `transitionToCancelledIfPending(orderId, tx)`
   (guardado por `WHERE status='pending_payment'`, setea `status='cancelled'` +
   `cancelled_at=now()`, `null` si 0 filas) y `cancelAbandonedPending(cutoff: Date): Promise<number>`
   (bulk `updateMany` por `created_at < cutoff`). También agregar `confirmed_at: new Date()`
@@ -99,6 +99,10 @@
     `new`, devuelve `null` sin tocarla. `cancelAbandonedPending` cancela sólo las órdenes con
     `created_at` anterior al corte, deja intactas las más nuevas.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository`
+  - **Nota de ejecución (2026-09-05)**: 18/18 tests verdes (14 preexistentes + 4 nuevos).
+    `transitionToCancelledIfPending` recibe `tx` opcional (default `this.prisma`), igual que
+    `transitionToNewIfPending` — se usó `tx` explícito en los tests para poder aislar la
+    escritura, mismo patrón que `updateStatusConditional`.
 
 - [ ] T2.3 `payments.repository.ts`: agregar `createApprovedPayment` (provider
   `mercadopago`/`simulated_dsm`, `status='approved'`, `idempotency_key='{provider}:{externalId}'`),

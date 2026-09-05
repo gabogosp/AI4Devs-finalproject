@@ -401,4 +401,56 @@ describe('OrdersRepository (integration)', () => {
 
     expect(pendientes.map((o) => o.id)).toEqual([pendienteNueva.id, pendienteVieja.id]);
   });
+
+  it('transitionToNewIfPending: setea confirmed_at (US-010 T2.2)', async () => {
+    const creada = await crearOrdenConEstado('confirmed-at', 'pending_payment');
+
+    const resultado = await repo.transitionToNewIfPending(creada.id);
+
+    expect(resultado?.confirmed_at).not.toBeNull();
+  });
+
+  it('transitionToCancelledIfPending: sobre pending_payment, cancela y setea cancelled_at (US-010 T2.2)', async () => {
+    const creada = await crearOrdenConEstado('cancel-ok', 'pending_payment');
+
+    const resultado = await prisma.$transaction((tx) =>
+      repo.transitionToCancelledIfPending(creada.id, tx),
+    );
+
+    expect(resultado?.status).toBe('cancelled');
+    expect(resultado?.cancelled_at).not.toBeNull();
+  });
+
+  it('transitionToCancelledIfPending: sobre una orden que ya no está pending_payment, devuelve null y no la toca (US-010 T2.2)', async () => {
+    const creada = await crearOrdenConEstado('cancel-noop', 'new');
+
+    const resultado = await prisma.$transaction((tx) =>
+      repo.transitionToCancelledIfPending(creada.id, tx),
+    );
+
+    expect(resultado).toBeNull();
+    const enBase = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
+    expect(enBase.status).toBe('new');
+    expect(enBase.cancelled_at).toBeNull();
+  });
+
+  it('cancelAbandonedPending: cancela sólo las pending_payment con created_at anterior al corte (US-010 T2.2)', async () => {
+    const vieja = await crearOrdenConEstado('abandoned-old', 'pending_payment');
+    const nueva = await crearOrdenConEstado('abandoned-new', 'pending_payment');
+    const corte = new Date(Date.now() + 1000 * 60 * 60); // 1h en el futuro: sólo "vieja" ya existe antes de esto
+    await prisma.order.update({
+      where: { id: nueva.id },
+      data: { created_at: new Date(Date.now() + 1000 * 60 * 60 * 2) }, // 2h en el futuro: queda del lado "nuevo" del corte
+    });
+
+    const cantidad = await repo.cancelAbandonedPending(corte);
+
+    expect(cantidad).toBe(1);
+    const viejaEnBase = await prisma.order.findUniqueOrThrow({ where: { id: vieja.id } });
+    const nuevaEnBase = await prisma.order.findUniqueOrThrow({ where: { id: nueva.id } });
+    expect(viejaEnBase.status).toBe('cancelled');
+    expect(viejaEnBase.cancelled_at).not.toBeNull();
+    expect(nuevaEnBase.status).toBe('pending_payment');
+    expect(nuevaEnBase.cancelled_at).toBeNull();
+  });
 });
