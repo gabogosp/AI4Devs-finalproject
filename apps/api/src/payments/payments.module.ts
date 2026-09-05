@@ -10,6 +10,7 @@ import { ConfirmOrderService } from './confirm-order.service';
 import { MercadoPagoClient } from './mercadopago/mercadopago-client';
 import { PaymentConfirmationController } from './payment-confirmation.controller';
 import { PaymentsRepository } from './payments.repository';
+import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.controller';
 
 /**
  * `design.md` §Approach — dirección de dependencias acíclica: `payments ->
@@ -21,7 +22,7 @@ import { PaymentsRepository } from './payments.repository';
  */
 @Module({
   imports: [PrismaModule, AuthModule, CheckoutModule, StockModule, OrdersModule],
-  controllers: [PaymentConfirmationController],
+  controllers: [PaymentConfirmationController, MercadoPagoWebhookController],
   providers: [
     ConfirmOrderService,
     PaymentsRepository,

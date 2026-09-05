@@ -283,7 +283,7 @@
 
 ## Phase 6: `POST /v1/webhooks/mercadopago`
 
-- [ ] T6.1 `webhooks/mercadopago-webhook.controller.ts` + `dto/mercadopago-webhook-body.dto.ts`:
+- [x] T6.1 `webhooks/mercadopago-webhook.controller.ts` + `dto/mercadopago-webhook-body.dto.ts`:
   parsea `{ type, data: { id } }`, extrae `x-signature`/`x-request-id` de headers. Si la
   firma es inválida (T4.1) → `UnauthorizedException` (401), **sin** llamar a
   `MercadoPagoClient` ni tocar la base (AC-7). Si es válida: `getPayment(data.id)`; si
@@ -294,7 +294,7 @@
     200, orden sigue `pending_payment`, stock intacto.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=mercadopago-webhook.controller`
 
-- [ ] T6.2 En el `catch` alrededor de `confirmOrder.confirm(...)` dentro del controller:
+- [x] T6.2 En el `catch` alrededor de `confirmOrder.confirm(...)` dentro del controller:
   capturar **cualquier** error (`OrderNotFoundError`, `OrderNotPendingPaymentError`,
   `OrderAutoCancelledInsufficientStockError`, o cualquier otro) y responder igual `{ received:
   true }` (200) — nunca 5xx, per `design.md` §D2 ("siempre 200 salvo firma inválida"). Cada
@@ -304,12 +304,23 @@
     inexistente responde 200 y queda logueado como anomalía.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=mercadopago-webhook.controller`
 
-- [ ] T6.3 Registrar el controller en `payments.module.ts`, sin throttler dedicado (decisión
+- [x] T6.3 Registrar el controller en `payments.module.ts`, sin throttler dedicado (decisión
   explícita, `design.md` §D5 — limitar por IP la puerta de entrada de dinero descarta pagos
   legítimos en ráfaga de reintentos del proveedor).
   - **Exit criterion**: `POST /v1/webhooks/mercadopago` responde sin pasar por ningún guard
     de `ThrottlerModule`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=mercadopago-webhook.controller`
+  - **Nota de ejecución conjunta T6.1-T6.3 (2026-09-05)**: `MercadoPagoWebhookBodyDto`
+    declara TODOS los campos reales del body de MercadoPago (`action`/`api_version`/
+    `date_created`/`id`/`live_mode`/`user_id`, opcionales) — el `ValidationPipe` global
+    corre con `forbidNonWhitelisted: true` (`bootstrap.ts`), así que un webhook real con
+    esos campos se hubiera rechazado con 422 si el DTO sólo declaraba `type`/`data.id`.
+    7/7 tests verdes vía HTTP real (`supertest`) contra Postgres real,
+    `MercadoPagoClient` overrideado con un mock (`getPayment`/`refund`) — no se testea
+    que MercadoPago funcione, sólo el controller. Sin `@UseGuards` de ningún throttler
+    (no hay un `APP_GUARD` global en este repo — el throttling es siempre explícito por
+    controller), así que "sin throttler" es la ausencia de decorador, no una config a
+    apagar.
 
 ## Phase 7: `POST /v1/checkout/simulate-payment` (AC-9 real, sin MercadoPago)
 
