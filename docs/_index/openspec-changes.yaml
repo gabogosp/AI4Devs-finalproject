@@ -185,19 +185,19 @@
   us-id: US-002
   discipline: backend
   variant: null
-  status: in progress
+  status: archived   # /archive-change 2026-09-05 — 18/18 tasks, mergeado vía PR #3 (2026-08-29, feature-entrega2-GOSP). Extiende openspec/specs/catalogo/ (CAP-1) con 3 endpoints de navegación pública
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 9
-  assignee: bce7ffb7
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-16
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-002-storefront-navegacion-categorias-backend/
 
 - name: US-001-admin-catalogo-productos-qa
   us-id: US-001
@@ -276,7 +276,7 @@
   us-id: US-002
   discipline: frontend-web
   variant: null
-  status: in progress
+  status: archived   # /archive-change 2026-09-05 — 33/33 tasks, mergeado vía PR #3 (2026-08-29, feature-entrega2-GOSP). Extiende openspec/specs/catalogo/ (CAP-1) con la UI SSR de navegación
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null
@@ -286,13 +286,13 @@
   # (diferido formalmente desde US-003), el circuito de invalidación del catálogo (la caché por
   # tag nació en US-003) y la extensión del stub de contrato para E2E server-side.
   estimate-hours: 10.5
-  assignee: f6678579
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: feature-entrega2-GOSP
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-17
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T17:24:45Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-002-storefront-navegacion-categorias-frontend-web/
 
 - name: US-018-contacto-whatsapp-frontend-web
   us-id: US-018

@@ -17,7 +17,7 @@
   blocked_by: []
 - id: US-002
   slug: storefront-navegacion-categorias
-  status: In Progress
+  status: Done
   priority: High
   prd-capacity: 1
   disciplines: [BE, FE, QA]
@@ -30,6 +30,15 @@
   # NOTA (2026-09-05, /archive-change): QA archivó (PR #21 mergeado 2026-08-30). `status`
   # NO avanza — BE y FE siguen sin plan/rama/PR (branch: null en ambos), no sólo sin
   # archivar.
+  #
+  # NOTA (2026-09-05, /archive-change US-002-storefront-navegacion-categorias-{backend,
+  # frontend-web}, barrido de changes pendientes — PR #3 mergeado 2026-08-29): la nota
+  # anterior quedó vieja — BE (18/18 tasks) y FE (33/33 tasks) SÍ estaban mergeados
+  # (mismo PR #3 bundled que US-004/005/007/014), sólo sin branch propio (modelo de
+  # rama de integración previo a la política de una rama por change). Ambas
+  # disciplinas archivadas ahora. Con QA ya archivado también, las 3/3 disciplinas
+  # están resueltas → `status` avanza a `Done`.
+  done-at: 2026-09-05
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp

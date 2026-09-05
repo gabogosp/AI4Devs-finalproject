@@ -86,3 +86,52 @@ del sistema vivo**, no la intención de un change.
 |---|---|---|
 | D-3 | Ejecución in-process del import (ADR-0012, enmienda a ADR-0004): migrar a BullMQ real cuando Redis esté aprovisionado, sin tocar el contrato HTTP ni el modelo de datos. | US-019 (provisión de nube). |
 | D-4 | Re-medir la duración del trabajo al tope (5.000 filas) en entorno prod-shaped; los NFRs de latencia de `POST`/`GET` quedan `[propuesto — confirma Arquitecto]`. | Gatillo: primera medición en Neon / US-019. |
+
+## Desde US-002 — Navegación pública por categorías (archivada 2026-09-05)
+
+Superficie cubierta: `GET /categories`, `GET /categories/{slug}`,
+`GET /categories/{slug}/products`, más las páginas SSR `(storefront)` que las
+consumen.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-20 | `GET /categories` devuelve el árbol público de dos niveles: rubros (`parent_id = null`) con sus subrubros directos embebidos, ambos ordenados por nombre. | AC-1 |
+| R-21 | `GET /categories/{slug}` devuelve la categoría con su `parent` (para el breadcrumb) y sus `children` — slug inexistente responde `404`, nunca un `200` vacío indexable fantasma. | AC-2, AC-9 |
+| R-22 | `GET /categories/{slug}/products` pagina (offset, `limit` 1..100 default 20) sólo productos `published` de la categoría — un RUBRO agrega los de sus subrubros directos, un SUBRUBRO lista sólo los propios. Orden estable `name ASC, id ASC`. | AC-3 |
+| R-23 | Categoría existente sin productos publicados responde `200` con `data: []` y `total: 0` (no un 404 ni un error). | AC-6 |
+| R-24 | El árbol de categorías y el listado de la home/rubro se renderizan **server-side**, indexables por buscadores (sin JS requerido para el contenido). | AC-4, AC-10 |
+| R-25 | La ficha de producto (US-003) muestra el breadcrumb con la categoría como link — el enlace al rubro padre queda diferido (`OQ-FE-11`, requiere `category.parent` en un segundo fetch). | AC-2 (FE) |
+| R-26 | La paginación de categoría es **linkeable** (server-side por `searchParams`, offset derivado) — no un botón "cargar más" que pierde el estado al compartir la URL. | Design FE §D3 |
+| R-27 | Cada página de categoría/paginación declara `canonical` auto-referencial + `rel=prev/next` + título propio por página (SEO). | Design FE §D4 |
+| R-28 | El sitemap incluye las rutas de categoría; convención de archivo compartiendo el tag de frescura `catalog`. | Design FE §D5 |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-10 | `draft`/`archived` nunca aparecen en `GET /categories/{slug}/products` — ni en `data` ni en `total`. |
+| N-11 | El catálogo completo nunca se transfiere de una sola vez — `limit` tiene tope 100, default 20. |
+| N-12 | El evento `category.viewed` sólo lo emite el detalle (`GET /categories/{slug}`), nunca el árbol ni el listado — y nunca lleva PII (lectura anónima). |
+| N-13 | Ninguna página de `(storefront)` usa `loading.tsx` (F59) — evita que Next confirme un `200` antes de poder emitir un `404` real. |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-9 | Caché por endpoint: árbol `max-age=300, stale-while-revalidate=60` (cambia poco); detalle y listado `max-age=60, stale-while-revalidate=30` (mismo criterio que la ficha de US-003) — sólo en `2xx`, nunca en `404`/`429`. | Suite dev-owned; hallazgo M1 heredado de US-003. |
+| NFR-10 | LCP < 2.5s, p95 < 300ms en las páginas de categoría (US §9, E2E §17). | Suite dev-owned. |
+| NFR-11 | WCAG 2.1 AA en `CategoryNav`, breadcrumb y grilla. | Suite a11y. |
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-5 | CTA "Agregar" en la card de producto. | US-007 — `design-system §7.3`. |
+| D-6 | Top-nav completo (buscador, carrito, cuenta). | US-004/US-007 — `design-system §7.10`. |
+| D-7 | Grilla global `/productos` (todas las categorías juntas). | `OQ-FE-7` — sin endpoint público que la sirva todavía. |
+| D-8 | Breadcrumb con el rubro **padre** en la ficha de producto (hoy sólo la categoría directa). | `OQ-FE-11` — requiere `category.parent` en el contrato de la ficha; exigiría un segundo fetch en cadena. |
+| D-9 | `generateSitemaps` particionado. | Disparador: > 50.000 URLs (design.md D5). |
+| D-10 | `placeholder="blur"` en imágenes remotas de producto. | Requiere loader propio (design.md D9). |
+| D-11 | Número real de WhatsApp en el footer/contacto. | `OQ-FE-3` (PO/cliente). |

@@ -1,0 +1,21 @@
+get:
+  operationId: storefrontListCategories
+  tags: [storefront-categories]
+  summary: Árbol público de categorías de dos niveles (US-002 AC-1)
+  description: |
+    Ruta PÚBLICA SIN auth. Rubros (sin padre) con sus subrubros directos,
+    ambos ordenados por nombre. TTL propio de 300s (decisión D5) porque el
+    árbol cambia poco. No emite `category.viewed` (sólo el detalle, D4).
+  security: []
+  responses:
+    '200':
+      description: Árbol de navegación
+      headers:
+        Cache-Control:
+          schema: { type: string }
+          description: 'public, max-age=300, stale-while-revalidate=60 (D5)'
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/CategoryTree' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

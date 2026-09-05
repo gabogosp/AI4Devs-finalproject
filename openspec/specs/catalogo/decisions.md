@@ -51,3 +51,23 @@ acá se registra **cuál aplica a esta capacidad y por qué**.
 | Retención de `import_jobs`: **90 días**, purga oportunista al crear un trabajo nuevo. | OQ-BE-6. Es el audit trail de quién cambió los precios del catálogo; 90 días cubre la ventana de disputa razonable. |
 | Celdas del reporte CSV neutralizadas contra inyección de fórmulas (`= + - @`, tab, CR → prefijo `'`). | `security-standards §6.3`: el destino del reporte es una planilla real del dueño, no un JSON. |
 | Enriquecimiento (AC-3) se marca con `enrichment_done = false` durable, sin encolar contra Redis. | OQ-BE-4. Deja el criterio recuperable — US-005 reconstruye su cola con `WHERE enrichment_done = false` sin depender de un evento emitido en el momento del import. |
+
+## Decisiones de implementación tomadas durante la construcción — US-002
+
+| Decisión | Motivo |
+|---|---|
+| Se extiende el módulo `storefront` (US-003) con un controller nuevo, en vez de un módulo `categories` público separado. | Reusa el throttler `storefront`, el `StorefrontCacheInterceptor` y el filtro RFC 7807 ya cableados — cero superficie nueva de borde HTTP. |
+| Un **rubro** agrega los productos de sus subrubros directos (`category_id IN (rubro, hijos)`); un **subrubro** lista sólo los propios. | Es el comportamiento que un catálogo de dos niveles necesita para que navegar el rubro no muestre "sin productos" cuando todo vive en los subrubros. |
+| `StorefrontCacheInterceptor` gana un decorador de TTL por endpoint (`Reflector`), en vez de un interceptor nuevo por ruta. | El árbol cambia poco (300s) y el detalle/listado comparten el presupuesto de frescura de la ficha (60s) — un solo interceptor parametrizado evita duplicar la lógica "sólo cachear 2xx" que ya blindó un hallazgo real de US-003. |
+| Evento `category.viewed` sólo en el detalle, nunca en el árbol ni en el listado. | Un evento por vista de página, no por cada llamada de red que arma esa página — el árbol/listado son datos de soporte de la misma vista. |
+| FE: rewrite/páginas van en el route group `(storefront)`, no en `(auth)`. | Son páginas públicas del sitio con el chrome público (header, `CategoryNav`, footer) — `(auth)` existe sólo para superficie privada del panel. |
+| FE: paginación server-side por `searchParams` con offset derivado, no un botón "cargar más" con estado de cliente. | Cada página de resultados necesita ser una URL propia, linkeable y compartible — condición para que `canonical`/`rel=prev/next` (SEO) tengan sentido. |
+| FE: invalidación de cache por **tag grueso** `catalog` (no por entidad fina). | Un cambio en cualquier categoría o producto puede afectar el árbol, la home y cualquier listado — separar tags finos multiplicaría los `revalidateTag` sin necesidad real a este volumen. |
+| FE: `CategoryNav` es Server Component montado en el layout, con degradación silenciosa (`null` + `captureError`) si el árbol falla. | Un layout que rompe la página entera por un fallo de un nav secundario es peor que un nav ausente; se captura el error para observabilidad sin propagar la excepción. |
+
+## Desviaciones conscientes registradas — US-002
+
+| Desviación | Motivo |
+|---|---|
+| Breadcrumb con el rubro padre en la ficha de producto queda diferido (`OQ-FE-11`). | Exigiría un segundo fetch en cadena sobre la página de conversión (la ficha) — costo de latencia no justificado todavía; la ficha ya muestra la categoría directa como link. |
+| Grilla global `/productos` (todas las categorías) no se construye. | Sin endpoint público que la sirva (`OQ-FE-7`) — el browse hoy es por categoría, no un índice plano. |
