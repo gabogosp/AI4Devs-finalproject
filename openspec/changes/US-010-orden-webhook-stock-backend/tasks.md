@@ -574,14 +574,31 @@
 
 ## Phase 15: Contratos + documentación
 
-- [ ] T15.1 Actualizar/crear `contracts/openapi/{webhook-mercadopago,simulate-payment,reconcile-payments,cleanup-abandoned-orders,retry-refunds}.yaml`
+- [x] T15.1 Actualizar/crear `contracts/openapi/{webhook-mercadopago,simulate-payment,reconcile-payments,cleanup-abandoned-orders,retry-refunds}.yaml`
   per skill `api-contract-completeness` (1 archivo por endpoint, request/response DTOs con
   `$ref`, catálogo de errores RFC 7807 con `type` URI, ejemplo funcional).
   - **Exit criterion**: cada yaml valida contra OpenAPI 3.x (`servers`, `paths`,
     `components.schemas`, `components.responses` completos, sin `TODO`).
   - **Verify**: `npx @redocly/cli lint openspec/changes/US-010-orden-webhook-stock-backend/contracts/openapi/*.yaml`
+  - **Nota de ejecución (2026-09-05)**: los 5 archivos ya existían (adoptados del regenerate,
+    ver commit de adopción) y validaban estructuralmente, pero la reconciliación contra el
+    código REAL encontró 2 gaps reales, corregidos acá:
+    1. `webhook-mercadopago.yaml` declaraba `401 → dsm:payments/webhook-unverified`, pero el
+       controller lanzaba `UnauthorizedException` genérico (built-in de Nest), que
+       `HttpProblemFilter` mapea a `dsm:catalog/http-401` — un `type` distinto al contrato.
+       Se agregó `WebhookUnverifiedError` (`DomainError`, 401,
+       `dsm:payments/webhook-unverified`) en `payment-confirmation-errors.ts` y el controller
+       ahora la lanza. Regresión completa re-verificada tras el fix.
+    2. `simulate-payment.yaml` declaraba `PaymentConfirmed` con `order_id`/`payment_id`, pero
+       `PaymentConfirmedDto` real (compartido con US-023, congelado) sólo tiene
+       `order_number`/`status`. Corregido el contrato para reflejar el DTO real — no se tocó
+       el DTO (evita romper `payment-confirmation.controller.ts`, US-023).
+    También se removió `securitySchemes.bearerAuth` sin uso de `webhook-mercadopago.yaml`
+    (el endpoint no usa JWT, usa HMAC). `npx @redocly/cli lint` → válido, 12 warnings
+    (todos preexistentes en el estilo del repo: `example.com` en servers, sin `info.license`
+    — mismo patrón que los contratos ya archivados de US-001).
 
-- [ ] T15.2 `src/payments/README.md`: documentar el alcance ampliado (qué reusa de US-023,
+- [x] T15.2 `src/payments/README.md`: documentar el alcance ampliado (qué reusa de US-023,
   qué es nuevo, la tabla "hoy con mocks vs necesita cuenta real" de `design.md` §D6) — mismo
   estilo que `checkout/README.md`.
   - **Exit criterion**: el README explica en 2 párrafos por qué `MercadoPagoClient` no tiene

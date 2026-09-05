@@ -66,13 +66,15 @@ components:
           pattern: '^[0-9a-f]{64}$'
           description: Claro devuelto una sola vez por `POST /v1/checkout`.
     PaymentConfirmed:
+      description: |
+        Mismo `PaymentConfirmedDto` que `POST /v1/admin/orders/{orderId}/confirm-payment`
+        (US-023) — deliberadamente angosto (sin `order_id`/`payment_id`): el identificador
+        público de la orden es `order_number`, los internos no se exponen (§5).
       type: object
-      required: [order_id, order_number, status, payment_id]
+      required: [order_number, status]
       properties:
-        order_id: { type: string, format: uuid }
         order_number: { type: integer }
         status: { type: string, enum: [new] }
-        payment_id: { type: string, format: uuid }
     ProblemDetails:
       type: object
       required: [type, title, status]

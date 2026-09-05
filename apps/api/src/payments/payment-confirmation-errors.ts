@@ -46,3 +46,17 @@ export class OrderAutoCancelledInsufficientStockError extends DomainError {
     );
   }
 }
+
+/**
+ * 401 — la firma del webhook de MercadoPago es inválida, ausente, malformada
+ * o con `ts` fuera de la ventana de tolerancia (US-010 AC-7). Único status
+ * de error del endpoint: no se consulta el pago ni se toca la base.
+ */
+export class WebhookUnverifiedError extends DomainError {
+  readonly status = 401;
+  readonly type = 'dsm:payments/webhook-unverified';
+
+  constructor() {
+    super('La firma no pudo verificarse.');
+  }
+}

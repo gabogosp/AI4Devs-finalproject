@@ -63,11 +63,6 @@ paths:
         '401':
           $ref: '#/components/responses/WebhookUnverified'
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
     MercadoPagoWebhookBody:
       type: object

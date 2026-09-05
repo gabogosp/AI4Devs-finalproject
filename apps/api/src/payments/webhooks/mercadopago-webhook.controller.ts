@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, HttpCode, Logger, Post, Req } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { configNumber } from '../../enrichment/config-number';
@@ -7,6 +7,7 @@ import { ConfirmOrderService } from '../confirm-order.service';
 import { MercadoPagoWebhookBodyDto } from '../dto/mercadopago-webhook-body.dto';
 import { MercadoPagoClient } from '../mercadopago/mercadopago-client';
 import { parseSignatureHeader, verifyWebhookSignature } from '../mercadopago/webhook-signature';
+import { WebhookUnverifiedError } from '../payment-confirmation-errors';
 
 /**
  * `POST /v1/webhooks/mercadopago` (US-010 T6.1-T6.3, `design.md` §D2/§D11).
@@ -58,7 +59,7 @@ export class MercadoPagoWebhookController {
       // AC-7: cero escrituras, cero llamada a MercadoPago — la firma es la
       // única puerta antes de creerle algo al payload.
       this.events.emitSignatureRejected();
-      throw new UnauthorizedException('Firma inválida');
+      throw new WebhookUnverifiedError();
     }
 
     this.events.emitWebhookReceived(body.data.id);
