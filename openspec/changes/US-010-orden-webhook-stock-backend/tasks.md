@@ -71,7 +71,7 @@
 
 ## Phase 2: Puerto + repositorios (extienden US-023, sin romper el camino `manual`)
 
-- [ ] T2.1 `payment-confirmation.port.ts`: reemplazar `ConfirmPaymentInput` (interfaz única)
+- [x] T2.1 `payment-confirmation.port.ts`: reemplazar `ConfirmPaymentInput` (interfaz única)
   por una unión discriminada `ConfirmManualPaymentInput | ConfirmWebhookPaymentInput`, con
   `ConfirmWebhookPaymentInput { orderId; provider: 'mercadopago' | 'simulated_dsm'; externalId: string; amountArsCents: number }`.
   El literal `provider: 'manual'` de la variante manual no cambia.
@@ -80,6 +80,12 @@
   - **Exit criterion**: `payment-confirmation.controller.ts` (US-023, sin tocar) sigue
     compilando construyendo `{ orderId, provider: 'manual', confirmedBy }` sin cast.
   - **Verify**: `pnpm --filter @dsm/api typecheck`
+  - **Nota de ejecución (2026-09-05)**: `confirm-order.service.ts` se actualizó para importar
+    `ConfirmManualPaymentInput` (antes `ConfirmPaymentInput`) como tipo de su parámetro
+    `confirm(input)` — sólo el nombre del tipo, cero cambios de lógica. `PaymentConfirmationPort.confirm`
+    en la interfaz acepta la unión completa; TS lo permite (chequeo bivariante de parámetros
+    en sintaxis de método) sin necesitar ensanchar `confirm-order.service.ts` todavía —
+    ese ensanche es T5.1. `payment-confirmation.controller.ts` sin tocar, typecheck limpio.
 
 - [ ] T2.2 `checkout/orders.repository.ts`: agregar `transitionToCancelledIfPending(orderId, tx)`
   (guardado por `WHERE status='pending_payment'`, setea `status='cancelled'` +

@@ -7,7 +7,7 @@ import { InsufficientStockError } from '../stock/stock-errors';
 import { OrderNotFoundError, OrderNotPendingPaymentError } from './payment-confirmation-errors';
 import {
   ConfirmedPayment,
-  ConfirmPaymentInput,
+  ConfirmManualPaymentInput,
   PaymentConfirmationPort,
 } from './payment-confirmation.port';
 import { PaymentsRepository } from './payments.repository';
@@ -37,7 +37,7 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
     private readonly events: PaymentsEventsService,
   ) {}
 
-  async confirm(input: ConfirmPaymentInput): Promise<ConfirmedPayment> {
+  async confirm(input: ConfirmManualPaymentInput): Promise<ConfirmedPayment> {
     const orden = await this.orders.findById(input.orderId);
     if (!orden) {
       throw new OrderNotFoundError();
