@@ -714,7 +714,7 @@ Agregar a `qa/exploratory/charters.md`, sección nueva "US-021 — Retención y 
 |---|---|---|
 | US-008 backend (checkout, crea `orders`) | Mergeado a `main` | Resuelto — necesario para `seed-checkout.ts` |
 | US-012 backend (`GET /v1/admin/orders[/:id]`) | Mergeado a `main` (PR #22, `in-review`) | Resuelto — usado como proxy de AC-2/5/6 (§1, §4) |
-| US-021 backend (este change, PR #25) | `draft`, 0/16 tasks ejecutadas | **Bloquea todo lo de este plan** — ningún escenario corre hasta que `/develop-backend` construya los dos endpoints |
+| US-021 backend (este change) | **Resuelto** — mergeado (PR #41, 30/30 tasks) y archivado (PR #48) | Ya no bloquea: la ejecución real corrió contra este código (§0/§4, "Estado ejecutado") |
 | Fast-follow de DTO (§1.3) | No planificado en ningún change | Bloquea sólo TC-021-004b — el resto de este plan no depende de él |
 | `US-021-...-frontend-web` | No existe | Bloquea el Badge/confirmación de dos pasos a nivel UI — fuera de alcance de este plan (§1.2) |
 
