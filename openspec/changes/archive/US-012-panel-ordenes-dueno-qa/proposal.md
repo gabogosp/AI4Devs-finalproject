@@ -6,6 +6,10 @@ discipline: qa
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-05
+merged_commit: 8606168
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/30
 ---
 
 # US-012 QA — Panel de órdenes del dueño: suite cross-stack
