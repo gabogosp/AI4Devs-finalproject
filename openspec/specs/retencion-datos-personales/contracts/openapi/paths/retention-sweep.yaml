@@ -1,0 +1,32 @@
+post:
+  operationId: runOrderRetentionSweep
+  tags: [admin-orders-retention]
+  summary: Anonimizar todas las órdenes con el plazo de retención cumplido (AC-1)
+  description: |
+    `reason` queda fijo en `retention_policy` para todo lo que anonimiza —
+    nunca viene del body, no hay `requestBody`. El plazo sale de
+    `ORDER_RETENTION_MONTHS` (12 meses por defecto, PRD §6). Síncrono a
+    propósito: un único `UPDATE` de conjunto resuelto por el motor sobre un
+    índice de rango, sobre un volumen de algunos cientos de órdenes por mes
+    (E2E §17) — no `202`+polling.
+  responses:
+    '200':
+      description: |
+        Barrido corrido — **siempre 200, incluso `anonymized_count: 0`**
+        (US §9: "registrar cuántas órdenes anonimiza cada corrida" es
+        también la señal de que el barrido corrió).
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/RetentionSweepResult' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

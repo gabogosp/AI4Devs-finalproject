@@ -435,6 +435,20 @@
   # Publicado ahora — PR #41 abierto contra main. `status` de la US NO avanza: falta
   # merge + archive del backend, y hay un worktree/rama `feat/US-021-retencion-datos-ordenes-qa`
   # en curso (otra sesión) para la disciplina QA. `blocked_by` sin tocar.
+  #
+  # NOTA (2026-09-05, /archive-change US-021-retencion-datos-ordenes-backend, PR #41
+  # mergeado): disciplina backend archivada (openspec/changes/archive/US-021-...
+  # -backend/), 30/30 tasks. Crea la capacidad nueva
+  # `openspec/specs/retencion-datos-personales/` (CAP-13) — README + requirements +
+  # decisions + contratos vivos (2 endpoints admin, seedeados desde los yaml draft
+  # del change porque nunca llegaron al spec publicado del servicio). `status` de la
+  # US NO avanza: QA sigue en curso (otra sesión, worktree
+  # `feat/US-021-retencion-datos-ordenes-qa`) y FE NO existe como change ni parece
+  # absorbido por US-012 (a diferencia de US-023, cuyo FE sí quedó cubierto por
+  # PendingPaymentsPanel — acá no hay referencia a anonimización en
+  # apps/web/src/features/orders/). Falta confirmar con el PO/Arquitecto si la
+  # acción "anonimizar" en el panel es un change FE propio o se agrega a US-012 FE.
+  # `blocked_by` sin tocar.
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend

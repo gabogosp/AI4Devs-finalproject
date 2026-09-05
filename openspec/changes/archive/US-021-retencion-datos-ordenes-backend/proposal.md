@@ -5,6 +5,10 @@ parent-us: US-021
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-05
+merged_commit: c9bb229
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/41
 ---
 
 # US-021 Backend — Retención y anonimización de PII de órdenes (Ley 25.326)
