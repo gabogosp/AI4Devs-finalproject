@@ -324,6 +324,17 @@ export const envSchema = z.object({
   MP_WEBHOOK_TOLERANCE_SEC: z.coerce.number().int().positive().default(300),
   /** Reintentos además del intento inicial, sobre 429/5xx/timeout. */
   MP_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
+
+  /**
+   * US-010 D7 — medio simulado (`POST /v1/checkout/simulate-payment`, ADR-0006).
+   * Apagado por default; el refinement de abajo hace fallar el arranque si
+   * queda prendido en producción — es un gate de arranque, no sólo un
+   * checklist de release.
+   */
+  PAYMENTS_SIMULATED_ENABLED: z.enum(['true', 'false']).default('false'),
+  /** §7.3 — presupuesto propio del medio simulado, mismo criterio que checkout. */
+  PAYMENTS_SIMULATE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(600_000),
 }).superRefine((env, ctx) => {
   // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
   // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la
@@ -374,6 +385,19 @@ export const envSchema = z.object({
           'requerida en producción: sin ella el webhook de MercadoPago no puede verificar firmas ni confirmar pagos',
       });
     }
+  }
+
+  // US-010 D7 (ADR-0006) — condición INVERTIDA respecto a las de arriba: acá se
+  // rechaza el `true`, no se exige. El medio simulado saltea MercadoPago por
+  // completo; dejarlo prendido en producción permitiría "pagar" órdenes reales
+  // sin plata de por medio.
+  if (env.PAYMENTS_SIMULATED_ENABLED === 'true') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['PAYMENTS_SIMULATED_ENABLED'],
+      message:
+        'no puede quedar en `true` en producción (ADR-0006): el medio simulado saltea MercadoPago por completo',
+    });
   }
 
   // US-005 D6 — mismo razonamiento, otra feature: sin clave el enriquecimiento

@@ -10,6 +10,8 @@ import { ConfirmOrderService } from './confirm-order.service';
 import { MercadoPagoClient } from './mercadopago/mercadopago-client';
 import { PaymentConfirmationController } from './payment-confirmation.controller';
 import { PaymentsRepository } from './payments.repository';
+import { PaymentsSimulateThrottlerGuard } from './payments-simulate-throttler.guard';
+import { SimulatePaymentController } from './simulate-payment.controller';
 import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.controller';
 
 /**
@@ -22,11 +24,12 @@ import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.con
  */
 @Module({
   imports: [PrismaModule, AuthModule, CheckoutModule, StockModule, OrdersModule],
-  controllers: [PaymentConfirmationController, MercadoPagoWebhookController],
+  controllers: [PaymentConfirmationController, MercadoPagoWebhookController, SimulatePaymentController],
   providers: [
     ConfirmOrderService,
     PaymentsRepository,
     PaymentsEventsService,
+    PaymentsSimulateThrottlerGuard,
     // Factory (no `providers: [MercadoPagoClient]` directo): el constructor tiene
     // `baseUrl`/`seams` con default — Nest no puede resolverlos por reflexión de
     // tipos (string/object no son tokens), mismo patrón que `ai.providers.ts`

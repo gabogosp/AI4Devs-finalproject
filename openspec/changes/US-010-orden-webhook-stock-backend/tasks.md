@@ -324,7 +324,7 @@
 
 ## Phase 7: `POST /v1/checkout/simulate-payment` (AC-9 real, sin MercadoPago)
 
-- [ ] T7.1 `dto/simulate-payment.dto.ts` (`order_token` con `@Matches(/^[0-9a-f]{64}$/)`,
+- [x] T7.1 `dto/simulate-payment.dto.ts` (`order_token` con `@Matches(/^[0-9a-f]{64}$/)`,
   mismo patrón que el contrato ya declarado para `POST /v1/payments` de US-009) y
   `simulate-payment.controller.ts`: hashea el token (`hashToken`, reusado de
   `auth/tokens/opaque-token.ts`), busca la orden con `OrdersRepository.findByTokenHash`
@@ -336,7 +336,7 @@
     (`OrderNotFoundError`).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=simulate-payment.controller`
 
-- [ ] T7.2 Gate de feature flag: `env.validation.ts` agrega `PAYMENTS_SIMULATED_ENABLED`
+- [x] T7.2 Gate de feature flag: `env.validation.ts` agrega `PAYMENTS_SIMULATED_ENABLED`
   (enum `'true'|'false'`, default `'false'`) con un `superRefine` que **hace fallar el
   arranque** si `NODE_ENV === 'production' && PAYMENTS_SIMULATED_ENABLED === 'true'`
   (ADR-0006, enforced en código, no sólo checklist). El controller responde 404 (no 403)
@@ -348,12 +348,37 @@
     tocar la base.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern='env.validation|simulate-payment.controller'`
 
-- [ ] T7.3 Rate limit propio (`PAYMENTS_SIMULATE_RATE_LIMIT_MAX`/`_TTL_MS` en
+- [x] T7.3 Rate limit propio (`PAYMENTS_SIMULATE_RATE_LIMIT_MAX`/`_TTL_MS` en
   `env.validation.ts`, default 10/600000ms) sobre el endpoint, mismo criterio que
   `CheckoutThrottlerGuard`.
   - **Exit criterion**: la request número `PAYMENTS_SIMULATE_RATE_LIMIT_MAX + 1` dentro de
     la ventana responde 429.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=simulate-payment.controller`
+  - **Nota de ejecución conjunta T7.1-T7.3 (2026-09-05)**: 10/10 tests verdes (2 describe
+    blocks con app propia — el de rate-limit necesita su propia instancia, el throttler
+    cuenta por IP+ruta y compartirla con los otros tests consumiría presupuesto antes de
+    tiempo, mismo criterio que `e2e-checkout-ratelimit.spec.ts`).
+  - **Hallazgo de testing (`ConfigService`/env-flags)**: `AppConfigModule` valida
+    `process.env` una única vez por proceso de Jest (el `@Module({imports:
+    [ConfigModule.forRoot(...)]})` se evalúa al importar `config.module.ts`, no en cada
+    `Test.createTestingModule().compile()`) — mutar `process.env.PAYMENTS_SIMULATED_ENABLED`
+    en un `beforeAll` llega tarde. Además, un `new ConfigService({...process.env})` a mano
+    tampoco alcanza: `.get()` revisa el `process.env` VIVO (ya contaminado con STRINGS de
+    valores validados por OTROS tests, vía `assignVariablesToProcess`) antes que el
+    `internalConfig` propio. La solución: `new ConfigService({ _PROCESS_ENV_VALIDATED:
+    validateEnv({...process.env, ...overrides}) })` — la misma clave interna que usa
+    `ConfigModule.forRoot()`, con la coerción real de Zod. `simulate-payment.controller.spec.ts`
+    documenta el hallazgo completo.
+  - **Throttler #7**: `payments_simulate` sumado al array de `ThrottlerModule.forRootAsync`
+    en `auth.module.ts` (mismo criterio que `checkout`/`enrichment`/`search` — techo
+    inalcanzable acá, presupuesto real en el `@Throttle` del handler). Actualizado
+    `e2e-auth-ratelimit.spec.ts` (contaba "SEIS throttlers nombrados", ahora son 7).
+  - **Nota sobre la corrida completa de la suite**: `pnpm --filter @dsm/api test` (sin
+    filtro, 190 archivos) mostró un timeout de 30s en `e2e-auth-password-reset.spec.ts`
+    (bcrypt real, cost 12, bajo la carga de correr la suite entera + otras sesiones en la
+    máquina) — no reproduce en corridas acotadas ni en corridas anteriores/posteriores de
+    la misma suite completa (que sí pasan 190/190), y el archivo no toca nada de este
+    change. Tratado como flakiness de entorno, no como regresión.
 
 ## Phase 8: `NotificationPort` ampliado (reusa el de `orders/`, no crea uno paralelo)
 

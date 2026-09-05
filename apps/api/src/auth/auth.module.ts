@@ -100,6 +100,14 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('CHECKOUT_RATE_LIMIT_TTL_MS', 600_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — séptimo throttler nombrado: el medio simulado de pagos (US-010 D7).
+        // Mismo criterio que `checkout`: techo inalcanzable acá, presupuesto real
+        // (`PAYMENTS_SIMULATE_RATE_LIMIT_MAX`, 10/10min) en el `@Throttle` del handler.
+        {
+          name: 'payments_simulate',
+          ttl: config.get<number>('PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS', 600_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],

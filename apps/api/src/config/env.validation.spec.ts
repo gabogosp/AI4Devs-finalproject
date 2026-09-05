@@ -494,3 +494,59 @@ describe('MercadoPago (US-010 T4.2) — defaults y fail-fast', () => {
     );
   });
 });
+
+describe('Medio simulado (US-010 T7.2, ADR-0006) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin ninguna variable, aplica los defaults exactos (apagado)', () => {
+    const env = validateEnv({ ...base });
+
+    expect(env.PAYMENTS_SIMULATED_ENABLED).toBe('false');
+    expect(env.PAYMENTS_SIMULATE_RATE_LIMIT_MAX).toBe(10);
+    expect(env.PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS).toBe(600_000);
+  });
+
+  it('en DESARROLLO con PAYMENTS_SIMULATED_ENABLED=true parsea OK', () => {
+    const env = validateEnv({ ...base, NODE_ENV: 'development', PAYMENTS_SIMULATED_ENABLED: 'true' });
+    expect(env.PAYMENTS_SIMULATED_ENABLED).toBe('true');
+  });
+
+  it('en PRODUCCIÓN con PAYMENTS_SIMULATED_ENABLED=true hace fallar el arranque (ADR-0006)', () => {
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        PAYMENTS_SIMULATED_ENABLED: 'true',
+        RESEND_API_KEY: 'k',
+        PASSWORD_RESET_FROM: 'a@b.com',
+        PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+        GEMINI_API_KEY: 'g_x',
+        MP_ACCESS_TOKEN: 'token',
+        MP_WEBHOOK_SECRET: 'secreto',
+      }),
+    ).toThrow(/PAYMENTS_SIMULATED_ENABLED/);
+  });
+
+  it('en PRODUCCIÓN con el flag apagado (default), arranca', () => {
+    const env = validateEnv({
+      ...base,
+      NODE_ENV: 'production',
+      RESEND_API_KEY: 'k',
+      PASSWORD_RESET_FROM: 'a@b.com',
+      PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+      GEMINI_API_KEY: 'g_x',
+      MP_ACCESS_TOKEN: 'token',
+      MP_WEBHOOK_SECRET: 'secreto',
+    });
+    expect(env.PAYMENTS_SIMULATED_ENABLED).toBe('false');
+  });
+
+  it('PAYMENTS_SIMULATED_ENABLED sólo acepta true|false', () => {
+    expect(() =>
+      validateEnv({ ...base, PAYMENTS_SIMULATED_ENABLED: 'yes' }),
+    ).toThrow(/fail-fast|Config de entorno inválida/);
+  });
+});
