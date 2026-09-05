@@ -202,7 +202,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 > observables contra los que el frontend se va a construir. Se desbloquean con
 > `/develop-backend US-012` + `/develop-frontend-web US-012`.
 
-- [ ] T5.1 Listado y detalle en el navegador (AC-1, AC-2, AC-5, AC-9)
+- [x] T5.1 Listado y detalle en el navegador (AC-1, AC-2, AC-5, AC-9)
   - **Pattern**: selectores por rol/etiqueta accesible, nunca CSS ni índice; login del
     panel inyectando el token real de `admin-auth.ts` en `sessionStorage` antes de
     navegar (mecanismo actual del panel, `adminSession.ts`) — `per playwright-stability
@@ -213,7 +213,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     el historial de estado con al menos una entrada.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-1220|TC-1221" --reporter=line 2>&1 | grep -qE '^ *2 passed'`
 
-- [ ] T5.2 Avanzar el estado desde la UI, con rollback real (AC-3, AC-4, AC-6)
+- [x] T5.2 Avanzar el estado desde la UI, con rollback real (AC-3, AC-4, AC-6)
   - **Pattern**: ídem T5.1; para el caso de conflicto, forzar la carrera real con dos
     `PATCH` — uno vía la UI y otro vía `apiCall` directo entre el click y la respuesta —
     en vez de mockear la red, porque esta capa es precisamente la que verifica **contra
@@ -225,7 +225,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     fallo confirmado.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-1222|TC-1223" --reporter=line 2>&1 | grep -qE '^ *2 passed'`
 
-- [ ] T5.3 Acceso denegado end-to-end (AC-7)
+- [x] T5.3 Acceso denegado end-to-end (AC-7)
   - **Exit criterion**: TC-1224 verde — un navegador sin token en `sessionStorage`,
     navegando directo a `/admin/ordenes`, no ve el panel (redirect o pantalla de acceso
     denegado, según lo que `AdminGuard`/`guard.tsx` ya implementen — sin tocarlos).
