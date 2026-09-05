@@ -4,7 +4,7 @@ id: US-012
 slug: panel-ordenes-dueno
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: M
 story_points_traditional: 8
@@ -12,8 +12,9 @@ story_points_ai_assisted: 4
 estimation_basis: "FE panel de órdenes con TanStack Table + acciones de estado (Cohn 2005 §9 backoffice, 8) + BE listado/detalle + transiciones FSM validadas (Cohn 2005 §8, 5), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-09-05
 ready-at: 2026-06-15
+in-progress-at: 2026-08-30
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
@@ -156,7 +157,11 @@ And ese registro queda disponible para consulta
 
 - Modelo de estados confirmado (4 activos): **nueva → preparando → lista para retirar → entregada**; "cancelada" se gestiona en US-013. Coincide con la FSM del E2E §12.
 - El paso a **"lista para retirar"** es el que dispara el aviso al cliente (US-011).
-- Solo se gestionan órdenes confirmadas por pago aprobado (US-010); las pendientes de pago no entran al panel de fulfillment.
+- Solo se gestionan órdenes confirmadas por pago aprobado (US-010); las pendientes de pago no entran a la cola de fulfillment (nueva/preparando/lista/entregada).
+- **Actualización 2026-08-30 (US-023)**: cuando se planifique esta US, su AC-1 (listado) debe
+  incorporar una vista separada de órdenes `pending_payment` — el dueño necesita verlas para
+  poder confirmarles el pago manual/offline que introduce US-023 AC-2. Esa vista es distinta
+  de la cola operativa de arriba (no se mezclan). Ver `US-023-pago-manual-offline.md` §6/§10.
 
 ---
 

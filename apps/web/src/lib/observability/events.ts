@@ -71,7 +71,19 @@ export type BusinessEvent =
   | 'search_performed'
   | 'search_result_clicked'
   | 'search_fallback_clicked'
-  | 'search_rate_limited';
+  | 'search_rate_limited'
+  // Panel de fulfillment (US-012). Backoffice — van con `operator_id: 'admin'`,
+  // no entran en PUBLIC_EVENTS. Nunca llevan `buyer_name`/`buyer_email`: el
+  // `order_id` alcanza para correlacionar (mismo criterio que `OrderEventsService`
+  // del backend, que tampoco los loguea).
+  | 'order_status_change_attempted'
+  | 'order_status_change_succeeded'
+  | 'order_status_change_failed'
+  | 'orders_filtered'
+  // Vista de pendientes de pago (US-012 §D9, feature aditiva sobre el backend
+  // hermano US-023). Sin `buyer_name`, mismo criterio que los eventos de
+  // arriba.
+  | 'pending_payment_confirmed';
 
 export interface EventProps {
   operator_id?: string;

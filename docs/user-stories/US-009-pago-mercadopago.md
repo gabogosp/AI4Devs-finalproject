@@ -4,7 +4,7 @@ id: US-009
 slug: pago-mercadopago
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Blocked
 priority: High
 estimate-tshirt: M
 story_points_traditional: 8
@@ -12,7 +12,7 @@ story_points_ai_assisted: 4
 estimation_basis: "BE integración MercadoPago Checkout Pro (crear preferencia + manejo de retorno) + medio simulado tras feature flag (Cohn 2005 §8-10, 8) + INFRA secrets/credenciales (Cohn 2005 §11, 3), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-08-22
+updated: 2026-08-30
 ready-at: 2026-06-15
 in-progress-at: 2026-08-22
 authored-by: Gabriel Suarez
@@ -162,6 +162,7 @@ And no es posible pagar una orden inexistente o de otro cliente
 - Proveedor y modo fijados en ADR-0006: **MercadoPago Checkout Pro (hosted)** + medio simulado "DSM" para test/demo y el test E2E.
 - La idempotencia del procesamiento del pago y el decremento de stock se resuelven en US-010 (al consumir el webhook), no acá.
 - El medio simulado es **load-bearing** para el test E2E automatizado (permite ejercer pago→confirmación sin transacción real).
+- **Actualización 2026-08-30 — status → `Blocked`**: sin credenciales de MercadoPago disponibles todavía. `US-023-pago-manual-offline` cubre el checkout local en el interín (transferencia/efectivo confirmado por el dueño) y extrae `PaymentConfirmationPort`, de forma que cuando esta US se retome, la integración de MercadoPago se sume como OTRO adaptador del mismo puerto (no reemplaza el trabajo ya diseñado acá — `ConfirmOrderService`/`payments` de US-023 son la base que esta US extiende, no algo a re-derivar).
 
 ---
 

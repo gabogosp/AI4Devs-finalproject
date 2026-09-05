@@ -1,0 +1,30 @@
+get:
+  operationId: listPendingPaymentOrders
+  tags: [admin-payments]
+  summary: Listar órdenes pendientes de confirmar pago (US-023 AC-2)
+  description: |
+    El E2E §12 dice que el panel del dueño no muestra pending_payment — esta
+    ruta es la excepción declarada por US-023: sin verla, no hay forma de
+    llegar a POST .../confirm-payment. Lista angosta a propósito (sin
+    buyer_email/buyer_phone, sin paginación — volumen de un solo local): NO
+    reemplaza el listado general de US-012.
+  responses:
+    '200':
+      description: Órdenes pending_payment, más nuevas primero (puede ser vacía).
+      headers:
+        Cache-Control: { schema: { type: string } }
+      content:
+        application/json:
+          schema:
+            type: array
+            items: { $ref: '../../openapi.yaml#/components/schemas/PendingPaymentOrder' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

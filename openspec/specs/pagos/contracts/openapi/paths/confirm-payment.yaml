@@ -1,0 +1,49 @@
+post:
+  operationId: confirmManualPayment
+  tags: [admin-payments]
+  summary: Confirmar el pago manual/offline de una orden pendiente (US-023 AC-1/AC-3/AC-4/AC-5/AC-6)
+  description: |
+    Transiciona pending_payment -> new, decrementa el stock de cada línea de
+    forma atómica (ADR-0008) y registra un pago provider=manual con quién
+    confirmó y cuándo — las tres escrituras en una sola transacción. Sin
+    body: el monto y las líneas salen de la orden, el provider es siempre
+    manual, y quién confirma sale del JWT (sub), nunca de un campo que el
+    cliente pudiera falsificar. AC-4 (la orden ya no está pending_payment) y
+    AC-5 (doble confirmación) devuelven el MISMO 409
+    dsm:payments/order-not-pending-payment.
+  parameters:
+    - in: path
+      name: orderId
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    '200':
+      description: Pago confirmado; la orden pasa a new.
+      headers:
+        Cache-Control: { schema: { type: string } }
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/PaymentConfirmed' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: La orden no existe.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '409':
+      description: |
+        `dsm:payments/order-not-pending-payment` (la orden no está
+        pending_payment) o `dsm:payments/insufficient-stock` (alguna línea
+        se quedó sin stock entre el checkout y la confirmación).
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

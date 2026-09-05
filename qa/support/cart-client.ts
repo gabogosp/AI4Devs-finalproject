@@ -66,7 +66,16 @@ export interface Respuesta<T> {
  * carrito, que es lo que AC-4 afirma.
  */
 export class Invitado {
-  constructor(public ctx: APIRequestContext) {}
+  ctx: APIRequestContext;
+
+  // Sin TS parameter property (`constructor(public ctx: ...)`): el modo de
+  // type-stripping nativo de Node (el que usa Playwright al parsear .spec.ts
+  // en Node ≥22) no lo soporta — sólo borra tipos, no emite class fields desde
+  // el constructor. Mismo comportamiento, sintaxis compatible con ambos
+  // transforms (tsx de Cucumber y el nativo de Playwright).
+  constructor(ctx: APIRequestContext) {
+    this.ctx = ctx;
+  }
 
   /** Lee la cookie de CSRF. Es legible a propósito: el double-submit la exige. */
   private async csrf(): Promise<string | undefined> {

@@ -14,6 +14,9 @@ import { ImportsModule } from './imports/imports.module';
 import { EnrichmentModule } from './enrichment/enrichment.module';
 import { SearchModule } from './search/search.module';
 import { CheckoutModule } from './checkout/checkout.module';
+import { OrdersModule } from './orders/orders.module';
+import { StockModule } from './stock/stock.module';
+import { PaymentsModule } from './payments/payments.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -29,6 +32,11 @@ import { CheckoutModule } from './checkout/checkout.module';
  * responde, sin romper la navegación.
  * `CheckoutModule` (US-008) expone `POST /v1/checkout`: convierte el carrito en una orden
  * `pending_payment`, con el `order_token` que US-009 consume para iniciar el pago.
+ * `OrdersModule` (US-012) expone `GET/PATCH /v1/admin/orders`: el panel del dueño gestiona
+ * las 4 transiciones activas de fulfillment (`new→preparing→ready→delivered`).
+ * `StockModule` (US-023) es el único escritor de `products.stock`. `PaymentsModule`
+ * (US-023) implementa `PaymentConfirmationPort` con su primer adaptador (`manual`):
+ * el dueño confirma el pago sin depender de MercadoPago (US-009, `Blocked`).
  */
 @Module({
   imports: [
@@ -47,6 +55,9 @@ import { CheckoutModule } from './checkout/checkout.module';
     EnrichmentModule,
     SearchModule,
     CheckoutModule,
+    OrdersModule,
+    StockModule,
+    PaymentsModule,
   ],
   controllers: [],
   providers: [],

@@ -4,6 +4,7 @@ import { customerToken, bootTestApp } from '../../test/e2e-app';
 import { CategoriesModule } from '../categories/categories.module';
 import { MetricsModule } from '../observability/metrics.module';
 import { ProductsModule } from '../products/products.module';
+import { OrdersModule } from '../orders/orders.module';
 
 type Method = 'get' | 'post' | 'patch';
 
@@ -15,7 +16,7 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await bootTestApp([CategoriesModule, MetricsModule, ProductsModule]);
+    app = await bootTestApp([CategoriesModule, MetricsModule, ProductsModule, OrdersModule]);
   });
   afterAll(async () => {
     await app?.close();
@@ -36,6 +37,10 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
     // especialmente acá: un /metrics abierto publicaría volumen de ventas, logins
     // fallidos y stock bloqueado — inteligencia de negocio gratis.
     ['get', '/v1/admin/metrics'],
+    // US-012 — panel de órdenes del dueño.
+    ['get', '/v1/admin/orders'],
+    ['get', `/v1/admin/orders/${uuid}`],
+    ['patch', `/v1/admin/orders/${uuid}`],
   ];
 
   function call(method: Method, path: string): request.Test {

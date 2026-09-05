@@ -340,6 +340,116 @@ export const UpdateProductResponse = zod.object({
 
 
 /**
+ * Sólo las 4 fases activas del fulfillment (new/preparing/ready/delivered) — `pending_payment`/`cancelled` NUNCA son valores válidos de `status` acá (AC-8, allowlist cerrada). `sort` es un enum cerrado de 6 valores (comma-list con prefijo `-` para descendente, api-standards §7.2), no un parser libre.
+ * @summary Listado del panel de fulfillment (US-012 AC-1, AC-5, AC-8)
+ */
+export const listAdminOrdersQueryLimitDefault = 20;
+export const listAdminOrdersQueryLimitMax = 100;
+
+export const listAdminOrdersQueryOffsetDefault = 0;
+export const listAdminOrdersQueryOffsetMin = 0;
+
+export const listAdminOrdersQuerySortDefault = `-created_at`;
+
+export const ListAdminOrdersQueryParams = zod.object({
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered']).optional(),
+  "limit": zod.number().int().min(1).max(listAdminOrdersQueryLimitMax).default(listAdminOrdersQueryLimitDefault),
+  "offset": zod.number().int().min(listAdminOrdersQueryOffsetMin).default(listAdminOrdersQueryOffsetDefault),
+  "sort": zod.enum(['order_number', '-order_number', 'created_at', '-created_at', 'total_ars_cents', '-total_ars_cents']).default(listAdminOrdersQuerySortDefault)
+})
+
+export const ListAdminOrdersResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "order_number": zod.number().int(),
+  "buyer_name": zod.string(),
+  "total_ars_cents": zod.number().int(),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']).describe('El listado (GET \/admin\/orders) NUNCA incluye cancelled\/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET \/admin\/orders\/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.'),
+  "created_at": zod.string().datetime({"offset":true})
+})),
+  "pagination": zod.object({
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "total": zod.number().int()
+})
+})
+
+
+/**
+ * 404 si la orden no existe **o** está `pending_payment` (AC-8 — no gestionable acá). `cancelled` sí se devuelve (defensivo, OQ-BE-1: no hay hoy ningún flujo que la enumere, pero es trazable por id).
+ * @summary Detalle de una orden (US-012 AC-2, AC-9)
+ */
+export const GetAdminOrderParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const GetAdminOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "order_number": zod.number().int(),
+  "buyer_name": zod.string(),
+  "total_ars_cents": zod.number().int(),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']).describe('El listado (GET \/admin\/orders) NUNCA incluye cancelled\/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET \/admin\/orders\/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.'),
+  "created_at": zod.string().datetime({"offset":true})
+}).and(zod.object({
+  "buyer_email": zod.string(),
+  "buyer_phone": zod.string(),
+  "fulfillment": zod.enum(['pickup']),
+  "items": zod.array(zod.object({
+  "product_name": zod.string(),
+  "product_sku": zod.string(),
+  "quantity": zod.number().int(),
+  "unit_price_ars_cents": zod.number().int(),
+  "subtotal_ars_cents": zod.number().int()
+})),
+  "status_history": zod.array(zod.object({
+  "from_status": zod.string().nullable(),
+  "to_status": zod.string(),
+  "changed_by": zod.string().nullable().describe('sub del JWT admin (uuid) o el literal admin (bootstrap token).'),
+  "changed_at": zod.string().datetime({"offset":true})
+}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).'))
+}))
+
+
+/**
+ * `status` sólo admite `preparing|ready|delivered` — `cancelled` NUNCA es un valor de tipo válido acá (US-013, ruta distinta). Idempotente por estructura: si `status` ya es el pedido, 200 sin re-disparar nada (no por `Idempotency-Key` almacenada — el header se acepta y se ignora, ver `src/orders/README.md`). `status=ready` dispara el aviso al cliente (US-011, async, fuera de esta respuesta).
+ * @summary Avanzar el estado de fulfillment (US-012 AC-3, AC-4, AC-6, AC-9)
+ */
+export const UpdateAdminOrderStatusParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const UpdateAdminOrderStatusBody = zod.object({
+  "status": zod.enum(['preparing', 'ready', 'delivered'])
+})
+
+export const UpdateAdminOrderStatusResponse = zod.object({
+  "id": zod.string().uuid(),
+  "order_number": zod.number().int(),
+  "buyer_name": zod.string(),
+  "total_ars_cents": zod.number().int(),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']).describe('El listado (GET \/admin\/orders) NUNCA incluye cancelled\/pending_payment (AC-8, garantía de negocio, no de schema). cancelled SÍ puede aparecer acá porque este mismo schema es la base (allOf) de AdminOrderDetail, y GET \/admin\/orders\/{id} devuelve 200 para una orden cancelled (defensivo, OQ-BE-1) — un status enum de 4 valores le rechazaría esa respuesta real al cliente generado.'),
+  "created_at": zod.string().datetime({"offset":true})
+}).and(zod.object({
+  "buyer_email": zod.string(),
+  "buyer_phone": zod.string(),
+  "fulfillment": zod.enum(['pickup']),
+  "items": zod.array(zod.object({
+  "product_name": zod.string(),
+  "product_sku": zod.string(),
+  "quantity": zod.number().int(),
+  "unit_price_ars_cents": zod.number().int(),
+  "subtotal_ars_cents": zod.number().int()
+})),
+  "status_history": zod.array(zod.object({
+  "from_status": zod.string().nullable(),
+  "to_status": zod.string(),
+  "changed_by": zod.string().nullable().describe('sub del JWT admin (uuid) o el literal admin (bootstrap token).'),
+  "changed_at": zod.string().datetime({"offset":true})
+}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).'))
+}))
+
+
+/**
  * Ruta PÚBLICA `GET /v1/products/{slug}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `slug` (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el `slug` lo deriva el servidor del `name`, nunca se acepta del cliente). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
  * @summary Ficha pública de producto publicado (US-003 AC-1/AC-2)
  */
@@ -613,6 +723,34 @@ export const CreateGuestCheckoutResponse = zod.object({
   "total_ars_cents": zod.number().int().describe('Centavos ARS (api-standards §5.5), IVA incluido. Suma exacta de los subtotales del snapshot, no del carrito.'),
   "items_count": zod.number().int().describe('Líneas distintas de la orden.')
 })
+
+
+/**
+ * Transiciona pending_payment -> new, decrementa el stock de cada línea de forma atómica (ADR-0008) y registra un pago provider=manual con quién confirmó y cuándo — las tres escrituras en una sola transacción. Sin body: el monto y las líneas salen de la orden, el provider es siempre manual, y quién confirma sale del JWT (sub), nunca de un campo que el cliente pudiera falsificar. AC-4 (la orden ya no está pending_payment) y AC-5 (doble confirmación) devuelven el MISMO 409 dsm:payments/order-not-pending-payment.
+ * @summary Confirmar el pago manual/offline de una orden pendiente (US-023 AC-1/AC-3/AC-4/AC-5/AC-6)
+ */
+export const ConfirmManualPaymentParams = zod.object({
+  "orderId": zod.string().uuid()
+})
+
+export const ConfirmManualPaymentResponse = zod.object({
+  "order_number": zod.number().int(),
+  "status": zod.enum(['new'])
+})
+
+
+/**
+ * El E2E §12 dice que el panel del dueño no muestra pending_payment — esta ruta es la excepción declarada por US-023: sin verla, no hay forma de llegar a POST .../confirm-payment. Lista angosta a propósito (sin buyer_email/buyer_phone, sin paginación — volumen de un solo local): NO reemplaza el listado general de US-012.
+ * @summary Listar órdenes pendientes de confirmar pago (US-023 AC-2)
+ */
+export const ListPendingPaymentOrdersResponseItem = zod.object({
+  "id": zod.string().uuid().describe('UUID interno de la orden — el que espera el path de POST \/admin\/orders\/{orderId}\/confirm-payment. Obligatorio: sin él ningún consumidor puede construir esa URL desde este listado.'),
+  "order_number": zod.number().int(),
+  "buyer_name": zod.string(),
+  "total_ars_cents": zod.number().int(),
+  "created_at": zod.string().datetime({"offset":true})
+})
+export const ListPendingPaymentOrdersResponse = zod.array(ListPendingPaymentOrdersResponseItem)
 
 
 /**
