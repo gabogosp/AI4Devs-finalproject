@@ -82,6 +82,33 @@ export const auth_login = {
   rate_limited: ['count<1'],
 };
 
-// Unión de los thresholds de US-004 (`search`, llegó por main) y US-014 (`auth_login`):
-// las dos suites QA extienden el mismo archivo compartido.
-export default { list_products, storefront_product, cart_write, auth_login, search, MIN_SKUS };
+/**
+ * Confirmación de pago manual/offline de US-023 (QA-023-PERF-1/PERF-2). Mismo
+ * presupuesto heredado que `cart_write`/`auth_login`: el PRD §4 fija «p95 de
+ * escritura (carrito/orden) < 500 ms» y la US-023 §9 lo repite explícitamente
+ * para "confirmar pago" — no es un número nuevo, es el mismo NFR de escritura
+ * aplicado a un tercer endpoint de escritura.
+ *
+ * Sin `rate_limited` (a diferencia de `cart_write`/`auth_login`): el endpoint
+ * no tiene throttler dedicado (`design.md` §Approach de US-023-pago-manual-offline-backend
+ * — misma superficie de bajo volumen que `ProductsController`/`CategoriesController`),
+ * así que no hay una guarda de esa clase que necesite excluirse.
+ */
+export const confirm_payment = {
+  'http_req_duration{endpoint:confirm_payment}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
+// Unión de los thresholds de US-004 (`search`, llegó por main), US-014
+// (`auth_login`) y US-023 (`confirm_payment`): las suites QA extienden el
+// mismo archivo compartido.
+export default {
+  list_products,
+  storefront_product,
+  cart_write,
+  auth_login,
+  search,
+  confirm_payment,
+  MIN_SKUS,
+};

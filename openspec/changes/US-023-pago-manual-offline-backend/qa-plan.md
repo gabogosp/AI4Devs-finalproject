@@ -297,9 +297,9 @@ alcanzar esta precondición concreta que el sistema no expone por ninguna otra v
 
 ## 6. Performance (k6)
 
-- [ ] **QA-023-PERF-1**: Script k6 para `POST /confirm-payment` con target p95 < 500 ms (PRD §4 /
+- [x] **QA-023-PERF-1**: Script k6 para `POST /confirm-payment` con target p95 < 500 ms (PRD §4 /
   US-023 §9, heredado — hereda el mismo threshold que `checkout`/`cart_write`/`auth_login`, no un
-  número nuevo)
+  número nuevo) — **ejecutado (`/develop-qa`, 2026-09-05)**, thresholds verdes.
 
   ```yaml
   id: QA-023-PERF-1
@@ -307,24 +307,49 @@ alcanzar esta precondición concreta que el sistema no expone por ninguna otra v
   test_layer: 1
   target_tooling: K6
   gherkin_scenario: N/A (performance, no BDD)
+  status: done
   ```
 
   - Exit criterion: `qa/performance/confirm-payment.js` pre-siembra N órdenes `pending_payment`
-    reales (vía `seedPendingPaymentOrder`, §8) en `setup()` — **una por iteración**, nunca la misma
-    orden dos veces (confirmar una orden ya confirmada mide el camino 409, no el camino feliz que
-    el NFR describe). Cada VU consume una orden distinta de un `SharedArray` correlacionado por
-    índice de iteración. `check()` valida `status === 200` y `body.status === 'new'`, gateado por
-    `checks: ['rate>0.99']`. Sin superficie de rate-limit dedicada en este endpoint (`design.md`
-    §Approach — "sin throttler dedicado"), así que no hace falta la guarda `rate_limited` que sí
-    usan `cart_write`/`auth_login`.
-  - Verify: `k6 run --vus 3 --duration 15s qa/performance/confirm-payment.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"`
+    reales (vía checkout real nativo de k6, mismo contrato que `seedPendingPaymentOrder`, §8) en
+    `setup()` — **una por iteración**, nunca la misma orden dos veces (confirmar una orden ya
+    confirmada mide el camino 409, no el camino feliz que el NFR describe). `check()` valida
+    `status === 200` y `body.status === 'new'`, gateado por `checks: ['rate>0.99']`. Sin superficie
+    de rate-limit dedicada en este endpoint (`design.md` §Approach — "sin throttler dedicado"), así
+    que no hace falta la guarda `rate_limited` que sí usan `cart_write`/`auth_login`.
+  - **Resultado real**: 150 iteraciones (`K6_CONFIRM_ORDERS`, default), 3 VUs, `http_req_duration{endpoint:confirm_payment}`
+    p(95)=4.61ms (threshold `p(95)<500`), `checks` 100% (300/300), `http_req_failed` 0.00%. Exit 0.
+  - **Dos deviaciones registradas, ambas encontradas ejecutando** (no en el diseño original del
+    plan):
+    1. **`SharedArray` (`k6/data`) reemplazado por el valor de retorno de `setup()`**: `SharedArray`
+       está pensado para datos ESTÁTICOS leídos de un archivo (`open(...)` en el contexto `init`,
+       que corre ANTES de `setup()`); acá las órdenes se crean con checkouts reales EN `setup()`
+       (no pueden existir antes de que la API esté arriba), así que no hay archivo que `SharedArray`
+       pueda leer. El valor devuelto por `setup()` cumple la misma propiedad de fondo (compartido,
+       de sólo lectura, una copia por corrida entre todos los VUs) sin la restricción de archivo
+       estático — es el mismo patrón que ya usa `auth-login.js` de este repo para su propio recurso
+       finito pre-sembrado (cuentas).
+    2. **Executor: `shared-iterations` (`iterations: POOL`), no `vus`+`duration` abierto** — la
+       primera versión de este script usaba `options.{vus,duration}` (calcando el `Verify:` original
+       del plan) y `exec.scenario.iterationInTest` para indexar el pool; **falló al ejecutar**: sin
+       un techo de iteraciones, en cuanto el pool de 150 órdenes se agotaba, cada iteración fallaba
+       en microsegundos (sin red de por medio) y la corrida gastó el resto de los 15s martillando
+       **más de 1.000.000 de iteraciones fallidas** en vez de detenerse — un recurso finito
+       (`setup()`) y una duración abierta (`vus`+`duration`) son incompatibles. Se corrigió a
+       `shared-iterations` con `iterations: POOL` (mismo patrón, otra vez, de `auth-login.js`, que
+       enfrenta el mismo problema con su propio recurso finito). El `Verify:` real ya NO acepta
+       `--vus`/`--duration` por CLI (con `options.scenarios` explícito, k6 los ignora a favor de la
+       config del escenario) — se leen por env var (`K6_VUS`, `K6_CONFIRM_ORDERS`).
+  - **Verify real** (reemplaza el original): `QA_API_BASE_URL=http://localhost:3009
+    ADMIN_BOOTSTRAP_TOKEN=<mismo valor de la API> k6 run qa/performance/confirm-payment.js
+    --summary-trend-stats="p(95)"` (exit 0).
 
-- [ ] **QA-023-PERF-2**: Threshold agregado a la fuente única `thresholds.js`
+- [x] **QA-023-PERF-2**: Threshold agregado a la fuente única `thresholds.js` — **ejecutado**.
   - Exit criterion: `qa/performance/lib/thresholds.js` exporta `confirm_payment` con
     `'http_req_duration{endpoint:confirm_payment}': ['p(95)<500']` (mismo NFR heredado que
     `cart_write`/`auth_login`, per el comentario ya establecido en ese archivo — no se inventa un
     número nuevo).
-  - Verify: `grep -q "confirm_payment" qa/performance/lib/thresholds.js && grep -q "p(95)<500" qa/performance/lib/thresholds.js`
+  - Verify: `grep -q "confirm_payment" qa/performance/lib/thresholds.js && grep -q "p(95)<500" qa/performance/lib/thresholds.js` (exit 0).
 
 > **No se planifica baseline/stress/soak trio** (per `k6-load-scaffolding`, "cuándo NO usar" —
 > la superficie es admin, un solo operador, bajo volumen declarado explícitamente en `design.md`
