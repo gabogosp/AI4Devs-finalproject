@@ -41,12 +41,43 @@ Superficie cubierta: `POST /v1/checkout`.
 | NFR-3 | `Cache-Control: no-store` en toda la superficie `/v1/checkout` — la respuesta lleva un token de acceso a la orden y el total de la compra. | Suite dev-owned. |
 | NFR-4 | Email del comprador normalizado (trim + NFKC + lowercase, `normalizeEmail` de US-014) antes de persistir. | Suite dev-owned. |
 
+## Desde US-008 frontend-web — Formulario, consentimiento y resumen del checkout (archivada 2026-09-05)
+
+Superficie cubierta: `/checkout` (ruta de cliente, `noindex`), consumiendo `POST /v1/checkout`.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-11 | `/checkout` valida el carrito con el mismo estado que expone `useCartContext()`; un carrito vacío o con líneas bloqueadas (`has_blocking_issues`) muestra `CheckoutBlocked` con link a `/carrito`, sin llegar a mostrar el formulario. | AC-5 (entrada) |
+| R-12 | El formulario valida con el resolver custom sobre `CreateGuestCheckoutBody` (schema generado del contrato, D3) — un mapa de mensajes traduce los issues de Zod a copy en español, sin redeclarar ninguna constraint. Si el backend cambia una constraint, la próxima regeneración del cliente cambia el comportamiento sin tocar este código. | AC-3 |
+| R-13 | El checkbox de consentimiento consume `CONSENT_COPY`/`LEGAL_ROUTES` de US-017 (seam ya construido) — nunca redeclara el texto legal. | AC-8 (mitad FE) |
+| R-14 | Al `201`, `CheckoutConfirmation` se renderiza in-place en `/checkout` (sin navegar a una ruta nueva) con `order_number` + total + un CTA "Continuar al pago" deshabilitado (`Deferred: US-009`). | AC-1 (parcial — "avanza al pago" queda para US-009 FE) |
+| R-15 | El `order_token` del `201` se persiste en `sessionStorage` (`dsm_order_token`), nunca en la URL ni en una cookie — es la credencial de la orden, no un identificador. Hoy nada lo lee (`Deferred: US-009 — owner: FE`). | Design §D7 (OQ-FE-19) |
+| R-16 | El CTA "Ir al pago" del carrito (`CartSummary.tsx`) se un-diferió: navega a `/checkout` salvo `has_blocking_issues`. | Continuación de US-007 (`Deferred: US-008` cerrado) |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-6 | El formulario nunca declara un segundo schema de validación — toda constraint sale de `CreateGuestCheckoutBody` generado; un mensaje amigable traduce, no redefine. |
+| N-7 | El `order_token` nunca viaja en la URL ni en un querystring: quedaría en el historial del navegador, en logs de proxies intermedios y en el `Referer` al salir del sitio. |
+| N-8 | `fulfillment` no es un control editable en el formulario (valor fijo `pickup`) — no existe un segundo valor posible en el sistema, así que un checkbox sería fricción sin decisión real detrás. |
+| N-9 | Los eventos de observabilidad del checkout (`checkout_started`, `_blocked`, `_submitted`, `_succeeded`, `_failed`) nunca llevan PII ni el `order_token` — sólo `order_number` (no-PII, contador público) y `error_kind`. |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-5 | p95 de escritura del formulario < 500 ms (E2E §17, US §9) — llamada same-origin vía el rewrite de ADR-0013, mismo costo aceptado que el carrito. | Suite dev-owned. |
+| NFR-6 | WCAG 2.1 AA: foco al primer campo con error, `role="alert"` en el banner, `aria-describedby` en el checkbox de consentimiento, heading propio en la confirmación para gestionar el foco al cambiar de estado sin navegar. | Suite dev-owned + a11y. |
+
 ### Diferidos con dueño
 
 | # | Requisito | Dueño / disparador |
 |---|---|---|
-| D-1 | UI del checkout (formulario, validación inline, checkbox de consentimiento, resumen, CTA "Ir al pago"). | `US-008-checkout-guest-frontend-web` — construida y mergeada (PR #23), pendiente `/archive-change` propio. |
-| D-2 | Inicio del pago (`payments`, preferencia de MercadoPago, medio simulado). | `US-009-pago-mercadopago-backend` — este change resuelve su OQ-BE-1. |
+| D-1 | ~~UI del checkout~~ — **resuelto por este change** (formulario, validación inline, checkbox de consentimiento, resumen, CTA "Ir al pago" un-diferido). | Cerrado. |
+| D-2 | Inicio del pago (`payments`, preferencia de MercadoPago, medio simulado) — consume el `order_token` que este change sólo escribe. | `US-009-pago-mercadopago-backend` (BE) + FE de US-009 (sin plan todavía). |
 | D-3 | Confirmación de la orden, decremento de stock, transición a `new`. | US-010 (ADR-0008). |
 | D-4 | Limpieza de órdenes `pending_payment` abandonadas (doble submit, pago nunca iniciado). | US-010 (E2E §18.5). |
 | D-5 | Notificación por email de la orden creada. | US-011. |

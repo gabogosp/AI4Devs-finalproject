@@ -121,6 +121,16 @@
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
   in-review-at: 2026-08-30          # FE (PR #23); BE ya estaba en review (PR #11) sin este campo
                                      # estampado — QA sin planificar, status US se queda en Progress
+  #
+  # NOTA (2026-09-05, /archive-change US-008-checkout-guest-frontend-web, barrido de
+  # archivos pendientes — PR #23 mergeado 2026-08-30): disciplina frontend-web archivada
+  # (openspec/changes/archive/US-008-checkout-guest-frontend-web/), 39/39 tasks. Extiende
+  # openspec/specs/checkout/ (CAP-10, ya existente desde el backend) con la sección "Desde
+  # US-008 frontend-web" en requirements.md + decisions.md (resolver de validación sobre
+  # schema generado, order_token en sessionStorage, confirmación in-place). BE también ya
+  # está archivado. `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca
+  # se planificó (no existe openspec/changes/US-008-*-qa/ en ningún estado). Se queda en
+  # `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
