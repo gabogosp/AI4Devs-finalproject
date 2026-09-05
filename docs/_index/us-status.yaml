@@ -195,6 +195,16 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
   in-review-at: 2026-08-30   # /commit — backend (primera disciplina) llega a in-review, 22/22 tasks
+  # NOTA (2026-09-05, /archive-change US-012-panel-ordenes-dueno-qa): la disciplina QA
+  # archivó (PR #30 mergeado, openspec/changes/archive/US-012-panel-ordenes-dueno-qa/).
+  # `status` NO avanza a `Done` — backend y frontend-web siguen SIN archivar
+  # (openspec/changes/US-012-panel-ordenes-dueno-{backend,frontend-web}/, todavía en
+  # `changes/`, no en `changes/archive/`), aunque sus PRs (#22, #31) ya están
+  # mergeados — sus entradas en openspec-changes.yaml quedaron en `in-review`, stale
+  # respecto al merge real. No se tocan esas dos entradas ni sus directorios desde
+  # este comando (fuera del alcance pedido: sólo QA); parece haber otra sesión
+  # trabajando ese archive en paralelo (worktree `archive-US-012-frontend-web` visto
+  # en `git worktree list`).
   # NOTA (2026-09-05, /commit US-012-panel-ordenes-dueno-qa): las 3 disciplinas ya
   # alcanzaron PR abierta — BE+FE mergearon vía PR #22 (confirmado: commit 1a90fe7 en
   # `main`, "feat: US-012 panel de órdenes del dueño — backend + frontend (QA pendiente)

@@ -1703,7 +1703,7 @@
   us-id: US-012
   discipline: qa
   variant: null
-  status: in review
+  status: archived
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1763,9 +1763,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/30
   pr-opened-at: 2026-09-05
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T19:55:30Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-qa/
 
 - name: US-021-retencion-datos-ordenes-backend
   us-id: US-021
