@@ -185,7 +185,7 @@
   blocked_by: [US-010, US-012]
 - id: US-012
   slug: panel-ordenes-dueno
-  status: In Review   # /commit — QA (última disciplina) abre PR #30, 24/24 tasks. BE+FE ya mergeados vía PR #22.
+  status: Done   # 3/3 disciplinas archivadas (BE PR #35, FE PR #32, QA PR #33). Cerrada por el coordinador tras el archive sweep 2026-09-05.
   priority: High
   prd-capacity: 5
   disciplines: [BE, FE, QA]
@@ -195,6 +195,7 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
   in-review-at: 2026-08-30   # /commit — backend (primera disciplina) llega a in-review, 22/22 tasks
+  done-at: 2026-09-05        # 3/3 disciplinas archivadas (BE+FE+QA); flip de status hecho en el archive sweep
   # NOTA (2026-09-05, /archive-change US-012-panel-ordenes-dueno-qa): la disciplina QA
   # archivó (PR #30 mergeado, openspec/changes/archive/US-012-panel-ordenes-dueno-qa/).
   # `status` NO avanza a `Done` — backend y frontend-web siguen SIN archivar
