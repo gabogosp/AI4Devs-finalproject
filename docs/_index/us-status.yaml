@@ -148,7 +148,14 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
-  blocked_by: [US-009]              # cadena: US-008 → US-009 → US-010, ninguna construida aún
+  # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate): desacoplado de US-009.
+  # US-008 y payments (US-023) ya existen y son lo único que este change necesita; construye
+  # su propio MercadoPagoClient de alcance mínimo (getPayment/searchByExternalReference/
+  # refund) en vez de esperar a que US-009 lo entregue. US-009 sigue Blocked (sin
+  # credenciales) y ya no es un pre-requisito de este change — ver
+  # openspec-changes.yaml (US-010-orden-webhook-stock-backend) y design.md §D6 para el
+  # detalle de qué se puede construir/verificar hoy vs qué necesita la cuenta real de MP.
+  blocked_by: []
 - id: US-011
   slug: notificaciones-email
   status: Ready

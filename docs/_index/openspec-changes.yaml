@@ -1124,72 +1124,88 @@
   us-id: US-010
   discipline: backend
   variant: null
-  status: draft
+  status: in-progress   # /develop-backend, primeras tasks cerradas 2026-09-05 (Pre-requisitos + T0.1)
   parent-us: docs/user-stories/US-010-orden-webhook-stock.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  # 13,6 h AI-asistido / ~26 h tradicional (26 tasks, suma de las 9 fases). US §7 presupuesta
-  # BE-US-010 en 16-24 h —es la task mas grande del proyecto y la US ya lo sabia—; el
-  # tradicional excede el techo ~2 h por tres cosas que la US menciona en una linea cada una:
-  # (a) «se disparan las notificaciones» (AC-2) NO TIENE COLA: Redis sigue sin aprovisionar,
-  #     cuarta instancia del desvio de ADR-0012/0014 (las otras tres: import US-006,
-  #     enriquecimiento US-005, cache de busqueda US-004). Hace falta NotificationPort +
-  #     adaptador de log; US-011 pone la implementacion real.
-  # (b) «corre la reconciliacion» (AC-10) y «corre el job de limpieza» (AC-11) NO TIENEN
-  #     PLANIFICADOR: no hay @nestjs/schedule ni nada de scheduling en apps/api. Dos runners
-  #     en proceso + dos endpoints admin — que es literalmente lo que el runbook del E2E
-  #     §18.5 pide («job/endpoint manual idempotente»).
-  # (c) el REEMBOLSO DURABLE de AC-4 necesita un estado persistido (payments.status gana
-  #     `refund_pending`) y un runner de reintentos: perder un reembolso en memoria es perder
-  #     plata de un cliente.
-  # La transaccion del camino feliz son ~1,5 h. El resto es condicion adversa, que es donde
-  # esta el valor: SIETE de los once AC son negative space.
+  # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate). Version anterior
+  # respaldada en openspec/changes/_backups/2026-09-05-US-010-orden-webhook-stock-backend/.
+  # MOTIVO: la version anterior asumia crear src/orders/ desde cero y dependia literalmente
+  # de que US-009 (MercadoPago) estuviera construido (MercadoPagoClient +
+  # PaymentConfirmationPort no-op). Ninguna de las dos cosas es cierta: US-009 sigue Blocked
+  # (sin credenciales) y MercadoPagoClient no existe en el repo (verificado con grep). En su
+  # lugar, src/orders/ ya existe (US-012, mergeado, FSM propia de 4 estados) y
+  # US-023-pago-manual-offline-backend (mergeado) construyo exactamente el seam que esta US
+  # necesita: PaymentConfirmationPort + ConfirmOrderService para provider='manual', con un
+  # docstring que dice literalmente que esta US amplia el mismo contrato
+  # (provider: 'mercadopago' | 'simulated_dsm') sin renombrar nada.
   #
-  # DECISIONES QUE VALE MIRAR:
-  # - IDEMPOTENCIA POR LA BASE, NO POR UN `if`: SELECT ... FOR UPDATE sobre la fila del pago
-  #   dentro de la transaccion, y solo la transicion pending → approved hace trabajo. Un
-  #   check-then-act se rompe con dos webhooks concurrentes, que es exactamente lo que hace un
-  #   proveedor que reintenta. T6.1 lo prueba con 10 requests en Promise.all — un
-  #   check-then-act NO pasaria ese test.
-  # - ITEMS ORDENADOS POR product_id en el decremento: sin eso, dos ordenes que comparten
-  #   productos A y B en orden inverso se abrazan en un deadlock. Falla solo bajo concurrencia,
-  #   en produccion, y en los logs se ve como un error de Postgres sin relacion con el negocio.
-  # - EL WEBHOOK NO LLEVA THROTTLER, a proposito: limitar por IP la puerta por la que entra el
-  #   dinero significa DESCARTAR PAGOS cuando el proveedor reintenta en rafaga. La proteccion
-  #   es la firma (rechazar cuesta un HMAC) y que nada no verificado toca la base.
-  # - SIEMPRE 200 SALVO FIRMA INVALIDA: MP reintenta ante cualquier no-2xx, asi que un 500 por
-  #   un bug nuestro desata una tormenta justo cuando el sistema esta mal. Un fallo transitorio
-  #   queda para la reconciliacion, que es el mecanismo pensado para eso.
-  # - LA VERIFICACION DE FIRMA TIENE VENTANA DE ts (5 min): sin ella, un webhook legitimo
-  #   capturado se puede reproducir para siempre porque la firma sigue siendo valida.
+  # DESACOPLADO DE US-009: mismo criterio ya aplicado al regenerate de
+  # US-012-panel-ordenes-dueno-backend (2026-08-30) — una US bloqueada por credenciales
+  # externas no debe paralizar trabajo que si puede avanzar. Este change construye
+  # MercadoPagoClient (alcance minimo: getPayment/searchByExternalReference/refund, NO
+  # createPreference) y LA DEPENDENCIA SE INVIERTE respecto al plan anterior: antes
+  # "US-009 construye el cliente, US-010 lo extiende"; ahora "US-010 construye el cliente
+  # minimo, US-009 lo extiende con createPreference cuando existan credenciales".
   #
-  # SEAMS: extiende el MercadoPagoClient de US-009 con getPayment (la re-consulta de AC-7) y
-  # refund (AC-4) sobre el adaptador que ya tiene timeout/reintentos/breaker — NO se crea un
-  # segundo cliente HTTP, y con eso US-013 encuentra la capacidad de reembolso ya construida y
-  # probada. Y T2.4 reemplaza NoopPaymentConfirmation por ConfirmOrderService: es el punto de
-  # extension que US-009 diseño, y lo que vuelve AC-9 estructural (el medio simulado confirma
-  # de verdad sin que su codigo cambie — un solo camino, no dos).
+  # QUE SE REUSA TAL CUAL (sin tocar una linea de su comportamiento):
+  # ConfirmOrderService.confirm() (US-023) para provider='manual', orders.
+  # transitionToNewIfPending (guard WHERE status='pending_payment'), stock.decrementForOrder
+  # (atomico condicional, ADR-0008), payments.createManualPayment, orders/ports/
+  # notification.port.ts + LoggingNotificationAdapter (US-012, ampliado con 3 metodos
+  # nuevos en vez de crear un puerto paralelo).
   #
-  # DEVIACIONES DECLARADAS del DER (E2E §8): payments.status gana `refund_pending` en su CHECK;
-  # orders gana confirmed_at y cancelled_at (la FSM §12 tiene seis estados y el DER solo modela
-  # delivered_at — sin confirmed_at no hay insumo para US-016). Todas aditivas.
-  # Sin ADR nuevo: ADR-0008 gobierna el decremento, ADR-0006 el webhook verificado.
+  # QUE ES NUEVO: MercadoPagoClient completo (transporte + timeout + retry/backoff propio +
+  # breaker in-process, sin libreria nueva); verificacion de firma HMAC pura
+  # (webhook-signature.ts); POST /v1/webhooks/mercadopago; POST /v1/checkout/simulate-payment
+  # (el medio simulado de ADR-0006, "POST /checkout/simulate" — SE CONSTRUYE EN ESTE CHANGE,
+  # no en US-009, porque no depende de MercadoPago y es la unica forma de ejercer AC-9 de
+  # verdad y no solo estructuralmente); 3 endpoints admin (reconcile/cleanup-abandoned/
+  # retry-refunds) sin scheduler — verificado que no existe setInterval ni @nestjs/schedule
+  # en ningun lado de apps/api (el patron real es evento + endpoint admin, ver
+  # import-runner.ts/enrichment.runner.ts), asi que se sigue ESE patron, no el "runner cada
+  # 15 min" de la version anterior sin precedente real.
   #
-  # ORDEN DE DESPLIEGUE NO NEGOCIABLE: US-008 → US-009 → US-010. Secreto nuevo:
-  # MP_WEBHOOK_SECRET (el arranque falla en produccion sin el). Este change es el que CONTESTA
-  # la URL publica del webhook que INFRA-US-009 provisiona: mal configurada, los pagos se
-  # cobran y las ordenes no se confirman, y el defecto se ve como «vendi y no me aparecio el
-  # pedido». Se recomienda /plan-deployment CONJUNTO para US-008 + US-009 + US-010.
-  # OJO con el rollback: revertir con pagos ya aprobados en MP deja ordenes cobradas sin
-  # confirmar — la reconciliacion las recupera al volver a desplegar, es su escenario.
+  # AC-4 (reembolso automatico + cancelacion ante stock insuficiente) vive DENTRO de
+  # ConfirmOrderService.confirm() como una rama que solo corre para providers automaticos
+  # ('mercadopago'/'simulated_dsm') — la rama 'manual' no cambia una linea, y los specs de
+  # US-023 (confirm-order.service.spec.ts, e2e-payments-*.spec.ts) pasan SIN modificarse.
   #
-  # 5 preguntas abiertas, ninguna bloquea el arranque. La que conviene cerrar antes: OQ-BE-1
-  # (plazo de abandono, 48 h) porque interactua con el vencimiento de 24 h de la preferencia
-  # de MercadoPago que fijo US-009.
-  estimate-hours: 13.6
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  branch: null
+  # IDEMPOTENCIA: se descarta el SELECT ... FOR UPDATE de la version anterior — US-023 ya
+  # resuelve el mismo problema con el UPDATE condicional guardado por status, mas simple y ya
+  # probado. payments.idempotency_key ('{provider}:{externalId}') es la segunda red.
+  #
+  # QUE SE PUEDE CONSTRUIR Y VERIFICAR HOY (sin cuenta real de MercadoPago) vs QUE NECESITA
+  # CREDENCIALES REALES: ver proposal.md y design.md §D6 — la tabla completa. Resumen: TODO
+  # el codigo + unit + integration tests con Postgres real + el medio simulado end-to-end se
+  # construyen y verifican en este change; lo unico detras de un gate real es el TRAFICO EN
+  # VIVO contra MercadoPago (webhook real recibiendo notificaciones reales).
+  #
+  # DEVIACIONES DECLARADAS del DER (E2E §8), reducidas respecto al plan anterior: orders gana
+  # confirmed_at y cancelled_at (FSM §12 tiene seis estados, el DER solo modela delivered_at);
+  # payments.status gana refund_pending en su CHECK. Ya NO se agrega ninguna columna de
+  # reintentos (refund_attempts) — el conteo de reintentos vive en metricas/eventos, no en la
+  # tabla (mas simple). Todas aditivas. Sin ADR nuevo: ADR-0008 gobierna el decremento,
+  # ADR-0006 el webhook verificado + el medio simulado.
+  #
+  # DEPLOYMENT: YA NO hay orden de despliegue obligatorio con US-008/US-009 — orders y
+  # payments ya existen (US-008, US-023). Se recomienda /plan-deployment PROPIO para este
+  # change (no conjunto). Secretos nuevos, requeridos solo en produccion (mismo patron
+  # fail-fast que RESEND_API_KEY/GEMINI_API_KEY): MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET. Gate de
+  # ADR-0006 (medio simulado apagado en produccion) ENFORCED EN CODIGO via superRefine de
+  # env.validation.ts, no solo checklist.
+  #
+  # 5 preguntas abiertas (renumeradas), ninguna bloquea el arranque. OQ-BE-1 (plazo de
+  # abandono, 48h) se mantiene igual que el plan anterior.
+  #
+  # ~19,5 h AI-asistido / ~37 h tradicional (42 tasks, 17 fases) — crece respecto a las 13,6h
+  # del plan anterior porque ahora construye MercadoPagoClient completo desde cero (antes
+  # asumido ya construido por US-009) MAS el endpoint de medio simulado (antes fuera de
+  # alcance) MAS el endpoint de reintento de reembolsos (antes un runner sin endpoint propio).
+  estimate-hours: 19.5
+  assignee: claude-code
+  branch: feat/US-010-orden-webhook-stock-backend
   pr-url: null
   created: 2026-08-22
   completed-at: null

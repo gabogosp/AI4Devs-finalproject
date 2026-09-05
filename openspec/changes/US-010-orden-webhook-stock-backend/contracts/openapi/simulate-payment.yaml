@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info:
+  title: "simulate-payment — medio simulado DSM (ADR-0006)"
+  version: v1
+  description: |
+    Salta MercadoPago por completo: marca el pago `approved` directo y dispara el mismo
+    camino de confirmación + decremento de stock + notificación que el webhook real
+    (AC-9). Autorizado por el `order_token` de la orden (mismo contrato que
+    `POST /v1/payments`, US-009), no por JWT. Gateado por `PAYMENTS_SIMULATED_ENABLED`
+    — el arranque de la app falla si este flag está en `true` con `NODE_ENV=production`
+    (ADR-0006, enforced en código). Responde 404 cuando el flag está apagado, para no
+    revelar la existencia del endpoint en producción.
+servers:
+  - url: https://api.dsm-ferreteria.example.com
+    description: PROD (flag apagado — este endpoint responde 404)
+  - url: https://api.uat.dsm-ferreteria.example.com
+    description: UAT (flag prendido — habilita demos y el E2E automatizado)
+paths:
+  /v1/checkout/simulate-payment:
+    post:
+      operationId: simulatePayment
+      tags: [payments, checkout]
+      summary: Confirmar un pago simulado "DSM" para una orden pendiente de pago
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulatePaymentRequest'
+            examples:
+              minimal:
+                value: { order_token: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2" }
+      responses:
+        '200':
+          description: Pago simulado confirmado — orden `new`, stock decrementado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentConfirmed'
+        '404':
+          description: Flag `PAYMENTS_SIMULATED_ENABLED` apagado, o `order_token` no encontrado.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+        '409':
+          $ref: '#/components/responses/AutoCancelledInsufficientStock'
+        '422':
+          description: "`order_token` con formato inválido (no hex de 64)."
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+        '429':
+          description: Rate limit de la superficie de simulación excedido.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+components:
+  schemas:
+    SimulatePaymentRequest:
+      type: object
+      required: [order_token]
+      properties:
+        order_token:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: Claro devuelto una sola vez por `POST /v1/checkout`.
+    PaymentConfirmed:
+      type: object
+      required: [order_id, order_number, status, payment_id]
+      properties:
+        order_id: { type: string, format: uuid }
+        order_number: { type: integer }
+        status: { type: string, enum: [new] }
+        payment_id: { type: string, format: uuid }
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+  responses:
+    AutoCancelledInsufficientStock:
+      description: |
+        Uno o más ítems se quedaron sin stock suficiente entre el checkout y la
+        confirmación (AC-4). La orden ya quedó `cancelled` y el pago simulado
+        `refunded` (no-op externo, E2E §9.5) — no hay acción de reintento posible
+        desde el cliente.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            type: "dsm:payments/auto-cancelled-insufficient-stock"
+            title: Orden cancelada por falta de stock
+            status: 409
+            detail: Uno o más productos se quedaron sin stock; la orden fue cancelada.
