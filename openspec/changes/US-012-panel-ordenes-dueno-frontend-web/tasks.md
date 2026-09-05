@@ -378,7 +378,7 @@
     cliente ya estaba generado contra este contrato (quedó committeado junto con T1.1/el
     merge de PR #22, adelantado a la publicación real del gate T0.3). Sin cambios que
     commitear en `apps/web/src/api/generated/`.
-- [ ] **T12.2 — `pendingPaymentsService.ts`**
+- [x] **T12.2 — `pendingPaymentsService.ts`**
   - **Pattern**: `design.md` §D9 — servicio separado de `ordersService.ts` (concern distinto,
     backend hermano), `parseContract` sobre las operaciones generadas (nunca `fetch` crudo,
     F48), `list()` sin params (el endpoint no pagina) y `confirm(orderId)`.
@@ -389,6 +389,9 @@
     `POST /v1/admin/orders/order-1/confirm-payment` (el id correcto en el path, no un id
     hardcodeado ni el `order_number`) y que `list()` parsea la respuesta con el schema Zod
     generado (un body con un campo fuera de forma debe hacer fallar el test con `ZodError`).
+  - **Nota de ejecución (2026-09-05)**: la operación generada real se llama
+    `confirmManualPayment(orderId)` (no `confirmOrderPayment`, nombre ilustrativo del
+    `design.md`) — usa el `operationId` real del contrato. 3/3 tests verdes.
 - [ ] **T12.3 — `PendingPaymentsPanel`: listado + confirmación por fila**
   - **Pattern**: `design.md` §D9 — estados explícitos (`idle`/`loading`/`success`/`error` a
     nivel panel, `confirming` por fila vía `Set<orderId>`), refetch-on-success (NO UI
