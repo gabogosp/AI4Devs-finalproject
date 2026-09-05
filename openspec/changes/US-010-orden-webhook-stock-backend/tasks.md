@@ -42,7 +42,7 @@
 
 ## Phase 1: Migración (aditiva — `orders.confirmed_at`/`cancelled_at`, `payments.status` gana `refund_pending`)
 
-- [ ] T1.1 Migración Prisma aditiva: `orders.confirmed_at TIMESTAMPTZ NULL`,
+- [x] T1.1 Migración Prisma aditiva: `orders.confirmed_at TIMESTAMPTZ NULL`,
   `orders.cancelled_at TIMESTAMPTZ NULL`, y `payments_status_check` recreado con
   `refund_pending` agregado al `IN (...)`.
   - **Pattern**: seguir el precedente de `20260829172227_add_orders/migration.sql` y
@@ -55,11 +55,19 @@
     `Order`; la migración SQL generada agrega las 2 columnas + recrea el CHECK de
     `payments.status` con 5 valores, y NO modifica ninguna otra tabla.
   - **Verify**: `pnpm --filter @dsm/db migrate:deploy && psql "$DATABASE_URL" -c "\d+ orders" | grep -q confirmed_at && psql "$DATABASE_URL" -c "\d+ orders" | grep -q cancelled_at && psql "$DATABASE_URL" -c "\d+ payments" | grep -q "refund_pending"`
+  - **Nota de ejecución (2026-09-05)**: sin `psql` local instalado — mismo check vía
+    `docker exec <contenedor-postgres> psql -U dsm -d dsm -c '\d+ orders|payments'` contra el
+    Postgres aislado (`localhost:55433`). `confirmed_at`/`cancelled_at` presentes en
+    `orders`; `payments_status_check` con los 5 valores (incluye `refund_pending`). Ninguna
+    otra tabla tocada — el drift de Prisma sobre columnas `Unsupported` (vector/tsvector) y
+    la sequence de `order_number` se descartó a mano, igual que en las migraciones
+    precedentes de US-008/US-009.
 
-- [ ] T1.2 `orders.repository.spec.ts` (existente, US-023) sigue verde sin ninguna
+- [x] T1.2 `orders.repository.spec.ts` (existente, US-023) sigue verde sin ninguna
   modificación — confirma que la migración es aditiva y no rompe nada tipado.
   - **Exit criterion**: cero diffs en `checkout/orders.repository.spec.ts`.
   - **Verify**: `git diff --stat apps/api/src/checkout/orders.repository.spec.ts | wc -l` da `0`, y `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository`
+  - **Nota de ejecución (2026-09-05)**: 0 diffs, 14/14 tests verdes.
 
 ## Phase 2: Puerto + repositorios (extienden US-023, sin romper el camino `manual`)
 
