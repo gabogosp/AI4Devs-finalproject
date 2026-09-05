@@ -79,7 +79,11 @@ export type BusinessEvent =
   | 'order_status_change_attempted'
   | 'order_status_change_succeeded'
   | 'order_status_change_failed'
-  | 'orders_filtered';
+  | 'orders_filtered'
+  // Vista de pendientes de pago (US-012 §D9, feature aditiva sobre el backend
+  // hermano US-023). Sin `buyer_name`, mismo criterio que los eventos de
+  // arriba.
+  | 'pending_payment_confirmed';
 
 export interface EventProps {
   operator_id?: string;

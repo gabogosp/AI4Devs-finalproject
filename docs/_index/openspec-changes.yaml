@@ -1437,13 +1437,23 @@
   us-id: US-012
   discipline: frontend-web
   variant: null
-  status: in-progress   # /develop-frontend-web, primer task cerrado 2026-08-30 (T0.1 desbloqueado)
+  status: in-review   # /commit 2026-09-05: 26/26 tasks, PR #31 abierto contra main
   # /commit 2026-08-30: 21/26 tasks cerradas (Fases 0-11 completas). Checkpoint consciente,
   # no un stop real — las 5 restantes (T0.3, T12.1-T12.4, la Fase 12 de "pendientes de pago")
-  # están genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
-  # publicó su contrato (`pending-payment`/`confirm-payment` ausentes de openapi.yaml). status
-  # se queda en `in-progress` (no `in-review`) porque no todas las tasks están [x] — per
-  # /commit paso 9. 828/828 tests en @dsm/web, type-check y lint limpios.
+  # estaban genuinamente bloqueadas por `US-023-pago-manual-offline-backend`, que todavía no
+  # publicaba su contrato (`pending-payment`/`confirm-payment` ausentes de openapi.yaml).
+  # 828/828 tests en @dsm/web, type-check y lint limpios.
+  #
+  # /develop-frontend-web 2026-09-05 (worktree aislado `.claude/worktrees/
+  # US-012-pendientes-pago-frontend-web`, rama `feat/US-012-pendientes-pago-frontend-web`
+  # — no se reusó `feat/US-012-panel-ordenes-dueno-frontend-web`, ya mergeada por PR #22):
+  # `US-023-pago-manual-offline-backend` mergeó (PR #27, 2026-09-02) y publicó el contrato.
+  # T0.3 desbloqueada, T12.1-T12.4 (PendingPaymentsPanel) cerradas. 26/26 tasks. Suite
+  # completa 138/138 archivos, 886/886 tests, tsc y lint limpios, gate de codegen sin diff.
+  # /commit 2026-09-05: PR #31 abierto contra main (check-pr-scope.sh ✓, 12 files en scope,
+  # fork-point limpio). Rama nueva `feat/US-012-pendientes-pago-frontend-web` — la original
+  # (`feat/US-012-panel-ordenes-dueno-frontend-web`, PR #22) ya estaba mergeada. status →
+  # `in-review`.
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1480,9 +1490,9 @@
   # cuyo contrato de datos no existe.
   estimate-hours: 8
   assignee: sin-asignar
-  branch: feat/US-012-panel-ordenes-dueno-frontend-web
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
-  pr-opened-at: 2026-08-30
+  branch: feat/US-012-pendientes-pago-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/31
+  pr-opened-at: 2026-09-05
   created: 2026-08-30
   completed-at: null
   archived-at: null

@@ -58,7 +58,7 @@
     plan de FE que fijó /admin/ordenes..."). No es un change *distinto* construyendo el
     mismo feature — la intención del gate (evitar dos FE compitiendo por la misma
     superficie) está satisfecha.
-- [ ] **T0.3 — Gate de contrato (pendientes de pago): `pending-payment`/`confirm-payment` deben
+- [x] **T0.3 — Gate de contrato (pendientes de pago): `pending-payment`/`confirm-payment` deben
   existir en el OpenAPI del backend antes de cerrar la Fase 12**
   - Este gate es **específico de la Fase 12** (`PendingPaymentsPanel`) — a diferencia de T0.1,
     NO bloquea las Fases 1-11 (fulfillment), que solo dependen de
@@ -70,6 +70,9 @@
     mayor que `0`. Hoy imprime `0` — esta task falla a propósito hasta que
     `US-023-pago-manual-offline-backend` publique su contrato; T12.1-T12.4 no pueden cerrarse
     mientras esta falle (T1.1-T11.1 sí pueden, son independientes).
+  - **Nota de ejecución (2026-09-05)**: `US-023-pago-manual-offline-backend` mergeó (PR #27,
+    2026-09-02) y publicó el contrato. `grep -c "pending-payment\|confirm-payment"
+    apps/api/docs/api/openapi.yaml` imprime `5`. Gate desbloqueado — Fase 12 ejecutable.
 
 ## Fase 1: Codegen (contract-derived artifacts)
 
@@ -357,7 +360,7 @@
 > Bloqueada por T0.3, no por T0.1 — puede ejecutarse en paralelo a las Fases 1-11 o después,
 > según cuándo `US-023-pago-manual-offline-backend` publique su contrato.
 
-- [ ] **T12.1 — Regenerar el cliente/Zod/MSW con los endpoints de pendientes de pago**
+- [x] **T12.1 — Regenerar el cliente/Zod/MSW con los endpoints de pendientes de pago**
   - **Pattern**: mismo `orval.config.ts` que T1.1 (un solo `dsmCatalog`/`dsmCatalogZod` sobre
     el contrato completo) — re-ejecutar codegen una vez `US-023-pago-manual-offline-backend`
     publique `GET /admin/orders/pending-payment` y `POST /admin/orders/{orderId}/confirm-payment`.
@@ -368,7 +371,14 @@
   - **Verify**: `pnpm --filter @dsm/web codegen` sale con código 0, y
     `grep -ril "pending.payment\|confirm.payment" apps/web/src/api/generated/ | wc -l` → mayor
     que `0`.
-- [ ] **T12.2 — `pendingPaymentsService.ts`**
+  - **Nota de ejecución (2026-09-05)**: `pnpm --filter @dsm/web codegen` sale con código 0;
+    `grep -ril` imprime `7` archivos (`zod.ts`, `endpoints.ts`,
+    `model/{pendingPaymentOrder,adminOrderSummary,checkoutCreatedStatus,
+    adminOrderStatusChange,adminOrderSummaryStatus}.ts`). `git status` no muestra diff — el
+    cliente ya estaba generado contra este contrato (quedó committeado junto con T1.1/el
+    merge de PR #22, adelantado a la publicación real del gate T0.3). Sin cambios que
+    commitear en `apps/web/src/api/generated/`.
+- [x] **T12.2 — `pendingPaymentsService.ts`**
   - **Pattern**: `design.md` §D9 — servicio separado de `ordersService.ts` (concern distinto,
     backend hermano), `parseContract` sobre las operaciones generadas (nunca `fetch` crudo,
     F48), `list()` sin params (el endpoint no pagina) y `confirm(orderId)`.
@@ -379,7 +389,10 @@
     `POST /v1/admin/orders/order-1/confirm-payment` (el id correcto en el path, no un id
     hardcodeado ni el `order_number`) y que `list()` parsea la respuesta con el schema Zod
     generado (un body con un campo fuera de forma debe hacer fallar el test con `ZodError`).
-- [ ] **T12.3 — `PendingPaymentsPanel`: listado + confirmación por fila**
+  - **Nota de ejecución (2026-09-05)**: la operación generada real se llama
+    `confirmManualPayment(orderId)` (no `confirmOrderPayment`, nombre ilustrativo del
+    `design.md`) — usa el `operationId` real del contrato. 3/3 tests verdes.
+- [x] **T12.3 — `PendingPaymentsPanel`: listado + confirmación por fila**
   - **Pattern**: `design.md` §D9 — estados explícitos (`idle`/`loading`/`success`/`error` a
     nivel panel, `confirming` por fila vía `Set<orderId>`), refetch-on-success (NO UI
     optimista — deviación explícita de D7, documentada en Trade-offs), botón "Confirmar pago"
@@ -406,7 +419,12 @@
        un fallo confirmado, o si el botón queda deshabilitado para siempre).
     4. con MSW devolviendo `[]`, renderiza el texto "No hay pagos pendientes de confirmar" (no
        una tabla vacía muda).
-- [ ] **T12.4 — Segunda pestaña en `/admin/ordenes`, mutuamente excluyente con `OrdersList`**
+  - **Nota de ejecución (2026-09-05)**: 4/4 tests verdes. Se agregó `pending_payment_confirmed`
+    a `BusinessEvent` (`events.ts`) — el pseudocódigo de `design.md` §D9 lo emite y no estaba
+    declarado (T9.1 sólo cubrió los eventos de fulfillment, Fases 1-11); sin operator_id manual
+    (lo agrega `track()` automáticamente, no está en `PUBLIC_EVENTS`). `confirmManualPayment`
+    (nombre real del operationId) en vez de `confirmOrderPayment`, igual que T12.2.
+- [x] **T12.4 — Segunda pestaña en `/admin/ordenes`, mutuamente excluyente con `OrdersList`**
   - **Pattern**: `design.md` §D9 — `?tab=pendientes-de-pago` leído por el Server Component de
     `page.tsx`; nunca `OrdersList` y `PendingPaymentsPanel` montados a la vez.
   - **Exit criterion**: `apps/web/app/(admin)/admin/ordenes/page.tsx` renderiza
@@ -418,19 +436,39 @@
     `searchParams: { tab: 'pendientes-de-pago' }` renderiza `PendingPaymentsPanel` y NO
     `OrdersList` — falla si ambos aparecen en el DOM simultáneamente en cualquiera de los dos
     casos.
+  - **Nota de ejecución (2026-09-05)**: la ruta real vive en `app/(admin)/admin/ordenes/`
+    (no `src/app/`, que no existe en este proyecto) — `vitest.config.ts` sólo escanea
+    `src/**`, así que el test quedó en `apps/web/src/app/admin/ordenes/page.test.tsx`
+    importando el page real por ruta relativa (única forma de que `pnpm --filter @dsm/web
+    test` lo levante). Se agregó `data-testid="orders-list"`/`"pending-payments-panel"` en
+    los `<div>` wrapper del propio `page.tsx` (sin tocar `OrdersList`/`PendingPaymentsPanel`,
+    ya cerrados) para el assert de exclusión mutua. Se agregó también una nav de 2 tabs
+    (`Fulfillment`/`Pendientes de pago`, `aria-current="page"`) — el pseudocódigo de
+    `design.md` no la incluía pero sin ella no había forma real de navegar a la vista nueva.
+    2/2 tests verdes; suite completa 138/138 archivos, 886/886 tests, tsc y lint limpios.
 
 ## Verification (suite-level)
 
-- [ ] Toda la suite de `apps/web` sigue verde: `pnpm --filter @dsm/web test` (`vitest run`,
+- [x] Toda la suite de `apps/web` sigue verde: `pnpm --filter @dsm/web test` (`vitest run`,
       forma terminante — nunca `vitest` a secas).
-- [ ] Type-check limpio: `pnpm --filter @dsm/web exec tsc --noEmit`.
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`.
-- [ ] Gate de contrato: `pnpm --filter @dsm/web codegen` no produce diff sin commitear
+  - **Nota de ejecución (2026-09-05)**: 138/138 archivos, 886/886 tests.
+- [x] Type-check limpio: `pnpm --filter @dsm/web exec tsc --noEmit`.
+  - **Nota de ejecución (2026-09-05)**: limpio.
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`.
+  - **Nota de ejecución (2026-09-05)**: limpio.
+- [x] Gate de contrato: `pnpm --filter @dsm/web codegen` no produce diff sin commitear
       (`git diff --exit-code apps/web/src/api/generated`) — el gate `frontend-codegen-fresh`
       de CI hace exactamente esto.
-- [ ] Gate de choke-point de red (F48): `./scripts/check-consumer-contract.sh` (o el gate
+  - **Nota de ejecución (2026-09-05)**: sin diff.
+- [x] Gate de choke-point de red (F48): `./scripts/check-consumer-contract.sh` (o el gate
       `consumer-contract-check` de CI) no reporta ningún `fetch`/`axios` crudo nuevo fuera de
       `src/lib/http/client.ts` en los archivos de `src/features/orders/`.
-- [ ] `OrderStatusActions` NUNCA deja el estado optimista aplicado sin confirmación del
+  - **Nota de ejecución (2026-09-05)**: `spekode/scripts/check-consumer-contract.sh` reporta
+    31 violaciones preexistentes (todas en `apps/web/e2e/support/api-stub.selftest.mjs` y en
+    `apps/api/src/enrichment/ai/gemini-http.client.ts`, ninguna nueva de este change) — cero
+    hits en `src/features/orders/`. Deuda preexistente fuera de alcance de esta task.
+- [x] `OrderStatusActions` NUNCA deja el estado optimista aplicado sin confirmación del
       backend — cubierto por T6.1 caso 3; si ese test se borra o se debilita, este ítem de
       suite-level debe volver a agregarlo.
+  - **Nota de ejecución (2026-09-05)**: `OrderStatusActions.test.tsx` sin tocar, el caso de
+    rollback (línea 99) sigue verde.

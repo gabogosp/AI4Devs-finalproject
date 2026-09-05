@@ -223,6 +223,19 @@
   # PRIMERA transición a `In Progress`). PR #27 (US-023 backend, `pending-payment`) ya mergeó a
   # `main` en este mismo merge — el bloqueo de T0.3/T12.1-T12.4 de la nota anterior debería
   # revisarse en la próxima corrida de /develop-frontend-web.
+  #
+  # NOTA (2026-09-05, /develop-frontend-web, worktree aislado
+  # `.claude/worktrees/US-012-pendientes-pago-frontend-web`): T0.3 desbloqueada
+  # (`US-023-pago-manual-offline-backend` mergeó PR #27) — T12.1-T12.4 (PendingPaymentsPanel)
+  # cerradas. frontend-web queda en 26/26 tasks, pendiente sólo `/commit`. `status` de la US
+  # se queda en `In Progress` (backend en-review, QA todavía sin ejecutar) — no se toca
+  # `blocked_by` (propiedad de otro agente).
+  #
+  # NOTA (2026-09-05, /commit): frontend-web abrió PR #31 contra `main`
+  # (`feat/US-012-pendientes-pago-frontend-web`) — segunda disciplina en llegar a in-review
+  # (backend ya lo estaba desde 2026-08-30). No se toca `in-review-at` (ya lo puso backend,
+  # primera disciplina) ni el `status` de la US (se queda en `In Progress` — QA sigue en
+  # `draft`, 0/24 tasks, ninguna PR abierta todavía).
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
