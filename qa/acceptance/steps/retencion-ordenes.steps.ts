@@ -176,7 +176,14 @@ function esComparadorOriginal(
 ): boolean {
   return (
     orden.buyer_name === original.buyerName &&
-    orden.buyer_email === original.buyerEmail &&
+    // Case-insensitive: `checkout.service.ts` normaliza el email a minúsculas
+    // al persistir (`normalizeEmail`, `apps/api/src/auth/email/normalize-email.ts`)
+    // — comportamiento real esperado, no un bug de anonimización. El fixture de
+    // seed genera el email con el prefijo de corrida en mayúsculas
+    // (`buildOrderRetentionFixture`), así que una comparación case-sensitive
+    // acá fallaba SIEMPRE para la orden "reciente" (detectado corriendo la
+    // suite contra la implementación real, no una debilidad de assert).
+    orden.buyer_email.toLowerCase() === original.buyerEmail.toLowerCase() &&
     orden.buyer_phone === original.buyerPhone
   );
 }
@@ -211,14 +218,13 @@ function assertPlaceholderAnonimizado(
 // Antecedentes
 // ─────────────────────────────────────────────────────────────────────────────
 
-Given('un catálogo sembrado con productos disponibles', PASO, async function (
-  this: CatalogWorld,
-) {
-  // El catálogo real lo siembra `seedOrdenesRetencion` (1 producto publicado
-  // por corrida, per escenario) — acá sólo se confirma que hay un token con el
-  // que sembrar, la siembra puntual vive en cada `Given` de orden.
-  assert.ok(this.token, 'no hay token admin para sembrar el catálogo');
-});
+// "Dado un catálogo sembrado con productos disponibles" NO se registra acá: ya
+// existe como step global no-op en `pago-manual.steps.ts` (mismo texto literal,
+// Antecedentes compartido entre features) — Cucumber carga TODO el glob
+// `acceptance/steps/**/*.ts` junto, así que una segunda `Given` con el mismo
+// texto es una colisión ("Multiple step definitions match"), no una feature
+// aislada. El catálogo real de este feature lo siembra `seedOrdenesRetencion`
+// (1 producto publicado por corrida) desde cada `Given` de orden puntual.
 
 Given('un token admin real \\(AdminGuard\\)', function (this: CatalogWorld) {
   assert.ok(this.token, 'no hay token admin — el Before() no logueó');
@@ -690,7 +696,18 @@ When('alguien intenta {string} con {string}', PASO, async function (
 ) {
   const e = est(this);
   const token = credencialPara(credencial);
-  e.ultima = await dispararAnonimizacion(this, e.reciente!.id, token);
+  // NO se usa `dispararAnonimizacion` acá a propósito: su parámetro `token` tiene
+  // un default (`= w.token`) que en JS se activa con `undefined` — exactamente el
+  // valor que `credencialPara('sin Authorization')` devuelve para decir "sin
+  // header". Pasar ese `undefined` por el wrapper resustituía en silencio el token
+  // admin real (200 en vez de 401 — bug de test detectado corriendo la suite por
+  // primera vez contra la implementación real, no un defecto del backend). Se
+  // llama `llamarComoAdmin` directo, que sí distingue "sin token" de "con token".
+  e.ultima = await llamarComoAdmin(
+    `/v1/admin/orders/${e.reciente!.id}/anonymize`,
+    'POST',
+    token,
+  );
 });
 
 Then('la respuesta es {string}', function (this: CatalogWorld, status: string) {

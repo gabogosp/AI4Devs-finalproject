@@ -44,6 +44,18 @@
 #                          tercer o cuarto escenario. Mismo criterio que `AUTH_RATE_LIMIT_MAX`: el
 #                          límite real se sigue probando en la capa que sí lo ejercita (dev-owned,
 #                          `e2e-checkout-ratelimit.spec.ts`).
+#   ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX  US-021 (`@retencion-ordenes`): el presupuesto de
+#                          producción es angosto a propósito (5/hora, `orders-retention.controller.ts`)
+#                          para que un disparador externo mal configurado no pueda convertirlo en
+#                          carga recurrente. Pero la suite de aceptación llama
+#                          `POST retention-sweep` al menos 4 veces por corrida completa (SC-021-H1,
+#                          H2, N1, N4×2) — y cada re-corrida de la suite durante el desarrollo de
+#                          los tests suma sobre el mismo contador en memoria del proceso, agotando
+#                          el budget real antes de terminar. El límite real igual se prueba
+#                          (dev-owned, `orders-retention.controller.spec.ts` T4.2).
+#   ORDER_ANONYMIZE_RATE_LIMIT_MAX  Mismo motivo, para `POST :id/anonymize` (30/min default —
+#                          más holgado, pero varios escenarios llaman este endpoint dos y tres
+#                          veces por idempotencia, y se acumula entre corridas de la suite).
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -79,4 +91,6 @@ exec env \
   STOREFRONT_RATE_LIMIT_MAX=100000 \
   IMPORT_RATE_LIMIT_MAX=100000 \
   CHECKOUT_RATE_LIMIT_MAX=100000 \
+  ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX=100000 \
+  ORDER_ANONYMIZE_RATE_LIMIT_MAX=100000 \
   node "$MAIN"
