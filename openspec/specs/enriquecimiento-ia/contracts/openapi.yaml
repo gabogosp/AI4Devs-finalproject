@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Enriquecimiento de descripciones con IA (CAP-3)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-005-enriquecimiento-ia-embeddings-backend — capacidad 3 del PRD, el puente entre
+    `catalogo` (CAP-1) y `busqueda` (CAP-2): sin este pipeline, `product_embeddings` nunca
+    se puebla y la búsqueda semántica no tiene qué buscar.
+
+    Sólo 2 endpoints, los dos admin (`AdminGuard`, `role=admin`, ADR-0009). La curación
+    (AC-7) reusa `PATCH /admin/products/{id}` de la capacidad `catalogo` — no se duplica
+    acá.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-enrichment
+    description: Pipeline de enriquecimiento + embeddings (US-005). Superficie admin, gateada por AdminGuard.
+security:
+  - adminBearer: []
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    EnrichmentRateLimited:
+      description: |
+        Presupuesto del throttler `enrichment` excedido (`security-standards.md` §7.3):
+        6 requests/min por IP. Es la única superficie donde un request de más cuesta
+        plata, por eso tiene su propio cubo — compartir el de `auth` dejaría al dueño
+        sin poder entrar al panel mientras una corrida está activa. El GET de estado
+        NO consume este presupuesto.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    EnrichmentStatus:
+      type: object
+      required: [runner_state, coverage, models, last_error_code, last_run_at]
+      additionalProperties: false
+      properties:
+        runner_state: { type: string, enum: [idle, running, cooldown, disabled] }
+        coverage: { $ref: '#/components/schemas/EnrichmentCoverage' }
+        models:
+          type: object
+          required: [enrich, embed]
+          additionalProperties: false
+          description: |
+            Los NOMBRES de los modelos, nunca la clave. El panel los necesita para
+            interpretar la cobertura tras un cambio de modelo: los vectores viejos
+            siguen existiendo con su `model_version` y hay que regenerarlos (AC-8).
+          properties:
+            enrich: { type: string }
+            embed: { type: string }
+        last_error_code:
+          type: string
+          nullable: true
+          description: |
+            Último type del catálogo `dsm:enrichment/*`, NUNCA el mensaje del proveedor:
+            un mensaje crudo puede traer la URL con la clave o el texto del producto (AC-9).
+        last_run_at:
+          type: string
+          nullable: true
+          format: date-time
+          description: |
+            Fin de la última corrida DE ESTE PROCESO. `null` si no corrió ninguna desde el
+            arranque: el estado del ejecutor es en memoria (ADR-0014) y lo durable es
+            `products.enrichment_done`, así que un reinicio no pierde trabajo.
+    EnrichmentCoverage:
+      type: object
+      required: [total, enriched, embedded, pending, abandoned, coverage_ratio]
+      additionalProperties: false
+      description: |
+        `pending + abandoned + hechos = total`. Se separan porque se resuelven distinto:
+        `pending` se resuelve esperando la próxima corrida y `abandoned` NO se resuelve
+        solo — necesita un `POST /runs` con `force: true`.
+      properties:
+        total: { type: integer, description: 'Productos del catálogo, en cualquier estado.' }
+        enriched: { type: integer, description: 'Con description_enriched escrita (por la IA o curada por el dueño).' }
+        embedded:
+          type: integer
+          description: |
+            Con fila en product_embeddings. ESTE es el que decide si la búsqueda
+            semántica funciona.
+        pending: { type: integer, description: 'Elegibles para la próxima corrida.' }
+        abandoned:
+          type: integer
+          description: |
+            Agotaron ENRICHMENT_MAX_ATTEMPTS. Siguen visibles en la tienda con su
+            description_raw (AC-5): el catálogo pierde calidad de búsqueda, no productos.
+        coverage_ratio:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: |
+            embedded / total, o 0 con catálogo vacío. El KPI de AC-3 (>= 0,9) se mide
+            acá, sobre el catálogo real y después de una corrida: no es una propiedad del
+            código.
+    StartEnrichmentRun:
+      type: object
+      additionalProperties: false
+      description: 'Todos los campos son opcionales; el cuerpo vacío es el pedido normal.'
+      properties:
+        force:
+          type: boolean
+          default: false
+          description: |
+            Rehabilita los productos abandonados antes de barrer (attempts a 0, espera y
+            error_code limpios).
+        product_ids:
+          type: array
+          maxItems: 500
+          items: { type: string, format: uuid }
+          description: |
+            Acota la corrida. Un array VACÍO significa "ninguno", no "todos": interpretarlo
+            como el catálogo entero sería la peor lectura de un pedido acotado. El tope de
+            500 existe porque cada id es una llamada paga.
+    EnrichmentRunAccepted:
+      type: object
+      required: [run_id, accepted]
+      additionalProperties: false
+      properties:
+        run_id:
+          type: string
+          format: uuid
+          description: |
+            Identificador de CORRELACIÓN para los logs. No hay GET /runs/{id}: el estado
+            se consulta en /admin/enrichment/status, porque una tabla de corridas sería
+            estado duplicado que puede desincronizarse del catálogo.
+        accepted: { type: boolean, enum: [true] }
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). Types de esta capacidad:
+        `dsm:enrichment/run-in-progress` (409), `dsm:enrichment/cooldown` (409),
+        `dsm:enrichment/disabled` (503).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene la clave del proveedor, su URL completa, ni texto de producto sin redactar.'
+paths:
+  /admin/enrichment/status:
+    $ref: ./openapi/paths/enrichment-status.yaml
+  /admin/enrichment/runs:
+    $ref: ./openapi/paths/enrichment-runs.yaml
