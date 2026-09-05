@@ -236,6 +236,12 @@
   # (backend ya lo estaba desde 2026-08-30). No se toca `in-review-at` (ya lo puso backend,
   # primera disciplina) ni el `status` de la US (se queda en `In Progress` — QA sigue en
   # `draft`, 0/24 tasks, ninguna PR abierta todavía).
+  #
+  # NOTA (2026-09-05, /archive-change US-012-panel-ordenes-dueno-frontend-web): PR #31
+  # mergeado, change movido a `changes/archive/`. La US NO avanza a `Done`: backend
+  # (`in review`, PR sin archivar) y qa (`in review` — otra sesión mergeó su PR #30,
+  # 24/24 tasks, en el mismo lapso, pero tampoco corrió `/archive-change` todavía) siguen
+  # activos. `status` se queda en `In Progress`.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
