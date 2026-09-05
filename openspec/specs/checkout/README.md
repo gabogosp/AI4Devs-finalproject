@@ -1,8 +1,7 @@
 # Capacidad: Checkout del invitado (CAP-10)
 
-**Estado**: parcialmente entregada — superficie de **backend** viva; **UI del checkout**
-construida en `US-008-checkout-guest-frontend-web` (PR #23, mergeado a `main`) pendiente
-de su propio `/archive-change`.
+**Estado**: entregada — backend y UI del checkout vivos. Falta el inicio del pago
+(`payments`, US-009) para que el flujo llegue a una orden pagada.
 
 Estado declarado del sistema para la capacidad CAP-10 del PRD §2.1. Este directorio es el
 **acumulado** de los changes archivados: se extiende en cada `/archive-change`, nunca se
@@ -41,15 +40,31 @@ requerir cuenta (US-008 backend):
 - Throttler `checkout` propio (10/10 min por IP), independiente de `auth`, `storefront` y
   `cart`.
 
-Una **UI de cliente** construida sobre esta superficie (US-008 frontend-web, PR #23) — el
-formulario de checkout, el checkbox de consentimiento con enlaces legales y el resumen de
-la orden — todavía no atravesó su propio `/archive-change`; este documento se extiende
-cuando lo haga.
+Una **UI de cliente** sobre esta superficie (US-008 frontend-web, `/checkout`, ruta de
+cliente forzada + `noindex`, mismo patrón que `/carrito`):
+
+- Formulario (nombre, email, teléfono) con validación via el schema **generado** del
+  contrato (`CreateGuestCheckoutBody`) — un resolver custom traduce los mensajes de Zod al
+  español sin redeclarar ninguna constraint (nunca un segundo schema).
+- Checkbox de consentimiento que consume `CONSENT_COPY`/`LEGAL_ROUTES` de US-017 (seam ya
+  construido, no reescrito).
+- Retiro mostrado como información fija (dirección + horario), no un control — un único
+  valor posible en todo el sistema (`fulfillment: pickup`).
+- Al `201`, confirmación **in-place** en `/checkout` (sin ruta nueva): `order_number` +
+  total + CTA "Continuar al pago" deshabilitado (`Deferred: US-009`).
+- `order_token` persistido en `sessionStorage` (nunca la URL ni una cookie) — es la
+  credencial de la orden; hoy nada lo lee, lo consumirá la futura pantalla de pago.
+- El CTA "Ir al pago" del carrito (`CartSummary.tsx`) quedó un-diferido: navega a
+  `/checkout` salvo `has_blocking_issues`.
+- 5 eventos de observabilidad sin PII ni `order_token` (`checkout_started/_blocked/
+  _submitted/_succeeded/_failed`).
+- WCAG 2.1 AA: foco gestionado al fallar validación y al confirmar, `role="alert"` en
+  errores, `aria-describedby` en el consentimiento.
 
 ## Qué NO está vivo todavía
 
-- **UI del checkout** — construida y mergeada (US-008 frontend-web), pero sin archivar.
-- **Inicio del pago** (`payments`, MercadoPago) — US-009.
+- **Inicio del pago** (`payments`, MercadoPago) — US-009. El `order_token` que el FE ya
+  persiste queda sin consumidor hasta entonces.
 - **Confirmación de la orden, decremento de stock, transición a `new`** — US-010
   (ADR-0008).
 - **Limpieza de órdenes `pending_payment` abandonadas** — US-010 (E2E §18.5).
@@ -78,7 +93,7 @@ por path bajo [`contracts/openapi/paths/`](contracts/openapi/paths/) referenciad
 | Change | Disciplina | Aporte |
 |---|---|---|
 | [`US-008-checkout-guest-backend`](../../changes/archive/US-008-checkout-guest-backend/) | BE | `CheckoutModule`, `orders`/`order_items`, token opaco de la orden, snapshot de precios, consentimiento con trazabilidad legal |
-| [`US-008-checkout-guest-frontend-web`](../../changes/US-008-checkout-guest-frontend-web/) | FE | Formulario, consentimiento y resumen del checkout. Mergeado (PR #23), pendiente `/archive-change` propio |
+| [`US-008-checkout-guest-frontend-web`](../../changes/archive/US-008-checkout-guest-frontend-web/) | FE | Formulario, consentimiento y resumen del checkout; `order_token` en `sessionStorage`, CTA del carrito un-diferido |
 
 ## Estado de la provisión
 

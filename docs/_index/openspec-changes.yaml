@@ -686,7 +686,7 @@
   # `completed` es el valor del enum del schema (draft|ready|approved|in-progress|completed|
   # archived). Nota: otras 12 entradas de este archivo usan `in progress` con espacio, que NO
   # está en el enum — deriva preexistente, no se toca acá para no pisar trabajo ajeno.
-  status: completed
+  status: archived   # /archive-change 2026-09-05 — 28/28 tasks (AS-BUILT), PR #3 mergeado 2026-08-29. Crea openspec/specs/enriquecimiento-ia/ (CAP-3)
   parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
   linear-task-id: null
   audit-baseline: null
@@ -720,8 +720,8 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
   completed-at: 2026-08-23  # 28/28 tasks cerradas con su Verify; AS-BUILT en tasks.md
-  archived-at: null
-  archive-path: null
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/
   # AS-BUILT (2026-08-23): las 28 tasks cerraron con su `Verify` en verde. Suite completa de
   # apps/api en 1246 tests / 123 suites; `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test`
   # en 0. Cuatro hallazgos que la ejecución destapó y que el plan no anticipaba:
@@ -1577,7 +1577,7 @@
   us-id: US-008
   discipline: frontend-web
   variant: null
-  status: in review   # 39/39 tasks cerradas 2026-08-30, PR abierto (/commit)
+  status: archived   # /archive-change 2026-09-05 — 39/39 tasks, PR #23 mergeado 2026-08-30. Extiende openspec/specs/checkout/ (CAP-10)
   parent-us: docs/user-stories/US-008-checkout-guest.md
   linear-task-id: null
   audit-baseline: null
@@ -1621,15 +1621,15 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/23
   pr-opened-at: 2026-08-30
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-30T14:02:02Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-008-checkout-guest-frontend-web/
 
 - name: US-012-panel-ordenes-dueno-backend
   us-id: US-012
   discipline: backend
   variant: null
-  status: in-review   # /commit — 22/22 tasks cerradas, 2026-08-30
+  status: archived   # /archive-change 2026-09-05 — 29/29 tasks (contando la reconciliación F40/F51 post-regenerate), PR #22 mergeado 2026-09-03
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1695,15 +1695,15 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
   pr-opened-at: 2026-08-30
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-03T00:07:57Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-backend/
 
 - name: US-012-panel-ordenes-dueno-qa
   us-id: US-012
   discipline: qa
   variant: null
-  status: in review
+  status: archived
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1763,9 +1763,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/30
   pr-opened-at: 2026-09-05
   created: 2026-08-30
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T19:55:30Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-012-panel-ordenes-dueno-qa/
 
 - name: US-021-retencion-datos-ordenes-backend
   us-id: US-021

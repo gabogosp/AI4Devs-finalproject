@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Panel de fulfillment (CAP-5)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-012 (panel de órdenes del dueño) — capacidad 5 del PRD, primer módulo
+    admin que gestiona la FSM de fulfillment sobre las órdenes que crea
+    `checkout` (CAP-10).
+
+    **El backend es la autoridad real.** AC-6 (transición inválida bloqueada),
+    AC-7 (acceso restringido) y AC-8 (sólo pagadas) se cumplen server-side; la
+    UI del panel es UX, nunca el mecanismo de seguridad.
+
+    **Capacidad hermana, no anidada**: `GET /admin/orders/pending-payment`
+    (mismo prefijo de ruta) pertenece a la capacidad `pagos`
+    (US-023-pago-manual-offline-backend), no a esta.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-orders
+    description: Panel de fulfillment del dueño (US-012). Superficie admin, gateada por AdminGuard.
+security:
+  - adminBearer: []
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: |
+        UUID interno de la orden. Restringido por regex de forma UUID en el
+        path de Nest (`decisions.md`) — nunca matchea `pending-payment`
+        (ruta hermana de US-023), sin importar el orden de registro de los
+        dos módulos.
+      schema: { type: string, format: uuid }
+  schemas:
+    AdminOrderSummary:
+      type: object
+      required: [id, order_number, buyer_name, total_ars_cents, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        order_number: { type: integer }
+        buyer_name: { type: string }
+        total_ars_cents: { type: integer }
+        status:
+          type: string
+          enum: [new, preparing, ready, delivered, cancelled]
+          description: |
+            El listado (`GET /admin/orders`) NUNCA incluye `cancelled`/
+            `pending_payment` (AC-8, garantía de negocio, no de schema).
+            `cancelled` SÍ puede aparecer acá porque este mismo schema es la
+            base (`allOf`) de `AdminOrderDetail`, y `GET /admin/orders/{id}`
+            devuelve 200 para una orden `cancelled` (defensivo).
+        created_at: { type: string, format: date-time }
+    AdminOrderList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/AdminOrderSummary' } }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    AdminOrderItem:
+      type: object
+      required: [product_name, product_sku, quantity, unit_price_ars_cents, subtotal_ars_cents]
+      properties:
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        subtotal_ars_cents: { type: integer }
+    AdminOrderStatusChange:
+      type: object
+      description: |
+        Sin la fila inicial `pending_payment → new` (fuera de alcance de este
+        panel — la escribe `payments/`, US-023).
+      required: [from_status, to_status, changed_by, changed_at]
+      properties:
+        from_status: { type: string, nullable: true }
+        to_status: { type: string }
+        changed_by:
+          type: string
+          nullable: true
+          description: '`sub` del JWT admin (uuid) o el literal `admin` (bootstrap token).'
+        changed_at: { type: string, format: date-time }
+    AdminOrderDetail:
+      allOf:
+        - { $ref: '#/components/schemas/AdminOrderSummary' }
+        - type: object
+          required: [buyer_email, buyer_phone, fulfillment, items, status_history]
+          properties:
+            buyer_email: { type: string }
+            buyer_phone: { type: string }
+            fulfillment: { type: string, enum: [pickup] }
+            items: { type: array, items: { $ref: '#/components/schemas/AdminOrderItem' } }
+            status_history: { type: array, items: { $ref: '#/components/schemas/AdminOrderStatusChange' } }
+    UpdateAdminOrderStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [preparing, ready, delivered] }
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). `type` de esta capacidad:
+        `dsm:orders/not-found` (404), `dsm:orders/invalid-transition` (409).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene PII del comprador.'
+paths:
+  /admin/orders:
+    $ref: ./openapi/paths/list-orders.yaml
+  /admin/orders/{id}:
+    $ref: ./openapi/paths/order-detail.yaml

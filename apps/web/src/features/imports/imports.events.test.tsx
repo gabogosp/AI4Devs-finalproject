@@ -186,8 +186,15 @@ describe('eventos del import (imports.events)', () => {
     await screen.findByRole('heading', { name: /importación terminada/i });
 
     expect(llamadas).toBeGreaterThanOrEqual(6);
+    // El evento se emite al procesar la respuesta de cierre, que puede caer un tick DESPUÉS
+    // de que el heading renderiza. Un filter tomado una sola vez lo perdía a veces en CI
+    // (llegaba 0 en vez de 1) → se re-evalúa dentro de waitFor.
+    await waitFor(() => {
+      expect(
+        eventos.filter((e) => e.event === 'import_job_finished'),
+      ).toHaveLength(1);
+    });
     const finalizados = eventos.filter((e) => e.event === 'import_job_finished');
-    expect(finalizados).toHaveLength(1);
     expect(finalizados[0].props).toMatchObject({
       status: 'completed',
       created: 480,

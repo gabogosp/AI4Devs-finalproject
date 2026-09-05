@@ -1,0 +1,83 @@
+parameters:
+  - $ref: '../../openapi.yaml#/components/parameters/Id'
+get:
+  operationId: getAdminOrder
+  tags: [admin-orders]
+  summary: Detalle de una orden (AC-2, AC-9)
+  description: |
+    404 si la orden no existe **o** está `pending_payment` (AC-8 — no
+    gestionable acá). `cancelled` sí se devuelve (defensivo: no hay hoy
+    ningún flujo que la enumere, pero es trazable por id).
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AdminOrderDetail' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: '`dsm:orders/not-found` — la orden no existe, o está `pending_payment` (AC-8).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+patch:
+  operationId: updateAdminOrderStatus
+  tags: [admin-orders]
+  summary: Avanzar el estado de fulfillment (AC-3, AC-4, AC-6, AC-9)
+  description: |
+    `status` sólo admite `preparing|ready|delivered` — `cancelled` NUNCA es
+    un valor de tipo válido acá (US-013, ruta distinta). Idempotente por
+    estructura: si `status` ya es el pedido, 200 sin re-disparar nada (no
+    por `Idempotency-Key` almacenada — el header se acepta y se ignora).
+    `status=ready` dispara el aviso al cliente (US-011, async, fuera de
+    esta respuesta).
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/UpdateAdminOrderStatus' }
+  responses:
+    '200':
+      description: OK — orden actualizada (o sin cambio, si ya estaba en el `status` pedido).
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AdminOrderDetail' }
+    '400':
+      description: '`id` fuera de forma UUID (`ParseUUIDPipe`).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: '`dsm:orders/not-found` — la orden no existe, o está `pending_payment`.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '409':
+      description: '`dsm:orders/invalid-transition` — el salto de FSM pedido no es válido desde el estado actual.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: '`status` fuera del enum `preparing|ready|delivered` (`ValidationPipe` global).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
