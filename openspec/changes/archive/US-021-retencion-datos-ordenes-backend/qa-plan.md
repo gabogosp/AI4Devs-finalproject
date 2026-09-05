@@ -445,6 +445,39 @@ gherkin_scenario: SC-021-N5 — Sólo el dueño autenticado puede anonimizar a p
 
 ---
 
+#### Estado de ejecución (actualizado por `/develop-qa`, rama `feat/US-021-retencion-datos-ordenes-qa`)
+
+**Scaffolded, ejecución `blocked-on-impl`** — el harness de aceptación de las 9
+TC arriba marcadas `execution_mode: automated` (TC-021-001, 002, 003, 004a, 005,
+006, 008, 009, 010) está escrito y commiteado:
+
+- `qa/acceptance/features/retencion-ordenes.feature` — los 9 escenarios Gherkin
+  (`@retencion-ordenes`), verbatim de §4.
+- `qa/acceptance/steps/retencion-ordenes.steps.ts` — step defs reales contra
+  `POST /v1/admin/orders/:id/anonymize`, `POST /v1/admin/orders/retention-sweep`,
+  `GET /v1/admin/orders`, `GET /v1/admin/orders/:id` (no stubs/pending).
+- `qa/support/seed-orders-retention.ts` + `buildOrderRetentionFixture` en
+  `qa/support/builders.ts` — siembra vía checkout real + `confirm-payment`
+  (US-023) + backdate de `created_at` vía `@dsm/db` (§7).
+
+**No corren hoy** — verificado, no asumido: `tasks.md` de este mismo change
+tiene **0/16 tasks cerradas**; no existen `OrdersRetentionController`/`Service`/
+`Runner` en `apps/api/src/checkout/` ni las columnas `anonymized_at`/
+`anonymization_reason` en `packages/db/prisma/schema.prisma`. Cada llamada a los
+dos endpoints nuevos devuelve 404 de ruta inexistente. La única dependencia que
+desbloquea las 9 a la vez es **`/develop-backend US-021`** (0/16 tasks). Ningún
+`execution_mode` se cambió — siguen `automated`, porque son automatizables tal
+como están escritas; sólo la ejecución está pendiente de la implementación.
+
+TC-021-004b (`blocked`) y TC-021-007 (`manual`) se dejan exactamente como están
+— no se scaffoldean (el primero no tiene superficie API que cubrir todavía, el
+segundo es checklist humano por diseño, §1.3/§4). TC-021-007 sí tiene su
+escenario Gherkin (SC-021-N2) copiado al `.feature`, tageado `@deferred`
+(mismo criterio que `catalogo.feature` AC-10) para que Cucumber no lo ejecute
+ni falle por steps sin definir.
+
+---
+
 ## 5. Contract testing
 
 - [ ] **QA-021-CT-1**: Script standalone (mismo patrón que `qa/contract/search.contract.ts`)
@@ -457,6 +490,14 @@ gherkin_scenario: SC-021-N5 — Sólo el dueño autenticado puede anonimizar a p
     con el `type` declarado en el yaml (`dsm:checkout/order-not-found` para el 404).
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=retencion-ordenes` (exit 0)
   - Location: `qa/contract/retencion-ordenes.contract.ts`
+  - **Estado (`/develop-qa`)**: `blocked-on-impl` — NO se escribió
+    `qa/contract/retencion-ordenes.contract.ts`. `contracts/openapi/anonymize-order.yaml`
+    y `contracts/openapi/retention-sweep.yaml` **no existen todavía** en este change
+    (T6.1, 0/16 — verificado: `openspec/changes/US-021-retencion-datos-ordenes-backend/`
+    no tiene ni siquiera un directorio `contracts/` todavía). Escribir un script de
+    contrato contra un yaml que no existe simularía cobertura que no hay; se deja
+    como blocker explícito en vez de fingir el test. Desbloquea: T6.1 de `tasks.md`
+    (contrato OpenAPI de los dos endpoints).
 
 - [ ] **QA-021-CT-2**: Confirmar (no re-probar) que `GET /v1/admin/orders/:id` sigue sin
   romper el contrato existente de US-012 (`AdminOrderDetailDto`) tras el merge de este
