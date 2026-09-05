@@ -502,7 +502,7 @@
 
 ## Phase 13: Wiring final del módulo
 
-- [ ] T13.1 `payments.module.ts`: registrar todos los providers/controllers nuevos
+- [x] T13.1 `payments.module.ts`: registrar todos los providers/controllers nuevos
   (`MercadoPagoClient`, `MercadoPagoWebhookController`, `SimulatePaymentController`,
   `ReconcilePaymentsService`, `CleanupAbandonedOrdersService`, `RefundRetryService`,
   `AdminJobsController`). Confirmar que `PaymentsModule` sigue exportando sólo
@@ -510,6 +510,13 @@
   - **Exit criterion**: la app arranca (`onModuleInit` de todos los módulos) sin errores de
     DI, con `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` en variables de test.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=payments.module`
+  - **Nota de ejecución (2026-09-05)**: todo el wiring ya estaba hecho incrementalmente
+    (cada fase registró lo suyo al cerrar su propia task — T3.2/T6.3/T7.1/T8.2/T9.2/T10.2/
+    T11.2). Este archivo era el ÚNICO que faltaba: `payments.module.spec.ts`, boot test
+    contra `bootTestApp`. 1/1 test verde. `exports` sigue siendo sólo `ConfirmOrderService`
+    (verificado por lectura, no hay un test automatizado dedicado a "nada más se exporta" —
+    el chequeo real es que ningún otro módulo del repo necesitó importar un internal nuevo
+    de `PaymentsModule`, cosa que ya se hubiera notado como error de compilación).
 
 ## Phase 14: Tests de integración cross-cutting (Postgres real — AC-1, AC-4, AC-5, AC-6, AC-8, AC-9)
 
