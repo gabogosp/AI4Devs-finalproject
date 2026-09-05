@@ -397,6 +397,13 @@
   # US-020 cubre el borrado de CUENTAS; el comprador invitado no tiene cuenta que borrar, y
   # es el camino principal del PRD §2.1 cap. 4. Anonimiza, NO borra: el E2E §8 fija que las
   # órdenes no se borran (historial 12 meses + métricas de US-016).
+  #
+  # NOTA (2026-09-05, /commit US-021-retencion-datos-ordenes-backend, barrido de changes
+  # pendientes de archivar): la disciplina backend estaba 30/30 tasks cerrada desde
+  # 2026-08-23 pero nunca se había pusheado (sólo la planificación había mergeado, PR #25).
+  # Publicado ahora — PR #41 abierto contra main. `status` de la US NO avanza: falta
+  # merge + archive del backend, y hay un worktree/rama `feat/US-021-retencion-datos-ordenes-qa`
+  # en curso (otra sesión) para la disciplina QA. `blocked_by` sin tocar.
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
