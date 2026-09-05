@@ -57,3 +57,7 @@ test-results/
 playwright-report/
 *.log
 
+# Pool de ids de órdenes sembrado localmente por seed-orders-load.ts (US-012
+# QA, TC-1241) — ids de una base local efímera, no portables entre entornos.
+qa/performance/data/orders-load-pool.json
+

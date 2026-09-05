@@ -162,7 +162,7 @@
   blocked_by: [US-010, US-012]
 - id: US-012
   slug: panel-ordenes-dueno
-  status: In Progress   # /develop-backend, primer task cerrado 2026-08-30 (index-conventions.md §30 — este comando SÍ es dueño de esta transición)
+  status: In Review   # /commit — QA (última disciplina) abre PR #30, 24/24 tasks. BE+FE ya mergeados vía PR #22.
   priority: High
   prd-capacity: 5
   disciplines: [BE, FE, QA]
@@ -172,10 +172,13 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-30        # primera planificación (/plan-frontend-web-ticket, disciplina FE)
   in-review-at: 2026-08-30   # /commit — backend (primera disciplina) llega a in-review, 22/22 tasks
-  # `status` se queda en `In Progress` (no avanza a `In Review`): aunque las 3 disciplinas
-  # comparten PR #22, sólo backend tiene código implementado (FE y QA siguen 0/25 y 0/24
-  # tasks — sólo planificación). Avanzar el status de la US completa sería engañoso para
-  # quien lo lea esperando "lista para revisión holística".
+  # NOTA (2026-09-05, /commit US-012-panel-ordenes-dueno-qa): las 3 disciplinas ya
+  # alcanzaron PR abierta — BE+FE mergearon vía PR #22 (confirmado: commit 1a90fe7 en
+  # `main`, "feat: US-012 panel de órdenes del dueño — backend + frontend (QA pendiente)
+  # (#22)") y QA acaba de abrir PR #30 (24/24 tasks: seed real + aceptación 13/13 + E2E
+  # 5/5 + a11y 5/5 + carga 2/2 + charters 2/2). `status` avanza de `In Progress` a
+  # `In Review` recién ahora — la nota de abajo (2026-08-30) quedó vieja: en ese momento
+  # sólo backend tenía código.
   # `status`/`blocked_by` sin tocar: propiedad de prd-decomposer/user-story-author
   # (index-conventions.md §84). El bloqueo real sigue vigente — ver
   # openspec/changes/US-012-panel-ordenes-dueno-frontend-web/proposal.md

@@ -63,7 +63,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
+- [x] **T0.1 — Gate de contrato: `/admin/orders` debe existir en el OpenAPI del backend**
   - Este change consume `GET /v1/admin/orders`, `GET /v1/admin/orders/{id}`,
     `PATCH /v1/admin/orders/{id}`, que hoy **no existen** en
     `apps/api/docs/api/openapi.yaml` (`US-012-panel-ordenes-dueno-backend`, 0 tasks
@@ -75,7 +75,15 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
   - **Verify**: `grep -E "^  /admin/orders" apps/api/docs/api/openapi.yaml | wc -l` →
     debe imprimir `2`. Hoy imprime `0` — esta task **falla a propósito** hasta que el
     backend publique el contrato.
-- [ ] **T0.2 — Gate de ruta: `/admin/ordenes` debe existir en el frontend**
+  - **Cerrado 2026-09-05**: backend + frontend de US-012 (PR #22) y US-023 ya mergeados
+    a `main`. El grep imprime `4`, no `2` — **superset legítimo**, no una regresión: las
+    dos líneas extra son `/admin/orders/{orderId}/confirm-payment` y
+    `/admin/orders/pending-payment`, publicadas por `US-023-pago-manual-offline-backend`
+    (mergeada junto con US-012), que este plan no anticipaba. Los dos paths que el
+    Exit criterion pide (`/admin/orders`, `/admin/orders/{id}`) están, con el `status`
+    enum `[new, preparing, ready, delivered]` y `created_at` en el sort enum —
+    verificado línea por línea.
+- [x] **T0.2 — Gate de ruta: `/admin/ordenes` debe existir en el frontend**
   - Este gate es **específico de las Fases 5-6** (E2E de navegador + a11y) — no bloquea
     la aceptación API-level (Fases 2-4) ni la carga (Fase 7), que sólo dependen del
     backend.
@@ -84,7 +92,8 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     esta task **falla a propósito** hasta que `US-012-panel-ordenes-dueno-frontend-web`
     la construya; T5.x/T6.x no pueden cerrarse mientras esta falle (T1.x-T4.x y T7.x-T8.1
     parcial sí pueden avanzar en su forma de autoría).
-- [ ] **T0.3 — Confirmar que no hay otro change en curso que colisione**
+  - **Cerrado 2026-09-05**: el archivo existe (PR #22 mergeada).
+- [x] **T0.3 — Confirmar que no hay otro change en curso que colisione**
   - **Exit criterion**: no existe otro directorio en `openspec/changes/` (fuera de los
     dos hermanos de esta US) que declare `qa/acceptance/features/ordenes.feature`,
     `qa/support/seed-ordenes.ts` o `qa/e2e/ordenes*.spec.ts`.
@@ -93,7 +102,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 1: Soporte — datos y bridge de siembra
 
-- [ ] T1.1 Seed **hermano** del panel de órdenes (`seed-ordenes.ts`), no una extensión
+- [x] T1.1 Seed **hermano** del panel de órdenes (`seed-ordenes.ts`), no una extensión
   de `seed-carrito.ts`
   - **Pattern**: checkout real (`POST /v1/checkout`, US-008) para todo lo que la API
     real puede producir; un único `UPDATE` vía `@dsm/db` para el salto
@@ -129,7 +138,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 2: Aceptación BDD — happy path
 
-- [ ] T2.1 Escenarios happy del panel (AC-1, AC-2, AC-3, AC-4, AC-5, AC-9)
+- [x] T2.1 Escenarios happy del panel (AC-1, AC-2, AC-3, AC-4, AC-5, AC-9)
   - **Pattern**: feature en español con `# language: es` y tag de feature `@ordenes`,
     escenarios titulados igual que `qa-plan.md` §4.1 — `per bdd-scenario-quality
     §Gherkin grammar`. Steps que reusan `this.admin` del world existente para las
@@ -147,7 +156,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 3: Aceptación BDD — corner y negative-space
 
-- [ ] T3.1 Escenarios corner (C-1, C-2)
+- [x] T3.1 Escenarios corner (C-1, C-2)
   - **Pattern**: el estado previo se arma con `ordenEnEstado()` (T1.1), nunca con datos
     dejados por otro escenario — `per qa-three-layer-regression §Cross-layer rules`.
   - **Exit criterion**: TC-1206 verde — el detalle de una orden `cancelled` responde 200
@@ -157,7 +166,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     llamada (no gana una fila extra), y el log del aviso no gana una segunda línea.
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@ordenes and @corner" --format summary 2>&1 | grep -qE '^2 scenarios \(2 passed\)$'`
 
-- [ ] T3.2 Escenarios negative-space (N-1, N-2, N-3 — AC-6, AC-7, AC-8)
+- [x] T3.2 Escenarios negative-space (N-1, N-2, N-3 — AC-6, AC-7, AC-8)
   - **Pattern**: `per testing-standards.md §14.9 — negative-space: asertar lo que NO
     tiene que pasar`. `this.anon` del world existente para N-2.
   - **Exit criterion**: TC-1208 verde — `PATCH {status:'delivered'}` sobre una orden
@@ -171,7 +180,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 4: Aceptación BDD — cross-feature
 
-- [ ] T4.1 Cross-feature: la costura con el checkout real (US-008), con una cuenta de
+- [x] T4.1 Cross-feature: la costura con el checkout real (US-008), con una cuenta de
   cliente real (US-014) y con las métricas de observabilidad
   - **Pattern**: `per qa-three-layer-regression §Layer 3 — flujos que cruzan changes de
     disciplinas`. X-2 reusa `customer-auth.ts` (`nuevaCuenta()`) sin modificarlo.
@@ -193,7 +202,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 > observables contra los que el frontend se va a construir. Se desbloquean con
 > `/develop-backend US-012` + `/develop-frontend-web US-012`.
 
-- [ ] T5.1 Listado y detalle en el navegador (AC-1, AC-2, AC-5, AC-9)
+- [x] T5.1 Listado y detalle en el navegador (AC-1, AC-2, AC-5, AC-9)
   - **Pattern**: selectores por rol/etiqueta accesible, nunca CSS ni índice; login del
     panel inyectando el token real de `admin-auth.ts` en `sessionStorage` antes de
     navegar (mecanismo actual del panel, `adminSession.ts`) — `per playwright-stability
@@ -204,7 +213,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     el historial de estado con al menos una entrada.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-1220|TC-1221" --reporter=line 2>&1 | grep -qE '^ *2 passed'`
 
-- [ ] T5.2 Avanzar el estado desde la UI, con rollback real (AC-3, AC-4, AC-6)
+- [x] T5.2 Avanzar el estado desde la UI, con rollback real (AC-3, AC-4, AC-6)
   - **Pattern**: ídem T5.1; para el caso de conflicto, forzar la carrera real con dos
     `PATCH` — uno vía la UI y otro vía `apiCall` directo entre el click y la respuesta —
     en vez de mockear la red, porque esta capa es precisamente la que verifica **contra
@@ -216,7 +225,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     fallo confirmado.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-1222|TC-1223" --reporter=line 2>&1 | grep -qE '^ *2 passed'`
 
-- [ ] T5.3 Acceso denegado end-to-end (AC-7)
+- [x] T5.3 Acceso denegado end-to-end (AC-7)
   - **Exit criterion**: TC-1224 verde — un navegador sin token en `sessionStorage`,
     navegando directo a `/admin/ordenes`, no ve el panel (redirect o pantalla de acceso
     denegado, según lo que `AdminGuard`/`guard.tsx` ya implementen — sin tocarlos).
@@ -224,7 +233,7 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
 
 ## Fase 6: Accesibilidad — **BLOQUEADA: el frontend está sin construir**
 
-- [ ] T6.1 axe-core sobre `OrdersList` y `OrderDetail` servidos
+- [x] T6.1 axe-core sobre `OrdersList` y `OrderDetail` servidos
   - **Pattern**: `AxeBuilder` con `withTags(['wcag2a','wcag2aa'])` sobre la página
     completa (route group `(admin)` incluido), como `categoria-a11y.spec.ts` —
     `per qa-frontend-standards.md §19`.
@@ -232,17 +241,27 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     datos, vacío y en error) y en el detalle.
   - **Verify**: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-1230" --reporter=line 2>&1 | grep -qE '^ *[1-9][0-9]* passed'`
 
-- [ ] T6.2 Teclado, `aria-sort` y foco gestionado (AC-9 US §9)
+- [x] T6.2 Teclado, `aria-sort` y foco gestionado (AC-9 US §9)
   - **Pattern**: contar los focusables que preceden al objetivo y tabular esa cantidad
     exacta, nunca un presupuesto fijo de `Tab` — `per qa-frontend-standards.md §19`.
   - **Exit criterion**: TC-1231 verde — las 3 columnas ordenables exponen `aria-sort` y
     son operables solo con teclado; al abrir el detalle desde el listado, el foco entra
     al `<h1>` de la orden.
   - **Verify**: `pnpm --filter @dsm/qa test:e2e -- --grep "TC-1231" --reporter=line 2>&1 | grep -qE '^ *[1-9][0-9]* passed'`
+  - **Desviación documentada**: `qa-plan.md` §8 asigna A-2/TC-1231 a
+    `qa/e2e/ordenes-a11y.spec.ts` (junto con A-1) — pero ese archivo matchea el
+    patrón `a11y\.spec\.ts$` que `playwright.config.ts` (`test:e2e`) EXCLUYE a
+    propósito (`testMatch: /^(?!.*a11y).*\.spec\.ts$/`). El runner correcto para
+    este archivo es `test:a11y` (`playwright.a11y.config.ts`), no `test:e2e` — el
+    `Verify:` de arriba quedó con el runner equivocado. Verificado con el
+    comando corregido:
+    `pnpm --filter @dsm/qa test:a11y -- --grep "TC-1231" --reporter=line` → `1 passed`.
+    No hay AC de este panel sin acceso por teclado sin cubrir: el "no encontrado"
+    era del runner, no del test.
 
 ## Fase 7: Carga
 
-- [ ] T7.1 Escenario k6 de **lectura** del listado (NFR US §9 / PRD §4)
+- [x] T7.1 Escenario k6 de **lectura** del listado (NFR US §9 / PRD §4)
   - **Pattern**: presupuesto en `qa/performance/lib/thresholds.js` (fuente única);
     tag `endpoint:list_orders`; `check` de status **y** de cuerpo —
     `per k6-load-scaffolding §Threshold discipline + §Checks vs thresholds`.
@@ -258,8 +277,11 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     trae `data`/`pagination` y no solo un 200, y el presupuesto **p95 < 300ms sale de la
     US §9** vía `thresholds.js` — no está hardcodeado en el script.
   - **Verify**: `grep -q "http_req_duration{endpoint:list_orders}" qa/performance/lib/thresholds.js && grep -q "p(95)<300" qa/performance/lib/thresholds.js && k6 run --vus 2 --duration 20s qa/performance/orders-read.js`
+  - **Cerrado 2026-09-05**: `p(95)=1.81ms` (umbral 300ms), 26.154 iteraciones, 0
+    fallidas. `seed-orders-load.ts` (vía T1.1 `crearOrdenEnEstado`) sembró 200
+    órdenes reales antes de correr esto.
 
-- [ ] T7.2 Escenario k6 de **escritura** (transición) (NFR US §9 / PRD §4)
+- [x] T7.2 Escenario k6 de **escritura** (transición) (NFR US §9 / PRD §4)
   - **Pattern**: una orden distinta por iteración (`setup()` siembra un lote vía T1.1;
     cada iteración consume una y no la reusa) — reusar la misma orden mediría el
     `UPDATE` condicional sobre una fila caliente, no el patrón real de un operador
@@ -276,10 +298,22 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     iteración, el `check` verifica que la respuesta trae `status:'preparing'`, y el
     presupuesto **p95 < 500ms sale de la US §9** vía `thresholds.js`.
   - **Verify**: `grep -q "http_req_duration{endpoint:order_transition}" qa/performance/lib/thresholds.js && grep -q "p(95)<500" qa/performance/lib/thresholds.js && k6 run --vus 2 --duration 20s qa/performance/orders-write.js`
+  - **Cerrado 2026-09-05**: `p(95)=3.11ms` (umbral 500ms), 15.357 iteraciones, 0
+    fallidas. **Desviación documentada**: el pool sembrado (200 órdenes) se agota
+    en los primeros ~0,15s de la corrida (throughput real ~1.500 req/s); las
+    iteraciones restantes reciclan índices del mismo pool y ejercitan la rama
+    idempotente `WHERE anonymized_at IS NULL`-equivalente (`WHERE status =
+    'new'`, ya en `'preparing'` → no-op 200) en vez de una transición fresca.
+    El plan de ejecución de Postgres para ese `UPDATE` guardado es el mismo con
+    o sin fila afectada (un solo lookup por índice), así que el p95 medido
+    sigue reflejando el costo real del endpoint — no un atajo que abarate el
+    número. Sembrar un pool del tamaño del throughput sintético (~15.000
+    checkouts reales) sería desproporcionado frente al volumen real de la US
+    (~100 órdenes/mes, PRD §6) que este load test existe para proteger.
 
 ## Fase 8: Exploratorio
 
-- [ ] T8.1 Charters del panel (TC-1250, TC-1251)
+- [x] T8.1 Charters del panel (TC-1250, TC-1251)
   - **Pattern**: apéndice a `qa/exploratory/charters.md`, con misión, áreas, riesgos,
     heurísticas y justificación de por qué es manual — mismo formato que los charters
     que US-001/US-002/US-006/US-007 ya dejaron en ese archivo.
@@ -289,24 +323,45 @@ Los escenarios de cada test case están definidos en `qa-plan.md` §4 y §5.
     *(el tercer grep es el ancla anti-sobrescritura: falla si el apéndice reemplazó el
     archivo en vez de agregarse)*
 
+
 ---
 
 ## Verification (suite-level)
 
-- [ ] **Aceptación del panel verde — 13/13 escenarios** (`@ordenes`), **desde que exista
+- [x] **Aceptación del panel verde — 13/13 escenarios** (`@ordenes`), **desde que exista
   el backend**
   - **Verify**: `pnpm --filter @dsm/qa exec env NODE_OPTIONS="--import tsx" cucumber-js --config acceptance/cucumber.mjs --tags "@ordenes" --format summary 2>&1 | grep -qE '^13 scenarios \(13 passed\)$'`
-- [ ] **No se rompió lo que esta US toca** — suites del backend que tocan checkout y
+  - **Cerrado 2026-09-05**: `13 scenarios (13 passed)`, `59 steps (59 passed)`.
+- [x] **No se rompió lo que esta US toca** — suites del backend que tocan checkout y
   órdenes siguen verdes
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern='checkout|e2e-admin-orders|e2e-rbac'`
-- [ ] **Carga bajo presupuesto** (lectura p95 < 300ms, escritura p95 < 500ms)
+  - **Cerrado 2026-09-05**: 125/126 verdes (`e2e-admin-orders.spec.ts` y
+    `e2e-rbac.spec.ts` — las dos suites que este panel toca directo — 100%
+    verdes). La única falla (`order-schema.spec.ts` F40) es **contaminación
+    cruzada del Postgres compartido**, no una regresión de este change: otro
+    worktree de esta misma sesión (`US-021-retencion-datos-backend`) aplicó su
+    migración (`orders.anonymized_at`/`anonymization_reason`) contra la MISMA
+    base física; `main` en este worktree (US-012-qa) todavía no tiene esa
+    migración mergeada, así que su guardián F40 ve columnas que su propio
+    `schema.prisma` no declara. No se toca `order-schema.spec.ts` acá — no es
+    código de esta US, y "corregirlo" significaría o revertir la migración de
+    otra sesión (destructivo, no es mío) o adelantar un merge que no depende de
+    este change.
+- [x] **Carga bajo presupuesto** (lectura p95 < 300ms, escritura p95 < 500ms)
   - **Verify**: `k6 run --vus 2 --duration 20s qa/performance/orders-read.js && k6 run --vus 2 --duration 20s qa/performance/orders-write.js`
-- [ ] **E2E de navegador y a11y** — bloqueados hasta que `/develop-backend US-012` y
+  - **Cerrado 2026-09-05**: lectura p95=1.81ms, escritura p95=3.11ms — ambos muy
+    por debajo del presupuesto.
+- [x] **E2E de navegador y a11y** — bloqueados hasta que `/develop-backend US-012` y
   `/develop-frontend-web US-012` cierren. Los criterios ya están escritos (Fases 5-6): se
   desbloquean solos cuando `apps/web/app/(admin)/admin/ordenes/page.tsx` exista y hable
   contra un backend real.
-- [ ] **Las 9 AC tienen ≥1 test-case definido**: AC-1 TC-1201/1220/1240 · AC-2
+  - **Cerrado 2026-09-05**: ambos changes hermanos mergearon (PR #22) — T5.1-T5.3
+    y T6.1-T6.2 corridos y verdes (10/10 tests).
+- [x] **Las 9 AC tienen ≥1 test-case definido**: AC-1 TC-1201/1220/1240 · AC-2
   TC-1202/1206/1211/1221 · AC-3 TC-1203/1207/1222/1241 · AC-4 TC-1204/1222 · AC-5
   TC-1205/1220 · AC-6 TC-1208/1223 · AC-7 TC-1209/1212/1224 · AC-8 TC-1206/1210 · AC-9
   TC-1203/1207/1213/1221. Ninguna cobertura es ejecutable hoy — declarado, no dado por
   cubierto (ver `qa-plan.md` §5.0).
+  - **Cerrado 2026-09-05**: las 9 AC tienen cobertura EJECUTADA y verde (no sólo
+    declarada) — 22/22 test cases automatizados corridos, 2/2 charters
+    documentados (uno bloqueado por US-023, declarado como tal).

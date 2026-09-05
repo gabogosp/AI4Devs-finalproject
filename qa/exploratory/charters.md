@@ -244,3 +244,70 @@
 - **Salida esperada**: confirmación de que cada paso del runbook hace lo que dice,
   o un defecto puntual por paso que no — con el mismo estándar de evidencia que
   ya se aplicó al hallazgo del `pending` huérfano.
+
+---
+
+# US-012 — Panel de órdenes del dueño
+
+## TC-1250 — El panel de fulfillment en un día real de operación
+
+- **Misión**: sondear el panel bajo el patrón de uso real de una sola sucursal —
+  volumen bajo, pero con el dueño manejando varias órdenes a la vez y con
+  conectividad intermitente en el local.
+- **Áreas**: dos pestañas del mismo panel abiertas a la vez (ADR-0009 es un solo
+  dueño, no impide dos pestañas del mismo usuario); avanzar una orden en una
+  pestaña mientras la otra sigue mostrando el estado anterior; recargar en medio
+  de una transición; conexión que se corta justo después del click (¿la UI queda
+  en el estado optimista para siempre, o hay timeout?); filtrar y ordenar
+  mientras llegan órdenes nuevas de otro checkout en simultáneo.
+- **Riesgos**: una pestaña desactualizada reintroduce el error de una transición
+  ya aplicada por la otra, mostrando un mensaje de conflicto confuso en vez de
+  simplemente refrescar; el estado optimista queda "colgado" (ni confirmado ni
+  revertido) si la respuesta nunca llega; el dueño pierde de vista qué orden
+  estaba mirando si la lista se reordena sola por un refetch en curso.
+- **Heurísticas**: "dos manos" (dos pestañas, un solo operador); interrupción
+  (cortar la red con las devtools a mitad de un click); "sigue el dato" (mirar
+  `order_status_history` real después de la sesión, no sólo lo que la UI mostró
+  en el momento).
+- **Justificación manual**: el volumen real es bajo (unas pocas órdenes por día)
+  pero el operador puede tener dos pestañas abiertas del mismo panel (ADR-0009
+  es un solo dueño, no impide dos pestañas), con conectividad intermitente en el
+  local. Ningún test determinista reproduce ese patrón de uso real; se explora
+  con el navegador de verdad.
+- **Salida esperada**: confirmación de que el panel se recupera solo de una
+  desincronización entre pestañas (releyendo, no mostrando un estado inventado),
+  o un defecto puntual por escenario que no — mismo estándar de evidencia que el
+  resto de este archivo.
+
+## TC-1251 — Reconciliación del ciclo completo cuando aterrice US-023
+
+- **Misión**: confirmar que el puente de siembra documentado en `design.md` §D2
+  (`prisma.order.update` para alcanzar `new`) deja de hacer falta el día que
+  `US-023-pago-manual-offline-backend` publique
+  `POST /v1/admin/orders/{orderId}/confirm-payment`, repitiendo el ciclo
+  completo `pending_payment → new → preparing → ready → delivered` **100% por
+  API real**.
+- **Áreas**: `POST /v1/checkout` (US-008) → `POST .../confirm-payment` (US-023,
+  reemplaza el `UPDATE` directo) → los tres `PATCH` reales de este panel
+  (US-012) → el detalle final, comparado campo a campo contra lo que el charter
+  fue registrando en cada paso.
+- **Riesgos**: que `confirm-payment` deje la orden en un estado distinto de
+  `new` (rompería el contrato tácito que este panel asume); que alguna
+  invariante que hoy sostiene el puente manual (por ejemplo, que el
+  `consent_*` y el snapshot de precio no se toquen) no se sostenga con el
+  endpoint real.
+- **Heurísticas**: "reemplazar el doble por el original" (mismo camino, otra
+  fuente); comparar el resultado final contra una corrida hecha con el puente
+  viejo, campo a campo.
+- **Justificación manual**: es la salida esperada del puente de siembra de
+  `design.md` §D2 — repetir el ciclo completo usando el endpoint real de
+  `US-023`, sin el `UPDATE` directo vía `@dsm/db`. No es un assert
+  determinista porque su propósito es confirmar que el puente ya no hace
+  falta, no verificar una propiedad nueva del producto.
+- **Salida esperada**: si el ciclo completo por API real reproduce exactamente
+  lo que `seed-ordenes.ts` producía con el puente, **retirar el puente**
+  (actualizar `design.md` §D2 y este mismo archivo) y dejar de depender de
+  `@dsm/db` en la suite de aceptación de órdenes. Si no reproduce, un defecto
+  puntual contra `US-023` o contra este panel, según dónde diverja.
+- **Bloqueado por**: `US-023-pago-manual-offline-backend` (0 tasks al momento
+  de escribir este charter) — no ejecutable hasta que publique el endpoint.

@@ -1682,7 +1682,7 @@
   us-id: US-012
   discipline: qa
   variant: null
-  status: draft
+  status: in review
   parent-us: docs/user-stories/US-012-panel-ordenes-dueno.md
   linear-task-id: null
   audit-baseline: null
@@ -1733,12 +1733,14 @@
   #
   # 3-4 h AI-asistido / ~6-8 h tradicional. La US §7 presupuesta QA-US-012 en 6-8 h.
   estimate-hours: 3.5
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  # Comparte rama y PR con los dos hermanos dev de esta US, por el mismo criterio ya
-  # declarado en sus entradas (mismo worktree, mismo PR de US-012 completo).
-  branch: feat/US-012-panel-ordenes-dueno-frontend-web
-  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
-  pr-opened-at: 2026-08-30
+  # 2026-09-05: ejecutado (/develop-qa) — 24/24 tasks cerradas. PR #22 (los dos
+  # hermanos dev) ya había mergeado a `main` cuando esto se desarrolló, así que
+  # QA abrió su PROPIA rama/PR en vez de compartir la de #22 (que ya no existía
+  # como rama abierta) — corrige la nota de plan-time de arriba, que asumía
+  # que las tres disciplinas compartirían PR.
+  branch: feat/US-012-panel-ordenes-dueno-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/30
+  pr-opened-at: 2026-09-05
   created: 2026-08-30
   completed-at: null
   archived-at: null

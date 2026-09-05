@@ -31,6 +31,13 @@
 #                          la cuarta corrida. El límite real IGUAL se prueba — TC-613 lo baja
 #                          por su propia variable de proceso, sólo para ese escenario — así
 #                          que elevarlo acá no deja el límite sin cobertura en ningún lado.
+#   CHECKOUT_RATE_LIMIT_MAX  US-012: `seed-ordenes.ts` hace UN checkout real (`POST
+#                          /v1/checkout`) por orden sembrada, y casi todos los escenarios
+#                          de `ordenes.feature` siembran al menos una — el presupuesto de
+#                          producción (10/10min/IP) autobloquea la suite completa a partir
+#                          del tercer o cuarto escenario. Mismo criterio que
+#                          `AUTH_RATE_LIMIT_MAX`: el límite real se sigue probando en la
+#                          capa que sí lo ejercita (dev-owned, `e2e-checkout-ratelimit.spec.ts`).
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -65,4 +72,5 @@ exec env \
   CART_WRITE_RATE_LIMIT_MAX=100000 \
   STOREFRONT_RATE_LIMIT_MAX=100000 \
   IMPORT_RATE_LIMIT_MAX=100000 \
+  CHECKOUT_RATE_LIMIT_MAX=100000 \
   node "$MAIN"
