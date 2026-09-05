@@ -31,6 +31,13 @@
 #                          la cuarta corrida. El límite real IGUAL se prueba — TC-613 lo baja
 #                          por su propia variable de proceso, sólo para ese escenario — así
 #                          que elevarlo acá no deja el límite sin cobertura en ningún lado.
+#   CHECKOUT_RATE_LIMIT_MAX  US-023 (`@pagos`): cada escenario de `pago-manual.feature` siembra
+#                          su propia orden `pending_payment` vía `POST /v1/checkout` real (nunca
+#                          INSERT directo) — 10+ checkouts en una sola corrida de la suite de
+#                          aceptación. El presupuesto de producción (10, `CHECKOUT_RATE_LIMIT_MAX`
+#                          default) se agota antes de terminar y el resto de los escenarios ve un
+#                          429 que no tiene nada que ver con el guard de idempotencia que están
+#                          probando (`qa/support/seed-pending-payment-order.ts`).
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -65,4 +72,5 @@ exec env \
   CART_WRITE_RATE_LIMIT_MAX=100000 \
   STOREFRONT_RATE_LIMIT_MAX=100000 \
   IMPORT_RATE_LIMIT_MAX=100000 \
+  CHECKOUT_RATE_LIMIT_MAX=100000 \
   node "$MAIN"

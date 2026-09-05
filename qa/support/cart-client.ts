@@ -57,6 +57,22 @@ export interface Respuesta<T> {
   headers: Record<string, string>;
 }
 
+/** Entrada de `POST /v1/checkout` — mismo shape que `CreateCheckoutRequest` (US-023 §8). */
+export interface CheckoutBody {
+  buyer: { name: string; email: string; phone: string };
+  consent: boolean;
+  fulfillment: 'pickup';
+}
+
+/** Respuesta `201` de `POST /v1/checkout` (`CheckoutCreated`, sin `order_id` interno). */
+export interface CheckoutCreated {
+  order_token: string;
+  order_number: number;
+  status: string;
+  total_ars_cents: number;
+  items_count: number;
+}
+
 /**
  * Un invitado del carrito: un `APIRequestContext` con su **propio almacén de
  * cookies**, que es lo que le da identidad ante el servidor.
@@ -98,6 +114,24 @@ export class Invitado {
     return {
       status: res.status(),
       body: await res.json().catch(() => undefined),
+      headers: res.headers(),
+    };
+  }
+
+  /**
+   * `POST /v1/checkout` (US-008) — convierte el carrito del invitado en una
+   * orden real `pending_payment`. Reusa el mismo `CartCsrfGuard` que las
+   * escrituras del carrito (US-023 §8): mismo double-submit, mismo `Origin`.
+   */
+  async checkout(body: CheckoutBody): Promise<Respuesta<CheckoutCreated>> {
+    const token = await this.csrf();
+    const res = await this.ctx.post('/v1/checkout', {
+      data: body,
+      headers: token ? { 'x-csrf-token': token } : {},
+    });
+    return {
+      status: res.status(),
+      body: (await res.json().catch(() => undefined)) as CheckoutCreated,
       headers: res.headers(),
     };
   }
