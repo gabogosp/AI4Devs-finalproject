@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: DSM Ferretería — POST /admin/orders/retention-sweep
+  version: 1.0.0-draft
+  contact:
+    name: DSM
+    url: https://example.com
+  description: |
+    Contrato draft de US-021 (retención y anonimización de PII de órdenes, Ley
+    25.326). Barrido manual por plazo cumplido (AC-1) — el mismo barrido que
+    `OrdersRetentionRunner` corre oportunistamente al arrancar la API
+    (ADR-0012 aplicado a este dominio); esta ruta lo dispara bajo demanda
+    (operación manual del dueño, o un disparador externo — cron de Railway —
+    fuera de alcance de este change).
+
+    ## Síncrono a propósito
+
+    No hay `202` + polling: es un único `UPDATE` de conjunto resuelto por el
+    motor sobre un índice de rango, sobre un volumen de algunos cientos de
+    órdenes por mes (E2E §17). Si el volumen creciera dos órdenes de magnitud,
+    la señal para moverlo a un contrato asíncrono es la métrica de duración de
+    este mismo endpoint.
+servers:
+  - url: /v1
+tags:
+  - name: admin-orders-retention
+    description: Retención y anonimización de PII de órdenes (US-021). Sólo admin.
+paths:
+  /admin/orders/retention-sweep:
+    post:
+      operationId: runOrderRetentionSweep
+      tags: [admin-orders-retention]
+      summary: Anonimizar todas las órdenes con el plazo de retención cumplido (AC-1)
+      description: |
+        `reason` queda fijo en `retention_policy` para todo lo que anonimiza —
+        nunca viene del body, no hay `requestBody`. El plazo sale de
+        `ORDER_RETENTION_MONTHS` (12 meses por defecto, PRD §6).
+      security:
+        - adminBearer: []
+      responses:
+        '200':
+          description: |
+            Barrido corrido — **siempre 200, incluso `anonymized_count: 0`**
+            (US §9: "registrar cuántas órdenes anonimiza cada corrida" es
+            también la señal de que el barrido corrió).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RetentionSweepResult' }
+              examples:
+                conVencidas:
+                  value: { anonymized_count: 3, reason: retention_policy }
+                sinVencidas:
+                  value: { anonymized_count: 0, reason: retention_policy }
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/Problem'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error en envelope RFC 7807.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RateLimited:
+      description: |
+        Presupuesto del barrido manual excedido: **5 por hora por IP**
+        (`ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX` /
+        `ORDER_RETENTION_SWEEP_RATE_LIMIT_TTL_MS`, `security-standards §7.3`).
+        Deliberadamente angosto: un disparador externo mal configurado en loop
+        no debería poder convertir esto en una carga recurrente indeseada.
+        Cubo `auth` reusado, sin registrar uno nuevo.
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema: { type: integer }
+        RateLimit-Limit:
+          schema: { type: integer }
+        RateLimit-Remaining:
+          schema: { type: integer }
+        RateLimit-Reset:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    RetentionSweepResult:
+      type: object
+      required: [anonymized_count, reason]
+      additionalProperties: false
+      properties:
+        anonymized_count:
+          type: integer
+          minimum: 0
+          description: Cuántas órdenes anonimizó ESTA corrida (US §9 — observabilidad, sin PII en el evento).
+        reason:
+          type: string
+          enum: [retention_policy]
+          description: Fijo — este endpoint sólo produce anonimizaciones por plazo cumplido.
+    Problem:
+      type: object
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          description: |
+            `dsm:catalog/http-401` / `dsm:catalog/http-403` de la frontera admin
+            y el 429 del throttler — catálogo cerrado, sin errores de dominio
+            propios (no hay body que validar).
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
