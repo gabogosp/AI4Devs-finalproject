@@ -1569,9 +1569,74 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/27
   pr-opened-at: 2026-08-30
   created: 2026-08-30
+  # NOTA (2026-09-05, /plan-qa Mode A, superada por el archive de abajo): qa-plan.md se
+  # agregó originalmente a este mismo change
+  # (openspec/changes/US-023-pago-manual-offline-backend/qa-plan.md, sin tocar
+  # `status`/`branch`). El `/archive-change` de este mismo día movió TODO el directorio
+  # (proposal/design/tasks/contracts + qa-plan.md) a `archive/` — ver entrada hermana
+  # `US-023-pago-manual-offline-qa` más abajo para el estado real de la disciplina QA
+  # (su PR #38 sigue abierto, no archivado; sólo el archivo físico se movió porque vivía
+  # dentro del directorio del backend).
   completed-at: 2026-09-02T23:37:32Z
   archived-at: 2026-09-05
   archive-path: openspec/changes/archive/US-023-pago-manual-offline-backend/
+
+- name: US-023-pago-manual-offline-qa
+  us-id: US-023
+  discipline: qa
+  variant: null
+  # MODO A — embebido (no hermano): igual precedente que
+  # US-008-checkout-guest-backend/qa-plan.md, no el de US-007/US-012/US-014 (que abren
+  # directorio propio con proposal/tasks/design). El único artefacto de este discipline
+  # es `qa-plan.md`, y vive DENTRO de `US-023-pago-manual-offline-backend/` (mergeado,
+  # PR #27) — no existe `openspec/changes/US-023-pago-manual-offline-qa/` como directorio.
+  # Se justifica porque las 4 suites automatizadas que este change agrega son 100%
+  # Layer 1 (backend-aislado, contra la superficie que ese change ya publicó) — no hay
+  # nada cross-stack construido todavía (QA-023-E2E-1 sigue bloqueado, ver abajo).
+  #
+  # `/develop-qa` (2026-09-05) cerró los 4 stubs automatizados declarados en el
+  # qa-plan.md: QA-023-ACC-1 (Cucumber-js + Playwright APIRequestContext — 10 escenarios,
+  # 8 Scenario/Outline declarados en el plan, 61 steps, verdes contra API+Postgres reales),
+  # QA-023-CT-1 (contract test standalone `tsx`, 7 casos), QA-023-PERF-1/PERF-2 (k6,
+  # p95=4.6ms contra el umbral heredado de 500ms). Sin defectos de backend encontrados —
+  # los 4 stubs pasaron a la primera contra la implementación real, sin necesidad de
+  # ajustar producción. QA-023-E2E-1 (Playwright cross-stack, Gherkin SC-023-X1) queda
+  # `execution_mode: manual` / `status: blocked` — bloqueado por
+  # `US-012-panel-ordenes-dueno-frontend-web` Fase 12 (`PendingPaymentsPanel`, T12.1-T12.4
+  # sin marcar, componente ausente del repo — hallazgo de esta misma ejecución, drift
+  # real, no sólo de índice) — queda como checklist, no se scaffoldea contra selectores
+  # inexistentes.
+  #
+  # Desvíos registrados respecto al texto literal del qa-plan.md (documentados inline en
+  # el propio archivo, en cada stub): la convención real de este repo para contract test
+  # es un script `tsx` standalone (no jest/testPathPattern) y para BDD es Playwright
+  # `APIRequestContext` (no supertest); `qa/scripts/api-up.sh` no elevaba
+  # `CHECKOUT_RATE_LIMIT_MAX` y la suite (11 checkouts reales) pegaba contra el límite de
+  # producción — corregido con el mismo patrón que los 5 overrides ya existentes; el k6
+  # del plan (`--vus`+`--duration` con pool finito) era una trampa de falso-verde una vez
+  # agotado el pool — corregido a `shared-iterations` (mismo fix que ya usa
+  # `auth-login.js`).
+  #
+  # Riesgo NO corregido (fuera de alcance, reportado): `.github/workflows/qa.yml` levanta
+  # la API sin pasar por `api-up.sh` y sin ningún override de rate-limit — el nuevo
+  # feature `@pagos` (y otras suites existentes) van a 429 en el nightly CI por el mismo
+  # motivo. Pre-existente, no introducido por este change, pero ahora también lo bloquea.
+  status: in review
+  parent-us: docs/user-stories/US-023-pago-manual-offline.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # US §7 presupuesta QA-US-023 en 4-6h — sin una re-estimación propia del qa-engineer/
+  # qa-developer en esta corrida, se usa el punto medio del rango ratificado por la US.
+  estimate-hours: 5
+  assignee: claude-code
+  branch: feat/US-023-pago-manual-offline-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/38
+  pr-opened-at: 2026-09-05
+  created: 2026-09-05
+  completed-at: null
+  archived-at: null
+  archive-path: null
 
 - name: US-008-checkout-guest-frontend-web
   us-id: US-008
