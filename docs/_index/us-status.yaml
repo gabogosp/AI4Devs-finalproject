@@ -27,6 +27,9 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-16
   in-review-at: 2026-08-30T12:30:00Z # PR #21 (qa) abierto; BE y FE siguen sin rama/PR propios (branch: null) — US-level se queda In Progress
+  # NOTA (2026-09-05, /archive-change): QA archivó (PR #21 mergeado 2026-08-30). `status`
+  # NO avanza — BE y FE siguen sin plan/rama/PR (branch: null en ambos), no sólo sin
+  # archivar.
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp

@@ -5,6 +5,10 @@ parent-us: US-002
 discipline: qa
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-05
+merged_commit: 3e9b516
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/21
 ---
 
 # US-002 QA — Suite cross-stack del browse por categorías
