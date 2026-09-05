@@ -257,7 +257,7 @@
   us-id: US-002
   discipline: qa
   variant: null
-  status: in review   # regresión completa re-verificada 2026-08-30 (/develop-qa): 20/20 automatizados verdes; 2 diferidos (T2.5/T5.1) sin cambio
+  status: archived   # 20/20 automatizados verdes + 2 Deferred (T2.5/T5.1, decisión PO 2026-08-20) — no bloquean el archive (F53)
   parent-us: docs/user-stories/US-002-storefront-navegacion-categorias.md
   linear-task-id: null
   audit-baseline: null
@@ -268,9 +268,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/21
   pr-opened-at: 2026-08-30T12:30:00Z
   created: 2026-08-16
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-30T12:49:49Z
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-002-storefront-navegacion-categorias-qa/
 
 - name: US-002-storefront-navegacion-categorias-frontend-web
   us-id: US-002
