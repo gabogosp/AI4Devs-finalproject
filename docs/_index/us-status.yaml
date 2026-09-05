@@ -416,4 +416,13 @@
   # el FE completo de esta US (confirmar pago + vista de pendientes), consumiendo sus dos
   # endpoints. FE-US-023 queda sin change propio; no es una disciplina huérfana, está
   # satisfecha por el change de US-012.
+  #
+  # NOTA (2026-09-05, /archive-change US-023-pago-manual-offline-backend, barrido de
+  # archivos pendientes — PR #27 mergeado 2026-09-02): disciplina backend archivada
+  # (openspec/changes/archive/US-023-pago-manual-offline-backend/), 28/28 tasks. Crea la
+  # capacidad nueva `openspec/specs/pagos/` (CAP-4, camino manual/offline) — README +
+  # requirements + decisions + contratos vivos (POST .../confirm-payment,
+  # GET .../pending-payment). `status` de la US NO avanza a `Done`: QA sigue en curso (PR
+  # #38, otra sesión) y FE está satisfecha por US-012 (no un change propio archivable).
+  # Se queda en `In Progress`/pendiente del merge de QA. `blocked_by` sin tocar.
   blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción (FE, ya construida en su PR #22) y su AC-1/Fase 12 cubre AC-2 de esta US.

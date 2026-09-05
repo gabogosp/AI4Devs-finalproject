@@ -5,6 +5,10 @@ parent-us: US-023
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-05
+merged_commit: f717dc3
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/27
 ---
 
 # US-023 Backend — Pago manual / offline: confirmación del dueño
