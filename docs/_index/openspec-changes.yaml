@@ -686,7 +686,7 @@
   # `completed` es el valor del enum del schema (draft|ready|approved|in-progress|completed|
   # archived). Nota: otras 12 entradas de este archivo usan `in progress` con espacio, que NO
   # está en el enum — deriva preexistente, no se toca acá para no pisar trabajo ajeno.
-  status: completed
+  status: archived   # /archive-change 2026-09-05 — 28/28 tasks (AS-BUILT), PR #3 mergeado 2026-08-29. Crea openspec/specs/enriquecimiento-ia/ (CAP-3)
   parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
   linear-task-id: null
   audit-baseline: null
@@ -720,8 +720,8 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
   completed-at: 2026-08-23  # 28/28 tasks cerradas con su Verify; AS-BUILT en tasks.md
-  archived-at: null
-  archive-path: null
+  archived-at: 2026-09-05
+  archive-path: openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/
   # AS-BUILT (2026-08-23): las 28 tasks cerraron con su `Verify` en verde. Suite completa de
   # apps/api en 1246 tests / 123 suites; `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test`
   # en 0. Cuatro hallazgos que la ejecución destapó y que el plan no anticipaba:

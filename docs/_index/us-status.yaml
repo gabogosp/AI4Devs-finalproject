@@ -72,6 +72,16 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (backend-node-developer)
+  #
+  # NOTA (2026-09-05, /archive-change US-005-enriquecimiento-ia-embeddings-backend, barrido
+  # de archivos pendientes — PR #3 mergeado 2026-08-29): disciplina backend archivada
+  # (openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/), 28/28 tasks
+  # AS-BUILT. Crea la capacidad nueva `openspec/specs/enriquecimiento-ia/` (CAP-3, puente
+  # entre catálogo y búsqueda semántica) — README + requirements + decisions + contratos
+  # vivos (2 endpoints admin: GET /admin/enrichment/status, POST /admin/enrichment/runs).
+  # `status` de la US NO avanza a `Done`: QA e INFRA (las otras dos disciplinas declaradas)
+  # nunca se planificaron — no hay `openspec/changes/US-005-*-qa/` ni `-infrastructure/`.
+  # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario

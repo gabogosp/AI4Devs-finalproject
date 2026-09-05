@@ -1,0 +1,35 @@
+get:
+  operationId: getEnrichmentStatus
+  tags: [admin-enrichment]
+  summary: Cobertura de embeddings y estado del ejecutor (AC-3)
+  description: |
+    Responde la pregunta que decide si la tienda puede vender por búsqueda: cuántos
+    productos del catálogo son buscables. Sin esto, un catálogo con 3 de 800 productos
+    vectorizados se ve idéntico a uno completo hasta que un cliente busca y no encuentra
+    nada. `runner_state` distingue cuatro situaciones que se resuelven distinto: `idle`
+    (listo), `running` (un POST daría 409), `cooldown` (breaker abierto tras fallos
+    consecutivos del proveedor — es el diagnóstico de "Gemini caído" del runbook) y
+    `disabled` (sin GEMINI_API_KEY o con ENRICHMENT_ENABLED=false: el catálogo sigue
+    navegable pero NO se generan vectores). NO consume el presupuesto del POST: el panel
+    lo consulta en loop mientras una corrida avanza. No devuelve la clave del proveedor
+    ni su URL; `last_error_code` es un type del catálogo dsm:enrichment/* (AC-9).
+  responses:
+    '200':
+      description: Cobertura y estado actuales.
+      headers:
+        Cache-Control:
+          schema: { type: string }
+          description: 'no-store: el estado de un ejecutor no se cachea.'
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/EnrichmentStatus' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
