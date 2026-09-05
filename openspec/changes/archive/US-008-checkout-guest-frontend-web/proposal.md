@@ -4,6 +4,10 @@ discipline: frontend-web
 variant: null
 language: es
 created: 2026-08-30
+archived: true
+archived_at: 2026-09-05
+merged_commit: bacffc5
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/23
 ---
 
 # US-008 Frontend Web — Checkout del invitado: formulario, consentimiento y resumen

@@ -27,6 +27,9 @@
   ready-at: 2026-06-15
   in-progress-at: 2026-08-16
   in-review-at: 2026-08-30T12:30:00Z # PR #21 (qa) abierto; BE y FE siguen sin rama/PR propios (branch: null) — US-level se queda In Progress
+  # NOTA (2026-09-05, /archive-change): QA archivó (PR #21 mergeado 2026-08-30). `status`
+  # NO avanza — BE y FE siguen sin plan/rama/PR (branch: null en ambos), no sólo sin
+  # archivar.
   blocked_by: [US-001]
 - id: US-003
   slug: ficha-producto-pdp
@@ -69,6 +72,16 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (backend-node-developer)
+  #
+  # NOTA (2026-09-05, /archive-change US-005-enriquecimiento-ia-embeddings-backend, barrido
+  # de archivos pendientes — PR #3 mergeado 2026-08-29): disciplina backend archivada
+  # (openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/), 28/28 tasks
+  # AS-BUILT. Crea la capacidad nueva `openspec/specs/enriquecimiento-ia/` (CAP-3, puente
+  # entre catálogo y búsqueda semántica) — README + requirements + decisions + contratos
+  # vivos (2 endpoints admin: GET /admin/enrichment/status, POST /admin/enrichment/runs).
+  # `status` de la US NO avanza a `Done`: QA e INFRA (las otras dos disciplinas declaradas)
+  # nunca se planificaron — no hay `openspec/changes/US-005-*-qa/` ni `-infrastructure/`.
+  # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
@@ -118,6 +131,16 @@
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
   in-review-at: 2026-08-30          # FE (PR #23); BE ya estaba en review (PR #11) sin este campo
                                      # estampado — QA sin planificar, status US se queda en Progress
+  #
+  # NOTA (2026-09-05, /archive-change US-008-checkout-guest-frontend-web, barrido de
+  # archivos pendientes — PR #23 mergeado 2026-08-30): disciplina frontend-web archivada
+  # (openspec/changes/archive/US-008-checkout-guest-frontend-web/), 39/39 tasks. Extiende
+  # openspec/specs/checkout/ (CAP-10, ya existente desde el backend) con la sección "Desde
+  # US-008 frontend-web" en requirements.md + decisions.md (resolver de validación sobre
+  # schema generado, order_token en sessionStorage, confirmación in-place). BE también ya
+  # está archivado. `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca
+  # se planificó (no existe openspec/changes/US-008-*-qa/ en ningún estado). Se queda en
+  # `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
@@ -246,6 +269,12 @@
   # (backend ya lo estaba desde 2026-08-30). No se toca `in-review-at` (ya lo puso backend,
   # primera disciplina) ni el `status` de la US (se queda en `In Progress` — QA sigue en
   # `draft`, 0/24 tasks, ninguna PR abierta todavía).
+  #
+  # NOTA (2026-09-05, barrido de archives): backend (este change, 29/29 tasks) y
+  # frontend-web (PR #32) YA archivados a openspec/changes/archive/. El backend creó la
+  # capacidad nueva `openspec/specs/ordenes/` (CAP-5, panel de fulfillment) con su
+  # contrato vivo. Falta archivar la disciplina qa (PR #33) para que la US pase a Done —
+  # hasta entonces `status` se queda en `In Progress`. `blocked_by` sin tocar.
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso

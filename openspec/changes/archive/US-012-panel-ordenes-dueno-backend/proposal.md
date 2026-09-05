@@ -18,6 +18,10 @@ regenerated-reason: >
   existe en código) y lo funda sobre lo que el schema real de `orders` (US-008,
   ya migrado) efectivamente tiene hoy. Ver "Qué cambió respecto a la versión
   anterior" abajo.
+archived: true
+archived_at: 2026-09-05
+merged_commit: 1a90fe7
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/22
 ---
 
 # Proposal — Panel de órdenes del dueño (backend)

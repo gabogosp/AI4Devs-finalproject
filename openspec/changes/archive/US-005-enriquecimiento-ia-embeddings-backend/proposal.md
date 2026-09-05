@@ -5,6 +5,10 @@ parent-us: US-005
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-05
+merged_commit: 9a9fc53
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
 ---
 
 # US-005 Backend — Enriquecimiento IA de descripciones + embeddings (ejecutor in-process, contrato de cobertura observable)
