@@ -374,8 +374,10 @@
   created: 2026-08-30
   ready-at: 2026-08-30
   in-progress-at: 2026-08-30   # /plan-backend-ticket — primer plan de disciplina abierto
-  in-review-at: 2026-08-30     # backend PR #27 abierto (/commit); FE/QA todavía no arrancaron —
-                                # el status de la US queda en In Progress hasta que las tres tengan PR
+  in-review-at: 2026-08-30     # backend PR #27 abierto (/commit, mergeado 2026-09-02) + QA PR
+                                # abierto 2026-09-05 (/commit) — ver nota de 2026-09-05 abajo: FE
+                                # no está realmente satisfecho todavía, así que el status de la US
+                                # se queda en In Progress (no avanza a In Review las tres juntas)
   t-shirt: M
   # Pago manual/offline (transferencia/efectivo, coordinado por WhatsApp): el dueño confirma
   # el pago y la orden pasa a `new` (FSM E2E §12, no "paid" — corregido en el enrich).
@@ -391,4 +393,17 @@
   # el FE completo de esta US (confirmar pago + vista de pendientes), consumiendo sus dos
   # endpoints. FE-US-023 queda sin change propio; no es una disciplina huérfana, está
   # satisfecha por el change de US-012.
-  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción (FE, ya construida en su PR #22) y su AC-1/Fase 12 cubre AC-2 de esta US.
+  # 2026-09-05 (hallazgo de /develop-qa US-023, verificado leyendo código — no asumido):
+  # la afirmación de arriba ("Fase 12 ya construye el FE completo") es INCORRECTA hoy.
+  # `find apps/web/src -iname "*PendingPayment*"` no devuelve ningún componente (sólo el
+  # DTO generado del contrato); `git log --all -- "**/PendingPaymentsPanel*"` no tiene
+  # ningún commit; las 4 tasks de Fase 12 en
+  # `US-012-panel-ordenes-dueno-frontend-web/tasks.md` (T12.1-T12.4) siguen `- [ ]`. El PR
+  # #22 mergeó backend + Fases 0-11 del FE de US-012, pero NO su Fase 12 — la nota de
+  # 2026-08-31 quedó desactualizada frente al código real. Efecto: la mitad UI de AC-2 y
+  # el E2E cross-stack de esta US (`QA-023-E2E-1`) siguen genuinamente bloqueados — no es
+  # sólo un problema de coordinación entre worktrees, es trabajo no ejecutado. FE-US-023
+  # NO está satisfecho todavía. Owner: quien retome Fase 12 de
+  # US-012-panel-ordenes-dueno-frontend-web o abra un change dedicado — no bloquea el
+  # QA-plan de esta US (que dejó ese escenario como manual/blocked, no inventado).
+  blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment`. US-012: el panel donde vive la acción — Fase 12 (FE) SIN construir todavía (ver nota 2026-09-05), y su AC-1/Fase 12 debe cubrir AC-2 de esta US cuando se retome.
