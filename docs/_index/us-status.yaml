@@ -236,6 +236,15 @@
   # (backend ya lo estaba desde 2026-08-30). No se toca `in-review-at` (ya lo puso backend,
   # primera disciplina) ni el `status` de la US (se queda en `In Progress` — QA sigue en
   # `draft`, 0/24 tasks, ninguna PR abierta todavía).
+  #
+  # NOTA (2026-09-05, /archive-change US-012-panel-ordenes-dueno-backend, barrido de
+  # archivos pendientes — PR #22 mergeado 2026-09-03): disciplina backend archivada
+  # (openspec/changes/archive/US-012-panel-ordenes-dueno-backend/), 29/29 tasks. Crea la
+  # capacidad nueva `openspec/specs/ordenes/` (CAP-5, panel de fulfillment) — README +
+  # requirements + decisions + contracts vivos (openapi.yaml + paths/list-orders.yaml +
+  # paths/order-detail.yaml). QA también ya está archivado (PR #33). `status` de la US
+  # NO avanza a `Done` todavía — falta archivar la disciplina frontend-web (PR #31,
+  # en curso por otra sesión). `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
