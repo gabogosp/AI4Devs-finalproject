@@ -1621,7 +1621,11 @@
   # la API sin pasar por `api-up.sh` y sin ningún override de rate-limit — el nuevo
   # feature `@pagos` (y otras suites existentes) van a 429 en el nightly CI por el mismo
   # motivo. Pre-existente, no introducido por este change, pero ahora también lo bloquea.
-  status: in review
+  status: archived   # /archive-change 2026-09-05 — 4/4 stubs automatizados cerrados (QA-023-ACC-1,
+  # CT-1, PERF-1/2), PR #38 mergeado 2026-09-05. QA-023-E2E-1 queda manual/blocked en el
+  # qa-plan.md (checklist humano, no bloquea el archive). Sin spec delta: QA no declara
+  # contratos — nada que sincronizar en openspec/specs/ (mismo criterio que
+  # US-012-panel-ordenes-dueno-qa/US-002-storefront-navegacion-categorias-qa).
   parent-us: docs/user-stories/US-023-pago-manual-offline.md
   linear-task-id: null
   audit-baseline: null
@@ -1634,9 +1638,13 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/38
   pr-opened-at: 2026-09-05
   created: 2026-09-05
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-05T21:23:55Z
+  archived-at: 2026-09-05
+  # No hay directorio propio `openspec/changes/archive/US-023-pago-manual-offline-qa/`:
+  # Modo A embebido — el único artefacto (`qa-plan.md`) vivía dentro de
+  # `US-023-pago-manual-offline-backend/`, que ya se archivó (PR #40) y se llevó el
+  # archivo consigo. Ruta real del artefacto:
+  archive-path: openspec/changes/archive/US-023-pago-manual-offline-backend/qa-plan.md
 
 - name: US-008-checkout-guest-frontend-web
   us-id: US-008
