@@ -1124,7 +1124,7 @@
   us-id: US-010
   discipline: backend
   variant: null
-  status: in-progress   # /develop-backend, primeras tasks cerradas 2026-09-05 (Pre-requisitos + T0.1)
+  status: in-review   # /commit 2026-09-05: 42/42 tasks, PR #49 abierto contra main
   parent-us: docs/user-stories/US-010-orden-webhook-stock.md
   linear-task-id: null
   audit-baseline: null
@@ -1206,7 +1206,8 @@
   estimate-hours: 19.5
   assignee: claude-code
   branch: feat/US-010-orden-webhook-stock-backend
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/49
+  pr-opened-at: 2026-09-05
   created: 2026-08-22
   completed-at: null
   archived-at: null

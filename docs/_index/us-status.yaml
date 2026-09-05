@@ -148,6 +148,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
+  in-review-at: 2026-09-05   # /commit — backend (primera disciplina) llega a in-review, PR #49, 42/42 tasks. QA todavía no arrancó — US-level se queda In Progress.
   # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate): desacoplado de US-009.
   # US-008 y payments (US-023) ya existen y son lo único que este change necesita; construye
   # su propio MercadoPagoClient de alcance mínimo (getPayment/searchByExternalReference/
