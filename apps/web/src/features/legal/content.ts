@@ -7,12 +7,12 @@ import { z } from 'zod';
  * es anti-patrón (`frontend-standards.md` §12) y acá sería además innecesario —
  * un documento legal no necesita marcado, necesita ser legible y correcto.
  *
- * **Estado del texto**: provisional. Lleva los datos que **hoy son ciertos**
- * (nombre de fantasía, domicilio del local, email de contacto, tomados de
- * `docs/project-config.yml` y del footer ya publicado) y marca lo que falta con
- * `[PENDIENTE: …]` **dentro del propio texto**, así el hueco se ve en la página
- * y no sólo en el código. La revisión legal es un gate humano del DoD de la US
- * (decisión del PO, OQ-FE-17 (a)): no hay chequeo automático que lo bloquee.
+ * **Estado del texto**: completo (2026-09-06). Los datos reales — razón social,
+ * CUIT, condición frente al IVA y plazo de retención — los proveyó el dueño; ya
+ * no queda ningún marcador `[PENDIENTE: …]`. Cuando faltaban, se marcaban
+ * **dentro del propio texto** para que el hueco se viera en la página y no sólo
+ * en el código — la revisión legal fue un gate humano del DoD de la US
+ * (decisión del PO, OQ-FE-17 (a)), sin chequeo automático que lo bloqueara.
  */
 
 export interface LegalSection {
@@ -49,6 +49,8 @@ export interface LegalDocumentContent {
 export const LEGAL_TERMS_VERSION = '2026-06-15';
 
 const NOMBRE = 'DSM Refrigeración y Ferretería';
+const CUIT = '20-95964796-9';
+const CONDICION_IVA = 'Monotributo';
 const DOMICILIO = 'Av. Córdoba y Av. Pueyrredón, CABA, Argentina';
 const EMAIL = 'dsm.refrigeracion.ferreteria@gmail.com';
 
@@ -80,9 +82,8 @@ const privacidad: LegalDocumentContent = {
     controller: {
       heading: 'Quién trata tus datos',
       paragraphs: [
-        `El responsable del tratamiento es ${NOMBRE}, con domicilio en ${DOMICILIO}.`,
+        `El responsable del tratamiento es ${NOMBRE} (CUIT ${CUIT}), con domicilio en ${DOMICILIO}.`,
         `Podés contactarnos por correo electrónico a ${EMAIL}.`,
-        '[PENDIENTE: razón social, CUIT y domicilio legal completos — los provee el dueño antes de publicar]',
       ],
     },
     purpose: {
@@ -121,8 +122,7 @@ const privacidad: LegalDocumentContent = {
     {
       heading: 'Cuánto tiempo los conservamos',
       paragraphs: [
-        'Conservamos los datos asociados a una compra mientras dure la relación comercial y por el plazo que exijan las obligaciones fiscales y contables aplicables.',
-        '[PENDIENTE: plazo de retención definitivo — a confirmar con asesoría contable]',
+        'Conservamos los datos asociados a una compra mientras dure la relación comercial y, cumplido ese plazo, los anonimizamos automáticamente a los 12 meses de la última actividad de la orden.',
       ],
     },
     {
@@ -143,8 +143,7 @@ const terminos: LegalDocumentContent = {
     controller: {
       heading: 'Quién opera este sitio',
       paragraphs: [
-        `Este sitio es operado por ${NOMBRE}, con domicilio en ${DOMICILIO}.`,
-        '[PENDIENTE: razón social, CUIT y condición frente al IVA — los provee el dueño antes de publicar]',
+        `Este sitio es operado por ${NOMBRE} (CUIT ${CUIT}), con domicilio en ${DOMICILIO}, ${CONDICION_IVA.toLowerCase()} frente al IVA.`,
       ],
     },
     purpose: {
