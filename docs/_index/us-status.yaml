@@ -935,4 +935,7 @@
   linear-issue-id: null
   created: 2026-09-06
   ready-at: 2026-09-06
+  in-progress-at: 2026-09-06   # primera planificación de disciplina (/plan-frontend-web-ticket,
+  # frontend-web-developer) — el qa-plan standalone previo no marcaba in-progress (es QA
+  # adelantado, no el arranque de una disciplina de implementación)
   blocked_by: [US-008, US-013, US-014]   # necesita checkout + estado delivered + cuentas (las 3 Done)
