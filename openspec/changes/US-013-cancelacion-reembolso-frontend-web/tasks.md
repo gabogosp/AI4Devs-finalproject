@@ -195,7 +195,7 @@ language: es
 
 ## Fase 5 — Wiring en `OrderDetail`
 
-- [ ] **T5.1 — Montar `<OrderCancelAction>` junto a `OrderStatusActions`**
+- [x] **T5.1 — Montar `<OrderCancelAction>` junto a `OrderStatusActions`**
   - **Pattern**: `per design.md §D8` — reusa el mismo `onConfirmed` que ya
     reconcilia el estado local:
     ```tsx
@@ -220,7 +220,7 @@ language: es
 
 ## Fase 6 — Observabilidad (eventos + a11y)
 
-- [ ] **T6.1 — 3 literales nuevos en `BusinessEvent`**
+- [x] **T6.1 — 3 literales nuevos en `BusinessEvent`**
   - **Pattern**: agregar al bloque comentado "Panel de fulfillment (US-012)"
     en `apps/web/src/lib/observability/events.ts`, mismo criterio sin PII
     que `order_status_change_*`/`order_anonymize_*` (sólo `order_id`):

@@ -10,6 +10,7 @@ import { OrderStatusBadge } from './OrderStatusBadge';
 import { OrderStatusActions } from './OrderStatusActions';
 import { OrderStatusHistory } from './OrderStatusHistory';
 import { OrderAnonymizeAction } from './OrderAnonymizeAction';
+import { OrderCancelAction } from './OrderCancelAction';
 import { ordersService, type OrderDetail as Order, type OrderStatus } from './ordersService';
 
 /**
@@ -97,6 +98,8 @@ export function OrderDetail({ id }: { id: string }) {
         onOptimisticUpdate={onOptimisticUpdate}
         onConfirmed={onConfirmed}
       />
+
+      <OrderCancelAction order={{ id: order.id, status: order.status }} onCancelled={onConfirmed} />
 
       <section aria-labelledby="orden-items-heading">
         <h3 id="orden-items-heading" className="font-medium">
