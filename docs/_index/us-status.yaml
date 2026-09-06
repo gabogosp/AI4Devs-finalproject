@@ -395,6 +395,21 @@
   # disciplina) llega a in-review — 25/25 tasks + 6/6 verificación suite-level
   # (152 archivos/947 tests), PR #59 abierto (stacked sobre #55). `status` de
   # la US se queda en `In Progress` (QA todavía sin planificar).
+  #
+  # NOTA (2026-09-05, /plan-qa US-016): qa-plan.md agregado Modo A embebido en
+  # `US-016-panel-metricas-backend/qa-plan.md` (BE y FE ya construidos, PR #55/#59
+  # in review) — 12 test cases owned-by-QA (2 aceptación BDD, 1 contract, 5 E2E de
+  # navegador cross-stack, 1 a11y L3, 1 k6, 2 charters), 0 bloqueados: a diferencia
+  # de US-008/US-009/US-023 (otros Modo A de este repo), las cuatro capacidades de
+  # las que depende el dataset cross-feature (checkout US-008, confirmación manual
+  # US-023, pago simulado US-010, fulfillment US-012) ya están archivadas. El
+  # escenario central (X-1/QA-016-ACC-2/QA-016-E2E-1) siembra 6 órdenes 100% por
+  # API real (checkout→confirmación/simulado→PATCH de fulfillment) para probar
+  # que sólo las 4 activas cuentan como venta — algo que ningún test de un solo
+  # módulo puede ver, porque el backend siembra sus propios 6 estados con
+  # `prisma.order.create` directo (design.md §D2/T7.3 de ese change). `blocked_by`
+  # de abajo sigue desactualizado (ver nota de arriba, 2026-09-05) — no se toca,
+  # propiedad de otro agente. `status`/`in-progress-at` sin tocar.
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento

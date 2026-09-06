@@ -1922,6 +1922,10 @@
   archived-at: 2026-09-05
   archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-backend/
 
+# qa-plan.md agregado 2026-09-05 por /plan-qa (Modo A embebido — aceptación BDD
+# cross-stack + contract testing + E2E de navegador contra dataset de ciclo de vida
+# real checkout→pago→fulfillment + a11y L3 + k6 p95<300ms + 2 charters — 0 test cases
+# bloqueados, mismo esquema QA-016-* que US-008/US-009/US-023)
 - name: US-016-panel-metricas-backend
   us-id: US-016
   discipline: backend
