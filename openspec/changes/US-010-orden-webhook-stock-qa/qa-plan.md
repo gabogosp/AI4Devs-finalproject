@@ -280,7 +280,7 @@ llamadas sin ejercitar ningún camino de código distinto.
 
 ## 7. Performance (k6)
 
-- [ ] **QA-010-PERF-1**: `qa/performance/simulate-payment.js` — target p95 < 200ms
+- [x] **QA-010-PERF-1**: `qa/performance/simulate-payment.js` — target p95 < 200ms
   (`design.md` de backend §D12, propuesto — confirma Ops), heredado sin inventar un
   número nuevo.
 
@@ -301,7 +301,7 @@ llamadas sin ejercitar ningún camino de código distinto.
     `body.status` presente, gateado por `checks: ['rate>0.99']`.
   - Verify: `QA_API_BASE_URL=http://localhost:3009 k6 run qa/performance/simulate-payment.js --summary-trend-stats="p(95)"`
 
-- [ ] **QA-010-PERF-2**: threshold agregado a la fuente única `qa/performance/lib/thresholds.js`.
+- [x] **QA-010-PERF-2**: threshold agregado a la fuente única `qa/performance/lib/thresholds.js`.
 
   ```yaml
   id: QA-010-PERF-2

@@ -32,7 +32,7 @@ documentado.
 | SC-010-N5 | T1.4 | AC-9 | 1 | hecho |
 | SC-010-N6 | T1.3 | AC-4 | 1 | hecho |
 | QA-010-CT-1 | T2.1 | (contrato de los 5 endpoints) | 1 | hecho |
-| QA-010-PERF-1/2 | T3.1, T3.2 | AC-1/AC-9 (NFR) | 1 | por hacer |
+| QA-010-PERF-1/2 | T3.1, T3.2 | AC-1/AC-9 (NFR) | 1 | hecho |
 | SC-010-X1 | T4.1 | AC-1, AC-9 | 3 | por hacer |
 | SC-010-X2 | T4.2 | AC-4 | 3 | por hacer |
 | QA-010-EXP-1 | T5.1 | (exploratorio) | — | por hacer |
@@ -166,7 +166,7 @@ documentado.
 
 ## Fase 3: Performance (k6)
 
-- [ ] T3.1 `qa/performance/simulate-payment.js` — QA-010-PERF-1.
+- [x] T3.1 `qa/performance/simulate-payment.js` — QA-010-PERF-1.
   - **Pattern**: `setup()` pre-siembra N órdenes reales vía checkout (mismo contrato que
     `seedPendingPaymentOrder`), executor `shared-iterations` con `iterations: POOL`
     (nunca `vus`+`duration` abierto sobre un recurso finito — mismo hallazgo ya resuelto
@@ -177,7 +177,7 @@ documentado.
     ['rate>0.99']`, `http_req_failed` bajo el umbral estándar del repo.
   - **Verify**: `QA_API_BASE_URL=http://localhost:3009 k6 run qa/performance/simulate-payment.js --summary-trend-stats="p(95)"`
 
-- [ ] T3.2 `qa/performance/lib/thresholds.js` — QA-010-PERF-2.
+- [x] T3.2 `qa/performance/lib/thresholds.js` — QA-010-PERF-2.
   - **Exit criterion**: exporta `simulate_payment` con
     `'http_req_duration{endpoint:simulate_payment}': ['p(95)<200']`.
   - **Verify**: `grep -q "simulate_payment" qa/performance/lib/thresholds.js && grep -q "p(95)<200" qa/performance/lib/thresholds.js`
@@ -238,7 +238,7 @@ sys.exit(0 if not faltan and len(scs)>=13 else 1)"`
   interprete `--tags` como ruta de feature (`ENOENT`) — se corrió sin el `--` extra;
   el resto de los Verify de este archivo asumen la misma corrección.
 - [x] Contract test verde: `pnpm --filter @dsm/qa test:contract:pago-webhook` — 13/13 casos
-- [ ] Carga dentro del presupuesto: `k6 run qa/performance/simulate-payment.js`
+- [x] Carga dentro del presupuesto: `k6 run qa/performance/simulate-payment.js` — p95=15.25ms (< 200ms), 150/150 checks
 - [ ] E2E cross-stack verde: `pnpm --filter @dsm/qa test:e2e -- --grep "SC-010-X1|SC-010-X2" --reporter=line`
 - [x] **Sin regresión en las suites QA ya existentes** (`pago-manual`): `pnpm --filter
   @dsm/qa test:acceptance --tags "@pagos and not @blocked"` — 25/25 escenarios verdes
