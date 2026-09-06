@@ -48,6 +48,14 @@ jobs:
       # US-010/ADR-0006: sin esto, POST /v1/checkout/simulate-payment no existe
       # y `pago-webhook.feature` falla con 404 en vez de confirmar el pago.
       PAYMENTS_SIMULATED_ENABLED: 'true'
+      # `qa/support/customer-auth.ts` (tokenDeResetDesde, usado por
+      # borrado-cuenta.feature AC-10) lee el stdout de la API desde
+      # `QA_API_LOG` — variable DISTINTA de la que ya usa `qa/support/api-log.ts`
+      # (`QA_API_LOG_FILE`, para los avisos de NotificationPort). Dos
+      # convenciones de nombre para el mismo archivo en este harness; en vez
+      # de redirigir el stdout a dos rutas, se apunta esta al mismo archivo
+      # que "Build + arranque de la API" ya escribe.
+      QA_API_LOG: /tmp/dsm-qa-api-us010.log
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
