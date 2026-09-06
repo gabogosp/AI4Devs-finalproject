@@ -25,6 +25,13 @@ export interface OrderCancelledNoStockPayload {
   buyerEmail: string;
 }
 
+export interface OrderCancelledByOwnerPayload {
+  orderId: string;
+  orderNumber: number;
+  buyerName: string;
+  buyerEmail: string;
+}
+
 /**
  * Seam para los avisos del ciclo de vida de la orden. Un solo puerto —
  * `per backend-node-standards.md §3`, mismo estilo de puerto por token de DI
@@ -40,6 +47,8 @@ export interface NotificationPort {
   ownerNewOrder(payload: OwnerNewOrderPayload): Promise<void>;
   /** La orden se canceló automáticamente por falta de stock tras un pago aprobado (AC-4). */
   orderCancelledNoStock(payload: OrderCancelledNoStockPayload): Promise<void>;
+  /** El dueño canceló manualmente una orden pagada no entregada (US-013 AC-4). */
+  orderCancelledByOwner(payload: OrderCancelledByOwnerPayload): Promise<void>;
 }
 
 export const NOTIFICATION_PORT = Symbol('NOTIFICATION_PORT');

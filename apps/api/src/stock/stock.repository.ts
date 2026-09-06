@@ -38,4 +38,22 @@ export class StockRepository {
       }
     }
   }
+
+  /**
+   * Inverso simétrico de `decrementForOrder` (US-013 AC-2/AC-8) — un
+   * incremento nunca puede fallar por cantidad, así que no hay guard `gte`
+   * ni excepción posible. El `FK RESTRICT` de `order_items.product_id`
+   * garantiza que el producto exista siempre.
+   */
+  async incrementForOrder(
+    lines: StockDecrementLine[],
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<void> {
+    for (const linea of lines) {
+      await tx.product.update({
+        where: { id: linea.productId },
+        data: { stock: { increment: linea.quantity } },
+      });
+    }
+  }
 }

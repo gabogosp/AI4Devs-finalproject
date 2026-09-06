@@ -15,10 +15,12 @@ propósito:
   fuera de este módulo, en el otro extremo del ciclo de vida de la orden.
   Este panel nunca ve una orden `pending_payment` (AC-8: `get`/`list` la
   excluyen siempre, sin excepción por filtro).
-- **`* → cancelled`**: la resuelve un futuro US-013 (cancelación /
-  reembolso / reintegro de stock). El `PATCH` de este módulo NUNCA acepta
-  `"cancelled"` como valor de `status` — ni siquiera llega a la FSM, el DTO
-  lo rechaza antes.
+- **`* → cancelled`**: la resuelve US-013 (cancelación / reembolso /
+  reintegro de stock) — `POST /v1/admin/orders/{id}/cancel`, en
+  `payments/`, NO acá (ver `payments/README.md` "Qué se sumó con US-013"
+  para el porqué). El `PATCH` de este módulo NUNCA acepta `"cancelled"`
+  como valor de `status` — ni siquiera llega a la FSM, el DTO lo rechaza
+  antes.
 
 `get(id)` sí devuelve una orden `cancelled` (defensiva, OQ-BE-1) — es
 trazable por id aunque este módulo no la haya cancelado ni pueda actuar sobre
