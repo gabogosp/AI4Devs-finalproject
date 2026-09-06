@@ -201,13 +201,13 @@ tanto" es exactamente el anti-patrón que la propia skill `openapi-client-codege
 
 ## Open questions
 
-1. **[BLOQUEANTE — owner: backend]** ¿Quién y cuándo sincroniza
+1. **[Resolved: 2026-09-05 — PR #52 (`fix/US-021-publish-order-anonymization-contract`),
+   mergeado a `main` (91aa3f1)]** ¿Quién y cuándo sincroniza
    `apps/api/docs/api/openapi.yaml` con los dos endpoints de retención + los 2 campos de
-   `AdminOrderDetail`? Recomendación: una task adicional en
-   `openspec/changes/US-021-retencion-datos-ordenes-backend/tasks.md` (todavía no
-   archivado) antes de `/archive-change`, o un change de backend nuevo y chico si ya se
-   archivó. Este FE no puede codegenerar la operación `anonymizeOrder` ni el campo
-   `anonymized_at` del detalle sin esto (`frontend-standards.md` §3.2, sin excepción).
+   `AdminOrderDetail`? Se abrió un change de backend chico dedicado (no una task del
+   change ya archivado) que publicó los 2 endpoints + los 2 campos + sincronizó el living
+   contract de `ordenes/` + regeneró el cliente de `@dsm/web`. T0.1/T0.2 de `tasks.md`
+   quedan ejecutables.
 2. ¿El texto exacto de confirmación y de la indicación de "datos anonimizados" necesita
    revisión legal (Ley 25.326) antes de ir a producción? Se propone copy en `design.md`
    siguiendo el tono §10.2 del design-system, pero no hay AC que exija redacción legal

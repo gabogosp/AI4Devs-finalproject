@@ -1,10 +1,11 @@
 # Tasks — US-021 Frontend Web (retención y anonimización de órdenes)
 
 > Per [`AGENTS.md`](../../../spekode/AGENTS.md) §1.1: tasks chicas, una a la vez.
-> **Estado del change: BLOQUEADO en T0.1.** Ver `proposal.md`/`design.md` para el detalle
-> del gap de contrato. Las tasks de Fase 1 en adelante llevan `Depends on: T0.1` y no deben
-> ejecutarse contra un mock hand-escrito — `/develop-frontend-web` debe verificar T0.1 antes
-> de tocar codegen.
+> **T0.1/T0.2 resueltas (2026-09-05, PR #52, `91aa3f1`)** — el contrato publicado
+> (`apps/api/docs/api/openapi.yaml`) ya incluye `admin-orders-retention` +
+> `anonymized_at`/`anonymization_reason`, el contrato vivo de `openspec/specs/ordenes/` está
+> sincronizado, y `apps/web/src/api/generated/` ya fue regenerado. El resto de las tasks se
+> ejecuta en orden normal.
 
 ## Traceability (AC → tasks)
 
@@ -18,7 +19,7 @@
 
 ## Fase 0 — Pre-flight y gate de contrato
 
-- [ ] T0.1 Verificar (o disparar) la publicación del contrato de backend
+- [x] T0.1 Verificar (o disparar) la publicación del contrato de backend
   - **Depends on**: nada — es la primera task, y bloquea todo lo demás.
   - **Qué falta exactamente** (ver `design.md` §"El gap de contrato"): dos paths
     (`/admin/orders/{id}/anonymize`, `/admin/orders/retention-sweep`) ausentes de
@@ -34,7 +35,7 @@
     dos da 0, **detener la ejecución del resto de este `tasks.md`** y reportar el bloqueo
     — nunca continuar con un DTO/Zod/mock escrito a mano como sustituto (prohibido por
     `frontend-standards.md` §3.2).
-- [ ] T0.2 Sincronizar el contrato vivo de la capability (`openspec/specs/ordenes/`)
+- [x] T0.2 Sincronizar el contrato vivo de la capability (`openspec/specs/ordenes/`)
   - **Depends on**: T0.1 resuelto.
   - **Pattern**: corrección de contrato — agregar al `AdminOrderDetail` de
     `openspec/specs/ordenes/contracts/openapi.yaml` las mismas 2 propiedades que ya
@@ -43,7 +44,7 @@
     `anonymized_at`/`anonymization_reason` en `AdminOrderDetail`, coincidiendo con el
     contrato publicado del backend.
   - **Verify**: `npx --yes @stoplight/spectral-cli lint openspec/specs/ordenes/contracts/openapi.yaml` sin errores, y `grep -c "anonymized_at" openspec/specs/ordenes/contracts/openapi.yaml` ≥ 1.
-- [ ] T0.3 Confirmar rama y ausencia de changes en conflicto
+- [x] T0.3 Confirmar rama y ausencia de changes en conflicto
   - **Exit criterion**: rama `feat/US-021-retencion-datos-ordenes-frontend-web` (o
     equivalente per `git-workflow-standards.md`) creada desde `main` actualizado; ningún
     otro change abierto en `openspec/changes/` toca `apps/web/src/features/orders/`.

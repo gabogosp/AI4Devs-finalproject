@@ -1926,7 +1926,7 @@
   us-id: US-021
   discipline: frontend-web
   variant: null
-  status: Draft   # /plan-frontend-web-ticket 2026-09-05 — el gap de contrato de T0.1
+  status: In Progress   # /develop-frontend-web 2026-09-05 — T0.1/T0.2/T0.3 cerradas
   # (ver design.md "El gap de contrato") YA SE RESOLVIÓ: PR #52
   # (fix/US-021-publish-order-anonymization-contract, mergeado a main 91aa3f1) publicó
   # los 2 paths + los 2 campos en apps/api/docs/api/openapi.yaml, sincronizó
