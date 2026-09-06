@@ -24,6 +24,7 @@ import {
   pendientesDeEnriquecimiento,
 } from '../../support/seed-import';
 import { nuevaCuenta } from '../../support/customer-auth';
+import { levantarApiTemporal } from '../../support/spawn-api';
 
 const PASO = { timeout: 30_000 };
 const PASO_LARGO = { timeout: 100_000 };
@@ -596,29 +597,83 @@ Then('el sistema lo rechaza por tamaño sin haber leído su contenido', PASO, fu
   assert.equal(body.type, 'dsm:import/file-too-large', JSON.stringify(body));
 });
 
+/** Terminales del job de import — mismo set que `import-client.ts` (no exportado desde ahí). */
+const TERMINALES_IMPORT = new Set(['completed', 'failed']);
+
+/**
+ * Espera a que un job de import llegue a un estado terminal, contra una base
+ * URL arbitraria (a diferencia de `esperarTrabajo` de `import-client.ts`, que
+ * apunta siempre a la instancia principal vía el `API` module-level — acá
+ * necesitamos apuntar a la instancia TEMPORAL).
+ */
+async function esperarTrabajoEn(
+  baseUrl: string,
+  token: string,
+  id: string,
+  timeoutMs = 10_000,
+): Promise<void> {
+  const limite = Date.now() + timeoutMs;
+  while (Date.now() < limite) {
+    const res = await fetch(`${baseUrl}/v1/admin/imports/${id}`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const body = (await res.json().catch(() => ({}))) as { status?: string };
+    if (body.status && TERMINALES_IMPORT.has(body.status)) return;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  // No se aborta el escenario por esto — sólo es mejor esfuerzo para no matar
+  // la instancia temporal con un job todavía procesando (ver comentario abajo).
+}
+
 Then(
   'cuando el dueño supera la cantidad de importaciones permitidas por hora',
   PASO_LARGO,
   async function (this: CatalogWorld) {
-    // Rate-limit bajo, propio de ESTE escenario: proceso hijo con
-    // IMPORT_RATE_LIMIT_MAX bajo, en un puerto distinto al de la suite
-    // principal (design.md §5 / tasks.md T4.2) — nunca se toca la instancia
-    // compartida por los otros 22 casos.
-    const puertoBajo = process.env.QA_IMPORT_LOWLIMIT_PORT ?? '3011';
-    const baseBajo = `http://localhost:${puertoBajo}`;
-    let ultimaRespuesta: { status: number; body: unknown } | undefined;
-    for (let i = 0; i < 4; i += 1) {
-      const { buffer } = csvValido({ filas: 1, sufijo: `${sufijo()}-${i}` });
-      const form = new FormData();
-      form.append('file', new Blob([buffer]), `rl-${i}.csv`);
-      const res = await fetch(`${baseBajo}/v1/admin/imports`, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${this.token}` },
-        body: form,
-      });
-      ultimaRespuesta = { status: res.status, body: await res.json().catch(() => ({})) };
+    // Rate-limit bajo, propio de ESTE escenario: SEGUNDA instancia real de la
+    // misma app compilada (nunca un doble/mock, `spawn-api.ts` — mismo patrón
+    // que SC-010-N5 "el flag del medio simulado está apagado" en
+    // pago-webhook.steps.ts), en un puerto distinto al de la suite principal
+    // (design.md §5 / tasks.md T4.2) — nunca se toca la instancia compartida
+    // por los otros 22 casos. `IMPORT_RATE_LIMIT_MAX=2` explícito (no el
+    // default de producción) para que 4 requests seguidos agoten el
+    // presupuesto de forma determinística, con margen.
+    const puertoBajo = Number(process.env.QA_IMPORT_LOWLIMIT_PORT ?? 3011);
+    const temporal = await levantarApiTemporal(puertoBajo, {
+      IMPORT_RATE_LIMIT_MAX: '2',
+    });
+    try {
+      let ultimaRespuesta: { status: number; body: unknown } | undefined;
+      const jobsAceptados: string[] = [];
+      for (let i = 0; i < 4; i += 1) {
+        const { buffer } = csvValido({ filas: 1, sufijo: `${sufijo()}-${i}` });
+        const form = new FormData();
+        form.append('file', new Blob([buffer]), `rl-${i}.csv`);
+        const res = await fetch(`${temporal.baseUrl}/v1/admin/imports`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${this.token}` },
+          body: form,
+        });
+        const body = await res.json().catch(() => ({}));
+        ultimaRespuesta = { status: res.status, body };
+        // Los que SÍ entran (antes de pegar en el techo de 2) arrancan
+        // procesamiento asincrónico sobre la MISMA base compartida
+        // (`DATABASE_URL` se hereda, `levantarApiTemporal` no la pisa) — si
+        // se mata el proceso con SIGTERM mientras un job sigue "processing",
+        // queda una fila húerfana que el guard de "una importación a la vez"
+        // (compartido, no por-instancia) bloquea PARA SIEMPRE, tumbando a
+        // los escenarios siguientes (N-4/N-5) con 409/timeout aunque no
+        // toquen este step. Esperar el terminal ANTES de `stop()` evita eso.
+        if (res.status < 400 && typeof (body as { id?: string }).id === 'string') {
+          jobsAceptados.push((body as { id: string }).id);
+        }
+      }
+      for (const jobId of jobsAceptados) {
+        await esperarTrabajoEn(temporal.baseUrl, this.token, jobId);
+      }
+      estado(this).rateLimitRespuesta = ultimaRespuesta;
+    } finally {
+      await temporal.stop();
     }
-    estado(this).rateLimitRespuesta = ultimaRespuesta;
   },
 );
 
