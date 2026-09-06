@@ -2399,7 +2399,8 @@
   us-id: US-013
   discipline: qa
   variant: null
-  status: draft
+  status: in progress   # /develop-qa 2026-09-06 — 13/14 automatizados verdes,
+  # QA-013-E2E-3 encontró un defecto real en apps/web (ver nota abajo)
   parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
   linear-task-id: null
   audit-baseline: null
@@ -2411,11 +2412,31 @@
   # dos directorios de código (-backend/-frontend-web). Único artefacto:
   # qa-plan.md (sin proposal/tasks/design propios, Modo A no los requiere).
   #
-  # ESTADO DE BLOQUEO: backend mergeado a main (e296d3f, PR #66) — la capa de
-  # aceptación API-level (4 test cases), contract testing (1) y carga (1)
-  # corren HOY. Frontend-web con PR #67 abierto, no mergeado todavía — la
-  # capa E2E de navegador (6 test cases) y accesibilidad L3 (1) quedan
-  # blocked_by ese merge. 15 test cases totales, 7 ejecutables hoy.
+  # ESTADO DE EJECUCIÓN (actualizado en /develop-qa, no en la planificación):
+  # NINGÚN test case quedó blocked_by el merge de PR #67 — este worktree está
+  # stacked sobre esa rama (backend #66 ya mergeado + frontend-web #67 sin
+  # mergear todavía), así que apps/web se construyó y sirvió DESDE ACÁ. Los
+  # 13 test cases automatizados corrieron: 4 aceptación BDD + 4 cross-feature
+  # (aceptación) + 1 contract + 5 E2E de navegador + 1 a11y + 1 k6 = 12
+  # verdes, 1 rojo (QA-013-E2E-3, defecto real, ver abajo). 2 charters
+  # documentados (no ejecutados, manuales).
+  #
+  # DEFECTO REAL ENCONTRADO (QA-013-E2E-3, no un problema de entorno): el
+  # mensaje de resultado de la cancelación (`REFUND_MESSAGE[refund.status]`,
+  # `apps/web/src/features/orders/OrderCancelAction.tsx`) nunca se ve en
+  # pantalla — el componente arranca con
+  # `if (order.status === 'delivered' || order.status === 'cancelled') return null`,
+  # y ese guard corta ANTES del JSX que pinta el mensaje, apenas
+  # `onCancelled` actualiza el `order` del padre a `status: 'cancelled'` (el
+  # mismo estado que dispara el guard). El AC-1/AC-6/AC-7 SÍ se ven (badge +
+  # historial actualizan bien, QA-013-E2E-1/2/4/5 pasan) — sólo el mensaje de
+  # AC-5 (reembolso) es invisible. Hallazgo secundario menor en el mismo
+  # componente: la fila de historial muestra "cancelled" crudo (inglés), no
+  # "Cancelada" — `STATUS_LABEL` de `orderStatus.ts` no tiene esa clave
+  # (`OrderStatusBadge` sí la tiene). Sugerencia de fix documentada en
+  # `qa-plan.md` (no aplicada — fuera de alcance de un change de QA; el fix
+  # es de `US-013-cancelacion-reembolso-frontend-web`, PR #67 todavía sin
+  # mergear — el momento ideal para corregirlo es ANTES de ese merge).
   #
   # HALLAZGO QA-013-F1 (declarado, no un gap nuevo): AC-3 (reembolso real
   # MercadoPago) no tiene NINGÚN camino de API real en este entorno que
@@ -2442,8 +2463,8 @@
   # US §7 presupuesta QA-US-013 en 4-6h tradicional — este plan queda en el
   # piso del rango por reutilización total de seed-metricas.ts (sin seeding
   # nuevo) y por declarar AC-3 bloqueado en vez de intentar cubrirlo.
-  assignee: sin-asignar
-  branch: null
+  assignee: claude-code
+  branch: feat/US-013-cancelacion-reembolso-qa
   pr-url: null
   created: 2026-09-06
   completed-at: null
