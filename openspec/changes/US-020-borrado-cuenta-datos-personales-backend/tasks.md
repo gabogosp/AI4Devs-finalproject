@@ -217,7 +217,7 @@ language: es
 
 ## Fase 4: Controller + módulo + wiring — 2,0 h
 
-- [ ] T4.1 `AccountThrottlerGuard`
+- [x] T4.1 `AccountThrottlerGuard`
   - **Pattern**: copia deliberada de `AuthThrottlerGuard`/
     `OrdersHistoryThrottlerGuard` (mismo boilerplate de cabeceras `RateLimit-*`/
     `Retry-After`) — ver `design.md` §Approach ("Controller") para la
@@ -227,7 +227,7 @@ language: es
     429 con `Retry-After`/`RateLimit-*` seteados.
   - **Verify**: cubierto por el test de controller de T4.2 (aserción de cabeceras en el caso 429)
 
-- [ ] T4.2 `DELETE /v1/me` (AC-1, AC-10, AC-13)
+- [x] T4.2 `DELETE /v1/me` (AC-1, AC-10, AC-13)
   - **Pattern**: ver `design.md` §Approach ("Controller"). `@UseGuards(CustomerGuard,
     CsrfGuard)` mismo orden y mismo par que `logout` de
     `customer-auth.controller.ts` — `per security-standards.md §7.5` y `per
@@ -242,7 +242,7 @@ language: es
     error.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=account.controller` en 0
 
-- [ ] T4.3 `AccountModule` + exports aditivos de `AuthModule` + throttler nombrado
+- [x] T4.3 `AccountModule` + exports aditivos de `AuthModule` + throttler nombrado
   - **Pattern**: `apps/api/src/account/account.module.ts` — `imports:
     [PrismaModule, AuthModule, CheckoutModule, CartModule]`, mismo patrón
     acíclico que `orders/orders.module.ts` (ver `design.md` §Context). Agregar
@@ -264,7 +264,7 @@ language: es
   - **Verify**: `pnpm --filter @dsm/api typecheck` en 0 **y**
     `pnpm --filter @dsm/api test -- --testPathPattern="^apps/api/src/auth"` en 0
 
-- [ ] T4.4 Registrar `AccountModule` en `AppModule`
+- [x] T4.4 Registrar `AccountModule` en `AppModule`
   - **Pattern**: agregar `AccountModule` al array `imports` de
     `apps/api/src/app.module.ts`, junto a `OrdersModule`/`PaymentsModule` — `per
     backend-node-standards.md §3`.

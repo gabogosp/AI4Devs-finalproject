@@ -15,6 +15,7 @@ import { EnrichmentModule } from './enrichment/enrichment.module';
 import { SearchModule } from './search/search.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { OrdersModule } from './orders/orders.module';
+import { AccountModule } from './account/account.module';
 import { StockModule } from './stock/stock.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReportsModule } from './reports/reports.module';
@@ -35,6 +36,8 @@ import { ReportsModule } from './reports/reports.module';
  * `pending_payment`, con el `order_token` que US-009 consume para iniciar el pago.
  * `OrdersModule` (US-012) expone `GET/PATCH /v1/admin/orders`: el panel del dueño gestiona
  * las 4 transiciones activas de fulfillment (`new→preparing→ready→delivered`).
+ * `AccountModule` (US-020) expone `DELETE /v1/me`: borrado de cuenta (derecho al olvido,
+ * Ley 25.326), reusando el mecanismo de anonimización de `orders` de US-021.
  * `StockModule` (US-023) es el único escritor de `products.stock`. `PaymentsModule`
  * (US-023) implementa `PaymentConfirmationPort` con su primer adaptador (`manual`):
  * el dueño confirma el pago sin depender de MercadoPago (US-009, `Blocked`).
@@ -57,6 +60,7 @@ import { ReportsModule } from './reports/reports.module';
     SearchModule,
     CheckoutModule,
     OrdersModule,
+    AccountModule,
     StockModule,
     PaymentsModule,
     ReportsModule,

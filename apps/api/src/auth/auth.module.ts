@@ -119,6 +119,15 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('ORDERS_HISTORY_RATE_LIMIT_TTL_MS', 60_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — noveno throttler nombrado: el borrado de cuenta (US-020).
+        // Mismo criterio que `orders_history`: techo inalcanzable acá,
+        // presupuesto real (`ACCOUNT_DELETION_RATE_LIMIT_MAX`, 5/hora) en el
+        // `@Throttle` del handler de `AccountController`.
+        {
+          name: 'account_deletion',
+          ttl: config.get<number>('ACCOUNT_DELETION_RATE_LIMIT_TTL_MS', 3_600_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],
@@ -154,6 +163,14 @@ import { AuthEventsService } from '../observability/auth-events.service';
     CustomerGuard,
     OptionalCustomerGuard,
     AuthEventsService,
+    // US-020 — `AccountModule` (fuera de `AuthModule`, ver `design.md`
+    // §Context sobre el ciclo `auth`↔`checkout`) necesita los 4 para
+    // orquestar el borrado de cuenta sin re-declararlos como provider propio
+    // (§5). Aditivo: ningún consumidor existente de `AuthModule` cambia.
+    CsrfGuard,
+    CustomersRepository,
+    RefreshTokensRepository,
+    PasswordResetTokensRepository,
   ],
 })
 export class AuthModule {}
