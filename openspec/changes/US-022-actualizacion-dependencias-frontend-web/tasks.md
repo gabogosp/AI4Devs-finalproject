@@ -92,7 +92,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
   - **Pattern**: mismo mecanismo que T5.1 — un override por paquete en `pnpm.overrides` raíz, versión leída del advisory vivo, no fijada de antemano.
   - **Exit criterion**: para cada paquete de la lista que siga apareciendo en `pnpm audit --audit-level=high` tras T2.1/T4.1, `pnpm-lock.yaml` resuelve la versión que el advisory marca como corregida; ninguno de los que ya se resolvió solo (arrastrado por el bump de `next` o `playwright`) recibe un override redundante.
   - **Verify**: `pnpm install && pnpm audit --audit-level=high --json > /tmp/us-022-post-overrides-audit.json && node -e "const a=require('/tmp/us-022-post-overrides-audit.json'); const targets=['node-forge','tar-fs','brace-expansion','js-yaml','flatted','fast-uri','picomatch','glob','tmp','lodash','underscore','nanoid','vite']; const s=JSON.stringify(a); const hits=targets.filter(t=>s.includes(t)); console.log(hits.length===0?'OK':'STILL VULNERABLE: '+hits.join(','))"` (debe imprimir `OK`)
-- [ ] T5.3 `undici` (viene de `testcontainers` en `apps/api`, no de `apps/web` — ver `design.md` D4).
+- [x] T5.3 `undici` (viene de `testcontainers` en `apps/api`, no de `apps/web` — ver `design.md` D4).
   - **Pattern**: `pnpm.overrides` raíz, `undici: "6.27.0"` — mismo mecanismo, per `design.md` D4.
   - **Exit criterion**: `pnpm audit --audit-level=high` ya no reporta `undici`; la suite de integración de `apps/api` que usa `testcontainers` (`pnpm --filter @dsm/api test:e2e`, requiere Docker disponible) sigue pasando.
   - **Verify**: `pnpm install && pnpm --filter @dsm/api test:e2e`
