@@ -13,10 +13,12 @@ import { ordersService, type OrderDetail } from './ordersService';
  * `apps/web/src/features/products/ProductActions.tsx` — `archive()`),
  * `frontend-standards.md` §11.bis.5.
  *
- * Refetch-on-success, NO optimista (`design.md` §Approach — "Decisión
- * explícita de shape de retorno"): `POST /anonymize` responde
- * `OrderAnonymizationResult`, no el `AdminOrderDetail` completo, así que se
- * pide un segundo `GET` en vez de mergear a mano una respuesta parcial.
+ * refetch-on-success, NO optimista — a diferencia de `OrderStatusActions`
+ * (`design.md` §Approach — "Decisión explícita de shape de retorno"):
+ * `POST /anonymize` responde `OrderAnonymizationResult`, no el
+ * `AdminOrderDetail` completo que sí devuelve el `PATCH` de estado, así que
+ * acá se pide un segundo `GET` (`ordersService.get`) en vez de mergear a
+ * mano una respuesta parcial sobre el estado existente.
  */
 export function OrderAnonymizeAction({
   order,

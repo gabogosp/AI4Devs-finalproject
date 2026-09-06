@@ -205,7 +205,7 @@
 
 ## Fase 7 — Documentación
 
-- [ ] T7.1 Nota en el README del feature (si existe) o comentario de cabecera
+- [x] T7.1 Nota en el README del feature (si existe) o comentario de cabecera
   - **Pattern**: mismo estilo que las notas de `apps/api/src/checkout/README.md` — si
     `apps/web/src/features/orders/` tiene un README, agregar una sección breve
     "Anonimización (US-021)"; si no existe README de feature en este módulo (no se detectó
