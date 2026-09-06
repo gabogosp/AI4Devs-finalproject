@@ -126,7 +126,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 - [x] T8.2 Suite completa del monorepo verde, lint y typecheck limpios — cierre de AC-3.
   - **Exit criterion**: `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test` terminan en exit 0, con el mismo conteo de tests (o mayor) que el baseline de T0.3.
   - **Verify**: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
-- [ ] T8.3 Build de producción final (mismo paso que corre `ci.yml` — "Build del frontend").
+- [x] T8.3 Build de producción final (mismo paso que corre `ci.yml` — "Build del frontend").
   - **Exit criterion**: `pnpm --filter @dsm/web build` termina en exit 0 con las mismas variables de entorno que usa `ci.yml` (`API_INTERNAL_ORIGIN`, `NEXT_PUBLIC_API_BASE_URL`).
   - **Verify**: `API_INTERNAL_ORIGIN=http://localhost:3000 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 pnpm --filter @dsm/web build`
 
