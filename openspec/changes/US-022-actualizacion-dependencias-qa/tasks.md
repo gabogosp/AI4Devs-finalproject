@@ -16,7 +16,7 @@
 | — | Hallazgo: bump de `@playwright/test` propio de `qa/` (consistencia con `apps/web`) | T-QA5 | deferred → `proposal.md` §Preguntas abiertas, primera entrada |
 | — | Hallazgo: carrera preexistente en TC-305 (mismo mecanismo que `pdp-invalidation.spec.ts`) | T-QA6 | deferred → `proposal.md` §Preguntas abiertas, segunda entrada |
 | — | Hallazgo: gate `qa.yml` roto desde antes de esta US (CORS ausente) | T-QA7 | deferred → `proposal.md` §Preguntas abiertas, tercera entrada |
-| — | **Hallazgo: `carrito.spec.ts` TC-731 falla real 3/3, toca `apps/web` bumpeado** | T-QA2 | deferred → `proposal.md` §Preguntas abiertas, cuarta entrada (agregada tras la ejecución) |
+| — | **Hallazgo: `carrito.spec.ts` TC-731 falla real 3/3 — bisect confirmó que NO es regresión del bump de `next`, bug preexistente ajeno a esta US** | T-QA2 | deferred → `proposal.md` §Preguntas abiertas, cuarta entrada (diagnóstico añadido tras bisect) |
 
 Ningún AC de US-022 asignado a QA (§7: "revalidar las suites propias... y
 confirmar que la cobertura no bajó") queda sin task. Los 3 hallazgos quedan
@@ -173,6 +173,19 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
       corrida de T-QA2 fue DESPUÉS de la corrida completa de T-QA1 contra la
       misma DB, sin resetear; no se re-verificó con DB limpia por acotar
       tiempo, pero el mecanismo es idéntico al ya diagnosticado en T-QA1).
+
+    - **Bisect de TC-731 (2026-09-06, post-escalación del coordinador)**:
+      stack aislado en puertos 39009/39100 contra el Postgres propio de este
+      worktree. Post-bump (`next` 15.5.21, estado actual): 3/3 fallas, mismo
+      mecanismo (`toBeFocused` nunca resuelve tras 40 `Tab`). Luego
+      `pnpm --filter @dsm/web add next@15.1.6` (downgrade quirúrgico, sólo
+      `next`, sin tocar ningún otro paquete ni el componente), rebuild +
+      restart: **3/3 fallas idénticas** contra `next` 15.1.6 (pre-bump). El
+      bump queda descartado como causa — es un bug de foco/accesibilidad
+      preexistente en el carrito, ajeno a esta US. Entorno revertido
+      (`git checkout -- apps/web/package.json pnpm-lock.yaml
+      apps/web/next-env.d.ts`, `pnpm install`), procesos temporales
+      terminados, working tree limpio verificado antes de continuar.
 
 ## Fase 3 — Revalidación de accesibilidad WCAG AA (Layer 3)
 
