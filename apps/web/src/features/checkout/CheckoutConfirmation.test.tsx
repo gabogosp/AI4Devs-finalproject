@@ -28,11 +28,14 @@ describe('CheckoutConfirmation — post-201 (D8)', () => {
     expect(document.body.textContent).toContain(formatArs(640000));
   });
 
-  it('el CTA "Continuar al pago" está disabled con el motivo visible', () => {
+  it('ofrece coordinar el pago por WhatsApp, con el número de pedido en el mensaje', () => {
     render(<CheckoutConfirmation order={orden} />);
 
-    expect(screen.getByRole('button', { name: /continuar al pago/i })).toBeDisabled();
-    expect(screen.getByText(/se habilita en la próxima entrega/i)).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /coordinar.*pago.*whatsapp/i });
+    expect(link).toHaveAttribute('href', expect.stringContaining('wa.me'));
+    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain(
+      `#${orden.order_number}`,
+    );
   });
 
   it('saveOrderToken se llama UNA vez en mount, cero en un re-render con las mismas props', () => {

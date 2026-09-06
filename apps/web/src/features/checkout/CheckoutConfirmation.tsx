@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from 'react';
 import { formatArs } from '@/lib/format/currency';
+import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
+import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
 import type { CheckoutCreated } from './checkoutService';
 import { saveOrderToken } from './orderToken';
 
@@ -11,9 +13,16 @@ export interface CheckoutConfirmationProps {
 
 /**
  * Pantalla post-201 (D8 — in-place, sin ruta nueva). Persiste el `order_token`
- * (T2.3) al montar. CTA "Continuar al pago" **deshabilitado** con el motivo
- * visible: `Deferred: US-009 — owner: FE`. Cuando exista la pantalla de pago,
- * este botón deja de estar disabled y navega/llama a `POST /v1/payments`.
+ * (T2.3) al montar.
+ *
+ * El pago de DSM es manual/offline (US-023): no hay pasarela online que
+ * "continuar al pago" pudiera abrir — US-009 (MercadoPago) sigue `Blocked`
+ * sin credenciales. El cierre real del loop es coordinar por WhatsApp
+ * (US-018), con el número de pedido en el mensaje: es el dato que el dueño
+ * necesita para ubicar la orden y confirmarla desde `PendingPaymentsPanel`
+ * (US-012/US-023). Reemplaza el botón deshabilitado que dejó pendiente
+ * `Deferred: US-009 — owner: FE` — esa pantalla de pago nunca existió porque
+ * el medio real terminó siendo otro, no MercadoPago.
  */
 export function CheckoutConfirmation({ order }: CheckoutConfirmationProps) {
   const guardado = useRef(false);
@@ -33,15 +42,14 @@ export function CheckoutConfirmation({ order }: CheckoutConfirmationProps) {
       <p className="text-sm">
         Total: <strong>{formatArs(order.total_ars_cents)}</strong>
       </p>
-      <div>
-        <button
-          type="button"
-          disabled
-          className="inline-flex min-h-[44px] items-center rounded-md bg-accent-strong px-4 text-sm font-medium text-white opacity-60"
-        >
-          Continuar al pago
-        </button>
-        <p className="mt-2 text-xs text-muted">El pago se habilita en la próxima entrega.</p>
+      <div className="flex flex-col gap-2">
+        <WhatsAppLink
+          label="Coordinar el pago por WhatsApp"
+          message={WHATSAPP_MESSAGES.order(order.order_number)}
+        />
+        <p className="text-xs text-muted">
+          Te contactamos por WhatsApp para coordinar transferencia o efectivo.
+        </p>
       </div>
     </div>
   );

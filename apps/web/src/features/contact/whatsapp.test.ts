@@ -43,4 +43,8 @@ describe('whatsappHref', () => {
       'Hola! Quería consultar por "Heladera".',
     );
   });
+
+  it('el mensaje de pedido lleva el número — es lo que el dueño necesita para ubicarlo', () => {
+    expect(WHATSAPP_MESSAGES.order(1234)).toContain('#1234');
+  });
 });

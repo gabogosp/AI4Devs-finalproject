@@ -51,9 +51,13 @@ cliente forzada + `noindex`, mismo patrón que `/carrito`):
 - Retiro mostrado como información fija (dirección + horario), no un control — un único
   valor posible en todo el sistema (`fulfillment: pickup`).
 - Al `201`, confirmación **in-place** en `/checkout` (sin ruta nueva): `order_number` +
-  total + CTA "Continuar al pago" deshabilitado (`Deferred: US-009`).
+  total + CTA "Coordinar el pago por WhatsApp" (`WhatsAppLink` reusado, mensaje con el
+  número de pedido). Reemplaza el botón "Continuar al pago" deshabilitado que dejó
+  `Deferred: US-009` — esa pantalla de pago online nunca se construyó porque el medio real
+  terminó siendo manual/offline (US-023), no MercadoPago.
 - `order_token` persistido en `sessionStorage` (nunca la URL ni una cookie) — es la
-  credencial de la orden; hoy nada lo lee, lo consumirá la futura pantalla de pago.
+  credencial de la orden; el dueño confirma el pago desde `PendingPaymentsPanel`
+  (US-012/US-023) usando el `order_number`, no este token.
 - El CTA "Ir al pago" del carrito (`CartSummary.tsx`) quedó un-diferido: navega a
   `/checkout` salvo `has_blocking_issues`.
 - 5 eventos de observabilidad sin PII ni `order_token` (`checkout_started/_blocked/
@@ -63,8 +67,9 @@ cliente forzada + `noindex`, mismo patrón que `/carrito`):
 
 ## Qué NO está vivo todavía
 
-- **Inicio del pago** (`payments`, MercadoPago) — US-009. El `order_token` que el FE ya
-  persiste queda sin consumidor hasta entonces.
+- **Pasarela de pago online** (`payments`, MercadoPago) — US-009, `Blocked` sin
+  credenciales. El pago real de DSM es manual/offline vía WhatsApp (US-023), ya vivo desde
+  la confirmación del checkout.
 - **Confirmación de la orden, decremento de stock, transición a `new`** — US-010
   (ADR-0008).
 - **Limpieza de órdenes `pending_payment` abandonadas** — US-010 (E2E §18.5).
