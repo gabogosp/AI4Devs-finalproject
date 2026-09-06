@@ -41,7 +41,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
   - **Pattern**: edición directa del campo `dependencies.next` (bump dentro de línea, sin `pnpm.overrides` — es el paquete directo, no una transitiva) — `per design.md D1`.
   - **Exit criterion**: `apps/web/package.json` declara `"next": "15.5.21"`; `pnpm-lock.yaml` resuelve `next@15.5.21` sin el aviso `deprecated` que hoy trae `next@15.1.6`.
   - **Verify**: `pnpm install && grep -A2 "^  next@15.5.21" pnpm-lock.yaml | grep -c deprecated` (debe imprimir `0`)
-- [ ] T2.2 Revalidar SSR/middleware/topología tras el bump de `next` — es el paso que prueba AC-2 y AC-3, no basta con que compile.
+- [x] T2.2 Revalidar SSR/middleware/topología tras el bump de `next` — es el paso que prueba AC-2 y AC-3, no basta con que compile.
   - **Exit criterion**: la suite E2E de topología y SSR sigue verde con el mismo comportamiento observable (mismos guards, mismo rewrite de `/v1/auth/*`, mismo `noindex` en `/admin/*`).
   - **Verify**: `pnpm --filter @dsm/web test:e2e -- auth-topology cart-topology checkout-topology admin-noindex cart-noindex category-ssr pdp-ssr`
 - [ ] T2.3 Agregar `sharp` como dependencia explícita de producción en `apps/web/package.json`.
