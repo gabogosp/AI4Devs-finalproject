@@ -2153,3 +2153,62 @@
   completed-at: 2026-09-06T03:32:29Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-016-panel-metricas-qa
+
+- name: US-005-enriquecimiento-ia-embeddings-qa
+  us-id: US-005
+  discipline: qa
+  variant: null
+  # MODO A, VARIANTE SIBLING: el backend ya está archivado (PR #3, 28/28 tasks, forma la
+  # capacidad `enriquecimiento-ia`). Su propio tasks.md deriva 2 piezas QA-owned que YA
+  # encontraron casa en el qa-plan de US-004 (QA-004-REL-*, QA-004-PERF-3, "el riesgo que
+  # miden sólo existe cuando enriquecimiento y búsqueda conviven") — no se repiten acá. Este
+  # change cubre la aceptación negro-caja de la capacidad `enriquecimiento-ia` en sí misma:
+  # los 2 endpoints admin, la matriz de decisión observable desde afuera, la degradación
+  # sin proveedor, y el NFR de que el runner no degrada la lectura del storefront GENÉRICO
+  # (E2E §17 — distinto de `/v1/search`, ya cubierto por QA-004-PERF-3).
+  #
+  # HALLAZGO QUE GOBIERNA EL DISEÑO (QA-005-F1, design.md §D-QA1 — no una incongruencia de
+  # producto, un riesgo de higiene de entorno compartido, mismo tipo que QA-010-F1 para
+  # MercadoPago): qa/scripts/api-up.sh deja la instancia compartida de QA con
+  # GEMINI_API_KEY=replace-me (no vacía → "configurada" para ai.providers.ts) y
+  # ENRICHMENT_ENABLED=true (default) — cualquier import real en esa instancia dispara la
+  # cola de enriquecimiento contra Google con una clave inválida, sin que nadie lo pida,
+  # ensuciando enrichment_attempts/enrichment_error_code del catálogo compartido de OTRAS
+  # sesiones. Fase 0 de tasks.md lo corrige (ENRICHMENT_ENABLED=false en la instancia
+  # compartida) antes de escribir el primer escenario.
+  #
+  # SEGUNDO HALLAZGO (QA-005-F2, contrato incompleto): UpdateProductDto acepta
+  # description_enriched (T4.3 del backend, AC-7) pero ni el contrato vivo de `catalogo`
+  # (openspec/specs/catalogo/contracts/openapi.yaml, schema UpdateProduct) lo declara ni
+  # ProductResponseDto (apps/api/src/products/dto/product.dto.ts) lo devuelve NUNCA — ni en
+  # el GET, ni en la respuesta del propio PATCH que lo setea. La curación es invisible para
+  # cualquier cliente API. Este plan corrige la mitad segura (declarar el campo que ya se
+  # acepta) y deja la mitad insegura (exponerlo en lectura, requiere código) como
+  # recomendación explícita, no ejecutada.
+  #
+  # 16 escenarios Gherkin (SC-005-H1-H3, C1-C8, N1-N5) cubriendo los 10 AC — 11 ejecutables
+  # negro-caja, 5 (H1/H2/C3/N2/N3 → AC-1/AC-2/AC-6/AC-8/AC-7-completa) `@blocked` explícito:
+  # necesitan que Gemini responda CON ÉXITO al menos una vez, y este entorno sólo tiene el
+  # placeholder de `.env.example`. Desbloqueo más barato que el caso análogo de US-010
+  # (MercadoPago): Gemini tiene tier gratuito (ADR-0003), conseguir una clave real es
+  # trámite de minutos, no una cuenta sandbox de un proveedor de pagos. Backoff durable +
+  # circuit-breaker cooldown SÍ son ejecutables sin clave real: el conteo de fallas del
+  # runner no distingue error transitorio de permanente, así que una clave real INVÁLIDA
+  # produce fallas reales (no un doble) que ejercitan el mismo mecanismo.
+  # Contract testing (2 endpoints + corrección de catalogo), k6 sobre lecturas de storefront
+  # genérico durante una corrida real (reusa thresholds YA existentes —
+  # list_products/storefront_product de qa/performance/lib/thresholds.js, no inventa un
+  # número nuevo), 3 charters exploratorios.
+  status: draft
+  parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 9
+  assignee: sin-asignar
+  branch: feat/US-005-enriquecimiento-ia-embeddings-qa
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
