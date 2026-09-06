@@ -188,7 +188,7 @@ language: es
     llama en este flujo).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/MiCuentaScreen.test.tsx`
 
-- [ ] **T4.4 — `AccountPanel` reenvía `onAccountDeleted` a `DeleteAccountSection`**
+- [x] **T4.4 — `AccountPanel` reenvía `onAccountDeleted` a `DeleteAccountSection`**
   - **Pattern**: prop opcional (no rompe consumidores existentes que monten
     `<AccountPanel />` sin ella):
     ```tsx

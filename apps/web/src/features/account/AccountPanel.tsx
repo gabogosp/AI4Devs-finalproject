@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { DeleteAccountSection } from './DeleteAccountSection';
 import { useSession } from './SessionProvider';
 
 /**
@@ -10,7 +11,16 @@ import { useSession } from './SessionProvider';
  * demostraría en el header. Muestra lo que el servidor dice de la persona, y
  * declara honestamente lo que todavía no existe en vez de insinuarlo.
  */
-export function AccountPanel() {
+export function AccountPanel({
+  onAccountDeleted,
+}: {
+  /**
+   * US-020: reenviada tal cual a `DeleteAccountSection.onDeleted`. Opcional
+   * para no romper ningún consumidor existente que monte `<AccountPanel />`
+   * sin ella (design.md §"Component breakdown").
+   */
+  onAccountDeleted?: () => void;
+}) {
   const { state, logout } = useSession();
   if (state.kind !== 'authenticated') return null;
 
@@ -48,6 +58,8 @@ export function AccountPanel() {
           Ver historial de compras
         </Link>
       </section>
+
+      <DeleteAccountSection onDeleted={() => onAccountDeleted?.()} />
 
       <button
         type="button"
