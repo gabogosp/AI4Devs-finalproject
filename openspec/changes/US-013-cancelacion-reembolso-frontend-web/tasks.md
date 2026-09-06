@@ -36,13 +36,13 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — `apps/web` limpio antes de empezar**
+- [x] **T0.1 — `apps/web` limpio antes de empezar**
   - **Exit criterion**: no hay cambios sin commitear en
     `apps/web/src/features/orders/`, `apps/web/src/lib/observability/events.ts`
     de otra sesión en vuelo en **este** worktree.
   - **Verify**: `git status --porcelain apps/web/src/features/orders apps/web/src/lib/observability/events.ts` vacío
 
-- [ ] **T0.2 — El cliente generado ya tiene `cancelOrder`/`CancelOrderResponse` (regenerado por el orquestador, no por este change)**
+- [x] **T0.2 — El cliente generado ya tiene `cancelOrder`/`CancelOrderResponse` (regenerado por el orquestador, no por este change)**
   - **Exit criterion**: `apps/web/src/api/generated/endpoints.ts` exporta
     `cancelOrder`; `apps/web/src/api/generated/zod.ts` exporta el schema
     `CancelOrderResponse`; `apps/web/src/api/generated/model/cancelOrderResponse.ts`
@@ -51,7 +51,7 @@ language: es
 
 ## Fase 1 — Contrato: verificar que el cliente generado sigue vigente
 
-- [ ] **T1.1 — `pnpm --filter @dsm/web codegen` no produce diff (gate `frontend-codegen-fresh`)**
+- [x] **T1.1 — `pnpm --filter @dsm/web codegen` no produce diff (gate `frontend-codegen-fresh`)**
   - **Pattern**: verificación de frescura, no regeneración — el orquestador
     ya corrió el codegen antes de este plan (`openapi-client-codegen`, skill
     — "nunca a mano"); esta task sólo confirma que `apps/api/docs/api/openapi.yaml`
