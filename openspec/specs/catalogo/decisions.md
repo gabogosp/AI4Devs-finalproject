@@ -71,3 +71,19 @@ acá se registra **cuál aplica a esta capacidad y por qué**.
 |---|---|
 | Breadcrumb con el rubro padre en la ficha de producto queda diferido (`OQ-FE-11`). | Exigiría un segundo fetch en cadena sobre la página de conversión (la ficha) — costo de latencia no justificado todavía; la ficha ya muestra la categoría directa como link. |
 | Grilla global `/productos` (todas las categorías) no se construye. | Sin endpoint público que la sirva (`OQ-FE-7`) — el browse hoy es por categoría, no un índice plano. |
+
+## Corrección de contrato — `description_enriched` (desde `US-005-enriquecimiento-ia-embeddings-qa`, 2026-09-06)
+
+`UpdateProductDto` acepta `description_enriched` en producción desde
+`US-005-enriquecimiento-ia-embeddings-backend` (T4.3, AC-7 de esa US — curación de la
+descripción generada por IA), pero el contrato vivo de esta capacidad nunca lo declaró en
+el schema `UpdateProduct` — hallazgo QA-005-F2, encontrado al planificar el QA de
+`enriquecimiento-ia`. Corregido: `UpdateProduct` ahora declara `description_enriched:
+{ type: string, nullable: true }`.
+
+**Mitad insegura, no ejecutada, recomendación explícita**: el schema `Product` (lectura)
+sigue sin exponer `description_enriched` — ni `GET /admin/products/{id}`, ni la respuesta
+del propio `PATCH` que lo setea, lo devuelven nunca. La curación es invisible para
+cualquier cliente API, incluida una futura UI de curación diferida. Requiere tocar
+`apps/api/src/products/dto/product.dto.ts` — fuera de alcance de un change QA-only;
+queda como recomendación para un change de backend futuro que toque esta capacidad.

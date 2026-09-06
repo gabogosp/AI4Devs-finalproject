@@ -5,6 +5,10 @@ parent-us: US-005
 discipline: qa
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: a9e0a18
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/68
 ---
 
 # US-005 QA — Enriquecimiento IA de descripciones + embeddings

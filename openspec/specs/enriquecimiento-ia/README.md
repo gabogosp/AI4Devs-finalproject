@@ -59,6 +59,39 @@ sin BullMQ — `REDIS_URL` no está aprovisionado, US-019 T1.3 abierta):
 - **Exponer el texto enriquecido en el storefront** — decisión de producto con impacto SEO
   pendiente (OQ-BE-3). El texto existe (`description_enriched`) y no se muestra hoy.
 
+## Qué verificó QA
+
+Suite QA-owned (`US-005-enriquecimiento-ia-embeddings-qa`) — aceptación negro-caja de la
+capacidad en sí misma (2 endpoints admin, matriz de decisión, degradación sin proveedor),
+sin repetir lo que ya vive en el qa-plan de `busqueda` (`QA-004-REL-*`/`QA-004-PERF-3`,
+porque ese riesgo sólo existe cuando `enriquecimiento` y `búsqueda` conviven):
+
+- **Aceptación BDD** (Cucumber-js + supertest, `enriquecimiento.feature`): 16/16 escenarios
+  concretos verdes, 59/59 steps — cubre 5 de los 10 AC negro-caja (mecánica de contrato,
+  backoff+cooldown con clave inválida real, abandono, 409 run-in-progress, 429 real, sin
+  fuga de secretos, nunca publica sin curación).
+- **Contract testing**: 12/12 casos contra los 2 endpoints de esta capacidad + fix de
+  contrato incompleto (`description_enriched` ahora declarado en `UpdateProduct` del
+  contrato de `catalogo`, campo que `UpdateProductDto` ya aceptaba en producción sin
+  documentar).
+- **Performance (k6)**: NFR de que el runner de enriquecimiento activo no degrada la
+  lectura del storefront genérico (`/v1/products`, `/v1/products/{slug}`) — medido
+  `list_products` p95=10.6ms, `storefront_product` p95=1.6ms, 0% `http_req_failed`.
+- **Fix de higiene de entorno compartido** (hallazgo QA-005-F1): `qa/scripts/api-up.sh`
+  ahora fija `ENRICHMENT_ENABLED=false` por default — antes, cualquier sesión que corriera
+  la suite de importación en la instancia compartida disparaba llamadas reales a Google
+  con `GEMINI_API_KEY=replace-me`, sin que nadie lo pidiera.
+- **Exploratorio**: 3 charters escritos (reintentos reales del proveedor, interacción
+  `force`+`product_ids`, ruido cross-sesión) — ejecución queda como checklist humano.
+
+**Hallazgos abiertos, con dueño (no bloquean esta capacidad)**:
+
+| Hallazgo | Efecto | Diferido a |
+|---|---|---|
+| Sin `GEMINI_API_KEY` real en este entorno, 5 escenarios (`SC-005-H1/H2/C3/N2/N3` → AC-1/AC-2/AC-6/AC-8/AC-7-completa) quedan bloqueados black-box — el resto de los 10 AC sí corre hoy. | Marcados `@blocked` explícito, sin doble no autorizado. | Owner: PO/Infra — conseguir clave real de tier gratuito (ADR-0003, trámite de minutos). |
+| `QA-004-PERF-3` (búsqueda semántica bajo enriquecimiento concurrente) sigue sin implementarse en el qa-plan de `busqueda` — este plan asumía que ya estaba cubierto por esa referencia cruzada. | Sin cobertura de ese riesgo cross-capacidad todavía. | Owner: quien retome el qa-plan de US-004. |
+| Charter exploratorio (QA-005-EXP-1) escrito pero no ejecutado. | Sin hallazgos todavía de esa vía. | Ejecución humana — owner QA. |
+
 ## Contratos
 
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml)
@@ -78,9 +111,12 @@ La curación (AC-7) vive en `/admin/products/{id}` (PATCH), contrato de la capac
 | Change | Disciplina | Aporte |
 |---|---|---|
 | [`US-005-enriquecimiento-ia-embeddings-backend`](../../changes/archive/US-005-enriquecimiento-ia-embeddings-backend/) | BE | Pipeline in-process (ADR-0014), matriz de decisión, claim por lease, `product_embeddings` + HNSW, 2 endpoints admin, throttler dedicado, 9 eventos de observabilidad |
+| [`US-005-enriquecimiento-ia-embeddings-qa`](../../changes/archive/US-005-enriquecimiento-ia-embeddings-qa/) | QA | Suite L1: 16 aceptación BDD, 12 contract, 1 k6, 3 charters, fix de higiene de entorno compartido (`ENRICHMENT_ENABLED=false` default) |
 
-Sin disciplinas FE/QA propias — el consumo del vector es de `busqueda` (US-004) y la curación es
-una costura de `catalogo` (US-001). Ningún change adicional planificado para esta capacidad hoy.
+Sin disciplina FE propia — el consumo del vector es de `busqueda` (US-004) y la curación es
+una costura de `catalogo` (US-001). US-005 declara también disciplina INFRA
+(`disciplines: [BE, QA, INFRA]` en `us-status.yaml`), todavía sin planificar — no bloquea
+esta capacidad, que ya tiene BE + QA resueltos.
 
 ## Estado de la provisión
 
