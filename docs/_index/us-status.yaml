@@ -477,6 +477,20 @@
   # apps/web/src/features/orders/). Falta confirmar con el PO/Arquitecto si la
   # acción "anonimizar" en el panel es un change FE propio o se agrega a US-012 FE.
   # `blocked_by` sin tocar.
+  #
+  # NOTA (2026-09-05, /develop-qa US-021, PR #51 mergeado): disciplina QA cerrada —
+  # Mode A (inline en `openspec/changes/archive/US-021-...-backend/qa-plan.md`, no
+  # hay change `-qa` separado que archivar). Suite de aceptación real contra el
+  # backend mergeado: 11/11 escenarios (74/74 steps) + contract testing 11/11 casos,
+  # verde, reproducido en corridas consecutivas. Sin defectos en la implementación.
+  # Gaps documentados, no rellenados en falso: TC-021-004b bloqueado — el DTO de
+  # US-012 (`AdminOrderSummaryDto`/`AdminOrderDetailDto`) no expone `anonymized_at`/
+  # `anonymization_reason`, PR #41 no lo cerró; TC-021-007 manual (consentimiento,
+  # sin superficie API); QA-021-CT-2 sin contract test de US-012 contra el que
+  # comparar. El gap del DTO queda a cargo de quien planifique el FE de US-021
+  # (`a7`, en curso) — extenderlo es la vía más chica para completar AC-4/AC-5 a
+  # nivel UI. `status` de la US sigue sin avanzar: sólo falta FE. `blocked_by` sin
+  # tocar.
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
