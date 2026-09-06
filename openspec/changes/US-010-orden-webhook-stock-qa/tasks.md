@@ -19,18 +19,18 @@ documentado.
 
 | id | Task | AC | Capa | Estado |
 |---|---|---|---|---|
-| SC-010-H1 | T1.1 | AC-1, AC-9 | 1 | por hacer |
-| SC-010-H2 | T1.1 | AC-2 | 1 | por hacer |
-| SC-010-C1 | T1.2 | AC-5, AC-6 | 1 | por hacer |
-| SC-010-C2 | T1.2 | AC-8 | 1 | por hacer |
-| SC-010-C3 | T1.3 | AC-11 | 1 | por hacer |
-| SC-010-C4 | T1.3 | AC-10 | 1 | por hacer |
-| SC-010-N1 | T1.4 | AC-7 | 1 | por hacer |
+| SC-010-H1 | T1.1 | AC-1, AC-9 | 1 | hecho |
+| SC-010-H2 | T1.1 | AC-2 | 1 | hecho |
+| SC-010-C1 | T1.2 | AC-5, AC-6 | 1 | hecho |
+| SC-010-C2 | T1.2 | AC-8 | 1 | hecho |
+| SC-010-C3 | T1.3 | AC-11 | 1 | hecho |
+| SC-010-C4 | T1.3 | AC-10 | 1 | hecho |
+| SC-010-N1 | T1.4 | AC-7 | 1 | hecho |
 | SC-010-N2 | T1.5 | AC-3 | 1 | **bloqueado**, ver QA-010-F1 |
-| SC-010-N3 | T1.4 | AC-4 | 1 | por hacer |
-| SC-010-N4 | T1.4 | AC-5 | 1 | por hacer |
-| SC-010-N5 | T1.4 | AC-9 | 1 | por hacer |
-| SC-010-N6 | T1.3 | AC-4 | 1 | por hacer |
+| SC-010-N3 | T1.4 | AC-4 | 1 | hecho |
+| SC-010-N4 | T1.4 | AC-5 | 1 | hecho |
+| SC-010-N5 | T1.4 | AC-9 | 1 | hecho |
+| SC-010-N6 | T1.3 | AC-4 | 1 | hecho |
 | QA-010-CT-1 | T2.1 | (contrato de los 5 endpoints) | 1 | por hacer |
 | QA-010-PERF-1/2 | T3.1, T3.2 | AC-1/AC-9 (NFR) | 1 | por hacer |
 | SC-010-X1 | T4.1 | AC-1, AC-9 | 3 | por hacer |
@@ -41,12 +41,12 @@ documentado.
 
 ## Pre-requisitos
 
-- [ ] **Backend de US-010 archivado, capacidad `pagos` viva.** No es una planificación
+- [x] **Backend de US-010 archivado, capacidad `pagos` viva.** No es una planificación
   pendiente — el código corre.
   - **Verify**: `test -d openspec/changes/archive/US-010-orden-webhook-stock-backend && grep -qx "archived: true" openspec/changes/archive/US-010-orden-webhook-stock-backend/proposal.md`
-- [ ] **Entorno de QA arriba**, con la API real + Postgres real (`qa/scripts/api-up.sh`).
+- [x] **Entorno de QA arriba**, con la API real + Postgres real (`qa/scripts/api-up.sh`).
   - **Verify**: `curl -sS -m 10 -o /dev/null -w "%{http_code}" "${QA_API_BASE_URL:-http://localhost:3009}/v1/checkout/simulate-payment" -X POST -H "content-type: application/json" -d '{"order_token":"0000000000000000000000000000000000000000000000000000000000000000"}' | grep -qE '^(404|422)$'` (404 = flag apagado o token no existe / 422 = formato — cualquiera de los dos confirma que la ruta existe y responde)
-- [ ] **`MP_WEBHOOK_SECRET` y `PAYMENTS_SIMULATED_ENABLED=true` están seteados en el
+- [x] **`MP_WEBHOOK_SECRET` y `PAYMENTS_SIMULATED_ENABLED=true` están seteados en el
   entorno de QA** (sin esto, T1.1/T1.3/T1.4/T3.1/T4.1 no tienen nada que ejercitar).
   - **Verify**: `curl -sS -m 10 -o /dev/null -w "%{http_code}" "${QA_API_BASE_URL:-http://localhost:3009}/v1/checkout/simulate-payment" -X POST -H "content-type: application/json" -d '{"order_token":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}' | grep -qx 404` (con el flag apagado por accidente, este mismo 404 no distinguiría — si el resto de la suite falla en T1.1 con "flag apagado" hay que revisar `qa/scripts/api-up.sh`)
 
@@ -54,7 +54,7 @@ documentado.
 
 ## Fase 0: Soporte del harness — firma HMAC y backdate de antigüedad
 
-- [ ] T0.1 `qa/support/mercadopago-signature.ts` + `qa/support/mercadopago-signature.smoke.ts`
+- [x] T0.1 `qa/support/mercadopago-signature.ts` + `qa/support/mercadopago-signature.smoke.ts`
   — construir headers `x-signature`/`x-request-id` válidos o deliberadamente inválidos.
   - **Pattern**: réplica pura del algoritmo de `apps/api/src/payments/mercadopago/
     webhook-signature.ts` (HMAC-SHA256 sobre `id:{dataId};request-id:{requestId};ts:{ts};`)
@@ -69,7 +69,7 @@ documentado.
     `ts=...,v1=...`.
   - **Verify**: `pnpm --filter @dsm/qa exec tsx support/mercadopago-signature.smoke.ts` (exit 0; el smoke falla si `firmaValida === firmaConSecretoEquivocado` o si `headerMalformado()` accidentalmente matchea el formato válido)
 
-- [ ] T0.2 `qa/support/backdate-order.ts` + `qa/support/backdate-order.smoke.ts` —
+- [x] T0.2 `qa/support/backdate-order.ts` + `qa/support/backdate-order.smoke.ts` —
   backdatear `created_at` de una orden vía `@dsm/db` (Prisma), excepción angosta y
   documentada.
   - **Pattern**: `prisma.order.update({ where: { id }, data: { created_at } })` —
@@ -86,7 +86,7 @@ documentado.
 
 ## Fase 1: Suite de aceptación (Cucumber-js + Playwright `APIRequestContext`)
 
-- [ ] T1.1 `qa/acceptance/features/pago-webhook.feature` + `qa/acceptance/steps/
+- [x] T1.1 `qa/acceptance/features/pago-webhook.feature` + `qa/acceptance/steps/
   pago-webhook.steps.ts` — SC-010-H1, SC-010-H2 (happy path, AC-1, AC-2, AC-9).
   - **Pattern**: `Característica`/`Antecedentes`/`Escenario` en español, mismo estilo
     que `pago-manual.feature`; steps contra `APIRequestContext` (nunca `supertest`, per
@@ -100,7 +100,7 @@ documentado.
     PII), no sobre una bandeja de entrada real.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-010 and @happy"`
 
-- [ ] T1.2 SC-010-C1, SC-010-C2 (concurrencia real, AC-5, AC-6, AC-8).
+- [x] T1.2 SC-010-C1, SC-010-C2 (concurrencia real, AC-5, AC-6, AC-8).
   - **Pattern**: `Promise.all` sobre llamadas HTTP reales a `simulate-payment` — nunca
     `sleep`/timing artificial para simular la carrera, per `flakiness-detection` señal 5.
   - **Exit criterion**: SC-010-C1 verde — de dos confirmaciones simultáneas sobre la
@@ -110,7 +110,7 @@ documentado.
     paralelo, exactamente una gana y el stock termina en 0, nunca negativo.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-010 and @corner and @critical-path"`
 
-- [ ] T1.3 SC-010-C3, SC-010-C4, SC-010-N6 (jobs admin — mecánica, AC-10, AC-11, AC-4
+- [x] T1.3 SC-010-C3, SC-010-C4, SC-010-N6 (jobs admin — mecánica, AC-10, AC-11, AC-4
   durabilidad).
   - **Pattern**: usa `backdateOrder` (T0.2) para las precondiciones de antigüedad; los
     jobs corren de verdad (`POST /admin/orders/cleanup-abandoned`,
@@ -123,7 +123,7 @@ documentado.
     cero pagos `refund_pending`, el resumen es `{attempted:0,succeeded:0,failed:0}`.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-010 and @corner"` (cubre SC-010-C3/C4 de esta task; SC-010-N6 queda confirmado en la corrida agregada de T1.4)
 
-- [ ] T1.4 SC-010-N1, SC-010-N3, SC-010-N4, SC-010-N5 (negative space restante, AC-7,
+- [x] T1.4 SC-010-N1, SC-010-N3, SC-010-N4, SC-010-N5 (negative space restante, AC-7,
   AC-4, AC-5, AC-9).
   - **Pattern**: SC-010-N1 usa `mercadopago-signature.ts` (T0.1) para las 3 variantes de
     firma inválida; ninguna llega a llamar a `MercadoPagoClient` (el chequeo de firma
@@ -141,7 +141,7 @@ documentado.
     la base.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-010 and not @blocked"` (13/13 escenarios de T1.1-T1.4 verdes en una sola corrida)
 
-- [ ] T1.5 SC-010-N2 — declarar el bloqueo, no simularlo.
+- [x] T1.5 SC-010-N2 — declarar el bloqueo, no simularlo.
   - **Exit criterion**: `pago-webhook.feature` contiene el escenario `SC-010-N2` tageado
     `@blocked` con el comentario que explica por qué (necesita que MercadoPago responda
     `rejected` de verdad); **no** se escribe ningún step que lo implemente con un doble

@@ -31,6 +31,17 @@
 #                          la cuarta corrida. El límite real IGUAL se prueba — TC-613 lo baja
 #                          por su propia variable de proceso, sólo para ese escenario — así
 #                          que elevarlo acá no deja el límite sin cobertura en ningún lado.
+#   PAYMENTS_SIMULATE_RATE_LIMIT_MAX  US-010 (`@us-010`): `pago-webhook.feature` hace
+#                          VARIAS confirmaciones reales por `POST /v1/checkout/simulate-payment`
+#                          por escenario (SC-010-H1/H2/N3/N4 una c/u, SC-010-C1 dos
+#                          concurrentes sobre la misma orden, SC-010-C2 tres concurrentes
+#                          sobre órdenes distintas) — el presupuesto de producción
+#                          (`PAYMENTS_SIMULATE_RATE_LIMIT_MAX=10` cada 10 min, por IP) se
+#                          agota a mitad de la suite de aceptación y el resto ve 429 en vez
+#                          del 200/409 que el escenario realmente prueba (visto en la
+#                          primera corrida: SC-010-C1/C2 con `[429,429]`/0 éxitos). El
+#                          límite real sigue cubierto dev-owned
+#                          (`simulate-payment.controller.spec.ts`), sin cambios por elevarlo acá.
 #   CHECKOUT_RATE_LIMIT_MAX  US-023 (`@pagos`): cada escenario de `pago-manual.feature` siembra
 #                          su propia orden `pending_payment` vía `POST /v1/checkout` real (nunca
 #                          INSERT directo) — 10+ checkouts en una sola corrida de la suite de
@@ -79,4 +90,5 @@ exec env \
   STOREFRONT_RATE_LIMIT_MAX=100000 \
   IMPORT_RATE_LIMIT_MAX=100000 \
   CHECKOUT_RATE_LIMIT_MAX=100000 \
+  PAYMENTS_SIMULATE_RATE_LIMIT_MAX=100000 \
   node "$MAIN"
