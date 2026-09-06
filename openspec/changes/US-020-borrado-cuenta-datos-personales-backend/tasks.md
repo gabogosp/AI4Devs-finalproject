@@ -276,7 +276,7 @@ language: es
 
 ## Fase 5: Tests de invariantes cross-AC — 3,4 h
 
-- [ ] T5.1 AC-1 — happy path e2e (borrado, sesión cerrada, cookies limpias)
+- [x] T5.1 AC-1 — happy path e2e (borrado, sesión cerrada, cookies limpias)
   - **Pattern**: `per testing-standards.md §14 — e2e contra servidor real`,
     mismo estilo que `e2e-auth-session.spec.ts`.
   - **Exit criterion**: tras `DELETE /v1/me` con sesión válida y sin órdenes
@@ -287,7 +287,7 @@ language: es
     §Trade-offs sobre el residual — `me` sí re-verifica `findActiveById`).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-account-deletion` en 0 (spec nuevo)
 
-- [ ] T5.2 AC-2/AC-11 — irreversibilidad (negative-space)
+- [x] T5.2 AC-2/AC-11 — irreversibilidad (negative-space)
   - **Pattern**: `per testing-standards.md §14.9 — negative-space`. Sembrar un
     cliente con `name`/`email`/`phone` reales conocidos; borrar; releer por
     todos los caminos existentes (`CustomersRepository.findActiveById` — debe
@@ -300,7 +300,7 @@ language: es
     borrado.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac2-account-pii-irreversible` en 0 (spec nuevo)
 
-- [ ] T5.3 AC-3/AC-8/AC-12 — órdenes anonimizadas, métricas intactas
+- [x] T5.3 AC-3/AC-8/AC-12 — órdenes anonimizadas, métricas intactas
   - **Pattern**: mismo patrón que `ac2-order-metrics-preserved.spec.ts` de
     US-021 — sembrar cliente con N órdenes (algunas `delivered`, ninguna
     bloqueante) y M órdenes ya anonimizadas por US-021 previamente; calcular
@@ -312,7 +312,7 @@ language: es
     bit-a-bit iguales antes y después.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac3-ac8-ac12-account-orders-preserved` en 0 (spec nuevo)
 
-- [ ] T5.4 AC-4/AC-9 — bloqueo por órdenes en curso + carrera (negative-space)
+- [x] T5.4 AC-4/AC-9 — bloqueo por órdenes en curso + carrera (negative-space)
   - **Pattern**: `per threat-modeling-lite` superficie 3 — probar las dos
     direcciones de la carrera de AC-9 explícitamente (no sólo el bloqueo
     simple).
@@ -325,7 +325,7 @@ language: es
     el cliente recargue la pantalla).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac4-ac9-blocking-orders-race` en 0 (spec nuevo)
 
-- [ ] T5.5 AC-5 — email liberado, re-registro limpio
+- [x] T5.5 AC-5 — email liberado, re-registro limpio
   - **Pattern**: e2e — borrar una cuenta, `POST /v1/auth/register` con el
     mismo email inmediatamente después.
   - **Exit criterion**: el registro se completa 201 como alta nueva; el nuevo
@@ -334,7 +334,7 @@ language: es
     email en algún momento — el vínculo es por `customer_id`, no por email).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac5-email-liberado-reregistro` en 0 (spec nuevo)
 
-- [ ] T5.6 AC-6 — placeholder único, colisión concurrente (caso borde)
+- [x] T5.6 AC-6 — placeholder único, colisión concurrente (caso borde)
   - **Pattern**: `per testing-standards.md §14.9` — 2 clientes distintos
     borrando su cuenta uno después del otro y también en paralelo
     (`Promise.all`).
@@ -342,7 +342,7 @@ language: es
     violado; los 2 placeholders de `email` resultantes son distintos entre sí.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac6-anonymization-placeholder-unique` en 0 (spec nuevo)
 
-- [ ] T5.7 AC-10 — las 3 puertas cerradas (negative-space)
+- [x] T5.7 AC-10 — las 3 puertas cerradas (negative-space)
   - **Pattern**: ver `design.md` §Approach ("AC-10 — por qué las 3 puertas
     cierran"). Cubre las 3 explícitamente, no una sola.
   - **Exit criterion**: (1) `POST /v1/auth/login` con las credenciales viejas →
