@@ -152,4 +152,72 @@ export class PaymentsRepository {
       take: limit,
     });
   }
+
+  /**
+   * Pago `approved` vigente de una orden (US-013 AC-3): `CancelOrderService`
+   * lo usa para decidir si hay algo que reembolsar y de qué `provider`. Más
+   * nuevo primero por si alguna vez hubiera más de un `approved` histórico
+   * (no debería, pero no es este método el que lo garantiza).
+   */
+  findApprovedByOrderId(
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Payment | null> {
+    return tx.payment.findFirst({
+      where: { order_id: orderId, status: 'approved' },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Último pago de una orden, cualquier estado (US-013 D3): usado al final
+   * de `cancel()` para reportar el estado PERSISTIDO del reembolso — incluye
+   * lo que la llamada externa a MercadoPago (fuera de la tx) pudo haber
+   * cambiado después de que la transacción cerró.
+   */
+  findLatestByOrderId(
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Payment | null> {
+    return tx.payment.findFirst({
+      where: { order_id: orderId },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Marca un pago `approved` como `refund_pending` (US-013 AC-3, camino
+   * `mercadopago`): `UPDATE ... WHERE status='approved'` guardado, mismo
+   * criterio que `markRefunded` — un reintento sobre una fila que ya no está
+   * `approved` es un no-op, nunca un segundo cambio de estado.
+   */
+  async markApprovedAsRefundPending(
+    paymentId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Payment | null> {
+    const { count } = await tx.payment.updateMany({
+      where: { id: paymentId, status: 'approved' },
+      data: { status: 'refund_pending' },
+    });
+    if (count === 0) return null;
+    return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+  }
+
+  /**
+   * Marca un pago `approved` como `refunded` directo (US-013 AC-5): camino
+   * `simulated_dsm`/`manual` — no hay llamada externa que pueda fallar, así
+   * que el reembolso "sucede" en el mismo `UPDATE` guardado que el resto de
+   * los métodos `markApprovedAs*`.
+   */
+  async markApprovedAsRefunded(
+    paymentId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Payment | null> {
+    const { count } = await tx.payment.updateMany({
+      where: { id: paymentId, status: 'approved' },
+      data: { status: 'refunded' },
+    });
+    if (count === 0) return null;
+    return tx.payment.findUniqueOrThrow({ where: { id: paymentId } });
+  }
 }

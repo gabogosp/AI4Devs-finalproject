@@ -127,7 +127,7 @@ language: es
     escribir nada (0 filas afectadas).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository`
 
-- [ ] **T2.3 — `PaymentsRepository`: `findApprovedByOrderId`, `findLatestByOrderId`, `markApprovedAsRefundPending`, `markApprovedAsRefunded`**
+- [x] **T2.3 — `PaymentsRepository`: `findApprovedByOrderId`, `findLatestByOrderId`, `markApprovedAsRefundPending`, `markApprovedAsRefunded`**
   - **Pattern**: los dos `markApprovedAs*` son `UPDATE ... WHERE
     status='approved'` guardado, calcado a `markRefunded` (US-010) —
     `per design.md §D3`:
