@@ -56,6 +56,16 @@ tags:
       Anonimiza, no borra: sólo sobrescribe buyer_name/buyer_email/buyer_phone
       (AC-6). Idempotente por diseño (WHERE anonymized_at IS NULL, AC-8) — no
       existe forma de recuperar la PII original desde el sistema.
+  - name: customer-orders
+    description: >-
+      Historial de compras del cliente autenticado (US-015). Superficie de
+      CLIENTE, distinta de `admin-orders` (panel del dueño) aunque lee las
+      mismas tablas — nunca expone el UUID interno de la orden ni datos de
+      contacto del comprador (el cliente ya sabe quién es). Autorización
+      estructural: `customer_id` + la ventana de retención (12 meses, PRD §6)
+      se verifican en la misma consulta que resuelve la orden, nunca un
+      chequeo posterior — un `order_number` ajeno o fuera de retención
+      responde 404, indistinguible de "no existe" (IDOR, `threat-modeling-lite`).
   - name: admin-imports
     description: >-
       Importación masiva del catálogo desde CSV/XLSX (US-006). Sólo admin. El POST
@@ -864,6 +874,67 @@ paths:
               schema: { $ref: '#/components/schemas/RetentionSweepResult' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /me/orders:
+    get:
+      operationId: listOrderHistory
+      tags: [customer-orders]
+      summary: Listar mis órdenes (US-015 AC-1)
+      description: >-
+        Ordenadas de la más reciente a la más antigua, dentro de la ventana
+        de retención vigente (AC-7). Excluye `pending_payment` (checkout
+        iniciado y nunca pagado no es una "compra"). Sin `sort` ni `status`
+        parametrizables: AC-1 fija el orden y el filtro como reglas de
+        negocio, no como opciones del cliente.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Listado paginado, posiblemente vacío (AC-3, sin caso especial).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderHistoryListResponse' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /me/orders/{order_number}:
+    get:
+      operationId: getOrderHistoryDetail
+      tags: [customer-orders]
+      summary: Detalle de una compra propia (US-015 AC-2)
+      description: >-
+        Ítems con cantidades y precios, estado actual y retiro en sucursal.
+        La propiedad (`customer_id`) y la ventana de retención (AC-7) se
+        verifican en la misma consulta que resuelve la orden.
+      parameters:
+        - name: order_number
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1000 }
+          description: Identificador público legible de la orden ("Pedido #1042").
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Detalle de la orden — ítems, cantidades, precios, estado y retiro.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderHistoryDetail' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404':
+          description: >-
+            `dsm:checkout/order-not-found` — la orden no existe, no
+            pertenece al cliente autenticado, o quedó fuera de la ventana de
+            retención vigente. Las tres causas responden igual (IDOR).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
         '429': { $ref: '#/components/responses/RateLimited' }
   /admin/imports:
     post:
@@ -2081,6 +2152,60 @@ components:
           type: string
           enum: [retention_policy]
           description: Fijo — este endpoint sólo produce anonimizaciones por plazo cumplido.
+    OrderHistorySummary:
+      type: object
+      description: >-
+        Nunca incluye el UUID interno de la orden ni datos de contacto del
+        comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los
+        incluye para el panel del dueño.
+      required: [order_number, status, total_ars_cents, created_at]
+      additionalProperties: false
+      properties:
+        order_number:
+          type: integer
+          description: Identificador público y legible ("Pedido #1042").
+        status:
+          type: string
+          enum: [new, preparing, ready, delivered, cancelled]
+        total_ars_cents: { type: integer }
+        created_at: { type: string, format: date-time }
+    OrderHistoryListResponse:
+      type: object
+      required: [data, pagination]
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/OrderHistorySummary' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    OrderHistoryItem:
+      type: object
+      required: [product_name, product_sku, quantity, unit_price_ars_cents, subtotal_ars_cents]
+      additionalProperties: false
+      properties:
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        subtotal_ars_cents: { type: integer }
+    OrderHistoryDetail:
+      allOf:
+        - { $ref: '#/components/schemas/OrderHistorySummary' }
+        - type: object
+          required: [fulfillment, items]
+          properties:
+            fulfillment:
+              type: string
+              description: Modalidad de retiro/entrega (hoy sólo "pickup" en sucursal).
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/OrderHistoryItem' }
     CreateCheckoutRequest:
       type: object
       description: >-
