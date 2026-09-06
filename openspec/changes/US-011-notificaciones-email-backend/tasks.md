@@ -1,5 +1,14 @@
 # US-011 backend — Tasks
 
+> **QA (Mode A)**: el plan de pruebas QA-owned de este change (aceptación BDD
+> — extensión de escenarios existentes de US-010/US-012, no duplicación —,
+> regresión y exploratorio) vive en `qa-plan.md`, agregado `inline` a este
+> mismo change — no hay un change de QA dedicado. Ver ahí §0 para la
+> restricción central: sin `RESEND_API_KEY` en ningún entorno de QA, sólo el
+> *trigger* de cada aviso es observable (AC-1/2/3/7/8); AC-4/AC-5 quedan
+> `execution_mode: blocked` a nivel aceptación (sin cuenta Resend real) y
+> totalmente cubiertas a nivel unit por T6.1.
+
 ## Traceability (AC → tasks)
 
 | AC | Task IDs |
