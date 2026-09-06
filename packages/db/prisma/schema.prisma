@@ -280,8 +280,11 @@ model CartItem {
 /// Orden del checkout guest (US-008). Nace en `pending_payment` y es INERTE: no
 /// retiene stock ni plata (ADR-0008 decrementa recién al aprobarse el pago, US-010).
 /// Datos del comprador EMBEBIDOS (es una compra guest, no hay cuenta de la que
-/// colgarlos); `customer_id` es la columna del DER (E2E §8) y queda SIN ESCRITOR en
-/// esta US (fusión invitado↔cuenta diferida a US-015). `access_token_hash` y
+/// colgarlos); `customer_id` es la columna del DER (E2E §8) — ~~queda SIN
+/// ESCRITOR en esta US (fusión invitado↔cuenta diferida a US-015)~~ **US-015
+/// le agregó el escritor**: `OptionalCustomerGuard` resuelve la sesión de
+/// cliente si existe y el checkout la escribe acá, sin cambiar el
+/// comportamiento guest (ver `apps/api/src/checkout/README.md`). `access_token_hash` y
 /// `order_number` son deviaciones declaradas del DER (design.md §2, ítems 1 y 6): el
 /// invitado sin sesión se refiere a su orden por el token opaco (nunca el UUID sale a
 /// la red), y el dueño/comprador hablan del mismo pedido por el entero legible.

@@ -1,8 +1,28 @@
-# `src/orders/` — Panel admin de órdenes (US-012)
+# `src/orders/` — Panel admin de órdenes (US-012) + historial del cliente (US-015)
 
 `GET/PATCH /v1/admin/orders` — el dueño gestiona el fulfillment de una orden
 ya pagada: verla, filtrarla, y avanzarla por los cuatro estados activos
 (`new → preparing → ready → delivered`).
+
+`GET /v1/me/orders` + `GET /v1/me/orders/{order_number}` — el CLIENTE
+autenticado consulta su propio historial de compras (US-015). Dos audiencias
+distintas sobre las MISMAS tablas (`orders`/`order_items`):
+
+| | Admin (`OrdersController`) | Historial (`OrdersHistoryController`) |
+|---|---|---|
+| Guard | `AdminGuard` | `CustomerGuard` (fail-closed, `security-standards.md` §3.8) |
+| Alcance | todas las órdenes activas | sólo las propias (`customer_id` en el `WHERE`) |
+| `pending_payment` | excluida siempre (AC-8) | excluida siempre (no es una "compra") |
+| Ventana de tiempo | ninguna | ventana de retención vigente (12 meses, AC-7) |
+| Identificador expuesto | UUID interno + `order_number` | sólo `order_number` (nunca el UUID) |
+| Datos del comprador | `buyer_name`/`buyer_email`/`buyer_phone` | ninguno (el cliente ya sabe quién es) |
+
+Autorización estructural: `OrdersRepository.listByCustomer()` /
+`findByOrderNumberForCustomer()` filtran `customer_id` + corte de retención
+en el propio `WHERE` — una orden ajena o fuera de ventana no llega a
+construirse antes del chequeo (IDOR-safe, `design.md` §D3 de US-015). Ver
+también `apps/api/src/checkout/README.md` §`customer_id` ahora tiene
+escritor — el checkout es quien setea el `customer_id` que este historial lee.
 
 ## Qué transiciones expone este módulo, y cuáles no
 

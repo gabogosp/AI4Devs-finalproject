@@ -307,7 +307,7 @@ language: es
 
 ## Fase 6: Contratos + docs — 0,6 h
 
-- [ ] T6.1 Publicar/validar los 2 yaml OpenAPI del change
+- [x] T6.1 Publicar/validar los 2 yaml OpenAPI del change
   - **Pattern**: `contracts/openapi/list-order-history.yaml` +
     `contracts/openapi/get-order-history-detail.yaml` (ya en el change, ver
     checklist de `api-contract-completeness`) — lint con spectral (o el
@@ -316,7 +316,7 @@ language: es
     declara `security`, `parameters`, `responses` con TODOS los status code
     posibles y `components.responses` con `type` URI RFC 7807.
   - **Verify**: `npx @stoplight/spectral-cli lint openspec/changes/US-015-historial-compras-backend/contracts/openapi/*.yaml`
-- [ ] T6.2 `apps/api/src/checkout/README.md` — nota del escritor nuevo
+- [x] T6.2 `apps/api/src/checkout/README.md` — nota del escritor nuevo
   - **Pattern**: agregar una sección corta ("`customer_id` ahora tiene
     escritor — US-015") describiendo `OptionalCustomerGuard` y remitiendo a
     `design.md` de este change — `per documentation-standards.md §4/§8/§11`.
@@ -324,7 +324,7 @@ language: es
     ESCRITOR" (la frase original queda tachada/actualizada, no borrada sin
     rastro).
   - **Verify**: `grep -q "US-015" apps/api/src/checkout/README.md`
-- [ ] T6.3 `apps/api/src/orders/README.md` — nueva superficie de cliente
+- [x] T6.3 `apps/api/src/orders/README.md` — nueva superficie de cliente
   - **Pattern**: documentar `GET /v1/me/orders*` junto a la superficie admin
     existente, aclarando que son dos audiencias distintas sobre las mismas
     tablas.

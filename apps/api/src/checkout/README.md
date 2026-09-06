@@ -54,6 +54,29 @@ abierto entre el archive de este change y el de `US-012-panel-ordenes-dueno-back
 (ninguno de los dos lo cerró); lo cerró el plan de FE de US-021 al necesitarlo
 para codegen.
 
+## `customer_id` ahora tiene escritor — US-015
+
+`orders.customer_id` ~~queda SIN ESCRITOR en esta US~~ — **US-015 le agregó
+el escritor**, sin tocar el comportamiento guest.
+
+- `OptionalCustomerGuard` (`apps/api/src/auth/resolve-customer-session.ts`) es
+  la variante de `CustomerGuard` que **nunca bloquea**: resuelve la sesión de
+  cliente si hay una cookie válida, y sigue de largo sin ella. Cuelga de
+  `CheckoutController.create` junto a `CartCsrfGuard`.
+- Si hay sesión, `CheckoutService.customerIdDe(req)` (espejo de `traceDe`) lee
+  `req.customerId` y lo pasa a `OrdersRepository.createPendingOrder`, que
+  escribe `customer_id: data.customerId ?? null` en el mismo `INSERT` — sin
+  transacción nueva, columna/FK/índice ya existían.
+- Sin sesión, `customer_id` sigue siendo `null` — **exactamente el
+  comportamiento actual**. La respuesta pública de `POST /v1/checkout` no
+  cambia: `customer_id` nunca sale a la red.
+- La vinculación es **sólo** para checkouts nuevos con sesión activa — nunca
+  retroactiva sobre órdenes guest existentes (AC-6 de US-015, decisión de
+  privacidad ya tomada, no se reabre).
+- Detalle completo en
+  `openspec/changes/archive/US-015-historial-compras-backend/design.md` §D2
+  (una vez archivado el change).
+
 ## Qué NO hace este módulo
 
 - No cobra ni conoce MercadoPago — US-009.
