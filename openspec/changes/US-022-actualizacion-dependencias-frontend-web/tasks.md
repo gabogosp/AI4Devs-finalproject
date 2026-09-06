@@ -22,10 +22,10 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 - [x] T0.1 Confirmar que la rama activa es `feat/US-022-actualizacion-dependencias-frontend-web` (ya existe — este worktree fue creado desde `origin/main` actualizado).
   - **Exit criterion**: `git branch --show-current` imprime `feat/US-022-actualizacion-dependencias-frontend-web`.
   - **Verify**: `git branch --show-current`
-- [ ] T0.2 Confirmar que no hay otro change en `openspec/changes/` con el mismo `us-id` en conflicto.
+- [x] T0.2 Confirmar que no hay otro change en `openspec/changes/` con el mismo `us-id` en conflicto.
   - **Exit criterion**: ningún directorio `openspec/changes/US-022-*` existe salvo el que este plan crea.
   - **Verify**: `ls openspec/changes | grep -c '^US-022-' ` (debe imprimir `1`, contando sólo este directorio)
-- [ ] T0.3 Capturar el baseline: conteo de tests por workspace y salida cruda de `pnpm audit --audit-level=high --json` ANTES de tocar ninguna versión. No se commitea el baseline (es sólo para comparar en T3.1/T8.1); se pega en la descripción del PR.
+- [x] T0.3 Capturar el baseline: conteo de tests por workspace y salida cruda de `pnpm audit --audit-level=high --json` ANTES de tocar ninguna versión. No se commitea el baseline (es sólo para comparar en T3.1/T8.1); se pega en la descripción del PR.
   - **Exit criterion**: se tiene, para comparar después, el número total de tests que reportan `pnpm --filter @dsm/web test`, `pnpm --filter @dsm/api test` y las suites de `qa/`, más la lista completa de advisories `high`/`critical` actuales.
   - **Verify**: `pnpm -r test 2>&1 | tee /tmp/us-022-baseline-tests.log` y `pnpm audit --audit-level=high --json > /tmp/us-022-baseline-audit.json`
 
