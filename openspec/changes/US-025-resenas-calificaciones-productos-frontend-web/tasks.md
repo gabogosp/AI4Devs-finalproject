@@ -45,14 +45,14 @@ language: es
 
 ### Pre-requisitos
 
-- [ ] **T-A0 — `apps/web` limpio antes de empezar**
+- [x] **T-A0 — `apps/web` limpio antes de empezar**
   - **Exit criterion**: no hay cambios sin commitear bajo
     `apps/web/src/features/reviews/` (el directorio todavía no existe, así que esto se cumple
     trivialmente salvo que otra sesión ya haya empezado a escribir ahí).
   - **Verify**: `git status --porcelain apps/web/src/features/reviews` vacío (o el comando no
     devuelve nada porque el directorio no existe todavía)
 
-- [ ] **T-A1 — Confirmar que no hay contrato de reviews todavía (documentar el punto de partida, no un error)**
+- [x] **T-A1 — Confirmar que no hay contrato de reviews todavía (documentar el punto de partida, no un error)**
   - **Exit criterion**: `apps/api/docs/api/openapi.yaml` no declara ningún path ni schema con
     "review" en el nombre — este hecho es la premisa de todo `design.md` §D1, no algo a
     corregir en este change.
