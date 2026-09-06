@@ -132,7 +132,9 @@ test.describe('Topología de DELETE /v1/me (T7.3/T7.4)', () => {
     // ninguna cookie (no probaría idempotencia, probaría "sin sesión").
     const statuses = await page.evaluate(async () => {
       const csrf = document.cookie.match(/(?:^|;\s*)dsm_csrf=([^;]*)/)?.[1];
-      const headers = csrf ? { 'X-CSRF-Token': decodeURIComponent(csrf) } : {};
+      const headers: Record<string, string> = csrf
+        ? { 'X-CSRF-Token': decodeURIComponent(csrf) }
+        : {};
       const [primero, segundo] = await Promise.all([
         fetch('/v1/me', { method: 'DELETE', headers }),
         fetch('/v1/me', { method: 'DELETE', headers }),

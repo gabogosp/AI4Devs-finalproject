@@ -350,7 +350,7 @@ language: es
 
 ## Fase 8 — Pre-merge
 
-- [ ] **T8.1 — Sin `fetch`/`axios` crudo; sin pre-chequeo de órdenes antes de mostrar el botón (AC-9)**
+- [x] **T8.1 — Sin `fetch`/`axios` crudo; sin pre-chequeo de órdenes antes de mostrar el botón (AC-9)**
   - **Exit criterion**: ni `DeleteAccountSection.tsx` ni `accountService.ts`
     llaman `fetch`/`axios` directamente (F48); `DeleteAccountSection.tsx` no
     contiene ninguna llamada a `orderHistoryService`/`listOrderHistory` (AC-9
@@ -358,24 +358,24 @@ language: es
     verdad).
   - **Verify**: `! grep -nE "fetch\(|axios\." apps/web/src/features/account/DeleteAccountSection.tsx apps/web/src/features/account/accountService.ts && ! grep -n "orderHistoryService\|listOrderHistory" apps/web/src/features/account/DeleteAccountSection.tsx` (exit 0 = ninguna coincidencia en ambos greps)
 
-- [ ] **T8.2 — Suite completa de `apps/web` verde + lint + typecheck**
+- [x] **T8.2 — Suite completa de `apps/web` verde + lint + typecheck**
   - **Exit criterion**: lint, typecheck y la suite completa de `apps/web`
     (Vitest) pasan sin fallos ni skips inesperados.
   - **Verify**: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web exec tsc --noEmit && pnpm --filter @dsm/web test`
 
-- [ ] **T8.3 — Codegen sigue fresco (gate `frontend-codegen-fresh`)**
+- [x] **T8.3 — Codegen sigue fresco (gate `frontend-codegen-fresh`)**
   - **Exit criterion**: correr `codegen` de nuevo, después de todos los
     cambios de este change, sigue sin producir diff.
   - **Verify**: `pnpm --filter @dsm/web codegen && git status --porcelain apps/web/src/api/generated/` vacío
 
 ## Verification (suite-level)
 
-- [ ] Todos los tests del feature `account` pasan:
+- [x] Todos los tests del feature `account` pasan:
       `pnpm --filter @dsm/web vitest run src/features/account/`
-- [ ] El E2E dev-owned de topología pasa contra la app construida:
+- [x] El E2E dev-owned de topología pasa contra la app construida:
       `pnpm --filter @dsm/web test:e2e -- account-deletion-topology`
-- [ ] Lint / typecheck limpios:
+- [x] Lint / typecheck limpios:
       `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web exec tsc --noEmit`
-- [ ] Codegen sigue fresco: `pnpm --filter @dsm/web codegen && git status --porcelain apps/web/src/api/generated/` vacío
-- [ ] Ningún `fetch`/`axios` crudo en los archivos nuevos/modificados de esta
+- [x] Codegen sigue fresco: `pnpm --filter @dsm/web codegen && git status --porcelain apps/web/src/api/generated/` vacío
+- [x] Ningún `fetch`/`axios` crudo en los archivos nuevos/modificados de esta
       US (F48) — ver T8.1.
