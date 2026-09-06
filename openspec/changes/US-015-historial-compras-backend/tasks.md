@@ -122,7 +122,7 @@ language: es
 
 ## Fase 2: `OrdersRepository` — lecturas propias + helper de retención — 0,7 h
 
-- [ ] T2.1 `listByCustomer()` en `OrdersRepository`
+- [x] T2.1 `listByCustomer()` en `OrdersRepository`
   - **Pattern**: ver snippet completo en `design.md` §D3 (`$transaction` con
     `findMany` + `count`, mismo patrón que el `list()` admin existente) —
     `per backend-node-standards.md §5 — repositorio único de ORM, sin ORM en
@@ -132,7 +132,7 @@ language: es
     exactamente las 2 propias dentro de ventana, ordenadas `-created_at`,
     excluyendo `pending_payment`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders\\.repository\\.spec`
-- [ ] T2.2 `findByOrderNumberForCustomer()` en `OrdersRepository`
+- [x] T2.2 `findByOrderNumberForCustomer()` en `OrdersRepository`
   - **Pattern**: `findFirst` con `customer_id` + `status.not` +
     `created_at.gte` en el mismo `where` — ver `design.md` §D3. Sin
     separación entre "no existe" y "no es tuya" (`per threat-modeling-lite —
@@ -141,7 +141,7 @@ language: es
     orden propia `pending_payment`, o de una orden propia fuera de retención,
     los tres casos devuelven `null` (indistinguibles entre sí).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders\\.repository\\.spec`
-- [ ] T2.3 Extraer `computeRetentionCutoff()` compartido
+- [x] T2.3 Extraer `computeRetentionCutoff()` compartido
   - **Pattern**: nuevo archivo `apps/api/src/checkout/retention-cutoff.ts`
     (función pura, ver `design.md` §D4); `OrdersRetentionService.cutoffDate()`
     pasa a delegar en ella — `per refactoring-discipline — Extract Method,

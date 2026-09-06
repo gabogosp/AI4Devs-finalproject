@@ -24,7 +24,7 @@ describe('OrdersRepository (integration)', () => {
   });
   beforeEach(async () => {
     await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE orders, order_items, products, categories RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE orders, order_items, products, categories, customers RESTART IDENTITY CASCADE',
     );
     const cat = await prisma.category.create({
       data: { name: 'Refrigeración', slug: 'refrigeracion' },
@@ -561,6 +561,339 @@ describe('OrdersRepository (integration)', () => {
     const enBase = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
     expect(enBase.status).toBe('new');
     expect(enBase.cancelled_at).toBeNull();
+  });
+
+  /** US-015 T2.1/T2.2 — historial de compras del cliente autenticado. */
+  describe('listByCustomer (US-015 T2.1, AC-1/AC-4/AC-7)', () => {
+    async function crearCliente(sufijo: string) {
+      return prisma.customer.create({
+        data: {
+          email: `cliente-${sufijo}@test.local`,
+          password_hash: 'hash-de-prueba',
+          name: `Cliente ${sufijo}`,
+        },
+      });
+    }
+
+    async function crearOrdenDe(sufijo: string, customerId?: string) {
+      const orden = await repo.createPendingOrder({
+        ...ordenBase(sufijo),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      if (customerId) {
+        await prisma.order.update({ where: { id: orden.id }, data: { customer_id: customerId } });
+      }
+      // Las recién creadas quedan pending_payment; para "compras" reales del
+      // historial se confirman.
+      return repo.transitionToNewIfPending(orden.id);
+    }
+
+    it('dado un customerId con 3 órdenes propias (2 dentro de retención, 1 fuera) y 1 orden ajena, devuelve exactamente las 2 propias dentro de ventana, orden -created_at, excluyendo pending_payment', async () => {
+      const propio = await crearCliente('propio');
+      const ajeno = await crearCliente('ajeno');
+
+      const propiaVieja = await crearOrdenDe('hist-vieja', propio.id);
+      const propiaReciente = await crearOrdenDe('hist-reciente', propio.id);
+      const propiaFueraDeVentana = await crearOrdenDe('hist-fuera', propio.id);
+      await crearOrdenDe('hist-ajena', ajeno.id);
+
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      await prisma.order.update({
+        where: { id: propiaVieja!.id },
+        data: { created_at: new Date(cutoff.getTime() + 60_000) }, // dentro, más vieja
+      });
+      await prisma.order.update({
+        where: { id: propiaReciente!.id },
+        data: { created_at: new Date(cutoff.getTime() + 120_000) }, // dentro, más nueva
+      });
+      await prisma.order.update({
+        where: { id: propiaFueraDeVentana!.id },
+        data: { created_at: new Date(cutoff.getTime() - 60_000) }, // fuera
+      });
+
+      const { data, total } = await repo.listByCustomer(propio.id, {
+        cutoff,
+        limit: 20,
+        offset: 0,
+      });
+
+      expect(total).toBe(2);
+      expect(data.map((o) => o.id)).toEqual([propiaReciente!.id, propiaVieja!.id]);
+    });
+
+    it('excluye las órdenes pending_payment del cliente (no son una "compra")', async () => {
+      const cliente = await crearCliente('pending');
+      const pendiente = await repo.createPendingOrder({
+        ...ordenBase('hist-pending'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      await prisma.order.update({
+        where: { id: pendiente.id },
+        data: { customer_id: cliente.id },
+      });
+
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+      const { data, total } = await repo.listByCustomer(cliente.id, {
+        cutoff,
+        limit: 20,
+        offset: 0,
+      });
+
+      expect(total).toBe(0);
+      expect(data).toHaveLength(0);
+    });
+
+    it('sin órdenes, devuelve data vacío y total 0', async () => {
+      const cliente = await crearCliente('vacio');
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      const { data, total } = await repo.listByCustomer(cliente.id, {
+        cutoff,
+        limit: 20,
+        offset: 0,
+      });
+
+      expect(data).toHaveLength(0);
+      expect(total).toBe(0);
+    });
+  });
+
+  describe('findByOrderNumberForCustomer (US-015 T2.2, AC-2/AC-4/AC-5/AC-7 — IDOR)', () => {
+    async function crearCliente(sufijo: string) {
+      return prisma.customer.create({
+        data: {
+          email: `cliente-${sufijo}@test.local`,
+          password_hash: 'hash-de-prueba',
+          name: `Cliente ${sufijo}`,
+        },
+      });
+    }
+
+    it('orden propia dentro de retención y confirmada: la encuentra con items', async () => {
+      const cliente = await crearCliente('detalle-ok');
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('detalle-ok'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      await prisma.order.update({
+        where: { id: creada.id },
+        data: { customer_id: cliente.id, status: 'new' },
+      });
+
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      const encontrada = await repo.findByOrderNumberForCustomer(
+        creada.order_number,
+        cliente.id,
+        cutoff,
+      );
+
+      expect(encontrada?.id).toBe(creada.id);
+      expect(encontrada?.items).toHaveLength(1);
+    });
+
+    it('orden ajena: devuelve null (indistinguible de "no existe")', async () => {
+      const propio = await crearCliente('detalle-propio');
+      const ajeno = await crearCliente('detalle-ajeno');
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('detalle-ajena'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      await prisma.order.update({
+        where: { id: creada.id },
+        data: { customer_id: ajeno.id, status: 'new' },
+      });
+
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      expect(
+        await repo.findByOrderNumberForCustomer(creada.order_number, propio.id, cutoff),
+      ).toBeNull();
+    });
+
+    it('orden propia pending_payment: devuelve null', async () => {
+      const cliente = await crearCliente('detalle-pending');
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('detalle-pending'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      await prisma.order.update({
+        where: { id: creada.id },
+        data: { customer_id: cliente.id },
+      });
+
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      expect(
+        await repo.findByOrderNumberForCustomer(creada.order_number, cliente.id, cutoff),
+      ).toBeNull();
+    });
+
+    it('orden propia fuera de la ventana de retención: devuelve null', async () => {
+      const cliente = await crearCliente('detalle-fuera');
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('detalle-fuera'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+      await prisma.order.update({
+        where: { id: creada.id },
+        data: {
+          customer_id: cliente.id,
+          status: 'new',
+          created_at: new Date(cutoff.getTime() - 60_000),
+        },
+      });
+
+      expect(
+        await repo.findByOrderNumberForCustomer(creada.order_number, cliente.id, cutoff),
+      ).toBeNull();
+    });
+
+    it('order_number inexistente: devuelve null', async () => {
+      const cliente = await crearCliente('detalle-inexistente');
+      const cutoff = new Date();
+      cutoff.setMonth(cutoff.getMonth() - 12);
+
+      expect(
+        await repo.findByOrderNumberForCustomer(999_999, cliente.id, cutoff),
+      ).toBeNull();
+    });
+  });
+
+  /** US-015 T5.9 — borde exacto del corte de retención (`gte`, sin off-by-one). */
+  describe('listByCustomer / findByOrderNumberForCustomer — borde del corte (US-015 T5.9, AC-7)', () => {
+    async function crearCliente(sufijo: string) {
+      return prisma.customer.create({
+        data: {
+          email: `cliente-${sufijo}@test.local`,
+          password_hash: 'hash-de-prueba',
+          name: `Cliente ${sufijo}`,
+        },
+      });
+    }
+
+    it('orden con created_at EXACTAMENTE en el cutoff: incluida (gte)', async () => {
+      const cliente = await crearCliente('borde-incluida');
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('borde-incluida'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      const cutoff = new Date();
+      await prisma.order.update({
+        where: { id: creada.id },
+        data: { customer_id: cliente.id, status: 'new', created_at: cutoff },
+      });
+
+      const { total } = await repo.listByCustomer(cliente.id, { cutoff, limit: 20, offset: 0 });
+      expect(total).toBe(1);
+      expect(
+        await repo.findByOrderNumberForCustomer(creada.order_number, cliente.id, cutoff),
+      ).not.toBeNull();
+    });
+
+    it('orden con created_at 1ms ANTES del cutoff: excluida', async () => {
+      const cliente = await crearCliente('borde-excluida');
+      const creada = await repo.createPendingOrder({
+        ...ordenBase('borde-excluida'),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      const cutoff = new Date();
+      await prisma.order.update({
+        where: { id: creada.id },
+        data: {
+          customer_id: cliente.id,
+          status: 'new',
+          created_at: new Date(cutoff.getTime() - 1),
+        },
+      });
+
+      const { total } = await repo.listByCustomer(cliente.id, { cutoff, limit: 20, offset: 0 });
+      expect(total).toBe(0);
+      expect(
+        await repo.findByOrderNumberForCustomer(creada.order_number, cliente.id, cutoff),
+      ).toBeNull();
+    });
   });
 
   it('cancelAbandonedPending: cancela sólo las pending_payment con created_at anterior al corte (US-010 T2.2)', async () => {
