@@ -66,4 +66,32 @@ describe('CategoryNav (AC-1)', () => {
     expect(await CategoryNav()).toBeNull();
     expect(captureError).not.toHaveBeenCalled();
   });
+
+  it('con más de 8 rubros, el resto queda detrás de UN solo "Más rubros" — nunca fuera del DOM', async () => {
+    // Encontrado real corrigiendo TC-731: sin tope, cada rubro extra es un
+    // `Tab` más en TODA página pública. 10 rubros fuerza el caso "hay resto".
+    const muchos = Array.from({ length: 10 }, (_, i) => ({
+      slug: `rubro-${i}`,
+      name: `Rubro ${i}`,
+      children: [],
+    }));
+    getTree.mockResolvedValue(muchos);
+
+    render(await CategoryNav());
+
+    // Los primeros 8 son links directos, sin abrir nada.
+    for (let i = 0; i < 8; i += 1) {
+      expect(screen.getByRole('link', { name: `Rubro ${i}` })).toBeInTheDocument();
+    }
+
+    // Los 2 restantes siguen en el DOM (SEO — AC-1), no se pierden.
+    expect(screen.getByRole('link', { name: 'Rubro 8' })).toHaveAttribute(
+      'href',
+      '/categorias/rubro-8',
+    );
+    expect(screen.getByRole('link', { name: 'Rubro 9' })).toBeInTheDocument();
+
+    // Un único focusable adicional cubre TODO el resto, no uno por rubro.
+    expect(screen.getByText('Más rubros (2)')).toBeInTheDocument();
+  });
 });
