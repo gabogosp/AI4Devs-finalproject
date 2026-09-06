@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useSession } from './SessionProvider';
 
 /**
@@ -37,11 +38,15 @@ export function AccountPanel() {
         </div>
       </dl>
 
-      {/* Placeholder honesto: el historial es de US-015. Decir "próximamente"
-          es mejor que una sección vacía que parece rota. */}
+      {/* Cierra el placeholder de US-014 T2.6: el historial es esta US-015. */}
       <section className="rounded-md border border-border p-4">
         <h2 className="text-sm font-medium text-fg">Tus compras</h2>
-        <p className="text-sm text-muted">Próximamente.</p>
+        <Link
+          href="/mi-cuenta/compras"
+          className="text-sm underline focus:outline-none focus-visible:shadow-focus"
+        >
+          Ver historial de compras
+        </Link>
       </section>
 
       <button
