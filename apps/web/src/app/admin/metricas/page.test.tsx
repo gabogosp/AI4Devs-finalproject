@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
-import Page from './page';
+import Page from '../../../../app/(admin)/admin/metricas/page';
 
 const API = 'http://localhost:3000';
 
@@ -10,12 +10,7 @@ vi.mock('@/features/metrics/charts/SalesComposedChart', () => ({
   SalesComposedChart: () => <div data-testid="sales-composed-chart" />,
 }));
 
-/**
- * Smoke test de la ruta (US-016 T9.3, mirror del criterio de
- * `admin/ordenes/page.test.tsx`: no existe ese archivo hoy en el repo — no
- * hay page.test.tsx precedente bajo `app/` — así que este test sigue el
- * patrón de los tests de componente de `metrics/` en su lugar).
- */
+/** Smoke test de la ruta (US-016 T9.3) — mirror de `admin/ordenes/page.test.tsx`. */
 describe('/admin/metricas page', () => {
   it('con los 3 endpoints devolviendo 200, monta los 3 widgets', async () => {
     server.use(

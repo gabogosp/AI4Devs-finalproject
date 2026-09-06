@@ -213,10 +213,20 @@
     configuración nueva.
   - **Exit criterion**: la ruta renderiza `MetricsDashboard` dentro del layout
     `(admin)`.
-  - **Verify**: `pnpm --filter @dsm/web exec vitest run "app/(admin)/admin/metricas/page.test.tsx"`.
-- [x] T9.3 `apps/web/app/(admin)/admin/metricas/page.test.tsx` — smoke test de
-      la ruta con MSW (mirror de `admin/ordenes/page.test.tsx`): con los 3
-      endpoints devolviendo 200, la página monta los 3 widgets.
+  - **Verify**: `pnpm --filter @dsm/web exec vitest run src/app/admin/metricas/page.test.tsx`.
+    (DRIFT documentado en el reporte de cierre: el Pattern citaba
+    `admin/ordenes/page.test.tsx` como mirror; ese archivo SÍ existe pero en
+    `apps/web/src/app/admin/ordenes/page.test.tsx` — un directorio-espejo
+    que importa el `page.tsx` real de `app/(admin)/...` por ruta relativa —
+    no colocado junto al `page.tsx`, que es lo que el path original de esta
+    línea asumía. `vitest.config.ts` sólo incluye `src/**`, así que un test
+    bajo `app/` nunca se ejecuta. Corregido: el test vive en
+    `apps/web/src/app/admin/metricas/page.test.tsx`, mismo mecanismo que el
+    precedente real.)
+- [x] T9.3 `apps/web/src/app/admin/metricas/page.test.tsx` — smoke test de
+      la ruta con MSW (mirror real de `src/app/admin/ordenes/page.test.tsx`,
+      ver nota de drift en T9.2): con los 3 endpoints devolviendo 200, la
+      página monta los 3 widgets.
   - **Exit criterion**: los `data-testid` de los 3 widgets están presentes.
   - **Verify**: incluido en el comando de T9.2.
 
