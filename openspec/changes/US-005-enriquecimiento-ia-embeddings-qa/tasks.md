@@ -45,7 +45,7 @@ documentado.
 | QA-005-CT-1 | T2.1 | (contrato de los 2 endpoints) | 1 | hecho |
 | QA-005-CT-2 | T2.2 | (corrección de contrato, QA-005-F2) | 1 | hecho |
 | QA-005-PERF-1 | T3.1 | NFR-3 (E2E §17) | 1 | hecho |
-| QA-005-EXP-1 | T4.1 | (exploratorio) | — | pendiente (charter escrito, ejecución humana pendiente) |
+| QA-005-EXP-1 | T4.1 | (exploratorio) | — | charter escrito (T4.1 hecho); ejecución humana pendiente |
 
 ---
 
@@ -284,13 +284,13 @@ print('ok')"`
 
 ## Fase 4: Exploratorio y cierre
 
-- [ ] T4.1 Charter `qa/exploratory/us-005-enriquecimiento-ia.md` — QA-005-EXP-1 (manual).
+- [x] T4.1 Charter `qa/exploratory/us-005-enriquecimiento-ia.md` — QA-005-EXP-1 (manual).
   - **Exit criterion**: documenta los 3 charters de `qa-plan.md` §11 con su tiempo asignado,
     el riesgo que exploran y dónde se registran los hallazgos. Queda como checklist humano;
     `/develop-qa` no lo scaffoldea.
   - **Verify**: `test -f qa/exploratory/us-005-enriquecimiento-ia.md && grep -c "^## Charter" qa/exploratory/us-005-enriquecimiento-ia.md | grep -qx 3`
 
-- [ ] T4.2 Trazabilidad AC → escenario, sin huecos.
+- [x] T4.2 Trazabilidad AC → escenario, sin huecos.
   - **Exit criterion**: los 10 AC de US-005 aparecen en la matriz de `qa-plan.md` §3 con al
     menos un escenario (ejecutable, mecánico-parcial, o `@blocked` explícito); cada `SC-`/
     `QA-` de la matriz existe como escenario Gherkin, contract test, script k6 o charter.
@@ -306,21 +306,35 @@ sys.exit(0 if not faltan and len(scs) >= 16 else 1)"`
 
 ## Verification (suite-level)
 
-- [ ] Suite de aceptación completa verde (excepto lo bloqueado):
+- [x] Suite de aceptación completa verde (excepto lo bloqueado):
   `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and not @blocked"` —
-  11/11 escenarios ejecutables verdes (incluyendo las 4+3 combinaciones de los dos Esquemas
-  del Escenario).
-- [ ] Contract tests verdes: `pnpm --filter @dsm/qa test:contract:enrichment` — todos los
+  16/16 escenarios concretos verdes (11 definiciones, incluyendo las 4+3 combinaciones de
+  los dos Esquemas del Escenario), 59/59 steps.
+- [x] Contract tests verdes: `pnpm --filter @dsm/qa test:contract:enrichment` — 12/12
   casos declarados en `qa-plan.md` §6.
-- [ ] Contrato de `catalogo` corregido y lintado: `npx @stoplight/spectral-cli lint openspec/specs/catalogo/contracts/openapi.yaml`
-- [ ] Carga dentro del presupuesto existente:
-  `k6 run qa/performance/storefront-under-enrichment.js` — thresholds `list_products` y
-  `storefront_product` en verde, `runner_state: running` confirmado durante la ventana.
-- [ ] **Sin regresión en las suites QA ya existentes** (el fix de T0.1 es la superficie de
+- [x] Contrato de `catalogo` corregido y lintado: `npx @stoplight/spectral-cli lint openspec/specs/catalogo/contracts/openapi.yaml` — 0 errores (10 warnings preexistentes, ninguno de este change).
+- [x] Carga dentro del presupuesto existente:
+  `k6 run qa/performance/storefront-under-enrichment.js` — thresholds `list_products`
+  (p95=10.6ms) y `storefront_product` (p95=1.6ms) en verde, `runner_confirmed_running`
+  confirmado durante la ventana (3514 lecturas con `runner_state: "running"`).
+- [x] **Sin regresión en las suites QA ya existentes** (el fix de T0.1 es la superficie de
   mayor riesgo de romper algo ajeno):
   `pnpm --filter @dsm/qa test:acceptance -- --tags "not @enriquecimiento and not @blocked"`
   — mismo conteo de escenarios verdes que antes del fix (ninguna otra suite dependía de
   `ENRICHMENT_ENABLED=true` en la instancia compartida).
+  - **Verificado por comparación A/B real** (`develop-qa`): se corrió la MISMA suite (112
+    escenarios) contra dos instancias — una con `qa/scripts/api-up.sh` tal como quedó (T0.1
+    aplicado) y otra con una copia temporal del script SIN el fix (`git show` del commit
+    anterior), ambas contra el mismo Postgres. Resultado: **90/112 verdes con el fix
+    aplicado, 89/112 sin él** — ninguna categoría NUEVA de falla aparece con el fix; las
+    ~22-23 fallas en ambos casos son huecos de entorno preexistentes de este worktree,
+    ninguno relacionado con `enrichment` (`apps/web` nunca se levantó → timeouts de
+    Playwright en `ficha-publica`/`browse`; `ADMIN_BOOTSTRAP_TOKEN` no configurado →
+    `X-6`/`TC-216` fallan por diseño, avisan en vez de mintear; `PAYMENTS_SIMULATED_ENABLED`
+    no está en `true` en este `.env` → todo `pago-webhook.feature` que usa el medio
+    simulado devuelve 404). El fix de T0.1 no rompió nada — si acaso, un escenario más
+    verde con el fix (probablemente una de las carreras de concurrencia de
+    `pago-webhook.feature`, no determinista en ninguno de los dos casos).
 - [ ] El charter manual ejecutado y sus hallazgos registrados (humano) — charter ESCRITO
   (T4.1); ejecución queda para el humano.
 
