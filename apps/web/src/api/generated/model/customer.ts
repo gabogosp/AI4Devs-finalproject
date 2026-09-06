@@ -7,7 +7,7 @@
  */
 
 /**
- * Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.
+ * Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.
  */
 export interface Customer {
   id: string;
@@ -15,5 +15,10 @@ export interface Customer {
   name: string;
   /** @nullable */
   phone: string | null;
+  /**
+     * URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.
+     * @nullable
+     */
+  avatar_url: string | null;
   created_at: string;
 }

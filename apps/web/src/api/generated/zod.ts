@@ -30,8 +30,9 @@ export const RegisterCustomerResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 })
 
 
@@ -50,8 +51,9 @@ export const LoginCustomerResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 })
 
 
@@ -69,8 +71,9 @@ export const RefreshSessionResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 })
 
 
@@ -94,8 +97,9 @@ export const GetCurrentCustomerResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 
 
 /**
@@ -479,6 +483,51 @@ export const StorefrontGetProductResponse = zod.object({
   "slug": zod.string()
 })
 }).describe('Ficha pública (US-003): sólo campos SEO; sin id\/stock\/status\/timestamps.')
+
+
+/**
+ * Ruta PÚBLICA sin auth. SIEMPRE excluye reseñas ocultas (moderación, AC-8) del agregado y de la lista. `average: null` + `count: 0` distingue "sin reseñas" (AC-4) de "reseñas con promedio bajo" (nunca `0` cuando hay al menos una). Mismo criterio de 404 que la ficha (draft/archived/inexistente → 404 uniforme).
+ * @summary Reseñas públicas de un producto publicado (US-025 AC-3, AC-4)
+ */
+export const getPublicReviewsPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
+export const GetPublicReviewsParams = zod.object({
+  "slug": zod.string().regex(getPublicReviewsPathSlugRegExp)
+})
+
+export const getPublicReviewsQueryLimitDefault = 20;
+
+export const getPublicReviewsQueryOffsetDefault = 0;
+export const getPublicReviewsQueryOffsetMin = 0;
+
+
+
+export const GetPublicReviewsQueryParams = zod.object({
+  "limit": zod.number().int().min(1).default(getPublicReviewsQueryLimitDefault),
+  "offset": zod.number().int().min(getPublicReviewsQueryOffsetMin).default(getPublicReviewsQueryOffsetDefault)
+})
+
+export const getPublicReviewsResponseDataItemRatingMax = 5;
+
+
+
+export const GetPublicReviewsResponse = zod.object({
+  "average": zod.number().nullable().describe('`null` si no hay reseñas visibles (AC-4) — nunca `0` cuando hay al menos una.'),
+  "count": zod.number().int().describe('Cantidad de reseñas visibles (AC-3).'),
+  "data": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "customer_name": zod.string(),
+  "rating": zod.number().int().min(1).max(getPublicReviewsResponseDataItemRatingMax),
+  "comment": zod.string().nullable(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Reseña en la lista pública — nunca expone `customer_id` ni `hidden_at`.')),
+  "pagination": zod.object({
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "total": zod.number().int()
+})
+})
 
 
 /**
@@ -897,6 +946,123 @@ export const DeleteAccountHeader = zod.object({
 })
 
 export const DeleteAccountResponse = zod.void()
+
+
+/**
+ * Ambos campos van SIEMPRE presentes (formulario completo, no un patch parcial): `name` no vacío/no sólo-espacios (AC-4) y `avatar_url` es `null` para quitar el avatar (AC-3) o una URL http/https válida para setearlo (AC-2) — cualquier otro valor no-null se rechaza (AC-5). El email NO es parte del body: enviarlo es 422 por `additionalProperties: false` (AC-6). La identidad sale exclusivamente de la sesión, nunca de un parámetro del request (AC-7).
+ * @summary Editar nombre y avatar del cliente autenticado (US-024 AC-1, AC-2, AC-3)
+ */
+export const UpdateProfileHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige además de un Origin de la allowlist; la ausencia de Origin se rechaza.')
+})
+
+export const updateProfileBodyNameMax = 120;
+
+export const updateProfileBodyAvatarUrlMax = 2048;
+
+
+
+export const UpdateProfileBody = zod.object({
+  "name": zod.string().min(1).max(updateProfileBodyNameMax).describe('No vacío ni sólo-espacios (AC-4, se recorta antes de validar).'),
+  "avatar_url": zod.string().url().max(updateProfileBodyAvatarUrlMax).nullable().describe('`null` quita el avatar (AC-3). Si no es `null`, debe ser una URL http\/https válida (AC-5) — mismo criterio que `avatar_url` de `Customer`.')
+}).describe('Entrada de PATCH \/me (US-024). Formulario completo, no un patch parcial.')
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+
+
+/**
+ * `eligible` refleja si el cliente tiene una orden `delivered` con este producto (AC-6) — el FE lo usa para decidir si mostrar el control de reseña. `review` es la reseña propia si existe, SIN IMPORTAR si está oculta por moderación (AC-8 — transparencia hacia el autor); `null` si todavía no reseñó. Requiere sesión (AC-7).
+ * @summary Elegibilidad y reseña propia de un producto (US-025 AC-6, AC-7, AC-8)
+ */
+export const GetOwnReviewParams = zod.object({
+  "productId": zod.string().uuid()
+})
+
+export const getOwnReviewResponseReviewOneRatingMax = 5;
+
+
+
+export const GetOwnReviewResponse = zod.object({
+  "eligible": zod.boolean().describe('true si el cliente tiene una orden delivered con este producto (AC-6).'),
+  "review": zod.object({
+  "id": zod.string().uuid(),
+  "rating": zod.number().int().min(1).max(getOwnReviewResponseReviewOneRatingMax),
+  "comment": zod.string().nullable(),
+  "hidden": zod.boolean().describe('true si el dueño la ocultó (AC-8).'),
+  "created_at": zod.string().datetime({"offset":true}),
+  "updated_at": zod.string().datetime({"offset":true})
+}).describe('Reseña propia del cliente (US-025). `hidden` es real sin importar quién pregunte.').nullable()
+})
+
+
+/**
+ * Upsert idempotente: crea si no existe, actualiza la MISMA reseña si ya existe (AC-5 — una reseña por cliente por producto). `comment` es opcional (AC-2). Se rechaza con 403 si el cliente no tiene una orden `delivered` con este producto (AC-6, verificado SIEMPRE server-side, sin importar lo que envíe el cliente) y con 422 si `rating` está fuera de 1-5 (AC-9).
+ * @summary Dejar o editar la propia reseña de un producto (US-025 AC-1, AC-2, AC-5)
+ */
+export const UpsertOwnReviewParams = zod.object({
+  "productId": zod.string().uuid()
+})
+
+export const UpsertOwnReviewHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige además de un Origin de la allowlist; la ausencia de Origin se rechaza.')
+})
+
+export const upsertOwnReviewBodyRatingMax = 5;
+
+export const upsertOwnReviewBodyCommentMax = 2000;
+
+
+
+export const UpsertOwnReviewBody = zod.object({
+  "rating": zod.number().int().min(1).max(upsertOwnReviewBodyRatingMax).describe('Fuera de 1-5 → 422 (AC-9).'),
+  "comment": zod.string().max(upsertOwnReviewBodyCommentMax).optional().describe('Opcional — sólo calificar es válido (AC-2).')
+})
+
+export const upsertOwnReviewResponseRatingMax = 5;
+
+
+
+export const UpsertOwnReviewResponse = zod.object({
+  "id": zod.string().uuid(),
+  "rating": zod.number().int().min(1).max(upsertOwnReviewResponseRatingMax),
+  "comment": zod.string().nullable(),
+  "hidden": zod.boolean().describe('true si el dueño la ocultó (AC-8).'),
+  "created_at": zod.string().datetime({"offset":true}),
+  "updated_at": zod.string().datetime({"offset":true})
+}).describe('Reseña propia del cliente (US-025). `hidden` es real sin importar quién pregunte.')
+
+
+/**
+ * Soft-flag de moderación — nunca borra la fila ni edita el contenido. `hidden: true` la excluye del agregado y de la lista pública; el autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como oculta (transparencia, no censura invisible).
+ * @summary Ocultar/mostrar una reseña (US-025 AC-8)
+ */
+export const ModerateReviewParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const ModerateReviewBody = zod.object({
+  "hidden": zod.boolean()
+})
+
+export const moderateReviewResponseRatingMax = 5;
+
+
+
+export const ModerateReviewResponse = zod.object({
+  "id": zod.string().uuid(),
+  "rating": zod.number().int().min(1).max(moderateReviewResponseRatingMax),
+  "comment": zod.string().nullable(),
+  "hidden": zod.boolean().describe('true si el dueño la ocultó (AC-8).'),
+  "created_at": zod.string().datetime({"offset":true}),
+  "updated_at": zod.string().datetime({"offset":true})
+}).describe('Reseña propia del cliente (US-025). `hidden` es real sin importar quién pregunte.')
 
 
 /**

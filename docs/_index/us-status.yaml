@@ -912,7 +912,11 @@
   blocked_by: [US-014]   # necesita Customer/mi-cuenta (Done)
 - id: US-025
   slug: resenas-calificaciones-productos
-  status: Ready   # 2026-09-06: US nueva, nacida de un hallazgo de la prueba visual del
+  status: In Progress   # 2026-09-06: BE cerrado (9/9 tasks, PR #130 abierto contra
+  # main), openspec/changes/US-025-resenas-calificaciones-productos-backend/. FE/QA
+  # (standalone qa-plan ya existente) todavía pendientes.
+  in-progress-at: 2026-09-06
+  # US nueva, nacida de un hallazgo de la prueba visual del
   # dueño ("copiar de Mercado Libre" — descripción + reseñas + estrellas; la descripción ya
   # existía en código, sólo faltaba dato de demo, resuelto aparte en PR #119). Reseñas es
   # la parte genuinamente nueva (prd-capacity: null). Enriquecida a Ready con 3 decisiones
@@ -922,8 +926,7 @@
   # NOTA (2026-09-06, /plan-qa --standalone): qa-plan escrito en paralelo, ANTES de
   # BE/FE (openspec/changes/US-025-resenas-calificaciones-productos-qa/, status:
   # draft). 9/9 AC cubiertos, elegibilidad probada con el seed real
-  # `crearOrdenEnEstado(..., 'delivered')` ya existente. No cambia el status de la
-  # US — sigue `Ready` hasta que algún discipline change abra.
+  # `crearOrdenEnEstado(..., 'delivered')` ya existente.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]

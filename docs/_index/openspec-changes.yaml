@@ -3043,3 +3043,30 @@
   completed-at: 2026-09-06T22:15:25Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-024-edicion-perfil-cliente-backend
+
+- name: US-025-resenas-calificaciones-productos-backend
+  us-id: US-025
+  discipline: backend
+  variant: null
+  status: In Review   # 9/9 tasks cerradas (tests+typecheck+lint+spectral verdes), PR #130
+  # abierto contra main.
+  parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Tabla nueva `reviews` (rating 1-5 con CHECK, comment opcional, hidden_at soft-flag
+  # de moderación AC-8, unique(customer_id,product_id) para AC-5). Elegibilidad AC-6 vía
+  # OrdersRepository.hasDeliveredOrderWithProduct() (único punto de acceso a
+  # orders/order_items, §5) — verificado SIEMPRE server-side antes de escribir reviews.
+  # Nuevo ReviewsModule: GET/PUT /v1/me/reviews/:productId (upsert idempotente), GET
+  # /v1/products/:slug/reviews (público, agregado on-read excluyendo ocultas), PATCH
+  # /v1/admin/reviews/:id (moderación). rating validado en DTO (422) y CHECK de DB
+  # (defensa en profundidad).
+  estimate-hours: 10   # US §7 presupuesta BE-US-025 en 10h — el plan real se mantuvo
+  # dentro del presupuesto (schema nuevo + elegibilidad + agregado + moderación, sin
+  # infra nueva).
+  assignee: claude-code
+  branch: feat/US-025-resenas-productos-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/130
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
