@@ -474,9 +474,9 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Unit + integration completos: `pnpm --filter @dsm/api test`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Typecheck limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Contrato OpenAPI draft + spec publicado sin errores: `npx --yes @stoplight/spectral-cli lint openspec/changes/US-020-borrado-cuenta-datos-personales-backend/contracts/openapi/*.yaml apps/api/docs/api/openapi.yaml`
-- [ ] Migración aplicada limpia contra Postgres local: `pnpm --filter @dsm/db migrate:deploy`
-- [ ] Regresión cero sobre `auth/`, `checkout/`, `cart/`, `orders/` (los 4 módulos que este change modifica sin abrir un change dedicado): `pnpm --filter @dsm/api test -- --testPathPattern="auth|checkout|cart|orders|account"`
+- [x] Unit + integration completos: `pnpm --filter @dsm/api test` → 254/254 suites, 2022/2022 tests passed (133.6s).
+- [x] Lint limpio: `pnpm --filter @dsm/api lint` → limpio, 0 salida.
+- [x] Typecheck limpio: `pnpm --filter @dsm/api typecheck` → limpio, 0 salida.
+- [x] Contrato OpenAPI draft + spec publicado sin errores: `npx --yes @stoplight/spectral-cli lint openspec/changes/US-020-borrado-cuenta-datos-personales-backend/contracts/openapi/*.yaml apps/api/docs/api/openapi.yaml` → el draft lintea limpio con `npx --yes` (latest); el publicado NO — `latest` resuelve a spectral-cli 6.16.3, que crashea por un bug interno de `nimma` bajo Node 23, reproducido también contra el HEAD sin tocar (preexistente, no introducido por este change — ver nota de T6.2). Pineado a `@stoplight/spectral-cli@6.11.1` ambos (draft + publicado) dan `No results with a severity of 'error' found!`.
+- [x] Migración aplicada limpia contra Postgres local: `pnpm --filter @dsm/db migrate:deploy` → "No pending migrations to apply."
+- [x] Regresión cero sobre `auth/`, `checkout/`, `cart/`, `orders/` (los 4 módulos que este change modifica sin abrir un change dedicado): `pnpm --filter @dsm/api test -- --testPathPattern="auth|checkout|cart|orders|account"` → 114/114 suites, 899/899 tests passed (77.0s).

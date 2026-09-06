@@ -323,37 +323,46 @@ export class AccountDeletionService {
     private readonly events: AccountEventsService,
   ) {}
 
-  async deleteAccount(customerId: string): Promise<void> {
-    const result = await this.prisma.$transaction(async (tx) => {
-      // AC-4/AC-9: lectura fresca, DENTRO de la transacción, primera operación.
-      const blocking = await this.orders.listBlockingForCustomer(customerId, tx);
-      if (blocking.length > 0) {
-        throw new AccountHasActiveOrdersError(blocking.map(OrderHistorySummaryDto.from));
-      }
+  async deleteAccount(customerId: string, traceId?: string): Promise<void> {
+    let anonymizedOrders: number | null;
+    try {
+      anonymizedOrders = await this.prisma.$transaction(async (tx) => {
+        // AC-4/AC-9: lectura fresca, DENTRO de la transacción, primera operación.
+        const blocking = await this.orders.listBlockingForCustomer(customerId, tx);
+        if (blocking.length > 0) {
+          throw new AccountHasActiveOrdersError(blocking.map(OrderHistorySummaryDto.from));
+        }
 
-      // AC-15: guardado por WHERE deleted_at IS NULL — 0 filas = ya borrada, no-op.
-      const anonymized = await this.customers.anonymize(customerId, tx);
-      if (!anonymized) return null;
+        // AC-15: guardado por WHERE deleted_at IS NULL — 0 filas = ya borrada, no-op.
+        const anonymized = await this.customers.anonymize(customerId, tx);
+        if (!anonymized) return null;
 
-      await this.refreshTokens.revokeAllForCustomer(customerId, tx);       // AC-10
-      await this.passwordResetTokens.deleteAllForCustomer(customerId, tx); // AC-10
-      await this.carts.unlinkAllForCustomer(customerId, tx);               // AC-2
-      const anonymizedOrders = await this.orders.anonymizeAllForCustomer(
-        customerId,
-        'account_deletion',
-        tx,
-      ); // AC-3, AC-8, AC-12
-      return { anonymizedOrders };
-    });
-
-    if (result) {
-      this.events.emit('account.deleted', customerId, undefined, {
-        anonymized_orders: result.anonymizedOrders,
+        await this.refreshTokens.revokeAllForCustomer(customerId, tx);       // AC-10
+        await this.passwordResetTokens.deleteAllForCustomer(customerId, tx); // AC-10
+        await this.carts.unlinkAllForCustomer(customerId, tx);               // AC-2
+        return this.orders.anonymizeAllForCustomer(customerId, 'account_deletion', tx); // AC-3, AC-8, AC-12
       });
+    } catch (error) {
+      if (error instanceof AccountHasActiveOrdersError) {
+        this.events.emit('account.deletion_blocked', customerId, traceId);
+      }
+      throw error;
     }
+
+    if (anonymizedOrders === null) return; // AC-15 — sin evento, no hubo borrado nuevo
+    this.events.emit('account.deleted', customerId, traceId, {
+      anonymized_orders: anonymizedOrders,
+    });
   }
 }
 ```
+
+**Actualizado post-Fase 2/T5.9 respecto al borrador inicial de este documento**:
+la implementación final SÍ emite un segundo evento (`account.deletion_blocked`) en
+el camino de bloqueo por órdenes en curso — ver §Observabilidad, que también se
+actualizó. El borrador de este bloque decía lo contrario ("no se agrega un
+evento 'blocked'"); quedó desactualizado por una mejora deliberada tomada
+durante la implementación, verificada sin PII por T5.9 (AC-14).
 
 Lanzar `AccountHasActiveOrdersError` **dentro** del callback de `$transaction`
 hace rollback automático — en ese punto no se escribió nada todavía, así que no
@@ -491,23 +500,27 @@ schema: *"Borrado de cuenta → US-020"*).
 `OrdersRetentionEventsService`/`AuthEventsService`:
 
 ```ts
-export type AccountEventName = 'account.deleted';
+export type AccountEventName = 'account.deleted' | 'account.deletion_blocked';
 
 emit(
   name: AccountEventName,
-  customerId: string,
+  customerId: string | null,
   traceId?: string,
   fields?: EventFields,
 ): void
 ```
 
-Un solo evento, sólo en el camino exitoso (no en el bloqueo por órdenes en curso
-ni en el no-op de una segunda confirmación — mismo minimalismo que
-`OrdersRetentionEventsService`: no se agrega un evento "blocked" porque ningún
-AC lo exige y US-021 no tiene un equivalente para su propio 404). `customerId`
-va sólo al log (`entity_id`), nunca a una dimensión de métrica (cardinalidad,
-`observability-patterns` §3.3); `anonymized_orders` es un entero. Cero
-`name`/`email`/`phone`, ni siquiera transformados (AC-14).
+**Actualizado respecto al borrador inicial**: la implementación final emite
+**dos** eventos, no uno. `account.deleted` en el camino exitoso
+(`anonymized_orders` como entero en el payload); `account.deletion_blocked` en
+el 409 por órdenes en curso — a diferencia de lo que este documento decía
+originalmente ("no se agrega un evento 'blocked'"), se agregó durante la
+implementación porque da visibilidad operativa real sobre cuántos intentos de
+borrado quedan bloqueados, sin costo de PII (verificado explícitamente por
+T5.9/AC-14: ni ese evento ni el de éxito contienen `name`/`email`/`phone`, ni
+siquiera en el 409). Ninguno en el no-op de una segunda confirmación (AC-15).
+`customerId` va sólo al log (`entity_id`), nunca a una dimensión de métrica
+(cardinalidad, `observability-patterns` §3.3).
 
 ### Threat model (lite, `threat-modeling-lite` — superficie 3/8: DELETE autenticado por cookie)
 
