@@ -181,7 +181,7 @@ language: es
 
 ## Fase 4 — Cross-module wiring
 
-- [ ] **T4.1 — Exportar `OrderStatusHistoryRepository` desde `OrdersModule`**
+- [x] **T4.1 — Exportar `OrderStatusHistoryRepository` desde `OrdersModule`**
   - **Pattern**: agregar al array `exports` existente (hoy sólo
     `NOTIFICATION_PORT`) — `per backend-node-standards.md §3`, ningún edge de
     módulo nuevo (ya es `payments → orders`):
