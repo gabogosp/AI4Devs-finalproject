@@ -4,7 +4,7 @@ id: US-017
 slug: paginas-legales-consentimiento
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: High
 estimate-tshirt: S
 story_points_traditional: 3
@@ -12,9 +12,10 @@ story_points_ai_assisted: 1
 estimation_basis: "FE páginas de contenido SSR + footer legal (Cohn 2005 §8, 3-5) + BE servir contenido + versionado de términos aceptados (Cohn 2005 §8, 3), tomado el dominante × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-08-22
+updated: 2026-09-06
 ready-at: 2026-06-15
 in-progress-at: 2026-08-22
+done-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [FE, BE, QA]
 linear-issue-id: null
@@ -191,8 +192,8 @@ And ese registro permite saber qué versión consintió cada comprador
 
 ## Definition of Done (gate QA → Done)
 
-- [ ] Todas las tasks de la US en estado Done
-- [ ] Regression suite del producto verde en staging
-- [ ] AC manuales verificados por QA
-- [ ] PO firma acceptance
-- [ ] Texto legal final provisto y revisado por el dueño / asesoría legal (gate de producción)
+- [x] Todas las tasks de la US en estado Done (FE 24/24, archivado)
+- [x] Regression suite del producto verde en staging (`pnpm --filter @dsm/web test`, 1029/1029 — no hay ambiente de staging separado en este proyecto, se toma la suite completa local/CI como equivalente)
+- [x] AC manuales verificados por QA (QA vive dentro del código de FE — E2E + a11y del change, sin change `-qa` propio, per nota de arriba)
+- [x] PO firma acceptance (2026-09-06, confirmado explícitamente por el dueño)
+- [x] Texto legal final provisto y revisado por el dueño / asesoría legal (gate de producción) (2026-09-06 — razón social, CUIT, condición IVA y plazo de retención, PR #108)
