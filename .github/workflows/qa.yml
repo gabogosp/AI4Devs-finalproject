@@ -162,7 +162,7 @@ jobs:
         # sólo, sin `not @blocked`, los dejaba pasar y fallar como si fueran
         # un defecto real.
         #
-        # Invoca `cucumber-js` DIRECTO (no `pnpm --filter @dsm/qa
+        # Invoca `cucumber-js` DIRECTO, con `cd qa` (no `pnpm --filter @dsm/qa
         # test:acceptance -- --tags ...`): `pnpm --filter <pkg> <script> --
         # <args>` inserta un `--` LITERAL en el comando final (verificado
         # contra el log real de este mismo workflow), y `cucumber-js` (yargs)
@@ -171,10 +171,16 @@ jobs:
         # 178 escenarios (el filtro nunca aplicó) vía `pnpm --filter`, 172
         # (178 − 6 `@blocked`, el número correcto) invocando `cucumber-js`
         # directo con el mismo `--tags`.
+        #
+        # `pnpm --filter @dsm/qa exec` (sin `run`) NO cambia el cwd al
+        # paquete filtrado — el proceso queda en la raíz del repo, y
+        # `NODE_OPTIONS=--import tsx` no resuelve `tsx` desde ahí
+        # (`ERR_MODULE_NOT_FOUND`, visto en el run real). `cd qa` explícito
+        # es el mismo cwd que ya usaba el script npm original.
         if: hashFiles('qa/acceptance/**/*.feature') != ''
         env:
           NODE_OPTIONS: '--import tsx'
-        run: pnpm --filter @dsm/qa exec cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked"
+        run: cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked"
 
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
