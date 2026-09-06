@@ -195,6 +195,17 @@ const initialResetTokens = () =>
 /** Sesiones vivas por token de acceso, para que `/auth/me` y logout sean reales. */
 let sessions = new Map();
 /**
+ * Tokens de acceso que ya pasaron por `DELETE /v1/me` (US-020 AC-15).
+ *
+ * Sin esto, una segunda confirmación con la MISMA cookie caería al 401 de
+ * "sin sesión" (la primera llamada ya borró la entrada de `sessions`) — el
+ * stub estaría reproduciendo un error donde el contrato real es idempotente.
+ * El stub no reproduce la anonimización real (design.md §D8), pero sí tiene
+ * que reproducir el contrato de status code: una segunda confirmación sobre
+ * una cuenta ya borrada responde 204, no 401.
+ */
+let cuentasBorradas = new Set();
+/**
  * Último token de reset **por email**, expuesto en `/__last-reset-token?email=`.
  *
  * Indexado por cuenta y no como un global de última escritura: con
@@ -445,6 +456,7 @@ const server = createServer(async (req, res) => {
       customers = initialCustomers();
       resetTokens = initialResetTokens();
       sessions = new Map();
+      cuentasBorradas = new Set();
       ultimoResetToken = new Map();
     }
     // El log NO se limpia acá a propósito: es diagnóstico append-only, no
@@ -608,6 +620,12 @@ const server = createServer(async (req, res) => {
     const cookies = leerCookies(req);
     const sesion = sessions.get(cookies.dsm_access);
     if (!sesion) {
+      if (cookies.dsm_access && cuentasBorradas.has(cookies.dsm_access)) {
+        // AC-15: idempotencia — una segunda confirmación sobre una cuenta ya
+        // borrada responde 204 sin error ni segundo efecto.
+        res.statusCode = 204;
+        return res.end();
+      }
       return problem(res, 401, 'dsm:auth/unauthenticated', 'Unauthorized', {});
     }
     const csrfHeader = req.headers['x-csrf-token'];
@@ -635,6 +653,7 @@ const server = createServer(async (req, res) => {
       });
     }
     sessions.delete(cookies.dsm_access);
+    cuentasBorradas.add(cookies.dsm_access);
     res.setHeader('Set-Cookie', [
       'dsm_access=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
       'dsm_refresh=; HttpOnly; SameSite=Lax; Path=/v1/auth; Max-Age=0',

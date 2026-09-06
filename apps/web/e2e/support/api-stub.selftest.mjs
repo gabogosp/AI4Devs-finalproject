@@ -360,6 +360,16 @@ try {
   const meDespuesDeBorrar = await fetch(`${BASE}/v1/auth/me`, { headers: { Cookie: accessBorrado } });
   check('tras el borrado la sesión ya no sirve → 401', meDespuesDeBorrar.status === 401);
 
+  const segundoBorrado = await fetch(`${BASE}/v1/me`, {
+    method: 'DELETE',
+    headers: { Cookie: accessBorrado, Origin: BASE, 'X-CSRF-Token': csrfBorrado },
+  });
+  check(
+    'AC-15: un segundo DELETE con la MISMA cookie ya borrada → 204, no 401',
+    segundoBorrado.status === 204,
+    `status ${segundoBorrado.status}`,
+  );
+
   // Aislamiento: resetear auth NO puede tocar el catálogo ni la PDP.
   await fetch(`${BASE}/v1/admin/products/33333333-3333-4333-8333-333333333333`, {
     method: 'PATCH',

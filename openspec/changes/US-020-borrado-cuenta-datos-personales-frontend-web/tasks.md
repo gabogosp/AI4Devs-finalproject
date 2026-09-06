@@ -322,7 +322,7 @@ language: es
     la cookie de sesión NO se limpia en este camino.
   - **Verify**: `node apps/web/e2e/support/api-stub.selftest.mjs` (exit 0; incluye el check nuevo del 409 con `blocking_orders` conteniendo `status: 'pending_payment'`)
 
-- [ ] **T7.3 — `account-deletion-topology.spec.ts` (nuevo) — happy path contra la app construida**
+- [x] **T7.3 — `account-deletion-topology.spec.ts` (nuevo) — happy path contra la app construida**
   - **Pattern**: `per design.md §D8` — espejo de `auth-topology.spec.ts`:
     login real → `DELETE /v1/me` con el CSRF leído de `context.cookies()` →
     asserts sobre `response.status()`/`context.cookies()`, NUNCA sobre el
@@ -335,7 +335,7 @@ language: es
     criterio que el 3er caso de `auth-topology.spec.ts`).
   - **Verify**: `pnpm --filter @dsm/web test:e2e -- account-deletion-topology`
 
-- [ ] **T7.4 — `account-deletion-topology.spec.ts` — 409 por bloqueo + doble `DELETE` (AC-15, superficie)**
+- [x] **T7.4 — `account-deletion-topology.spec.ts` — 409 por bloqueo + doble `DELETE` (AC-15, superficie)**
   - **Pattern**: `per design.md §D8` — usa el header de T7.2 para el 409;
     para el doble `DELETE`, dos llamadas seguidas con la MISMA cookie
     (simula doble clic).
