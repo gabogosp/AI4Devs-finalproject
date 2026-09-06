@@ -15,7 +15,7 @@ heredan US-002/US-004/US-007/US-016 — no se re-decide por US.
 |---|---|
 | Storefront (público, indexable) | `/` (home: rubros y subrubros), `/categorias/{slug}` (grilla paginada), `/productos/{slug}` (ficha), `/legales/privacidad`, `/legales/terminos`, `/sitemap.xml`, `/robots.txt` |
 | Storefront (público, `noindex` — vista de cliente) | `/carrito` (US-007), `/checkout` (US-008) |
-| Panel del dueño (privado, `noindex`) | `/admin/acceso`, `/admin/productos`, `/admin/productos/nuevo`, `/admin/productos/{id}`, `/admin/categorias` |
+| Panel del dueño (privado, `noindex`) | `/admin/acceso`, `/admin/productos`, `/admin/productos/nuevo`, `/admin/productos/{id}`, `/admin/categorias`, `/admin/metricas` (US-016) |
 
 El panel responde con `X-Robots-Tag: noindex, nofollow` sobre `/admin/:path*`.
 Es defensa en profundidad contra indexación, **no** control de acceso: eso lo

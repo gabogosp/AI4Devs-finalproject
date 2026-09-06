@@ -102,6 +102,39 @@ Detalle completo (decisiones D10-D16, threat model STRIDE, requisitos R-7 a R-17
 - **Disparo periódico real** de los 3 jobs admin — es una decisión de infraestructura
   (cron externo), no de código de aplicación; pendiente de su propio `/plan-deployment`.
 
+## Qué verificó QA
+
+Suite QA-owned (`US-010-orden-webhook-stock-qa`), continuación del contrato de
+comportamiento persistente que `US-023-pago-manual-offline-backend` ya había construido
+para el camino manual (`pago-manual.feature`/`pago-manual.contract.ts`/
+`confirm-payment.js`) — ahora también para la superficie automática (webhook + medio
+simulado + jobs admin):
+
+- **Aceptación BDD** (Cucumber-js + supertest, `pago-webhook.feature`): 15/15 escenarios
+  verdes (11 `SC-010-*` distintos, incluye Examples de 3 Esquemas) — cubre los 11 AC de
+  US-010, con foco en negative-space (duplicado, firma inválida, stock insuficiente,
+  cancelación automática, reconciliación/limpieza/reintento sin nada elegible). Regresión
+  conjunta con `pago-manual.feature` (US-023): 25/25 (`@pagos and not @blocked`).
+- **Contract testing**: 13/13 casos contra los 5 endpoints nuevos (`pago-webhook.contract.ts`)
+  + 7/7 sin cambios sobre los 2 endpoints de US-023 (`pago-manual.contract.ts`) — ambos
+  contra el contrato OpenAPI **vivo** de esta capacidad.
+- **Performance (k6)**: `POST /v1/checkout/simulate-payment` — budget `p95 < 200ms`
+  (heredado del `design.md` de backend §D12); medido **p95 4-15ms** en 3 corridas,
+  150/150 checks.
+- **E2E cross-stack (Playwright)**: 2/2 — loop completo checkout real → medio simulado →
+  panel del dueño (reusa `OrdersList` de US-012); y la invariante de que una orden
+  auto-cancelada por falta de stock nunca aparece accionable para el dueño.
+- **Exploratorio**: 3 charters escritos (ventana de tolerancia de la firma, backlog de
+  reconciliación, breaker durante retry-refunds) — ejecución queda como checklist humano.
+
+**Hallazgos abiertos, con dueño QA (no bloquean esta capacidad)**:
+
+| Hallazgo | Efecto | Diferido a |
+|---|---|---|
+| Sin cuenta sandbox de MercadoPago en este entorno (QA-010-F1), `AC-3` completo (pago rechazado real) queda bloqueado black-box — la mayoría de los 11 AC sí corren hoy vía el medio simulado (AC-9 estructural). | `SC-010-N2` marcado `@blocked` explícito, sin mock no autorizado. | Owner: PO/Infra — provisión de cuenta sandbox de MercadoPago. |
+| `K6_VUS` (QA-010-F2) es una env var reservada por k6 que pisa `options.scenarios` en silencio — afecta también a los scripts ya archivados de US-023 (`confirm-payment.js`/`auth-login.js`), sin que nadie lo supiera hasta ahora. | El script nuevo de este change usa `SIMULATE_PAYMENT_VUS` para evitarlo; los scripts viejos no se tocaron. | Pase de saneamiento de los scripts k6 existentes — owner QA. |
+| Charter exploratorio (QA-010-EXP-1) escrito pero no ejecutado. | Sin hallazgos todavía de esa vía. | Ejecución humana — owner QA. |
+
 ## Contratos
 
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml)
@@ -132,9 +165,10 @@ quien toque cualquiera de los dos controllers.
 |---|---|---|
 | [`US-023-pago-manual-offline-backend`](../../changes/archive/US-023-pago-manual-offline-backend/) | BE | `payments` (tabla nueva) + `stock/` (escritor único) + `PaymentConfirmationPort`/`ConfirmOrderService`, transacción cruzando 3 repositorios, 2 endpoints admin |
 | [`US-010-orden-webhook-stock-backend`](../../changes/archive/US-010-orden-webhook-stock-backend/) | BE | Webhook de MercadoPago, medio simulado «DSM», `MercadoPagoClient`, 3 jobs admin (reconciliación/limpieza/reintento de reembolsos), `confirmed_at`/`cancelled_at`/`refund_pending` |
+| [`US-010-orden-webhook-stock-qa`](../../changes/archive/US-010-orden-webhook-stock-qa/) | QA | Suite L1/L3: 15 aceptación BDD, 13 contract, 1 k6, 2 E2E de navegador, 3 charters. Continúa el contrato de comportamiento que US-023 QA (embebida en su propio backend) construyó para el camino manual |
 
-Sin disciplina QA propia todavía para US-010 (`disciplines: [BE, QA]` en `us-status.yaml`,
-QA sin planificar). Sin disciplina FE propia — la UI de confirmación manual (si existe)
+Con esto, `disciplines: [BE, QA]` de US-010 queda completo — ambas disciplinas
+archivadas. Sin disciplina FE propia — la UI de confirmación manual (si existe)
 vive dentro de `US-012-panel-ordenes-dueno-frontend-web`
 (`PendingPaymentsPanel.tsx`, componente separado del listado de
 fulfillment), no como un change propio de esta capacidad.

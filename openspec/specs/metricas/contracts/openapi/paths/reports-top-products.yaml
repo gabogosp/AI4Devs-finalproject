@@ -1,0 +1,32 @@
+get:
+  operationId: getAdminReportsTopProducts
+  tags: [admin-reports]
+  summary: Productos más pedidos por cantidad vendida (US-016 AC-2, AC-4, AC-5, AC-9)
+  description: >-
+    Agrupa por el snapshot de order_items (product_name/product_sku al
+    momento de la venta), sin JOIN a products — un producto renombrado a
+    mitad de período puede aparecer como dos filas (trade-off aceptado,
+    sin AC que pida consolidarlo). Sólo cuentan las 4 órdenes activas (AC-8).
+  parameters:
+    - name: created_at_from
+      in: query
+      schema: { type: string, format: date-time }
+    - name: created_at_to
+      in: query
+      schema: { type: string, format: date-time }
+    - name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AdminReportsTopProducts' }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '403': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '422':
+      description: 'dsm:reports/invalid-range.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

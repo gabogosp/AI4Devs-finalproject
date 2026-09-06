@@ -961,3 +961,141 @@ export const SearchProductsResponse = zod.object({
 })).min(1).describe('NUNCA vacío cuando está presente (AC-3): si no hay candidatos, cae a las categorías raíz con más productos publicados. Un «0 resultados» desnudo es un callejón sin salida y el cliente que lo ve se va.')
 }).nullable().describe('Salida ofrecida cuando la respuesta no convence (confidence low o none). null sólo con confidence high.')
 })
+
+
+/**
+ * Agrupa por día/semana/mes. Sólo cuentan las 4 órdenes activas (AC-8). Sin `created_at_from`/`created_at_to`, default a los últimos 30 días. Un `created_at_from` anterior al piso de retención vigente (ORDER_RETENTION_MONTHS, default 12) se acota silenciosamente al piso (AC-9) — la respuesta lleva el rango EFECTIVO en `range`. Un rango sin órdenes responde 200 con `data: []` (AC-5), nunca error.
+ * @summary Evolución de ventas en el tiempo (US-016 AC-1, AC-4, AC-5, AC-9)
+ */
+export const getAdminReportsSalesQueryGranularityDefault = `day`;
+
+export const GetAdminReportsSalesQueryParams = zod.object({
+  "created_at_from": zod.string().datetime({"offset":true}).optional(),
+  "created_at_to": zod.string().datetime({"offset":true}).optional(),
+  "granularity": zod.enum(['day', 'week', 'month']).default(getAdminReportsSalesQueryGranularityDefault)
+})
+
+export const GetAdminReportsSalesResponse = zod.object({
+  "range": zod.object({
+  "from": zod.string().datetime({"offset":true}),
+  "to": zod.string().datetime({"offset":true})
+}).describe('Rango EFECTIVO aplicado (post-acotado a retención, AC-9) — no necesariamente el pedido.'),
+  "granularity": zod.enum(['day', 'week', 'month']),
+  "data": zod.array(zod.object({
+  "period_date": zod.string().date(),
+  "orders_count": zod.number().int(),
+  "total_ars_cents": zod.number().int()
+}))
+})
+
+
+/**
+ * Mismos query params y misma agregación que GET /admin/reports/sales — no hay una segunda fuente de verdad para los números exportados. Celdas neutralizadas contra inyección de fórmulas (RFC 4180 + prefijo de comilla, `security-standards.md §6.3`).
+ * @summary CSV de la evolución de ventas (US-016 AC-6)
+ */
+export const exportAdminReportsSalesQueryGranularityDefault = `day`;
+
+export const ExportAdminReportsSalesQueryParams = zod.object({
+  "created_at_from": zod.string().datetime({"offset":true}).optional(),
+  "created_at_to": zod.string().datetime({"offset":true}).optional(),
+  "granularity": zod.enum(['day', 'week', 'month']).default(exportAdminReportsSalesQueryGranularityDefault)
+})
+
+export const ExportAdminReportsSalesResponse = zod.unknown()
+
+
+/**
+ * Agrupa por el snapshot de order_items (product_name/product_sku al momento de la venta), sin JOIN a products — un producto renombrado a mitad de período puede aparecer como dos filas (trade-off aceptado, sin AC que pida consolidarlo). Sólo cuentan las 4 órdenes activas (AC-8).
+ * @summary Productos más pedidos por cantidad vendida (US-016 AC-2, AC-4, AC-5, AC-9)
+ */
+export const getAdminReportsTopProductsQueryLimitDefault = 10;
+export const getAdminReportsTopProductsQueryLimitMax = 50;
+
+
+
+export const GetAdminReportsTopProductsQueryParams = zod.object({
+  "created_at_from": zod.string().datetime({"offset":true}).optional(),
+  "created_at_to": zod.string().datetime({"offset":true}).optional(),
+  "limit": zod.number().int().min(1).max(getAdminReportsTopProductsQueryLimitMax).default(getAdminReportsTopProductsQueryLimitDefault)
+})
+
+export const GetAdminReportsTopProductsResponse = zod.object({
+  "range": zod.object({
+  "from": zod.string().datetime({"offset":true}),
+  "to": zod.string().datetime({"offset":true})
+}).describe('Rango EFECTIVO aplicado (post-acotado a retención, AC-9) — no necesariamente el pedido.'),
+  "data": zod.array(zod.object({
+  "product_id": zod.string().uuid(),
+  "product_name": zod.string(),
+  "product_sku": zod.string(),
+  "quantity_sold": zod.number().int(),
+  "revenue_ars_cents": zod.number().int()
+}))
+})
+
+
+/**
+ * Mismos query params y misma agregación que GET /admin/reports/top-products. product_name/product_sku neutralizados contra inyección de fórmulas (texto libre cargado por el dueño vía catálogo/import masivo).
+ * @summary CSV del ranking de productos más pedidos (US-016 AC-6)
+ */
+export const exportAdminReportsTopProductsQueryLimitDefault = 10;
+export const exportAdminReportsTopProductsQueryLimitMax = 50;
+
+
+
+export const ExportAdminReportsTopProductsQueryParams = zod.object({
+  "created_at_from": zod.string().datetime({"offset":true}).optional(),
+  "created_at_to": zod.string().datetime({"offset":true}).optional(),
+  "limit": zod.number().int().min(1).max(exportAdminReportsTopProductsQueryLimitMax).default(exportAdminReportsTopProductsQueryLimitDefault)
+})
+
+export const ExportAdminReportsTopProductsResponse = zod.unknown()
+
+
+/**
+ * Sólo cuentan las 4 órdenes activas (AC-8). breakdown_by_status SIEMPRE trae las 4 claves (new/preparing/ready/delivered), zero-fill incluido — un período sin datos responde 200 con todo en cero (AC-5), nunca error ni un objeto incompleto.
+ * @summary Resumen del período — órdenes, monto, desglose por estado (US-016 AC-3, AC-5, AC-9)
+ */
+export const GetAdminReportsSummaryQueryParams = zod.object({
+  "created_at_from": zod.string().datetime({"offset":true}).optional(),
+  "created_at_to": zod.string().datetime({"offset":true}).optional()
+})
+
+export const GetAdminReportsSummaryResponse = zod.object({
+  "range": zod.object({
+  "from": zod.string().datetime({"offset":true}),
+  "to": zod.string().datetime({"offset":true})
+}).describe('Rango EFECTIVO aplicado (post-acotado a retención, AC-9) — no necesariamente el pedido.'),
+  "orders_count": zod.number().int(),
+  "total_ars_cents": zod.number().int(),
+  "breakdown_by_status": zod.object({
+  "new": zod.object({
+  "count": zod.number().int(),
+  "total_ars_cents": zod.number().int()
+}),
+  "preparing": zod.object({
+  "count": zod.number().int(),
+  "total_ars_cents": zod.number().int()
+}),
+  "ready": zod.object({
+  "count": zod.number().int(),
+  "total_ars_cents": zod.number().int()
+}),
+  "delivered": zod.object({
+  "count": zod.number().int(),
+  "total_ars_cents": zod.number().int()
+})
+}).describe('SIEMPRE las 4 claves activas, zero-fill incluido (AC-5).')
+})
+
+
+/**
+ * Mismos query params y misma agregación que GET /admin/reports/summary: una fila por estado activo (con zero-fill) + una fila `total`.
+ * @summary CSV del resumen del período (US-016 AC-6)
+ */
+export const ExportAdminReportsSummaryQueryParams = zod.object({
+  "created_at_from": zod.string().datetime({"offset":true}).optional(),
+  "created_at_to": zod.string().datetime({"offset":true}).optional()
+})
+
+export const ExportAdminReportsSummaryResponse = zod.unknown()

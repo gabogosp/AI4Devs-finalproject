@@ -61,4 +61,53 @@ describe('observability — eventos de negocio', () => {
       expect(sink).toHaveBeenCalledWith('login_failed', {});
     });
   });
+
+  describe('eventos del panel de métricas (US-016 T10.1)', () => {
+    const EVENTOS_DE_METRICAS = [
+      'metrics_shown',
+      'metrics_range_changed',
+      'metrics_export_downloaded',
+    ] as const;
+
+    it('los 3 incluyen operator_id: admin por default (backoffice)', () => {
+      const sink = vi.fn();
+      setEventSink(sink);
+
+      for (const evento of EVENTOS_DE_METRICAS) track(evento);
+
+      for (const [, props] of sink.mock.calls) {
+        expect(props).toMatchObject({ operator_id: 'admin' });
+      }
+      expect(sink).toHaveBeenCalledTimes(EVENTOS_DE_METRICAS.length);
+    });
+
+    it('metrics_export_downloaded lleva sólo {dataset}, nunca un rango de fechas', () => {
+      const sink = vi.fn();
+      setEventSink(sink);
+
+      track('metrics_export_downloaded', { dataset: 'sales' });
+
+      expect(sink).toHaveBeenCalledWith(
+        'metrics_export_downloaded',
+        expect.objectContaining({ dataset: 'sales', operator_id: 'admin' }),
+      );
+      const [, props] = sink.mock.calls[0];
+      expect(props).not.toHaveProperty('from');
+      expect(props).not.toHaveProperty('to');
+    });
+
+    it('ninguno lleva PII', () => {
+      const sink = vi.fn();
+      setEventSink(sink);
+
+      track('metrics_shown');
+      track('metrics_range_changed');
+      track('metrics_export_downloaded', { dataset: 'top-products' });
+
+      for (const [, props] of sink.mock.calls) {
+        const serializado = JSON.stringify(props);
+        expect(serializado).not.toMatch(/email|buyer|password|@/i);
+      }
+    });
+  });
 });

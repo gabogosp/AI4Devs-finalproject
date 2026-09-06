@@ -844,6 +844,71 @@ const server = createServer(async (req, res) => {
     return json(res, 200, adminProduct(slug));
   }
 
+  // --- Panel de métricas (US-016) ---
+  //
+  // Rango "sin órdenes" (AC-5, T12.2): un `created_at_from` del año 2000
+  // representa un período fuera de cualquier fixture — convención del stub,
+  // no del contrato real — así el spec de estado vacío elige ese rango
+  // explícitamente en vez de depender de que el fixture "por defecto" esté
+  // vacío por casualidad.
+  const reportsMatch = path.match(/^\/v1\/admin\/reports\/(sales|top-products|summary)$/);
+  if (req.method === 'GET' && reportsMatch) {
+    const dataset = reportsMatch[1];
+    const from = url.searchParams.get('created_at_from');
+    const to = url.searchParams.get('created_at_to');
+    const sinDatos = Boolean(from && from.startsWith('2000'));
+    // El contrato exige datetime ISO con offset (`.datetime({ offset: true })`)
+    // en `range.from`/`range.to` — nunca la fecha "pelada" que mandó el
+    // cliente, o `parseContract` del lado del panel rechaza la respuesta y el
+    // widget cae a `error` en vez de al estado vacío que este spec verifica.
+    const range = {
+      from: from ? `${from}T00:00:00.000Z` : '2026-08-01T00:00:00.000Z',
+      to: to ? `${to}T23:59:59.000Z` : '2026-08-31T23:59:59.000Z',
+    };
+
+    if (dataset === 'sales') {
+      const granularity = url.searchParams.get('granularity') ?? 'day';
+      return json(res, 200, {
+        range,
+        granularity,
+        data: sinDatos
+          ? []
+          : [
+              { period_date: '2026-08-01', orders_count: 3, total_ars_cents: 1_500_000 },
+              { period_date: '2026-08-02', orders_count: 5, total_ars_cents: 2_500_000 },
+            ],
+      });
+    }
+    if (dataset === 'top-products') {
+      return json(res, 200, {
+        range,
+        data: sinDatos
+          ? []
+          : [
+              {
+                product_id: PRODUCT_ID,
+                product_name: 'Heladera exhibidora',
+                product_sku: 'REF-001',
+                quantity_sold: 10,
+                revenue_ars_cents: 12_500_000,
+              },
+            ],
+      });
+    }
+    // summary
+    return json(res, 200, {
+      range,
+      orders_count: sinDatos ? 0 : 8,
+      total_ars_cents: sinDatos ? 0 : 4_000_000,
+      breakdown_by_status: {
+        new: { count: 0, total_ars_cents: 0 },
+        preparing: { count: sinDatos ? 0 : 2, total_ars_cents: sinDatos ? 0 : 1_000_000 },
+        ready: { count: sinDatos ? 0 : 1, total_ars_cents: sinDatos ? 0 : 500_000 },
+        delivered: { count: sinDatos ? 0 : 5, total_ars_cents: sinDatos ? 0 : 2_500_000 },
+      },
+    });
+  }
+
   return notFound(res);
 });
 

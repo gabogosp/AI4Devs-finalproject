@@ -1,0 +1,125 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Panel de métricas del dueño (CAP-9)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-016-panel-metricas-backend — agregaciones de sólo lectura sobre
+    `orders`/`order_items` (CAP-10 checkout, CAP-5 fulfillment), sin
+    persistencia nueva.
+
+    Seedeado directo desde el spec PUBLICADO del servicio
+    (`apps/api/docs/api/openapi.yaml`) — a diferencia de otras capacidades
+    recientes (ver `retencion-datos-personales/decisions.md`), el `tasks.md`
+    de este change sí tuvo su task de "mergear al spec publicado" y quedó
+    verde antes del archive; no hay brecha de sincronización que documentar.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-reports
+    description: >-
+      Panel de métricas del dueño (US-016): evolución de ventas, productos
+      más pedidos y resumen del período, cada uno con su export CSV. Sólo
+      admin.
+security:
+  - adminBearer: []
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con claim role=admin (seam ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    Problem:
+      description: Error RFC 7807
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      description: Envelope RFC 7807 (`api-standards.md` §8).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: 'dsm:reports/invalid-range en los 6 endpoints — nunca contiene PII del comprador.'
+    AdminReportsRange:
+      type: object
+      required: [from, to]
+      description: 'Rango EFECTIVO aplicado (post-acotado a retención, AC-9) — no necesariamente el pedido.'
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+    AdminReportsSalesRow:
+      type: object
+      required: [period_date, orders_count, total_ars_cents]
+      properties:
+        period_date: { type: string, format: date }
+        orders_count: { type: integer }
+        total_ars_cents: { type: integer }
+    AdminReportsSales:
+      type: object
+      required: [range, granularity, data]
+      properties:
+        range: { $ref: '#/components/schemas/AdminReportsRange' }
+        granularity: { type: string, enum: [day, week, month] }
+        data: { type: array, items: { $ref: '#/components/schemas/AdminReportsSalesRow' } }
+    AdminReportsTopProductsRow:
+      type: object
+      required: [product_id, product_name, product_sku, quantity_sold, revenue_ars_cents]
+      properties:
+        product_id: { type: string, format: uuid }
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity_sold: { type: integer }
+        revenue_ars_cents: { type: integer }
+    AdminReportsTopProducts:
+      type: object
+      required: [range, data]
+      properties:
+        range: { $ref: '#/components/schemas/AdminReportsRange' }
+        data: { type: array, items: { $ref: '#/components/schemas/AdminReportsTopProductsRow' } }
+    AdminReportsStatusBreakdownEntry:
+      type: object
+      required: [count, total_ars_cents]
+      properties:
+        count: { type: integer }
+        total_ars_cents: { type: integer }
+    AdminReportsSummary:
+      type: object
+      required: [range, orders_count, total_ars_cents, breakdown_by_status]
+      properties:
+        range: { $ref: '#/components/schemas/AdminReportsRange' }
+        orders_count: { type: integer }
+        total_ars_cents: { type: integer }
+        breakdown_by_status:
+          type: object
+          description: 'SIEMPRE las 4 claves activas, zero-fill incluido (AC-5).'
+          required: [new, preparing, ready, delivered]
+          properties:
+            new: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+            preparing: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+            ready: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+            delivered: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+paths:
+  /admin/reports/sales:
+    $ref: ./openapi/paths/reports-sales.yaml
+  /admin/reports/sales/export:
+    $ref: ./openapi/paths/reports-sales-export.yaml
+  /admin/reports/top-products:
+    $ref: ./openapi/paths/reports-top-products.yaml
+  /admin/reports/top-products/export:
+    $ref: ./openapi/paths/reports-top-products-export.yaml
+  /admin/reports/summary:
+    $ref: ./openapi/paths/reports-summary.yaml
+  /admin/reports/summary/export:
+    $ref: ./openapi/paths/reports-summary-export.yaml

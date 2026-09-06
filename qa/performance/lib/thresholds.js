@@ -63,6 +63,25 @@ export const cart_write = {
 };
 
 /**
+ * Escritura de `POST /v1/checkout` de US-008 (QA-008-PERF-1). El número sale
+ * del mismo NFR que `cart_write`: PRD §4 fija «p95 de escritura
+ * (carrito/orden) < 500 ms» y la US §9 lo repite explícitamente para el
+ * checkout — no es un número nuevo, es el mismo presupuesto de escritura
+ * aplicado al endpoint que efectivamente crea la orden.
+ *
+ * `rate_limited` con `count<1`: mismo criterio que `cart_write`/`auth_login` —
+ * el checkout tiene su propio throttler (`CHECKOUT_RATE_LIMIT_MAX`, §7.3) y la
+ * corrida real se hace contra la instancia QA con el presupuesto elevado
+ * (`qa/scripts/api-up.sh`); un solo 429 invalida la medición.
+ */
+export const checkout = {
+  'http_req_duration{endpoint:checkout}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+  rate_limited: ['count<1'],
+};
+
+/**
  * Login de cuenta de cliente de US-014 (TC-160). **Presupuesto NO ratificado**
  * (OQ-QA-5, `openspec/changes/US-014-registro-login-qa/proposal.md`): el PRD
  * §4 fija «p95 de escritura (carrito/orden) < 500 ms», pero esa fila dice
@@ -134,17 +153,55 @@ export const order_transition = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * Lectura de los 3 datasets del panel de métricas de US-016 (QA-016-PERF-1).
+ * El número sale de la US §9 ("Latencia p95 lectura < 300ms"), heredado de
+ * PRD §4/E2E §17/design.md §D8 — mismo NFR que `list_orders`, sin condicional.
+ * Tags por endpoint (`k6-load-scaffolding` §Per-scenario thresholds): el
+ * endpoint más lento no se esconde detrás de un agregado global.
+ */
+export const reports_read = {
+  'http_req_duration{endpoint:reports_sales}': ['p(95)<300'],
+  'http_req_duration{endpoint:reports_top_products}': ['p(95)<300'],
+  'http_req_duration{endpoint:reports_summary}': ['p(95)<300'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
+/**
+ * Medio simulado "DSM" de US-010 (QA-010-PERF-1/PERF-2, `design.md` de backend
+ * §D12). Presupuesto **propio** (no heredado de `cart_write`/`confirm_payment`):
+ * §D12 propone explícitamente `p95 < 200ms` para este endpoint por no tener
+ * ninguna llamada externa dentro de la transacción (a diferencia del webhook
+ * real, que sí llamaría a MercadoPago) — se hereda ESE número, no se inventa
+ * uno nuevo ni se reusa el de escritura genérico de 500ms.
+ *
+ * Sin `rate_limited`: `PAYMENTS_SIMULATE_RATE_LIMIT_MAX` se eleva a propósito
+ * en el entorno de QA (`qa/scripts/api-up.sh`) — mismo criterio que
+ * `confirm_payment` (sin throttler dedicado a nivel de negocio, superficie
+ * medida sin la guarda de rate-limit de producción).
+ */
+export const simulate_payment = {
+  'http_req_duration{endpoint:simulate_payment}': ['p(95)<200'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
-// (`auth_login`), US-023 (`confirm_payment`) y US-012 (`list_orders`/
-// `order_transition`): las suites QA extienden el mismo archivo compartido.
+// (`auth_login`), US-023 (`confirm_payment`), US-012 (`list_orders`/
+// `order_transition`), US-010 (`simulate_payment`) y US-016 (`reports_read`):
+// las suites QA extienden el mismo archivo compartido.
 export default {
   list_products,
   storefront_product,
   cart_write,
+  checkout,
   auth_login,
   search,
   confirm_payment,
   list_orders,
   order_transition,
+  simulate_payment,
+  reports_read,
   MIN_SKUS,
 };
