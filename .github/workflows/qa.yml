@@ -203,6 +203,24 @@ jobs:
           NODE_OPTIONS: '--import tsx'
         run: cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked and not @frontend"
 
+      # La suite de aceptación deja órdenes/carritos/clientes reales (siembra
+      # vía API, nunca INSERT directo) — `metricas.spec.ts` corre a
+      # continuación y cuenta "exactamente 4 órdenes activas" (AC-8): sin
+      # este reset, hereda las órdenes que dejó Cucumber y cuenta de más
+      # (visto real: 6 en vez de 4). Mismo patrón que ya resolvió #106 para
+      # SC-021-H1 (contaminación entre features), acá entre CAPAS. Trunca
+      # sólo datos transaccionales — products/categories/product_embeddings
+      # (catálogo, caro de regenerar y compartido por ambas capas) quedan
+      # intactos. La autenticación admin es bootstrap-token/JWT minteado, sin
+      # fila en `customers` (`qa/support/admin-auth.ts`), así que truncar esa
+      # tabla no rompe el login de los specs de admin que siguen.
+      - name: Reset de datos transaccionales entre capas (Cucumber → Playwright)
+        if: hashFiles('qa/acceptance/**/*.feature') != '' && hashFiles('qa/e2e/playwright.config.ts') != ''
+        run: |
+          PGPASSWORD=dsm psql -h localhost -U dsm -d dsm -v ON_ERROR_STOP=1 -c "
+            TRUNCATE TABLE orders, carts, customers, import_jobs RESTART IDENTITY CASCADE;
+          "
+
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
         # de nuevo acá sería un no-op lento, no una corrección.
