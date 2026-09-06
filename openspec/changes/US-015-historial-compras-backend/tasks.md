@@ -153,7 +153,7 @@ language: es
 
 ## Fase 3: Servicio + DTOs del historial — 0,8 h
 
-- [ ] T3.1 `OrdersHistoryService` (`orders/orders-history.service.ts`)
+- [x] T3.1 `OrdersHistoryService` (`orders/orders-history.service.ts`)
   - **Pattern**: `list()` y `detail()` según `design.md` §Approach — `detail`
     lanza `OrderNotFoundError` (reusada de `checkout/checkout-errors.ts`) si
     el repositorio devuelve `null` — `per backend-node-standards.md §6 —
@@ -162,7 +162,7 @@ language: es
     fuera de retención lanza `OrderNotFoundError`; `list()` con 0 órdenes
     devuelve `{ data: [], pagination: { total: 0, ... } }` sin lanzar.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-history\\.service\\.spec`
-- [ ] T3.2 DTOs (`orders/dto/order-history.dto.ts`)
+- [x] T3.2 DTOs (`orders/dto/order-history.dto.ts`)
   - **Pattern**: `ListOrderHistoryQueryDto`, `OrderHistorySummaryDto`,
     `OrderHistoryDetailDto` — ver clases completas en `design.md` §D5.
     `OrderHistoryDetailDto.fromDetail()` reusa `AdminOrderItemDto.from()` de
@@ -172,7 +172,7 @@ language: es
     (UUID) ni `buyer_*` en las claves del objeto devuelto — verificado con
     `Object.keys()` en el test, no sólo por inspección del tipo.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=order-history\\.dto\\.spec`
-- [ ] T3.3 `OrdersHistoryEventsService` (`observability/orders-history-events.service.ts`)
+- [x] T3.3 `OrdersHistoryEventsService` (`observability/orders-history-events.service.ts`)
   - **Pattern**: mismo esqueleto que `CheckoutEventsService`/
     `OrdersRetentionEventsService` (`@Optional() metrics`, `emit()` sin PII en
     la firma) — `per observability-standards.md §9 — cero PII en payload de
