@@ -177,7 +177,7 @@ language: es
     `serious`/`critical` en los 6 casos.
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewsSection.a11y`
 
-- [ ] **T-A11 — Frontera estructural: Fase A no toca `ProductDetail.tsx`/`ProductPage.tsx`/ningún archivo bajo `apps/web/app/`**
+- [x] **T-A11 — Frontera estructural: Fase A no toca `ProductDetail.tsx`/`ProductPage.tsx`/ningún archivo bajo `apps/web/app/`**
   - **Exit criterion**: ningún archivo fuera de `apps/web/src/features/reviews/` cambió como
     parte de la Fase A — la composición en la ficha real es explícitamente Fase B (`design.md`
     tabla de Riesgos, fila 2).
