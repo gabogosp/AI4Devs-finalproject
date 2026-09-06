@@ -171,7 +171,10 @@
   blocked_by: [US-008]              # US-008 sigue sin planificar: el change de US-009 arranca con pre-requisito en rojo
 - id: US-010
   slug: orden-webhook-stock
-  status: In Progress
+  status: Done   # /archive-change 2026-09-06: QA archivada (PR #57 mergeado ed9512a). Con
+  # BE ya archivado desde 2026-09-05 (dea4f25), las 2/2 disciplinas declaradas
+  # (`disciplines: [BE, QA]`) están resueltas — la US avanza a Done.
+  done-at: 2026-09-06
   priority: High
   prd-capacity: 6
   disciplines: [BE, QA]
@@ -192,6 +195,15 @@
   # `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca se planificó (no
   # existe `openspec/changes/US-010-*-qa/` en ningún estado, pese a `disciplines: [BE, QA]`).
   # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
+  #
+  # NOTA (2026-09-06, /archive-change US-010-orden-webhook-stock-qa, PR #57 mergeado
+  # ed9512a): disciplina QA archivada (openspec/changes/archive/US-010-orden-webhook-stock-qa/).
+  # Suite L1/L3 sobre la capacidad `pagos`: 15/15 BDD, 13/13 contract, k6 dentro de budget
+  # (p95 4-15ms vs 200ms), 2/2 E2E Playwright, 3 charters escritos. 2 hallazgos abiertos sin
+  # dueño bloqueante: AC-3 real bloqueado sin cuenta sandbox de MercadoPago (QA-010-F1,
+  # owner PO/Infra) y `K6_VUS` env var reservada que pisa scripts k6 en silencio (QA-010-F2,
+  # owner QA, afecta también scripts ya archivados de US-023). Con esto, 2/2 disciplinas de
+  # `disciplines: [BE, QA]` están resueltas (ambas archivadas) → `status` avanza a `Done`.
   # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate): desacoplado de US-009.
   # US-008 y payments (US-023) ya existen y son lo único que este change necesita; construye
   # su propio MercadoPagoClient de alcance mínimo (getPayment/searchByExternalReference/
@@ -468,9 +480,9 @@
   blocked_by: [US-014]    # no hay cuenta que borrar hasta que exista el registro
 - id: US-021
   slug: retencion-datos-ordenes
-  status: In Review   # /commit US-021-retencion-datos-ordenes-frontend-web 2026-09-05 —
-                       # las 3 disciplinas tienen PR (BE archivado, QA archivado inline,
-                       # FE #54 en review). Pasa a Done cuando FE también archive.
+  status: Done   # /archive-change US-021-retencion-datos-ordenes-frontend-web 2026-09-06 —
+                 # 3/3 disciplinas archivadas: BE (#41/#48), QA (#51, inline en el backend),
+                 # FE (#54). done-at abajo.
   priority: High
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
@@ -482,6 +494,7 @@
   in-review-at: 2026-09-05          # FE PR #54 abierto (/commit) — primera vez que se
                                      # estampa este campo: BE y QA ya habían pasado por
                                      # review y se archivaron sin que quedara registrado acá
+  done-at: 2026-09-06                # 3/3 disciplinas archivadas (/archive-change FE)
   # Origen: hueco detectado por el plan de backend de US-008 al modelar la PII del checkout
   # (su OQ-BE-5). El PO decidió el 2026-08-22 abrirla como CONDICIÓN PREVIA A PRODUCCIÓN.
   # US-020 cubre el borrado de CUENTAS; el comprador invitado no tiene cuenta que borrar, y

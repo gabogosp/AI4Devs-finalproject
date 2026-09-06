@@ -5,6 +5,10 @@ parent-us: US-021
 discipline: frontend-web
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: f8a4d483288d0adb4ab1f468e5f3d52e1753f045
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/54
 ---
 
 # Proposal — Retención y anonimización de datos de órdenes (panel del dueño)
@@ -12,9 +16,10 @@ language: es
 > **Ticket**: US-021 — Retención y anonimización de los datos personales de las órdenes
 > **Author**: frontend-web-developer agent (asistido por @Gabriel Suarez)
 > **Date**: 2026-09-05
-> **Status**: Implemented (2026-09-05) — el gap de contrato descrito abajo se resolvió
-> (PR #52) antes de ejecutar `/develop-frontend-web`; las 17 tasks de `tasks.md` están
-> cerradas. Pendiente: PR de este change y merge (`/commit`).
+> **Status**: Archived (2026-09-06) — PR #54 mergeado a `main` (`f8a4d48`), 27/27 tasks
+> cerradas. El gap de contrato descrito abajo se resolvió en PR #52 antes de ejecutar
+> `/develop-frontend-web`. Pendiente (no bloqueante, checklist de DoD): verificación manual
+> en navegador de console errors/warnings.
 > **Affected layers**: components, repository (HTTP client generado), state
 > **Affected platform**: web (Next.js App Router, `apps/web`)
 
