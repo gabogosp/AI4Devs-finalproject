@@ -2099,7 +2099,8 @@
   estimate-hours: null   # sin re-estimación propia del qa-engineer en esta corrida
   assignee: claude-code
   branch: feat/US-016-panel-metricas-dueno-qa
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/60
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
   archived-at: null
