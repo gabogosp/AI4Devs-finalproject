@@ -427,7 +427,7 @@ language: es
     depender de que exista un flujo real de pago para llegar a cada estado,
     mismo criterio que `orders/ac8-only-paid-orders.spec.ts`)
 
-- [ ] T7.4 AC-9 — el rango nunca muestra más atrás del piso de retención
+- [x] T7.4 AC-9 — el rango nunca muestra más atrás del piso de retención
   - **Exit criterion**: con `ORDER_RETENTION_MONTHS=12` y una orden sembrada
     con `created_at` de hace 13 meses (fuera de la ventana) y otra de hace 6
     meses (dentro), pedir `created_at_from` de hace 24 meses devuelve datos
