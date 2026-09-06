@@ -5,12 +5,16 @@ slug: actualizacion-dependencias-frontend
 parent-prd: docs/product/prd.md
 prd-capacity: null
 parent-e2e: docs/product/design-e2e.md
-status: Backlog
+status: Ready
 priority: High
 estimate-tshirt: S
+story_points_traditional: 5
+story_points_ai_assisted: 2
+estimation_basis: "FE bump de `next` dentro de 15.x + overrides de transitivas + lectura de changelog sobre SSR/middleware/imágenes (Cohn 2005 §8, 3) + QA revalidación de suites que ya existen —E2E de SSR/SEO, a11y, aceptación— sin escribir casos nuevos (Cohn 2005 §12, 2), agregado × 0.45 (Peng 2023)"
 language: es
 created: 2026-08-23
-updated: 2026-08-23
+updated: 2026-09-06
+ready-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [FE, QA]
 linear-issue-id: null
@@ -165,9 +169,34 @@ que **nada cambie** salvo los números de versión.
 
 ## 10. Notas / contexto adicional
 
-Medición del 2026-08-23 (`pnpm audit --audit-level=high`), tras el override de
-multer. **El mínimo seguro es el máximo entre todos los advisories del paquete**,
-no el del primero que aparece:
+**Dato vigente: medición del 2026-09-06** (`pnpm audit` sobre el monorepo, con el
+override de multer ya aplicado). La medición original de esta US es del
+2026-08-23 —es la que cita §2— y se conserva abajo como referencia. El árbol de
+paquetes no se movió en esas dos semanas; el conteo sí, porque se publicaron
+advisories nuevos sobre las mismas versiones:
+
+| Severidad | 2026-08-23 (el conteo que cita §2) | **2026-09-06 (vigente)** |
+|---|---|---|
+| critical | 5 | **5** — sin cambio |
+| high | 53 | **60** — +7 advisories nuevos |
+| moderate | 47 | 51 |
+| low | 12 | 14 |
+
+### De dónde salen las 5 critical
+
+El conteo de 5 es correcto pero se reparte en **tres** paquetes, no dos. Es la
+distinción que AC-1 y AC-6 necesitan para ser accionables, porque **sólo 2 de las
+5 llegan a producción**:
+
+| Origen | Cuántas | ¿Llega a producción? | Cómo se cierra |
+|---|---|---|---|
+| `next` 15.1.6 | 2 | **Sí** — es el código que se sirve al público | Subir dentro de 15.x. Es el corazón de la US (AC-2). |
+| `vitest` 2.1.8 | 2 | No — sólo dev | Exige un major. Candidato legítimo a diferirse por AC-6 (ver nota 1). |
+| `handlebars` 4.7.8 | 1 | No — sólo dev/QA | Transitiva de `newman` → `postman-runtime@7.39.1` → `handlebars@4.7.8`; `newman` es el runner de las colecciones Postman de `qa/` (script `test:functional`). Ver nota 3. |
+
+**Versiones declaradas** — revalidadas el 2026-09-06 contra `package.json`: sin
+cambios desde la medición original. **El mínimo seguro es el máximo entre todos
+los advisories del paquete**, no el del primero que aparece:
 
 | Paquete | Actual | Mínimo seguro | Salto | Corre en | Hallazgos |
 |---|---|---|---|---|---|
@@ -178,7 +207,13 @@ no el del primero que aparece:
 | `postcss` | — | 8.5.18 | — | build | 2 high |
 | `undici` | — | 6.27.0 | — | transitiva | 3 high |
 
-Dos observaciones para quien planifique:
+El desglose por paquete de esta tabla se confirmó sin cambios en la medición del
+2026-09-06. Los +7 high nuevos aparecen en paquetes que **no** estaban en la lista
+de transitivas de la nota 2: `browserslist` (2), `path-to-regexp` (1) y
+`@faker-js/faker` (1); ninguno de los tres es de producción, pero cuentan para el
+umbral de AC-5 y hay que resolverlos o declararlos.
+
+Tres observaciones para quien planifique:
 
 1. **`vitest` 2 → 3 es el único major**, y es de una dependencia que **no llega a
    producción**. Sus dos critical son de escenarios de desarrollo (abrir un sitio
@@ -192,6 +227,15 @@ Dos observaciones para quien planifique:
    se arrastran solos al subir sus padres; los que no, se resuelven con
    `pnpm.overrides` —el mismo mecanismo que ya se usó para multer— y ésa es la
    herramienta preferida antes que forzar un major del padre.
+
+3. **`handlebars` es el caso especial de esa lista de transitivas**: no es un high
+   más, carga **una de las 5 critical**, y por eso quien corra el audit se lo va a
+   encontrar de frente. Entra por `newman`, que sólo se usa para correr las
+   colecciones Postman de `qa/`, así que **no llega al bundle de producción**: no
+   viola AC-1, que habla del árbol que sí llega. Pero cuenta para el gate de AC-5.
+   Camino esperado: intentar el override sobre `handlebars` (nota 2) y, si el
+   runner se rompe, cae bajo la disciplina de AC-6 + AC-7 —exclusión nominal de
+   ese advisory, con motivo, dueño y fecha de revisión, nunca bajando el umbral—.
 
 ---
 

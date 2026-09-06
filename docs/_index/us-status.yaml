@@ -691,13 +691,14 @@
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
-  status: Backlog
+  status: Ready
   priority: High
   prd-capacity: null            # no nace del PRD: hallazgo del gate de seguridad de US-006
   disciplines: [FE, QA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null
   created: 2026-08-23
+  ready-at: 2026-09-06
   blocked_by: []
 - id: US-023
   slug: pago-manual-offline
