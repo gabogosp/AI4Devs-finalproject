@@ -887,7 +887,12 @@
   blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment` (satisfecho). US-012: el panel donde vive la acción — Fase 12 (FE) construida vía PR #31, cubre AC-2 de esta US (satisfecho).
 - id: US-024
   slug: edicion-perfil-cliente
-  status: Ready   # 2026-09-06: US nueva, nacida de un hallazgo de la prueba visual del
+  status: In Progress   # 2026-09-06: backend cerrado (8/8 tasks, tests + typecheck +
+  # lint + spectral verdes), openspec/changes/US-024-edicion-perfil-cliente-backend/,
+  # branch feat/US-024-edicion-perfil-backend. Falta commit+PR. FE (a1) en standby
+  # esperando el contrato — ya se lo pasé por mensaje directo.
+  in-progress-at: 2026-09-06
+  # 2026-09-06: US nueva, nacida de un hallazgo de la prueba visual del
   # dueño (no del PRD — prd-capacity: null, mismo patrón que US-009/US-022). Enriquecida
   # directamente a Ready en la misma sesión (decisiones de producto confirmadas con el
   # dueño: nombre + avatar por URL pegada, sin upload real — no hay pipeline de subida de

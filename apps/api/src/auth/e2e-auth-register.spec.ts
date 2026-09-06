@@ -64,15 +64,21 @@ describe('POST /v1/auth/register (e2e-auth-register)', () => {
         .expect((r) => expect(r.body.email).toBe('ana@example.com'));
     });
 
-    it('el cuerpo expone EXACTAMENTE cinco campos', async () => {
+    it('el cuerpo expone EXACTAMENTE seis campos', async () => {
       const res = await alta().expect(201);
       expect(Object.keys(res.body.customer).sort()).toEqual([
+        'avatar_url',
         'created_at',
         'email',
         'id',
         'name',
         'phone',
       ]);
+    });
+
+    it('un registro fresco no tiene avatar (US-024)', async () => {
+      const res = await alta().expect(201);
+      expect(res.body.customer.avatar_url).toBeNull();
     });
 
     it('ni la contraseña ni el hash salen por la respuesta (AC-8)', async () => {

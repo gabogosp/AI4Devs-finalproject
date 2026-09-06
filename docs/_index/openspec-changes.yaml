@@ -3004,3 +3004,37 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-024-edicion-perfil-cliente-backend
+  us-id: US-024
+  discipline: backend
+  variant: null
+  status: In Progress   # 8/8 tasks cerradas (tests+typecheck+lint+spectral verdes),
+  # falta commit+PR (/commit).
+  parent-us: docs/user-stories/US-024-edicion-perfil-cliente.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Migración aditiva `customers.avatar_url VARCHAR(2048)` nullable (sin data-architect
+  # Mode B — trivial). Nuevo `PATCH /v1/me` en el `AccountController` YA existente
+  # (US-020) — mismo par de guards `CustomerGuard,CsrfGuard`, misma fuente estructural
+  # de identidad (`req.customerId`, AC-7). `avatar_url` se valida con `@IsUrl` real
+  # (protocolos http/https) — a diferencia del validador laxo de `image_url` de
+  # producto, porque AC-5 pide rechazar URLs mal formadas explícitamente. Nuevo décimo
+  # throttler nombrado (`account_profile_update`, 20/min) siguiendo el mismo criterio de
+  # techo-inalcanzable-global que los 9 ya existentes.
+  #
+  # Regresiones cruzadas encontradas y corregidas (mismo patrón que PR #99/#122 de esta
+  # sesión — campo aditivo en un DTO compartido rompe fixtures en otros archivos):
+  # `e2e-auth-register.spec.ts`/`e2e-auth-login.spec.ts` (listas EXACTAS de campos),
+  # `auth-schema.spec.ts` (F40, columnas materializadas), `e2e-auth-ratelimit.spec.ts`
+  # (conteo exacto de throttlers nombrados, 9→10).
+  #
+  # NOTA FE: `buyer_name` en órdenes futuras (2da cláusula de AC-1) es 100% FE-owned —
+  # `orders.buyer_name` sale siempre de `body.buyer.name` del form de checkout, nunca
+  # derivado server-side de `Customer.name`. Señalado a a1 (FE) directamente.
+  estimate-hours: 3   # US §7 presupuesta BE-US-024 en 3h — el plan real se mantuvo
+  # dentro del presupuesto (endpoint chico, sin infra nueva).
+  assignee: claude-code
+  branch: feat/US-024-edicion-perfil-backend
+  created: 2026-09-06

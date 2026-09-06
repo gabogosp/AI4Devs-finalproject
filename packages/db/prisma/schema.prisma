@@ -186,6 +186,9 @@ model Customer {
   /// Soft-delete del DER (E2E §8). Ningún endpoint la escribe en US-014;
   /// el login ya la filtra. Borrado de cuenta → US-020.
   deleted_at            DateTime?
+  /// Avatar por URL pegada (US-024) — nunca upload real. `null` = sin avatar,
+  /// el FE muestra un placeholder de iniciales; no tiene default.
+  avatar_url            String?   @db.VarChar(2048)
   created_at            DateTime  @default(now())
   updated_at            DateTime  @default(now()) @updatedAt
 

@@ -128,6 +128,15 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('ACCOUNT_DELETION_RATE_LIMIT_TTL_MS', 3_600_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — décimo throttler nombrado: la edición de perfil (US-024).
+        // Mismo criterio que `account_deletion`: techo inalcanzable acá,
+        // presupuesto real (`ACCOUNT_PROFILE_UPDATE_RATE_LIMIT_MAX`, 20/min)
+        // en el `@Throttle` del handler de `AccountController`.
+        {
+          name: 'account_profile_update',
+          ttl: config.get<number>('ACCOUNT_PROFILE_UPDATE_RATE_LIMIT_TTL_MS', 60_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],

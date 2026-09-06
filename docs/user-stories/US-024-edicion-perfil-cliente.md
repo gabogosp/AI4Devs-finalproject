@@ -8,7 +8,7 @@ prd-capacity: null   # no nace del PRD §2.1: hallazgo de la prueba visual del d
 # editarlos, algo que `AccountPanel.tsx` ya declaraba honestamente ("nombre" y "foto" no
 # eran editables). Mismo patrón que US-009/US-022 (`prd-capacity: null`).
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: S
 story_points_traditional: 3
@@ -18,6 +18,7 @@ language: es
 created: 2026-09-06
 updated: 2026-09-06
 ready-at: 2026-09-06
+in-progress-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null

@@ -202,4 +202,25 @@ export class CustomersRepository {
     const actualizado = await tx.customer.findUniqueOrThrow({ where: { id } });
     return stripHash(actualizado);
   }
+
+  /**
+   * Edición de perfil (US-024): `name` + `avatar_url`. Mismo idioma guardado
+   * que `anonymize()` — `updateMany` con `deleted_at: null` en el WHERE,
+   * `count === 0` es "cuenta no activa o id inexistente" y el caller
+   * (`AccountController`) lo trata como sesión inválida, no como error de
+   * validación.
+   */
+  async updateProfile(
+    id: string,
+    data: { name: string; avatar_url: string | null },
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<SafeCustomer | null> {
+    const { count } = await tx.customer.updateMany({
+      where: { id, deleted_at: null },
+      data: { name: data.name, avatar_url: data.avatar_url },
+    });
+    if (count === 0) return null;
+    const actualizado = await tx.customer.findUniqueOrThrow({ where: { id } });
+    return stripHash(actualizado);
+  }
 }

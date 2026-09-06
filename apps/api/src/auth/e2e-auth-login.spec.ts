@@ -147,6 +147,7 @@ describe('Seam de auth de cliente (e2e-auth-login)', () => {
         .expect(200);
       expect(res.body.email).toBe(EMAIL);
       expect(Object.keys(res.body).sort()).toEqual([
+        'avatar_url',
         'created_at',
         'email',
         'id',
