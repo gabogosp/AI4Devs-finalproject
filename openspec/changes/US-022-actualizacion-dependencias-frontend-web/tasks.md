@@ -114,7 +114,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Fase 7 — Reconciliación final de Fase 1
 
-- [ ] T7.1 Cerrar los 4 hallazgos nuevos identificados en T1.1 (`browserslist`×2, `path-to-regexp`, `@faker-js/faker`) — vía override si el fix no exige major, o vía exclusión nominal en `scripts/.audit-exclusions.json` si sí lo exige (aplicando la misma cláusula de escalamiento de Fase 5 si romper algo al intentarlo).
+- [x] T7.1 Cerrar los 4 hallazgos nuevos identificados en T1.1 (`browserslist`×2, `path-to-regexp`, `@faker-js/faker`) — vía override si el fix no exige major, o vía exclusión nominal en `scripts/.audit-exclusions.json` si sí lo exige (aplicando la misma cláusula de escalamiento de Fase 5 si romper algo al intentarlo).
   - **Exit criterion**: cada uno de los 4 hallazgos está o resuelto (ya no aparece en `pnpm audit --audit-level=high`) o cubierto por una exclusión nominal completa en `scripts/.audit-exclusions.json`.
   - **Verify**: `pnpm audit --audit-level=high --json | node scripts/check-audit-exclusions.mjs; echo "exit=$?"` (debe imprimir `exit=0`, contingente en que T6.1-T6.3 ya existan)
 

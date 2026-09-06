@@ -19,5 +19,12 @@
     "reason": "Misma causa que GHSA-9crc-q9x8-hgqq — ambas critical de vitest 2.1.8, mismo spike/decisión pendiente (T4.2, rama spike/US-022-vitest-3, commit a742d15). Sólo dev, no toca ningún bundle de producción.",
     "owner": "usuario",
     "reviewBy": "2026-09-20"
+  },
+  {
+    "package": "@faker-js/faker",
+    "advisoryId": "GHSA-qxc2-j82w-r537",
+    "reason": "T7.1: la copia vulnerable (5.5.3) entra sólo vía newman/postman-collection@4.4.0 en qa/ (no la copia directa 10.5.0 de apps/web, ya segura). El fix exige la línea 10.x — forzarlo con pnpm.overrides rompe newman en el momento: postman-collection@4.4.0 llama `faker.address.city` (API de faker 5.x), inexistente en faker 10.x (renombrada a `faker.location.city` en v8+) -> TypeError al primer request con variable dinámica. Probado y revertido (ver proposal.md, entrada Deferred de T7.1). Sólo dev/QA, no toca ningún bundle de producción.",
+    "owner": "usuario",
+    "reviewBy": "2026-09-20"
   }
 ]
