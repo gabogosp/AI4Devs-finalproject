@@ -2780,3 +2780,59 @@
   completed-at: 2026-09-06T15:28:11Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-backend
+
+- name: US-020-borrado-cuenta-datos-personales-frontend-web
+  us-id: US-020
+  discipline: frontend-web
+  variant: null
+  status: draft   # /plan-frontend-web-ticket US-020 (2026-09-06) — plan escrito, sin PR todavía
+  parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión
+  audit-baseline: null
+  audit-derived: false
+  # Backend (PR #93) ya mergeado a `main`: `DELETE /v1/me`, contrato + codegen del
+  # cliente/Zod/MSW ya regenerados antes de este plan. Esta US-FE construye la UI en
+  # `/mi-cuenta`: botón destructivo + `ConfirmDialog` REUSADO (sin modificar — 2
+  # consumidores ya en producción, `OrderCancelAction`/`OrderAnonymizeAction`), copy
+  # explícito de qué se borra/qué sobrevive, manejo del 409 (`blocking_orders`).
+  #
+  # DECISIÓN DE ARQUITECTURA (no un ADR, aplicación de ADR-0013 existente): la
+  # confirmación post-borrado se levanta a un componente NUEVO (`MiCuentaScreen`) por
+  # ENCIMA de `CustomerGuard`, porque el guard oculta sus `children` en el MISMO render
+  # en el que `SessionState` pasa a `anonymous` — si el flujo de éxito viviera dentro del
+  # árbol que el guard protege, el mensaje de confirmación nunca llegaría a pintarse
+  # (design.md §D3, con el mecanismo de batching de React explicado en detalle).
+  #
+  # HALLAZGO DE DRIFT DE CONTRATO (no corregido acá, ver Open questions de proposal.md):
+  # `AccountHasActiveOrdersProblem.blocking_orders` reusa el schema `OrderHistorySummary`
+  # de US-015 (enum de `status` SIN `pending_payment`, CON `delivered`/`cancelled` que
+  # nunca aparecen en la práctica) — el backend puede emitir legítimamente un valor que
+  # el contrato publicado no declara. La FE se tipa defensiva (`status: string`, no el
+  # enum generado) y NO reusa `OrderStatusBadge` (que ni siquiera compilaría con
+  # `pending_payment`). Recomendación de follow-up de backend documentada, sin bloquear
+  # este change.
+  #
+  # HALLAZGO Y CIERRE PREVENTIVO DE UN GAP REAL: `US-015-historial-compras-frontend-web`
+  # (archivada) NO TIENE ninguna task de "E2E dev-owned de topología contra la app
+  # construida" — exactamente el hueco que dejó pasar a producción el bug real del
+  # rewrite `/v1/me/:path*` ausente, encontrado recién por QA (Layer 3, commit `6bb6517`,
+  # PR #89) en vez de por el propio change de FE. Este plan agrega esa fase explícitamente
+  # (`account-deletion-topology.spec.ts` + extensión de `api-stub.mjs`/
+  # `api-stub.selftest.mjs`) para US-020, sin diferirla a QA.
+  #
+  # Sin componente de confirmación/toast/botón nuevos (KISS/YAGNI) — reusa
+  # `ConfirmDialog`/`Button`/el patrón inline `role="alert"`/`role="status"` (no hay
+  # librería de toast en este código). Sin ADR, sin README (mismo criterio que US-013 FE).
+  estimate-hours: 6.5   # 27 tasks, 8 fases + pre-requisitos (~11h tradicional). Ver
+  # tasks.md para el desglose — más contenido que US-013 FE (~3,5/5h) por el método nuevo
+  # de SessionProvider, el drift de contrato documentado, el componente de "pantalla
+  # post-borrado" que exige levantar estado por encima del guard, y la fase completa de
+  # E2E dev-owned (stub + spec Playwright) que ninguna US-013-shaped-task presupuesta.
+  assignee: claude-code
+  branch: null
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+>>>>>>> 840ff68 (docs(openspec): US-020 frontend-web — plan (proposal + tasks + design))
