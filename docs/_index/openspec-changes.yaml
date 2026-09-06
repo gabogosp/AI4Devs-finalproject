@@ -2643,11 +2643,12 @@
   us-id: US-022
   discipline: frontend-web
   variant: null
-  status: in-review   # /commit 2026-09-06: PR #95. 24/24 tasks + verification suite-level
-  # cerradas. T4.1/T4.2 (ver nota más abajo) resueltas con investigación completa
-  # (bisect + spike + 4 fixes de test-hygiene) — ninguna quedó bloqueada al final.
-  # Suite 996/996 (12 corridas limpias), typecheck/lint limpios, audit:gate exit 0
-  # (2 hallazgos con exclusión nominal, ambos dev/QA-only).
+  status: merged   # PR #95 mergeado 2026-09-06T16:21:42Z (verificado gh pr view --json
+  # mergedAt). 24/24 tasks + verification suite-level cerradas. T4.1/T4.2 (ver nota
+  # más abajo) resueltas con investigación completa (bisect + spike + 4 fixes de
+  # test-hygiene) — ninguna quedó bloqueada al final. Suite 996/996 (12 corridas
+  # limpias), typecheck/lint limpios, audit:gate exit 0 (2 hallazgos con exclusión
+  # nominal, ambos dev/QA-only). Pendiente su propio /archive-change.
   parent-us: docs/user-stories/US-022-actualizacion-dependencias-frontend.md
   linear-task-id: null
   audit-baseline: null
@@ -2685,6 +2686,58 @@
   assignee: claude-code
   branch: feat/US-022-actualizacion-dependencias-frontend-web
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/95
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: 2026-09-06T16:21:42Z
+  archived-at: null
+  archive-path: null
+
+- name: US-022-actualizacion-dependencias-qa
+  us-id: US-022
+  discipline: qa
+  variant: null
+  status: in-review   # /commit 2026-09-06: PR #102 abierto contra main. 14/14 tasks +
+  # verification suite-level cerradas. 278 tests/escenarios revalidados (172 BDD + 68
+  # E2E + 38 a11y), cobertura sin regresión (≥242 documentado). 4 hallazgos [Deferred —
+  # owner: usuario] en proposal.md — TC-731 (`carrito.spec.ts`) inicialmente sospechoso
+  # de regresión del bump de next, DESCARTADO vía bisect quirúrgico (falla idéntica 3/3
+  # en next 15.1.6 y 15.5.21): bug de foco/a11y preexistente en el carrito, ajeno a
+  # esta US — no bloquea el commit, amerita su propio CR independiente.
+  # MODO A, VARIANTE SIBLING: el FE (PR #95, 24/24 tasks) ya está mergeado a
+  # main; este change hermano cubre lo QA-owned que la US pide en su §7:
+  # "revalidar las suites propias —E2E de SSR/SEO, a11y, aceptación— contra
+  # las versiones nuevas y confirmar que la cobertura no bajó". No agrega
+  # funcionalidad ni escenarios Gherkin nuevos — revalida 3 suites ya
+  # existentes de qa/ (aceptación BDD 136 escenarios, E2E SSR/SEO/funcional
+  # 68 tests, a11y WCAG AA 38 tests = 242 total) contra next 15.5.21 +
+  # sharp/postcss/undici ya bumpeados por el change de FE.
+  #
+  # 3 hallazgos reales, ninguno resuelto en este plan (todos [Deferred —
+  # owner: usuario, ...] en proposal.md): (1) qa/package.json mantiene su
+  # propia copia de @playwright/test en 1.49.1, sin bumpear — evaluar
+  # consistencia con la copia de apps/web (1.55.1) exige medir blast radius
+  # primero, el propio change de FE ya midió que ese bump angosta una
+  # carrera preexistente; (2) qa/e2e/pdp-ssr-seo.spec.ts TC-305 comparte el
+  # mismo mecanismo de carrera que apps/web/e2e/pdp-invalidation.spec.ts
+  # (fire-and-forget + expect.poll), con timeout más angosto (10s vs 20s) —
+  # no se toca sin evidencia de falla real; (3) el gate nightly
+  # .github/workflows/qa.yml está roto desde ANTES de esta US (verificado
+  # con gh run list, 8 corridas 2026-08-30→2026-09-06, todas fallan en
+  # "Aceptación BDD" por CORS ausente — la API se arranca sin
+  # qa/scripts/api-up.sh) — los pasos de E2E/a11y quedan `skipped` desde
+  # entonces, así que la revalidación de este plan corre 100% local, no
+  # depende de ese gate. Ninguno de los tres se corrige acá (fuera de
+  # alcance: requieren medir/decidir, o son CI — US-019).
+  parent-us: docs/user-stories/US-022-actualizacion-dependencias-frontend.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 2   # US §7 presupuesta QA-US-022 en 2-3h; estimation_basis
+  # de la US ya contempla "revalidación de suites que ya existen, sin
+  # escribir casos nuevos" con el descuento AI-asistido (story_points_ai_assisted: 2).
+  assignee: claude-code
+  branch: feat/US-022-actualizacion-dependencias-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/102
   pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
