@@ -424,11 +424,14 @@ TC-013-E1 parcial).
 
 ### 5.3 E2E de navegador cross-stack (Playwright, backend + frontend reales)
 
-> **Bloqueada por el merge de `US-013-cancelacion-reembolso-frontend-web`
-> (PR #67)**: el código de `OrderCancelAction.tsx` ya existe en este worktree
-> (stacked sobre el backend), pero no en `main` — la corrida real necesita
-> `apps/web` construido desde `main` (`qa/scripts/api-up.sh` +
-> `pnpm --filter @dsm/web build && start`).
+> **CORRECCIÓN (ejecución, `/develop-qa`)**: esta sección decía "bloqueada por
+> el merge de PR #67" al planificarse — no lo está. Este worktree está
+> stacked sobre la rama de `US-013-cancelacion-reembolso-frontend-web` (PR
+> #67), así que `apps/web` se construyó y sirvió DESDE ACÁ (no desde `main`)
+> con `pnpm --filter @dsm/web build && start`, contra el backend real de este
+> mismo worktree. Mismo criterio ya aplicado por `US-016-panel-metricas-qa`.
+> Las 6 corrieron; ver Estado por test case abajo — **QA-013-E2E-3 encontró
+> un defecto real** (no un bloqueo de entorno).
 
 | Escenario | Definición | AC |
 |---|---|---|
@@ -464,7 +467,9 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   confirmar')`); tipear exactamente "CANCELAR" habilita el confirmar;
   clickearlo dispara `page.waitForResponse` al `POST .../cancel` real y el
   badge de estado cambia a "Cancelada" sin recargar.
-- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "cancelar orden confirmacion dos pasos" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-1" --reporter=list` (exit 0)
+- **Estado**: verde — `qa/e2e/cancelacion-ordenes.spec.ts`, contra backend+web
+  reales servidos desde este worktree.
 
 ```yaml
 - id: QA-013-E2E-2
@@ -480,7 +485,8 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
 - Exit criterion: en el detalle de una orden real `delivered` y de una orden
   real `cancelled`, `page.getByRole('button', { name: 'Cancelar orden' })`
   tiene cuenta 0 en ambos casos.
-- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "cancelar orden boton oculto" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-2" --reporter=list` (exit 0)
+- **Estado**: verde.
 
 ```yaml
 - id: QA-013-E2E-3
@@ -497,7 +503,36 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   "Se canceló la orden y se reintegró el pago."; cancelar una orden pagada
   por el medio simulado muestra el mismo mensaje (ambos casos son `refunded`
   sin llamada externa, D3 del backend).
-- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "cancelar orden mensaje reembolso" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-3" --reporter=list` (exit 0)
+- **Estado**: 🔴 ROJO — **defecto real encontrado en `apps/web`, no un problema
+  de entorno ni de este test**. El mensaje de resultado
+  (`REFUND_MESSAGE[refund.status]`, `OrderCancelAction.tsx`) nunca llega a
+  verse: el componente arranca con
+  `if (order.status === 'delivered' || order.status === 'cancelled') return null;`
+  ANTES del JSX que renderiza `{message && <div role="status">{message}</div>}`.
+  `confirm()` llama `setMessage(...)` y, en el mismo ciclo, `onCancelled(cancelado)`
+  — que en `OrderDetail.tsx` reemplaza el `order` completo por el que devolvió
+  el `200` (con `status: 'cancelled'`). En el próximo render, `OrderCancelAction`
+  recibe `order.status === 'cancelled'` y el early-return corta ANTES de
+  llegar al div del mensaje — que queda seteado en estado pero nunca se
+  pinta. Verificado con un spec de debug ad-hoc (descartado): tras cancelar,
+  `page.locator('body').innerText()` confirma que el badge pasa a "Cancelada"
+  y el historial gana una fila, pero el texto
+  "Se canceló la orden y se reintegró el pago." está ausente del DOM incluso
+  2s después. **Hallazgo secundario, menor, en el mismo componente**: la fila
+  de historial muestra "Nueva → cancelled" (inglés crudo), no "Nueva →
+  Cancelada" — `STATUS_LABEL` de `orderStatus.ts` (usado por
+  `OrderStatusHistory`) no tiene una entrada para `cancelled` (`OrderStatusBadge`
+  sí la tiene, en `LABELS`). Ninguno de los dos hallazgos bloquea AC-1/AC-6/AC-7
+  (que sí se ven, y sí pasan en QA-013-E2E-1/E2E-2/E2E-4) — el AC-5 (mensaje de
+  reembolso) es el único afectado. **Sugerencia de fix (no aplicada acá — fuera
+  de alcance de un change de QA)**: en `OrderCancelAction.tsx`, no cortar con un
+  early-return sobre TODO el componente; condicionar sólo el botón/diálogo
+  (`{order.status !== 'delivered' && order.status !== 'cancelled' && (<>...botón
+  y diálogo...</>)}`) dejando `error`/`message` fuera de ese gate. Para el
+  hallazgo secundario: agregar `cancelled: 'Cancelada'` a `STATUS_LABEL` (o a un
+  mapa de labels específico de `OrderStatusHistory`, ya que `FulfillmentStatus`
+  no incluye `cancelled` por diseño).
 
 ```yaml
 - id: QA-013-E2E-4
@@ -516,7 +551,14 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   cancelación desde el DOM), el segundo intento responde 409 real, el mensaje
   "La orden ya no puede cancelarse..." aparece, y el diálogo de confirmación
   sigue montado (`page.getByRole('dialog')` visible).
-- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "cancelar orden conflicto 409" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-4" --reporter=list` (exit 0)
+- **Estado**: verde — **corrección respecto al diseño original del test**: cancelar
+  la MISMA orden dos veces (mi diseño inicial) es idempotente (200, D3 del
+  backend), nunca 409 — no reproduce la carrera. El 409 real sólo aparece
+  cuando la orden pasa a `delivered` (estado terminal) por fuera mientras el
+  diálogo sigue abierto — reescrito para avanzar la orden por los 3 `PATCH`
+  reales (`preparing`→`ready`→`delivered`) antes del click de confirmar,
+  mismo patrón que `ordenes.spec.ts` TC-1223.
 
 ```yaml
 - id: QA-013-E2E-5
@@ -532,7 +574,11 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
 - Exit criterion: tras cancelar con éxito, sin ninguna navegación ni
   recarga, la tabla de `OrderStatusHistory` en la misma página muestra una
   fila nueva con `to_status` "Cancelada".
-- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "cancelar orden historial sin recargar" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-5" --reporter=list` (exit 0)
+- **Estado**: verde — el conteo de filas del historial crece en 1 sin
+  navegación/recarga. Nota: el TEXTO de esa fila muestra "cancelled" en vez
+  de "Cancelada" — ver el hallazgo secundario documentado en el Estado de
+  QA-013-E2E-3 (no afecta este assert, que sólo verifica el conteo).
 
 ```yaml
 - id: QA-013-E2E-6
@@ -548,7 +594,13 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
 - Exit criterion: un visitante sin sesión que navega directo al detalle de
   una orden real no ve el panel (`AdminGuard` de FE redirige); una cuenta de
   cliente real (US-014, login real) tampoco.
-- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "cancelar orden sin sesion" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-6" --reporter=list` (exit 0)
+- **Estado**: verde — visitante sin sesión Y cuenta de cliente real (US-014,
+  registrada por API real, cookie `dsm_access` transplantada al contexto del
+  navegador vía `page.context().addCookies(...)` — sesión real, no un mock)
+  ambas redirigidas a `/admin/acceso`. El guard del FE (`adminSession`) sólo
+  mira el token admin en `sessionStorage`, así que ninguna cookie de cliente
+  lo satisface.
 
 ### 5.4 Accesibilidad L3 (axe-core + teclado, página servida con el diálogo real abierto)
 
