@@ -1,0 +1,11 @@
+archived: true
+archived_at: 2026-09-06
+merged_commit: ebfa7c0f26f619d835873d9e4df30c9b49077a55
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/98
+notes: >
+  Sibling QA change (Mode A en espíritu) — sólo qa-plan.md, sin proposal/tasks/design
+  propios. No declara delta de capability propio: el delta cruzado sobre
+  openspec/specs/ordenes/contracts/openapi.yaml (enum account_deletion) ya fue aplicado
+  por el archive del backend (US-020-borrado-cuenta-datos-personales-backend, PR #93).
+  Este archive sólo cierra la disciplina QA y confirma que openspec/specs/ no requiere
+  cambios adicionales.

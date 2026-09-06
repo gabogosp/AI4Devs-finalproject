@@ -2840,7 +2840,7 @@
   us-id: US-020
   discipline: qa
   variant: null
-  status: draft
+  status: archived
   parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
   linear-task-id: null
   audit-baseline: null
@@ -2878,9 +2878,16 @@
   # ejemplos), 1 suite k6 con NFR propio, 3 charters exploratorios.
   assignee: claude-code
   branch: feat/US-020-borrado-cuenta-datos-personales-qa
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/98
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T17:03:40Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-qa
+  # /archive-change 2026-09-06 (PR #98 mergeado ebfa7c0): última disciplina de US-020 —
+  # US-020 pasa a Done. Sin delta de capability propio: el enum account_deletion sobre
+  # openspec/specs/ordenes/contracts/openapi.yaml ya lo aplicó el archive del backend
+  # (PR #93). Bugs de infraestructura QA encontrados y corregidos en este PR: falta de
+  # ACCOUNT_DELETION_RATE_LIMIT_MAX en qa/scripts/api-up.sh, y mismatch de archivo de
+  # log (marcaDeLog/leerLogApi) en N-6/N-6b de borrado-cuenta.steps.ts. 26/26 escenarios
+  # verdes en 4 corridas + k6 p95≈15.4ms vs umbral 500ms.
