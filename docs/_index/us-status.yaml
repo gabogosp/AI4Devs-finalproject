@@ -582,7 +582,10 @@
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento
-  status: In Progress
+  status: Done   # 2026-09-06: PO firma acceptance (confirmado explícitamente por el
+  # usuario) — con el texto legal 3/3 completo (PR #108, mergeado) y el consentimiento
+  # de US-008 ya consumiendo CONSENT_COPY, los dos motivos que dejaban la US abierta
+  # quedan resueltos. Único checkbox del DoD que faltaba.
   priority: High
   prd-capacity: 10
   # BE SACADO 2026-08-23 — resolución de OQ-FE-18, opción (a): `BE-US-017` queda ABSORBIDA por
@@ -603,6 +606,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (frontend-web-developer)
+  done-at: 2026-09-06
   blocked_by: [US-001]
   # QA SE MANTIENE, sin change propio: es la norma del repo (15 de 20 US con QA en `disciplines`
   # no tienen change `-qa`; US-004/005/008/009/010 llevan su qa-plan.md DENTRO del change de
@@ -642,9 +646,10 @@
   # correcto**. Los 3 marcadores `[PENDIENTE: …]` de `content.ts` quedan RESUELTOS
   # (rama `chore/US-017-legal-content-datos-reales`, PR #108 — sin change propio por
   # tratarse de un dato/copy, no de un item de tasks.md). Texto legal completo, sin
-  # placeholders. `status` se queda en `In Progress` hasta la firma explícita del PO
-  # sobre el DoD ("PO firma acceptance" es un checkbox propio, distinto de "texto
-  # legal provisto" — DoD §Definition of Done de la US).
+  # placeholders.
+  #
+  # NOTA (2026-09-06, PO firma acceptance): el usuario confirmó explícitamente la firma
+  # del DoD. `status` avanza a `Done` — done-at abajo.
 - id: US-018
   slug: contacto-whatsapp
   status: Done
