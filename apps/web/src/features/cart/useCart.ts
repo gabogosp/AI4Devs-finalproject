@@ -121,15 +121,27 @@ function appErrorDe(error: unknown): AppError {
   return { kind: 'network', message: 'No se pudo conectar con el servidor' };
 }
 
+/** Resultado de una mutación: en `conflict`/`failed` el estado ya quedó actualizado (`useCart`), esto es sólo para que el caller decida su propio feedback optimista sin leer un `state` todavía stale dentro del mismo closure. */
+export type MutationOutcome = 'ok' | 'conflict' | 'failed';
+
 export interface UseCart {
   state: CartState;
   /** Cantidad de unidades para el badge; `undefined` mientras no se sabe. */
   totalQuantity: number | undefined;
   reload: () => Promise<void>;
-  /** Suma una unidad (o crea la línea con 1). El PUT es absoluto, así que la suma se calcula acá. */
-  add: (slug: string) => Promise<void>;
-  setQuantity: (slug: string, quantity: number) => Promise<void>;
-  remove: (slug: string) => Promise<void>;
+  /**
+   * Suma `quantity` unidades (default 1) a la línea existente, o la crea con
+   * esa cantidad. El PUT es absoluto, así que la suma se calcula acá.
+   *
+   * Con línea existente, se acota a `actual.max_quantity` (cifra real que ya
+   * confirmó el servidor). Sin línea (alta desde la ficha, C2a) se manda tal
+   * cual: el storefront público no expone stock exacto (C2b), así que no hay
+   * techo real que aplicar acá — si excede el stock real, el servidor
+   * responde 409 y el resultado es `'conflict'`, nunca un clamp silencioso.
+   */
+  add: (slug: string, quantity?: number) => Promise<MutationOutcome>;
+  setQuantity: (slug: string, quantity: number) => Promise<MutationOutcome>;
+  remove: (slug: string) => Promise<MutationOutcome>;
 }
 
 /**
@@ -173,10 +185,11 @@ export function useCart(options: { autoload?: boolean } = {}): UseCart {
   }, []);
 
   const mutar = useCallback(
-    async (slug: string, operacion: () => Promise<Cart>) => {
+    async (slug: string, operacion: () => Promise<Cart>): Promise<MutationOutcome> => {
       dispatch({ type: 'mutating', slug });
       try {
         dispatch({ type: 'mutated', slug, cart: await operacion() });
+        return 'ok';
       } catch (error) {
         const appError = appErrorDe(error);
         if (appError.kind === 'conflict') {
@@ -190,9 +203,10 @@ export function useCart(options: { autoload?: boolean } = {}): UseCart {
                 : {}),
             },
           });
-          return;
+          return 'conflict';
         }
         dispatch({ type: 'failed', slug, error: appError });
+        return 'failed';
       }
     },
     [],
@@ -205,14 +219,15 @@ export function useCart(options: { autoload?: boolean } = {}): UseCart {
   );
 
   const add = useCallback(
-    (slug: string) => {
+    (slug: string, quantity = 1) => {
       // El PUT fija la cantidad absoluta, así que «agregar» es leer la actual y
-      // sumarle uno. Sin línea previa (o sin carrito cargado) es 1.
+      // sumarle lo pedido. Sin línea previa (alta desde la ficha, C2a) se manda
+      // tal cual — ver el comentario de `UseCart.add`.
       const cart = cartDe(state);
       const actual = cart?.items.find((i) => i.slug === slug);
       const siguiente = actual
-        ? Math.min(actual.quantity + 1, actual.max_quantity)
-        : 1;
+        ? Math.min(actual.quantity + quantity, actual.max_quantity)
+        : quantity;
       return mutar(slug, () => cartService.setItemQuantity(slug, siguiente));
     },
     [mutar, state],

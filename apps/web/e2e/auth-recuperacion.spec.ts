@@ -75,7 +75,8 @@ test.describe('Journey de recuperación (T4.2)', () => {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/contraseña/i).fill('Contrasena-Nueva-9');
     await page.getByRole('button', { name: /^ingresar$/i }).click();
-    await expect(page).toHaveURL(/\/mi-cuenta$/);
+    // Post-login → home (decisión del PO, 2026-09-06).
+    await expect(page).toHaveURL('/');
   });
 
   test('el token desaparece de la URL al cargar la pantalla', async ({ page, request }) => {

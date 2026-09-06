@@ -62,13 +62,13 @@ const responder401 = () =>
   );
 
 describe('LoginForm (T2.2)', () => {
-  it('AC-2: credenciales correctas abren sesión y llevan a mi cuenta', async () => {
+  it('AC-2: credenciales correctas abren sesión y llevan al home (decisión del PO, 2026-09-06)', async () => {
     server.use(http.post(`${SITE}/v1/auth/login`, () => HttpResponse.json({ customer })));
 
     montar();
     await ingresar();
 
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/mi-cuenta'));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'));
     expect(eventos.map((e) => e.event)).toContain('login_succeeded');
   });
 

@@ -186,6 +186,52 @@ describe('useCart', () => {
     expect(servicio.setItemQuantity).toHaveBeenCalledWith('nuevo', 1);
   });
 
+  it('add() con cantidad explícita la suma a la línea existente (C2a, ficha con stepper)', async () => {
+    const { result } = renderHook(() => useCart());
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+
+    await act(async () => {
+      await result.current.add('mecha', 3);
+    });
+
+    // La línea tenía 2 → se pide 5 (2+3), no 3 a secas.
+    expect(servicio.setItemQuantity).toHaveBeenCalledWith('mecha', 5);
+  });
+
+  it('add() con cantidad explícita en un producto NUEVO la manda tal cual — sin techo local (C2b: el storefront no conoce el stock real)', async () => {
+    const { result } = renderHook(() => useCart());
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+
+    await act(async () => {
+      await result.current.add('nuevo', 7);
+    });
+
+    expect(servicio.setItemQuantity).toHaveBeenCalledWith('nuevo', 7);
+  });
+
+  it('add() devuelve "ok" en éxito y "conflict" en un 409 — la ficha lo usa para no mostrar un falso "agregado"', async () => {
+    const { result } = renderHook(() => useCart());
+    await waitFor(() => expect(result.current.state.kind).toBe('ready'));
+
+    let resultado: string | undefined;
+    await act(async () => {
+      resultado = await result.current.add('mecha');
+    });
+    expect(resultado).toBe('ok');
+
+    servicio.setItemQuantity.mockRejectedValueOnce(
+      new AppErrorException({
+        kind: 'conflict',
+        message: 'Quedan 2 unidades',
+        availableQuantity: 2,
+      }),
+    );
+    await act(async () => {
+      resultado = await result.current.add('nuevo', 50);
+    });
+    expect(resultado).toBe('conflict');
+  });
+
   it('add() no supera max_quantity', async () => {
     servicio.get.mockResolvedValue(
       cart({

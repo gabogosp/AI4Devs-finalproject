@@ -1,13 +1,34 @@
 'use client';
 
+import { useState } from 'react';
 import { track } from '@/lib/observability/events';
 import { AddToCartButton } from '@/features/cart/AddToCartButton';
+import { QuantityStepper } from '@/features/cart/QuantityStepper';
 import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
 import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
 
 /** Copy del design-system §10.2 — momento de ansiedad "sin stock". */
 const OUT_OF_STOCK_COPY =
   'Sin stock por ahora. Escribinos por WhatsApp y te avisamos cuando vuelva.';
+
+/**
+ * C2b (decisión del PO, 2026-09-06): urgencia SIN número. `product.low_stock`
+ * ya es booleano en el backend (`StorefrontProductDto`, OQ-BE-3 sigue
+ * cubierto — el storefront público nunca ve cuántas unidades quedan), así que
+ * acá sólo hay una elección de copy, nunca una cuenta.
+ */
+const LOW_STOCK_COPY = 'Quedan pocas unidades';
+
+/**
+ * Techo de UI del stepper de la ficha (C2a, decisión del PO 2026-09-06 —
+ * revierte OQ-FE-2 de US-002). NO es el stock real: el storefront público lo
+ * mantiene oculto a propósito (C2b, mismo trade-off de US-002). Mismo valor
+ * que el default de `CART_MAX_QTY_PER_LINE` del backend — un pedido por
+ * encima del stock real igual lo rechaza el servidor (409), que
+ * `AddToCartButton` ya maneja mostrando el conflicto en vez de un falso
+ * "agregado".
+ */
+const CANTIDAD_MAX_UI = 99;
 
 /**
  * Estados de compra de la ficha.
@@ -22,16 +43,25 @@ const OUT_OF_STOCK_COPY =
  * — no queda un disabled mudo (design-system §7.3). El badge lleva **texto**,
  * no sólo color, porque el color nunca puede ser el único portador de
  * significado (§7.7, WCAG 2.1 AA).
+ *
+ * **Pocas unidades** (C2b): el badge de "En stock" se reemplaza por uno de
+ * urgencia — no se muestran los dos a la vez, sería redundante. Nunca un
+ * número: `lowStock` es booleano de punta a punta (mismo trade-off que
+ * `in_stock`, OQ-BE-3).
  */
 export function ProductPurchase({
   inStock,
+  lowStock,
   productName,
   productSlug,
 }: {
   inStock: boolean;
+  lowStock: boolean;
   productName: string;
   productSlug: string;
 }) {
+  const [cantidad, setCantidad] = useState(1);
+
   /**
    * Salida al canal humano. `context` distingue las dos superficies: sin stock
    * mide demanda perdida; con stock mide el camino de compra real del MVP
@@ -63,10 +93,28 @@ export function ProductPurchase({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className="inline-flex w-fit items-center rounded-full bg-success-subtle px-3 py-1 text-sm font-medium text-foreground">
-        En stock
-      </span>
-      <AddToCartButton slug={productSlug} productName={productName} className="w-fit" />
+      {lowStock ? (
+        <span className="inline-flex w-fit items-center rounded-full bg-warning-subtle px-3 py-1 text-sm font-medium text-warning">
+          {LOW_STOCK_COPY}
+        </span>
+      ) : (
+        <span className="inline-flex w-fit items-center rounded-full bg-success-subtle px-3 py-1 text-sm font-medium text-foreground">
+          En stock
+        </span>
+      )}
+      <QuantityStepper
+        productName={productName}
+        quantity={cantidad}
+        maxQuantity={CANTIDAD_MAX_UI}
+        onChange={setCantidad}
+      />
+      <AddToCartButton
+        slug={productSlug}
+        productName={productName}
+        className="w-fit"
+        quantity={cantidad}
+        onAdded={() => setCantidad(1)}
+      />
       {/* El canal humano se conserva: consultar medidas o compatibilidades sigue
           siendo un camino legítimo, no un respaldo del carrito. */}
       <WhatsAppLink

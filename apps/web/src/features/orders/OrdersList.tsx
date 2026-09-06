@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   type ColumnDef,
   type SortingState,
@@ -81,7 +82,21 @@ export function OrdersList() {
 
   const columns = useMemo<ColumnDef<OrderSummary>[]>(
     () => [
-      { id: 'order_number', accessorKey: 'order_number', header: 'Nº de orden' },
+      {
+        id: 'order_number',
+        accessorKey: 'order_number',
+        header: 'Nº de orden',
+        // Único punto de entrada al detalle desde el listado — sin esto, la
+        // única forma de ver una orden es tipear su UUID a mano en la URL.
+        cell: (info) => (
+          <Link
+            href={`/admin/ordenes/${info.row.original.id}`}
+            className="text-accent-strong underline-offset-2 hover:underline focus:outline-none focus-visible:shadow-focus"
+          >
+            {info.getValue<number>()}
+          </Link>
+        ),
+      },
       {
         id: 'buyer_name',
         accessorKey: 'buyer_name',
