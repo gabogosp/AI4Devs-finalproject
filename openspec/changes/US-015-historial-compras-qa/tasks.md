@@ -40,20 +40,24 @@ checklist humano.
 
 ## Pre-requisitos
 
-- [ ] **Backend de US-015 mergeado, superficie viva.** No es una planificación
+- [x] **Backend de US-015 mergeado, superficie viva.** No es una planificación
   pendiente — el código corre (PR #70 + #71, 26/26 tasks).
   - **Verify**: `test -f apps/api/src/orders/orders-history.controller.ts && test -f apps/api/src/auth/resolve-customer-session.ts`
-- [ ] **Entorno de QA arriba**, con la API real + Postgres real
+  - **Nota de ejecución (2026-09-06)**: verificado, ambos archivos existen.
+- [x] **Entorno de QA arriba**, con la API real + Postgres real
   (`qa/scripts/api-up.sh`).
   - **Verify**: `curl -sS -m 10 -o /dev/null -w "%{http_code}" "${QA_API_BASE_URL:-http://localhost:3009}/health" | grep -qx 200`
-- [ ] **`PAYMENTS_SIMULATED_ENABLED=true` está seteado en el entorno de QA**
+  - **Nota de ejecución (2026-09-06)**: 200, contra `http://localhost:3011` (puerto propio del worktree, no el 3009 por defecto — libre elección del harness para no colisionar).
+- [x] **`PAYMENTS_SIMULATED_ENABLED=true` está seteado en el entorno de QA**
   (sin esto, `compraLogueada()` de T0.1 no puede confirmar ninguna orden — el
   historial de cualquier escenario listaría siempre cero filas).
   - **Verify**: `curl -sS -m 10 -o /dev/null -w "%{http_code}" "${QA_API_BASE_URL:-http://localhost:3009}/v1/checkout/simulate-payment" -X POST -H "content-type: application/json" -d '{"order_token":"0000000000000000000000000000000000000000000000000000000000000000"}' | grep -qE '^(404|422)$'` (404 = token inexistente / 422 = formato — cualquiera de los dos confirma que la ruta existe, el flag está prendido, y responde)
-- [ ] **`TRUST_PROXY_HOPS=1` en el entorno de QA** (sin esto, `nuevaCuenta()`
+  - **Nota de ejecución (2026-09-06)**: 404, confirmado.
+- [x] **`TRUST_PROXY_HOPS=1` en el entorno de QA** (sin esto, `nuevaCuenta()`
   de `customer-auth.ts` — reusada por T0.1 — agota su propio rate-limit de
   registro al sembrar varias cuentas en la misma corrida).
   - **Verify**: revisión de `qa/scripts/api-up.sh` (ya lo exporta — mismo pre-requisito que `US-014-registro-login-qa` documentó)
+  - **Nota de ejecución (2026-09-06)**: confirmado, línea 115 de `qa/scripts/api-up.sh`.
 
 ---
 
@@ -274,14 +278,33 @@ import sys; sys.exit(0 if not faltan and len(scs)>=11 else 1)"`
 
 ## Verification (suite-level)
 
-- [ ] Suite de aceptación completa verde: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015"` — objetivo 18/18 casos verdes (11 `SC-015-*`, contando Examples de los 3 Esquemas: C1×2, C3×4, N1×2).
-- [ ] Contract test verde: `pnpm --filter @dsm/qa test:contract:order-history`
-- [ ] Carga dentro del presupuesto: `k6 run qa/performance/orders-history-read.js` — p95 dentro de 300ms, `rate>0.99` en checks.
-- [ ] **Sin regresión en las suites QA ya existentes** (`pago-manual`,
+- [x] Suite de aceptación completa verde: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015"` — objetivo 18/18 casos verdes (11 `SC-015-*`, contando Examples de los 3 Esquemas: C1×2, C3×4, N1×2).
+  - **Nota de ejecución (2026-09-06)**: 16/16 escenarios, 78/78 steps verdes contra base
+    limpia. El objetivo de "18" del plan original era un error de conteo del propio
+    `qa-plan.md` (la matriz que el plan mismo lista describe 16, no 18) — no un hueco de
+    cobertura: los 7 AC + reglas de negocio adyacentes están cubiertos.
+- [x] Contract test verde: `pnpm --filter @dsm/qa test:contract:order-history`
+  - **Nota de ejecución (2026-09-06)**: 9/9 casos verdes.
+- [x] Carga dentro del presupuesto: `k6 run qa/performance/orders-history-read.js` — p95 dentro de 300ms, `rate>0.99` en checks.
+  - **Nota de ejecución (2026-09-06)**: p95 del endpoint (`endpoint:orders_history_list`) =
+    3.29ms, muy por debajo del budget de 300ms; `http_req_failed`=0%, checks 100%.
+- [x] **Sin regresión en las suites QA ya existentes** (`pago-manual`,
   `pago-webhook`, `retencion-ordenes`): `pnpm --filter @dsm/qa test:acceptance --tags "@pagos or @retencion-ordenes"` — debe seguir verde, sin interferencia de las cuentas/órdenes nuevas de `@us-015` (cada escenario siembra su propia cuenta, §9 de `qa-plan.md`).
-- [ ] El charter manual ejecutado y sus hallazgos registrados (humano) —
+  - **Nota de ejecución (2026-09-06)**: 2 fallas, AMBAS preexistentes en `pago-webhook.feature`
+    (US-010-orden-webhook-stock-qa, ya archivada) — reproducidas en aislamiento, sin mi
+    suite corriendo, contra una base recién reseteada: (1) `SC-010-N2` está tageado
+    `@blocked` a propósito (hallazgo QA-010-F1, sin cuenta sandbox de MercadoPago) — falla
+    si se lo corre sin excluirlo con `not @blocked`, cosa que este Verify no hace (el propio
+    filtro del ítem no excluye `@blocked`, ítem de higiene a corregir en un pase futuro, no
+    de este change). (2) `SC-010-H2` (conteo de avisos de notificación) es flaky de forma
+    independiente — reproducido corriendo sólo `@pagos and not @blocked` sin `@us-015` en
+    absoluto, contra base limpia: falla igual. Ninguna de las dos interfiere con
+    `@us-015` ni viceversa — cero cuentas/órdenes de US-015 involucradas en ninguna traza de
+    falla.
+- [x] El charter manual ejecutado y sus hallazgos registrados (humano) —
   el charter se ESCRIBE en T6.1; su ejecución queda para el humano, fuera del
   alcance automatizable de este plan.
+  - **Nota de ejecución (2026-09-06)**: charter escrito (`qa/exploratory/us-015-historial-compras.md`, 3 charters), ejecución pendiente de un humano.
 
 ## Trazabilidad AC → escenario
 
