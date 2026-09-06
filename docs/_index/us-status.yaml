@@ -631,6 +631,17 @@
   # `status` de la US se queda en `In Progress` por el motivo 2, ya con FE archivado —
   # única disciplina con change (QA vive dentro del código de FE, sin change propio, per
   # la norma del repo documentada arriba).
+  #
+  # NOTA (2026-09-06, gate 2 del cierre de dev): el dueño proveyó razón social ("DSM
+  # Refrigeración y Ferretería"), CUIT (20-95964796-9) y condición frente al IVA
+  # (Monotributo) — 2 de los 3 marcadores `[PENDIENTE: …]` de `content.ts` quedan
+  # resueltos (rama `chore/US-017-legal-content-datos-reales`, sin change propio por
+  # tratarse de un dato/copy, no de un item de tasks.md). El 3° marcador (plazo de
+  # retención de datos) SIGUE ABIERTO: el dueño dio "30 días", pero el sistema real
+  # (US-021, `ORDER_RETENTION_MONTHS`) anonimiza a los 12 MESES por defecto — no
+  # coincide, no se escribió ninguno de los dos números a ciegas. Escalado de vuelta al
+  # dueño (¿corregir el sistema a 30 días, o el texto a 12 meses?). US sigue `In
+  # Progress` hasta que ese último marcador se resuelva y el dueño firme el DoD.
 - id: US-018
   slug: contacto-whatsapp
   status: Done

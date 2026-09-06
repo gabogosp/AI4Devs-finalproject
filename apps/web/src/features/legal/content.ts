@@ -49,6 +49,8 @@ export interface LegalDocumentContent {
 export const LEGAL_TERMS_VERSION = '2026-06-15';
 
 const NOMBRE = 'DSM Refrigeración y Ferretería';
+const CUIT = '20-95964796-9';
+const CONDICION_IVA = 'Monotributo';
 const DOMICILIO = 'Av. Córdoba y Av. Pueyrredón, CABA, Argentina';
 const EMAIL = 'dsm.refrigeracion.ferreteria@gmail.com';
 
@@ -80,9 +82,8 @@ const privacidad: LegalDocumentContent = {
     controller: {
       heading: 'Quién trata tus datos',
       paragraphs: [
-        `El responsable del tratamiento es ${NOMBRE}, con domicilio en ${DOMICILIO}.`,
+        `El responsable del tratamiento es ${NOMBRE} (CUIT ${CUIT}), con domicilio en ${DOMICILIO}.`,
         `Podés contactarnos por correo electrónico a ${EMAIL}.`,
-        '[PENDIENTE: razón social, CUIT y domicilio legal completos — los provee el dueño antes de publicar]',
       ],
     },
     purpose: {
@@ -122,6 +123,12 @@ const privacidad: LegalDocumentContent = {
       heading: 'Cuánto tiempo los conservamos',
       paragraphs: [
         'Conservamos los datos asociados a una compra mientras dure la relación comercial y por el plazo que exijan las obligaciones fiscales y contables aplicables.',
+        // El dueño indicó "30 días", pero el sistema implementado (US-021,
+        // `ORDER_RETENTION_MONTHS`, apps/api/src/checkout/orders-retention.service.ts)
+        // anonimiza a los 12 MESES por defecto — no coincide. No se escribe ninguno de
+        // los dos números acá hasta que el dueño confirme cuál es el real (¿el sistema
+        // debe cambiar a 30 días, o el texto debe decir 12 meses?). Ver la nota de este
+        // change en `docs/_index/openspec-changes.yaml` / la escalación al usuario.
         '[PENDIENTE: plazo de retención definitivo — a confirmar con asesoría contable]',
       ],
     },
@@ -143,8 +150,7 @@ const terminos: LegalDocumentContent = {
     controller: {
       heading: 'Quién opera este sitio',
       paragraphs: [
-        `Este sitio es operado por ${NOMBRE}, con domicilio en ${DOMICILIO}.`,
-        '[PENDIENTE: razón social, CUIT y condición frente al IVA — los provee el dueño antes de publicar]',
+        `Este sitio es operado por ${NOMBRE} (CUIT ${CUIT}), con domicilio en ${DOMICILIO}, ${CONDICION_IVA.toLowerCase()} frente al IVA.`,
       ],
     },
     purpose: {
