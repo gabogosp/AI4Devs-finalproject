@@ -361,7 +361,7 @@
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas
-  status: Ready
+  status: In Progress
   priority: Medium
   prd-capacity: 9
   disciplines: [BE, FE, QA]
@@ -369,6 +369,12 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-09-05        # first plan invocation (backend-node-developer)
+  # NOTA (2026-09-05, /plan-backend-ticket US-016): `blocked_by` de abajo quedó
+  # desactualizado — US-010-orden-webhook-stock-backend archivó el 2026-09-05. El
+  # plan de backend (openspec/changes/US-016-panel-metricas-backend/) no depende de
+  # código de US-010: sólo lee `orders`/`order_items`, ya migradas desde US-008. No
+  # se toca `blocked_by` (propiedad de otro agente per index-conventions.md).
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento
