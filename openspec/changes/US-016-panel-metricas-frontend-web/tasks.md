@@ -266,7 +266,7 @@
   - **Exit criterion**: cero elementos `role="alert"` visibles; el texto de
     estado vacío está presente en los 3 widgets.
   - **Verify**: `pnpm --filter @dsm/web exec playwright test e2e/metrics-empty-state.spec.ts`.
-- [ ] T12.3 Verificar (sin test nuevo — ya cubierto por el wildcard existente)
+- [x] T12.3 Verificar (sin test nuevo — ya cubierto por el wildcard existente)
       que `/admin/metricas` responde con `X-Robots-Tag: noindex, nofollow`
       per `next.config.mjs` (`source: '/admin/:path*'`).
   - **Exit criterion**: el header noindex llega a `/admin/metricas` sin
