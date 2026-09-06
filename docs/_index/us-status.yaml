@@ -373,7 +373,7 @@
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas
-  status: In Progress
+  status: Done
   priority: Medium
   prd-capacity: 9
   disciplines: [BE, FE, QA]
@@ -435,6 +435,15 @@
   # Extiende openspec/specs/metricas/ con la feature `metrics/` (asimetría de
   # nombre vs `reports`/`Reports*` del backend, documentada en decisions.md D7).
   # Sólo falta QA (#60, ya mergeada a main) para que la US pase a `Done`.
+  #
+  # NOTA (2026-09-06, /archive-change US-016-panel-metricas-qa): PR #60
+  # mergeado a main (d9672ef). Archivado a openspec/changes/archive/. Última
+  # disciplina de las 3 (BE #55/FE #59/QA #60, todas `archived`) — US pasa a
+  # `Done`. `blocked_by` de abajo queda intencionalmente sin tocar aunque está
+  # obsoleto (US-010 archivó el 2026-09-05, ver nota de arriba) — no es
+  # bloqueante para el cierre, y su limpieza es propiedad de otro agente per
+  # index-conventions.md.
+  done-at: 2026-09-06
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento

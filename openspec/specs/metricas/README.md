@@ -1,8 +1,7 @@
 # Capacidad: Panel de métricas del dueño (CAP-9)
 
-**Estado**: backend + frontend-web entregados. QA de US-016 está construido
-en `main` pero todavía no archivado al momento de este archive (ver "Changes
-que formaron esta capacidad").
+**Estado**: entregada completa — backend, frontend-web y QA. US-016 pasa a
+`Done` con este archive (las 3 disciplinas quedan `archived`).
 
 Estado declarado del sistema para la capacidad CAP-9 del PRD §2.1. Este
 directorio es el **acumulado** de los changes archivados: se extiende en
@@ -113,12 +112,16 @@ diferencia de `retencion-datos-personales`, ver su `decisions.md`).
 |---|---|---|
 | [`US-016-panel-metricas-backend`](../../changes/archive/US-016-panel-metricas-backend/) | BE | Módulo `reports/` completo, 6 endpoints, sin migraciones, `ReportsEventsService` |
 | [`US-016-panel-metricas-frontend-web`](../../changes/archive/US-016-panel-metricas-frontend-web/) | FE | Feature `metrics/` (3 widgets independientes), ruta `/admin/metricas`, Recharts `^3.9.0`, refactor compartido de descarga CSV con `imports/` |
+| [`US-016-panel-metricas-qa`](../../changes/archive/US-016-panel-metricas-qa/) | QA | Suite cross-stack Modo A (sibling): 21/21 contract, 9/9+2/2 aceptación BDD (63/63 steps), 5 E2E de navegador backend+frontend reales, 1 a11y (0 violaciones WCAG AA), 1 carga k6 (p95 ~600µs vs presupuesto 300ms), 2 charters exploratorios. 0 bloqueados, 0 defectos reales encontrados |
 
-Sin disciplina QA propia archivada todavía en este directorio.
-`US-016-panel-metricas-qa` (PR #60) ya mergeó a `main` y se archiva a
-continuación en la misma tanda — ver el índice
-(`docs/_index/openspec-changes.yaml`) para su estado más reciente si este
-README no se actualizó todavía.
+## Cobertura QA
+
+Los 9 escenarios Gherkin de `US-016-panel-metricas-qa` cubren las 9 AC de la
+US, incluido el escenario cross-feature (X-1/QA-016-ACC-2) que siembra 6
+órdenes 100% por API real (checkout→confirmación/simulado→fulfillment) para
+probar que el panel cuenta exactamente las 4 órdenes activas y excluye
+`pending_payment`/`cancelled` — cobertura que ningún test dev-owned de un
+solo módulo puede dar. Sin deuda de QA conocida sobre esta capacidad.
 
 ## Estado de la provisión
 
