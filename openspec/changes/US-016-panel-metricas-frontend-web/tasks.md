@@ -49,7 +49,7 @@
 
 ## Phase 2 — Refactor compartido de export CSV (Extract Method, behavior-preserving)
 
-- [ ] T2.1 Extraer `filenameFromContentDisposition(headers, fallback)` a
+- [x] T2.1 Extraer `filenameFromContentDisposition(headers, fallback)` a
       `src/lib/http/contentDisposition.ts`; `importsService.ts` pasa a
       llamarlo en vez de su `nombreDelHeader` local.
   - **Pattern**: Extract Method — per `refactoring-discipline` skill (invariante:

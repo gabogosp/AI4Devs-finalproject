@@ -1,4 +1,5 @@
 import { parseContract } from '@/lib/http/contract';
+import { filenameFromContentDisposition } from '@/lib/http/contentDisposition';
 import {
   createImport,
   getImport,
@@ -33,13 +34,6 @@ export interface ReportFile {
    * en el cliente: `security-standards.md` §6.4 — server-generated storage names.
    */
   filename: string;
-}
-
-/** `import-{id}-errores.csv` del header; si no viniera, un nombre honesto de respaldo. */
-function nombreDelHeader(headers: Headers, id: string): string {
-  const disposition = headers.get('content-disposition') ?? '';
-  const match = /filename="?([^";]+)"?/i.exec(disposition);
-  return match?.[1] ?? `import-${id}-errores.csv`;
 }
 
 /**
@@ -107,6 +101,12 @@ export const importsService = {
   async downloadReport(id: string, signal?: AbortSignal): Promise<ReportFile> {
     const res = await getImportReport(id, { signal });
     const csv = typeof res.data === 'string' ? res.data : String(res.data ?? '');
-    return { csv, filename: nombreDelHeader(res.headers, id) };
+    return {
+      csv,
+      filename: filenameFromContentDisposition(
+        res.headers,
+        `import-${id}-errores.csv`,
+      ),
+    };
   },
 };
