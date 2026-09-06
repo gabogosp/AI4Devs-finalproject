@@ -130,7 +130,7 @@
       DD/MM"; `month` → `MMM AAAA`, `Intl.DateTimeFormat('es-AR', …)`).
   - **Exit criterion**: un caso por granularidad con fecha fija.
   - **Verify**: `pnpm --filter @dsm/web exec vitest run src/features/metrics/formatPeriod.test.ts`.
-- [ ] T6.2 `src/features/metrics/charts/SalesComposedChart.tsx` — primitivo
+- [x] T6.2 `src/features/metrics/charts/SalesComposedChart.tsx` — primitivo
       puro de Recharts (sin fetch, sin estado): `ComposedChart` con `Bar`
       (cantidad de órdenes, eje izquierdo, `#1A56DB`) + `Line` (monto
       facturado ARS, eje derecho, `#EA580C`) — paleta data-viz del
