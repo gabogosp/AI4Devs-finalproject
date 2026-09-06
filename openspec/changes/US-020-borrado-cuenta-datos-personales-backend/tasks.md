@@ -370,7 +370,7 @@ language: es
     test mismo. Barrido negativo extra: `DELETE /v1/admin/me` y
     `/v1/admin/customers/me` → 404 (no existe tal ruta).
 
-- [ ] T5.9 AC-14 — observabilidad sin PII (negative-space)
+- [x] T5.9 AC-14 — observabilidad sin PII (negative-space)
   - **Pattern**: mismo estilo que `e2e-auth-observability.spec.ts`/T2.2 de
     US-021 — inspecciona TODOS los logs/eventos producidos por un borrado
     completo, no sólo el de `AccountEventsService` aislado.
@@ -380,6 +380,15 @@ language: es
     reconstruir que hubo un borrado, cuándo, y cuántas órdenes anonimizó, sin
     identificar a la persona.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac14-account-deletion-no-pii-in-observability` en 0 (spec nuevo)
+  - Resultado real: 2/2 passed (2.457s). Cubre borrado exitoso (barrido de
+    `name`/`email`/`phone` sembrados sobre TODO lo capturado por el logger +
+    cookies de la respuesta) y el 409 de bloqueo (mismo barrido + body JSON de
+    la respuesta). `AccountEventsService.count()` requirió agregar
+    `MetricsModule` al grafo del test (`@Global` no alcanza sin un import
+    explícito en el árbol — mismo comentario que `e2e-search-observability`);
+    sin contador real el `@Optional() metrics?` queda `undefined` y `count()`
+    siempre da 0, un falso-verde silencioso que el propio test detectó antes
+    de este fix.
 
 - [ ] T5.10 AC-15 — doble confirmación (negative-space)
   - **Pattern**: llamar `DELETE /v1/me` dos veces seguidas con la misma cookie
