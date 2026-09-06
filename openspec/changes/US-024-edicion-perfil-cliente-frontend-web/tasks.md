@@ -36,7 +36,7 @@ Ninguna AC queda diferida.
 > en este repo para US-010/US-012/US-020 (ver
 > `docs/_index/openspec-changes.yaml`).
 
-- [ ] T0.1 Verificar que el contrato del backend hermano publica `PATCH /me`
+- [x] T0.1 Verificar que el contrato del backend hermano publica `PATCH /me`
   (bajo el path `/me` existente, junto al `delete` de US-020) y que
   `Customer` gana la propiedad `avatar_url` (`string`, nullable). Leer el
   `design.md` real de `US-024-edicion-perfil-cliente-backend` cuando esté
@@ -47,7 +47,7 @@ Ninguna AC queda diferida.
     sincronizado con la rama/PR de 07) contiene `patch:` bajo `/me:` y
     `avatar_url` bajo `components.schemas.Customer.properties`.
   - **Verify**: `grep -A2 "^  /me:" apps/api/docs/api/openapi.yaml | grep -q "patch:" && grep -q "avatar_url" apps/api/docs/api/openapi.yaml`
-- [ ] T0.2 Regenerar el cliente derivado del contrato (`orval`) una vez T0.1
+- [x] T0.2 Regenerar el cliente derivado del contrato (`orval`) una vez T0.1
   está verde.
   - **Pattern**: `pnpm --filter @dsm/web codegen` — mismo comando que
     `apps/web/orval.config.ts` documenta en su docblock. Nunca escribir a
@@ -56,7 +56,7 @@ Ninguna AC queda diferida.
     incluye `avatar_url`; `apps/web/src/api/generated/endpoints.ts` incluye
     la función generada para `PATCH /me`.
   - **Verify**: `grep -q "avatar_url" apps/web/src/api/generated/model/customer.ts && grep -qi "patch" apps/web/src/api/generated/endpoints.ts`
-- [ ] T0.3 Confirmar que el regen no dejó diff sucio (gate `frontend-codegen-fresh`
+- [x] T0.3 Confirmar que el regen no dejó diff sucio (gate `frontend-codegen-fresh`
   de CI simulado localmente) antes de commitear los archivos generados.
   - **Exit criterion**: correr el codegen dos veces seguidas produce el mismo
     output byte a byte (regenerar no es hand-editable).
