@@ -409,6 +409,18 @@ export const envSchema = z.object({
    */
   ORDERS_HISTORY_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
   ORDERS_HISTORY_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000), // 1 min
+
+  /**
+   * US-020 — borrado de cuenta (derecho al olvido, Ley 25.326). Defaults
+   * seguros; un valor inválido hace FALLAR el arranque (§7), nunca cae al
+   * default en silencio.
+   *
+   * §7.3 — presupuesto del throttler `account_deletion` por cliente:
+   * deliberadamente chico, la acción es irreversible y de un solo uso por
+   * cuenta (mismo criterio que `IMPORT_RATE_LIMIT_MAX`).
+   */
+  ACCOUNT_DELETION_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  ACCOUNT_DELETION_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(3_600_000), // 1 h
 }).superRefine((env, ctx) => {
   // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
   // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la

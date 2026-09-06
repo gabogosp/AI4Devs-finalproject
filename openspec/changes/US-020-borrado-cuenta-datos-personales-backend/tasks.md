@@ -71,7 +71,7 @@ language: es
 
 ## Fase 0: Esquema y configuración — 1,0 h
 
-- [ ] T0.1 Migración aditiva: ensanchar `orders_anonymization_reason_check`
+- [x] T0.1 Migración aditiva: ensanchar `orders_anonymization_reason_check`
   - **Pattern**: `prisma migrate --create-only` + edición manual del
     `migration.sql` generado, mismo flujo que US-021 (`orders_anonymization_reason_check`)
     y US-008 (`CHECK (consent_accepted = true)`) — `per backend-node-standards.md
@@ -92,7 +92,7 @@ language: es
   - **Verify**: `pnpm --filter @dsm/db migrate` termina en 0 **y**
     `grep -c "account_deletion" packages/db/prisma/migrations/*/migration.sql` ≥ 1
 
-- [ ] T0.2 Config nueva validada al arranque (fail-fast, §7)
+- [x] T0.2 Config nueva validada al arranque (fail-fast, §7)
   - **Pattern**: agregar a `envSchema` en `apps/api/src/config/env.validation.ts`,
     mismo bloque que `ORDERS_HISTORY_RATE_LIMIT_*` (T0.2 de US-021 / T4.2 de
     US-015) — `per backend-node-standards.md §7`:
