@@ -765,7 +765,8 @@
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
-  status: Ready
+  status: In Progress   # /commit 2026-09-06: FE (PR #95) llega a in-review — QA (segunda
+  # disciplina declarada) todavía no se planificó, la US se queda en In Progress.
   priority: High
   prd-capacity: null            # no nace del PRD: hallazgo del gate de seguridad de US-006
   disciplines: [FE, QA]
@@ -773,6 +774,8 @@
   linear-issue-id: null
   created: 2026-08-23
   ready-at: 2026-09-06
+  in-progress-at: 2026-09-06    # primera planificación (frontend-web-developer, /plan-frontend-web-ticket)
+  in-review-at: 2026-09-06      # FE (PR #95) — QA sin planificar, status US se queda en Progress
   blocked_by: []
 - id: US-023
   slug: pago-manual-offline

@@ -4,11 +4,21 @@ import { revalidateCatalog, revalidateProduct } from './revalidate';
 /**
  * Puente panel → storefront (design.md D2).
  *
- * Fire-and-forget a propósito: cuando se llama, la mutación **ya fue
- * confirmada** por el backend. Hacer esperar al dueño —o peor, mostrarle un
- * error— porque falló una invalidación de caché sería mentirle sobre lo que
- * pasó. Si falla, se reporta a observabilidad y la ficha queda cubierta por el
- * safety-net de 1 h del servicio.
+ * Sus fallos son fire-and-forget a propósito: cuando se llama, la mutación
+ * **ya fue confirmada** por el backend, así que un error de invalidación de
+ * caché nunca se muestra al dueño ni revierte nada — se reporta a
+ * observabilidad y la ficha queda cubierta por el safety-net de 1 h del
+ * servicio (por eso sigue devolviendo una promesa que nunca rechaza).
+ *
+ * SÍ se **awaitea** su finalización (éxito o fallo) antes de navegar (US-022):
+ * el fetch que dispara la Server Action de invalidación corre en el mismo tab
+ * que un `router.push`/navegación posterior del caller — sin esperar a que
+ * termine, esa navegación puede cancelar el fetch en pleno vuelo (carrera
+ * documentada como ~33% flaky en `e2e/pdp-invalidation.spec.ts`, que un cambio
+ * de versión de Chromium/Playwright expuso de forma reproducible). Awaitear
+ * la finalización — no su éxito, que sigue sin importarle al caller — cierra
+ * esa carrera sin resucitar la semántica de "esperar a que el dueño vea el
+ * resultado" que el diseño original evitaba a propósito.
  *
  * Mutar un producto invalida **la ficha y el catálogo**: cambiarle el precio,
  * publicarlo o archivarlo cambia también cómo se ve en la grilla de su
@@ -18,8 +28,8 @@ import { revalidateCatalog, revalidateProduct } from './revalidate';
  * futura que use el puente hereda la invalidación por construcción en vez de
  * poder olvidarse de ella.
  */
-export function revalidateProductSafely(slug: string): void {
-  void Promise.all([revalidateProduct(slug), revalidateCatalog()]).catch(captureError);
+export async function revalidateProductSafely(slug: string): Promise<void> {
+  await Promise.all([revalidateProduct(slug), revalidateCatalog()]).catch(captureError);
 }
 
 /**

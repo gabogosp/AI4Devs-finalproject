@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitForElementToBeRemoved } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
@@ -28,7 +28,7 @@ function detalle(over: Record<string, unknown> = {}) {
 }
 
 describe('PurchaseDetail (T4.1)', () => {
-  it('muestra role="status" mientras carga', () => {
+  it('muestra role="status" mientras carga', async () => {
     server.use(
       http.get(`${SITE}/v1/me/orders/1000`, async () => {
         await new Promise((r) => setTimeout(r, 20));
@@ -38,7 +38,13 @@ describe('PurchaseDetail (T4.1)', () => {
 
     render(<PurchaseDetail orderNumber="1000" />);
 
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    const status = screen.getByRole('status');
+    expect(status).toBeInTheDocument();
+
+    // El fetch demorado resuelve ~20ms después — esperarlo acá evita que
+    // siga en vuelo cuando vitest ya desmontó el entorno de este test
+    // (vitest 3.x reporta el `setState` tardío como error no manejado).
+    await waitForElementToBeRemoved(status);
   });
 
   it('en success muestra ítems, total, estado y retiro en sucursal', async () => {

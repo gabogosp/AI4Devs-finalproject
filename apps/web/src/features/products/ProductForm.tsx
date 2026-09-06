@@ -87,8 +87,10 @@ export function ProductForm({
         setSuccess('Creado en borrador — no visible hasta publicar.');
       } else {
         // Editar puede haber cambiado el precio: la ficha pública debe
-        // mostrarlo de inmediato (AC-9).
-        revalidateProductSafely(saved.slug);
+        // mostrarlo de inmediato (AC-9). Se awaitea (nunca rechaza al caller,
+        // ver revalidateSafely.ts) para que `onSaved` no navegue y cancele el
+        // fetch de invalidación a mitad de vuelo (US-022).
+        await revalidateProductSafely(saved.slug);
       }
       onSaved?.(saved);
     } catch (err) {

@@ -42,8 +42,10 @@ export function ProductActions({
       setStatus(updated.status); // solo cambia si el backend confirmó
       setMessage('Producto publicado.');
       track('product_published', { product_id: product.id });
-      // La ficha pública debe reflejar el cambio ya, no en 1 h (AC-9).
-      revalidateProductSafely(updated.slug);
+      // La ficha pública debe reflejar el cambio ya, no en 1 h (AC-9). Se
+      // awaitea para que `onChanged` no navegue y cancele el fetch de
+      // invalidación a mitad de vuelo (US-022, mismo criterio que ProductForm).
+      await revalidateProductSafely(updated.slug);
       onChanged?.(updated);
     } catch (err) {
       if (
@@ -71,7 +73,7 @@ export function ProductActions({
       setConfirmOpen(false);
       setMessage('Producto archivado.');
       track('product_archived', { product_id: product.id });
-      revalidateProductSafely(updated.slug);
+      await revalidateProductSafely(updated.slug);
       onChanged?.(updated);
     } catch {
       setMessage('No se pudo archivar.');

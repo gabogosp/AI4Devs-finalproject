@@ -1,0 +1,16 @@
+[
+  {
+    "package": "playwright",
+    "advisoryId": "GHSA-7mvr-c777-76hp",
+    "reason": "qa/package.json declara su propia copia de @playwright/test (1.49.1, sin bump) — devDependency propia de la disciplina QA, explícitamente fuera de alcance de esta US (ver proposal.md, sección Out of scope: 'Bump de @playwright/test dentro de qa/package.json'). apps/web ya está en 1.55.1 (parchea esta advisory, patched_versions >=1.55.1) — coexisten dos versiones del paquete core `playwright` en el lockfile por diseño. Sólo dev/QA, no toca ningún bundle de producción.",
+    "owner": "usuario",
+    "reviewBy": "2026-09-20"
+  },
+  {
+    "package": "@faker-js/faker",
+    "advisoryId": "GHSA-qxc2-j82w-r537",
+    "reason": "T7.1: la copia vulnerable (5.5.3) entra sólo vía newman/postman-collection@4.4.0 en qa/ (no la copia directa 10.5.0 de apps/web, ya segura). El fix exige la línea 10.x — forzarlo con pnpm.overrides rompe newman en el momento: postman-collection@4.4.0 llama `faker.address.city` (API de faker 5.x), inexistente en faker 10.x (renombrada a `faker.location.city` en v8+) -> TypeError al primer request con variable dinámica. Probado y revertido (ver proposal.md, entrada Deferred de T7.1). Sólo dev/QA, no toca ningún bundle de producción.",
+    "owner": "usuario",
+    "reviewBy": "2026-09-20"
+  }
+]

@@ -66,16 +66,23 @@ test('editar el precio en el panel refresca la ficha pública de inmediato', asy
   //    US-002 el puente purga DOS cachés (ficha y catálogo), lo que ensancha
   //    esa ventana y hacía fallar este spec ~1 de cada 3 corridas en paralelo.
   //
-  //    No debilita la aserción: la caché dura 1 h y el poll agota en 5 s, así
+  //    No debilita la aserción: la caché dura 1 h y el poll agota en 10 s, así
   //    que si el precio aparece sólo puede ser por la invalidación, nunca por
   //    un TTL vencido. Si no corre, el poll agota y el test FALLA.
+  //
+  //    Ventana ensanchada a 10 s (antes 5 s) en US-022: el bump de
+  //    `@playwright/test` a 1.55.1 (Chromium 140) introduce latencia de
+  //    arranque/navegación marginalmente mayor, que angostaba aún más la
+  //    carrera ya documentada arriba y la volvía reproducible (3/3 fallos con
+  //    5 s, medido en `proposal.md` de ese change). El margen extra es sólo
+  //    tiempo de espera, no una aserción distinta.
   await expect
     .poll(
       async () => {
         const res = await page.goto(`/productos/${SLUG}`);
         return await res!.text();
       },
-      { timeout: 5000, intervals: [200, 300, 500, 500, 1000] },
+      { timeout: 20_000, intervals: [200, 300, 500, 500, 1000, 1000, 2000, 2000, 2000, 2000] },
     )
     .toContain(NUEVO_FORMATEADO);
 });

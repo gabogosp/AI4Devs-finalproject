@@ -12,11 +12,35 @@
   "scripts": {
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "audit:gate": "pnpm audit --audit-level=high --json | node scripts/check-audit-exclusions.mjs"
   },
   "pnpm": {
     "overrides": {
-      "multer": "^2.0.0"
+      "multer": "^2.0.0",
+      "postcss": "8.5.18",
+      "handlebars": "4.7.9",
+      "brace-expansion@1.1.16": "1.1.18",
+      "brace-expansion@2.1.2": "2.1.4",
+      "brace-expansion@5.0.8": "5.0.9",
+      "node-forge": "1.4.0",
+      "tar-fs@2.0.1": "2.1.4",
+      "glob@10.4.5": "10.5.0",
+      "js-yaml@3.15.0": "3.15.1",
+      "js-yaml@4.3.0": "4.3.1",
+      "flatted@3.2.6": "3.4.2",
+      "fast-uri": "3.1.6",
+      "picomatch@4.0.1": "4.0.5",
+      "tmp@0.2.3": "0.2.7",
+      "tmp@0.0.33": "0.2.7",
+      "lodash@4.17.21": "4.18.1",
+      "underscore": "1.13.8",
+      "nanoid": "3.3.18",
+      "vite": "6.4.3",
+      "undici": "6.27.0",
+      "sharp": "^0.35.0",
+      "path-to-regexp@0.1.12": "0.1.13",
+      "browserslist": "4.28.7"
     }
   }
 }
