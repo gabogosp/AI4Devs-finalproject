@@ -202,7 +202,7 @@ language: es
     que tocarlo, el comportamiento existente cambió y algo está mal.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/AccountPanel.test.tsx`
 
-- [ ] **T4.5 — Wiring en la página**
+- [x] **T4.5 — Wiring en la página**
   - **Pattern**: `per design.md §D3` — `page.tsx` sigue siendo Server
     Component (conserva `metadata`), sólo cambia QUÉ renderiza:
     ```tsx
