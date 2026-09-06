@@ -99,7 +99,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Fase 6 — Gate ejecutable de auditoría (AC-5)
 
-- [ ] T6.1 Crear `scripts/.audit-exclusions.json` (raíz) — array vacío o con las exclusiones nominales que hayan quedado de las Fases 1/5 (p. ej. si `vitest` termina diferido, o si algún hallazgo de Fase 1 no se pudo cerrar sin major).
+- [x] T6.1 Crear `scripts/.audit-exclusions.json` (raíz) — array vacío o con las exclusiones nominales que hayan quedado de las Fases 1/5 (p. ej. si `vitest` termina diferido, o si algún hallazgo de Fase 1 no se pudo cerrar sin major).
   - **Pattern**: cada entrada requiere `package`, `advisoryId`, `reason`, `owner`, `reviewBy` (fecha ISO) — ningún campo opcional; una entrada incompleta debe hacer fallar el gate igual que un hallazgo sin cubrir (`design.md` D6).
   - **Exit criterion**: el archivo existe, es JSON válido, y cada entrada (si las hay) tiene los cinco campos.
   - **Verify**: `node -e "const e=require('./scripts/.audit-exclusions.json'); const bad=e.filter(x=>!x.package||!x.advisoryId||!x.reason||!x.owner||!x.reviewBy); console.log(bad.length===0?'OK':'INCOMPLETE: '+JSON.stringify(bad))"`

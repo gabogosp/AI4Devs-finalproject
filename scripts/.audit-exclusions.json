@@ -1,0 +1,23 @@
+[
+  {
+    "package": "playwright",
+    "advisoryId": "GHSA-7mvr-c777-76hp",
+    "reason": "T4.1 (@playwright/test 1.49.1 -> 1.55.1) queda bloqueado: el bump rompe reproduciblemente e2e/pdp-invalidation.spec.ts (único spec que cubre AC-9, invalidación on-demand de precio) en apps/web. Diagnóstico completo en proposal.md (Open questions, entrada Deferred de T4.1). Sólo dev, no toca ningún bundle de producción.",
+    "owner": "usuario",
+    "reviewBy": "2026-09-20"
+  },
+  {
+    "package": "vitest",
+    "advisoryId": "GHSA-9crc-q9x8-hgqq",
+    "reason": "T4.2 (vitest 2.1.8 -> 3.2.6) es un spike aislado (decisión del usuario 2026-09-06, opción b) medido en la rama spike/US-022-vitest-3 (commit a742d15): blast radius CERO/mecánico (996/996 tests, typecheck limpio). No se integró a esta rama porque la decisión de integrar queda para el usuario, con el dato del spike en mano — ver tasks.md T4.2 y proposal.md. Sólo dev, no toca ningún bundle de producción.",
+    "owner": "usuario",
+    "reviewBy": "2026-09-20"
+  },
+  {
+    "package": "vitest",
+    "advisoryId": "GHSA-5xrq-8626-4rwp",
+    "reason": "Misma causa que GHSA-9crc-q9x8-hgqq — ambas critical de vitest 2.1.8, mismo spike/decisión pendiente (T4.2, rama spike/US-022-vitest-3, commit a742d15). Sólo dev, no toca ningún bundle de producción.",
+    "owner": "usuario",
+    "reviewBy": "2026-09-20"
+  }
+]
