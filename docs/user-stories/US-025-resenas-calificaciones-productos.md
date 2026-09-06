@@ -9,7 +9,7 @@ prd-capacity: null   # no nace del PRD §2.1: hallazgo de la prueba visual del d
 # calificaciones es la parte que genuinamente nunca estuvo en el PRD ni en el roadmap
 # §2.2. Mismo patrón que US-009/US-022/US-024 (`prd-capacity: null`).
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: L
 story_points_traditional: 13
@@ -19,6 +19,7 @@ language: es
 created: 2026-09-06
 updated: 2026-09-06
 ready-at: 2026-09-06
+in-progress-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
