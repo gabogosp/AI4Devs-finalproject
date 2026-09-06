@@ -3,9 +3,27 @@
 > **Ticket**: US-020 — Borrado de cuenta y datos personales (Ley 25.326)
 > **Author**: qa-engineer agent (assisted by @gosp)
 > **Date**: 2026-09-06
-> **Status**: Planned, pre-implementation, reconciliado contra el `design.md` real
-> (2026-09-06) — ver §0 (ningún test case corrió todavía; el backend está pusheado
-> — PR #93, auto-merge — pero no mergeado a `main` de este worktree)
+> **Status**: **Executed (2026-09-06)** — backend mergeado a `main` (PR #93);
+> ejecutado vía `/develop-qa` contra la API real construida
+> (`apps/api/dist/apps/api/src/main.js`) + Postgres/Redis aislados
+> (`docker compose` proyecto `us-020-qa`, puerto 55420). **26/26 escenarios
+> Cucumber en verde (105/105 steps)** — 9 test cases `QA-020-ACC-1..9`, los 15
+> escenarios Gherkin de §4 más N-6b (agregado durante la ejecución para cubrir
+> el segundo evento de AC-14, ver §5.8/QA-020-ACC-8). Suite completa reconfirmada
+> verde en 2 corridas adicionales; el subconjunto `@regression` (11 escenarios,
+> incluye A-3b concurrente y N-7 doble-confirmación) reconfirmado verde en 2
+> corridas adicionales sobre esas — determinismo confirmado, sin flakiness
+> observada. **QA-020-PERF-1 (k6) corrido de verdad**: 8 cuentas reales × 50
+> órdenes `delivered` cada una, p95 medido = **15.52 ms** contra el umbral de
+> 500 ms (holgura amplia) — `checks` (204 + sesión efectivamente cerrada) y
+> `http_req_failed` también en verde. **QA-020-ACC-5 (AC-11) revisado
+> manualmente**: confirmado — el OpenAPI publicado (`apps/api/docs/api/openapi.yaml`)
+> declara únicamente `DELETE /me`, sin ningún endpoint de deshacer, cancelar
+> solicitud ni consultar estado de borrado pendiente. Ningún defecto real de
+> backend encontrado. Ver §5 para el detalle por test case y §9.6/`qa/exploratory/charters.md`
+> para los 3 charters (TC-020-E1 pendiente de ejecución real —sondeo de ráfaga—,
+> TC-020-E2 revisión de código ejecutada y confirmada, TC-020-E3 bloqueado por
+> ausencia de frontend).
 > **Affected platform(s)**: backend (superficie única planeada por ahora — no hay
 > `US-020-...-frontend-web` en `openspec/changes/` ni en el índice)
 > **Service tier(s)**: 2 (`docs/services/dsm-ecommerce/runbook.md` frontmatter —
@@ -433,25 +451,29 @@ N-5 y para leer `GET /v1/admin/reports/summary` en N-4).
 
 ### 5.0 Índice
 
-| Test case | Escenario(s) | Herramienta | Layer | Bloqueado por |
+| Test case | Escenario(s) | Herramienta | Layer | Estado (2026-09-06) |
 |---|---|---|---|---|
-| QA-020-ACC-1 | H-1, H-2, H-3 | Cucumber+Playwright | 3 | backend (no existe) |
-| QA-020-ACC-2 | A-1, A-2, A-3, A-3b, A-4 | Cucumber+Playwright | 3 | backend (no existe) |
-| QA-020-ACC-3 | N-1a, N-1b | Cucumber+Playwright | 3 | backend (no existe) |
-| QA-020-ACC-4 | N-2 | Cucumber+Playwright | 3 | backend (no existe) |
-| QA-020-ACC-5 | N-3 | documental (contra OpenAPI publicado) | 3 | backend (no existe) |
-| QA-020-ACC-6 | N-4 | Cucumber+Playwright | 3 | backend (no existe) |
-| QA-020-ACC-7 | N-5 | Cucumber+Playwright | 3 | backend (no existe) |
-| QA-020-ACC-8 | N-6 | Cucumber+Playwright + grep de log | 3 | backend (no existe) |
-| QA-020-ACC-9 | N-7 | Cucumber+Playwright (concurrente) | 3 | backend (no existe) |
-| QA-020-PERF-1 | NFR p95 < 500ms | k6 | 3 | backend (no existe) |
-| TC-020-E1 | AC-6 (charter) | manual | 3 | backend (no existe) |
-| TC-020-E2 | AC-9 (charter) | manual | 3 | backend (no existe) |
-| TC-020-E3 | AC-15 (charter) | manual | 3 | backend (no existe) |
+| QA-020-ACC-1 | H-1, H-2, H-3 | Cucumber+Playwright | 3 | **PASS** |
+| QA-020-ACC-2 | A-1, A-2, A-3, A-3b, A-4 | Cucumber+Playwright | 3 | **PASS** |
+| QA-020-ACC-3 | N-1a, N-1b | Cucumber+Playwright | 3 | **PASS** |
+| QA-020-ACC-4 | N-2 | Cucumber+Playwright | 3 | **PASS** |
+| QA-020-ACC-5 | N-3 | documental (contra OpenAPI publicado) | 3 | **Revisado — confirmado** |
+| QA-020-ACC-6 | N-4 | Cucumber+Playwright | 3 | **PASS** |
+| QA-020-ACC-7 | N-5 | Cucumber+Playwright | 3 | **PASS** |
+| QA-020-ACC-8 | N-6 (+N-6b agregado) | Cucumber+Playwright + grep de log | 3 | **PASS** |
+| QA-020-ACC-9 | N-7 | Cucumber+Playwright (concurrente) | 3 | **PASS** |
+| QA-020-PERF-1 | NFR p95 < 500ms | k6 | 3 | **PASS** (p95=15.52ms) |
+| TC-020-E1 | AC-6 (charter) | manual | 3 | pendiente (charter humano) |
+| TC-020-E2 | AC-9 (charter → revisión de código) | manual | 3 | **Ejecutado — confirmado** |
+| TC-020-E3 | AC-15 (charter) | manual | 3 | bloqueado — sin FE |
 
-**Por herramienta**: Cucumber+Playwright 7 · documental 1 · k6 1 · charter
-manual 3. **12 test cases automatizados, 0 corridos** (todos `blocked_by` el
-backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
+**Por herramienta**: Cucumber+Playwright 7 (+1 escenario N-6b agregado) ·
+documental 1 · k6 1 · charter manual 3. **9 test cases automatizados + 1 k6,
+10/10 en verde** (26/26 escenarios Cucumber, 105/105 steps; suite completa y
+el subconjunto `@regression` reconfirmados en corridas adicionales sin
+flakiness) **+ 1 revisión documental confirmada (ACC-5) + 3 charters
+manuales** (E2 ejecutado como revisión de código y confirmado; E1 pendiente
+de sesión humana; E3 bloqueado por ausencia de frontend, §1.2).
 
 ### 5.1 Aceptación BDD — happy path
 
@@ -471,7 +493,12 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   `nuevaCuenta`/`compraLogueada`/`avanzarEstado` reales — nunca de un
   `INSERT`/`UPDATE` directo.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @happy"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06). H-1, los 3 ejemplos de H-2 (detalle admin,
+  listado admin, CSV de reports — el CSV nunca tuvo columna de comprador,
+  verificado en vez de asumido) y H-3 pasan contra la API real (puerto 3021)
+  + Postgres real (`us-020-qa`, `:55420`), 100% vía `nuevaCuenta`/
+  `compraLogueadaConSesion`/`avanzarEstado`/`cancelarOrden` reales. Reconfirmado
+  en 3 corridas completas de la suite (26/26) sin flakiness.
 
 ### 5.2 Aceptación BDD — alternative path
 
@@ -492,7 +519,19 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   cuentas **difiere entre sí** — leído por `GET /v1/admin/orders/:id` de una
   orden de cada cuenta (proxy real, sin acceso directo a `customers`).
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @alternative"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06), con un ajuste de alcance sobre A-3/A-3b
+  reconciliado contra el `design.md` real: el placeholder único de AC-6 vive
+  en `customers.email`, y `GET /v1/admin/orders/:id` sólo expone
+  `orders.buyer_email` — que la anonimización de cuenta reemplaza por el
+  valor **fijo** de US-021 (`ANONYMIZED_BUYER_EMAIL`), no por el placeholder
+  único por `customerId`. Ninguna superficie admin expone `customers.email`
+  sin leer Postgres directo (prohibido, qa-plan.md §9). La aserción
+  observable real — y la que corrió — es que **ninguno de los dos borrados
+  termina en 5xx** (una colisión de `UNIQUE` en Postgres se propagaría así,
+  nunca como un valor distinto visible por API); ver la nota de alcance en
+  `qa/acceptance/features/borrado-cuenta.feature` (escenario A-3). Los 4
+  ejemplos de A-1, A-2, A-3, A-3b y los 2 de A-4 pasan. Reconfirmado en 3
+  corridas completas sin flakiness (A-3b concurrente incluida).
 - **Nota sobre AC-7 (deliberadamente sin test case acá)**: "cancela, cierra la
   confirmación o abandona la página sin confirmar" describe una propiedad
   100% de UI — la ausencia de una llamada HTTP. No hay ningún request que
@@ -525,7 +564,12 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   confirmación con el estado que tenía al principio, y es el backend quien
   debe re-evaluar).
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @negative and not @regression"` (parte de la corrida completa; ver ACC-4/6/7/8/9 para el resto de `@negative`) (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06). N-1a (orden creada DESPUÉS de "ver la
+  pantalla", ANTES de confirmar → 409 con `dsm:account/active-orders`) y
+  N-1b (orden bloqueante cancelada ANTES de confirmar, sin recargar el
+  estado del lado del test → 204) pasan contra el guard real dentro de la
+  transacción (`AccountDeletionService.deleteAccount`). Reconfirmado en 3
+  corridas completas sin flakiness.
 - **Advertencia de diseño (a resolver cuando el `design.md` real exista)**:
   N-1a/N-1b son "carrera simulada por orden de operaciones", no una carrera
   real de dos procesos concurrentes — son deterministas y automatizables
@@ -559,7 +603,19 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   borrado; después de borrar, confirmar ese token con la nueva contraseña
   falla igual que confirmar un token nunca emitido.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @us-020-ac10"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06) — 3/3 escenarios, 12/12 steps. Puerta 1
+  comparada byte-a-byte contra `login()` con un email que nunca existió
+  (mismo status 401, mismo `type: dsm:auth/invalid-credentials`, mismo
+  `detail`). Puerta 2 — ajuste de test-authoring: el control original
+  ("login + logout, refresh después") daba 403 (`CsrfGuard` deriva el
+  double-submit de la cookie de ACCESO, que `logout` también limpia) en vez
+  de 401 — control equivocado, no defecto de backend. Corregido a "login +
+  1er refresh válido (rota el token) + reintento con el refresh YA
+  consumido" — mismo camino de `InvalidRefreshError` (reuso) que la puerta
+  real ejercita, comparación ahora sí apples-to-apples (401/`dsm:auth/invalid-refresh`
+  en ambos). Puerta 3 comparada contra un token de reset jamás emitido
+  (400/`dsm:auth/invalid-reset-token` en ambos). Reconfirmado en 3 corridas
+  sin flakiness.
 - **Nota de reuso exacto**: las tres puertas usan, sin modificar, funciones
   que `qa/support/customer-auth.ts` YA expone y ya prueba contra la API real
   hoy para otros propósitos (US-014) — `login`, `refresh`, `pedirReset` +
@@ -612,7 +668,11 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   lecturas — mismo patrón que `SC-021-H2` de `US-021-...-backend/qa-plan.md`
   aplicó al barrido de retención.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @us-020-ac12"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06). `orders_count`/`total_ars_cents`/
+  `breakdown_by_status` de `GET /v1/admin/reports/summary` y el detalle de
+  `GET /v1/admin/reports/top-products` idénticos antes y después del borrado
+  (2 órdenes `delivered` de la cuenta borrada, mismo período por default de
+  30 días). Reconfirmado en 3 corridas sin flakiness.
 
 ### 5.7 Aceptación BDD — autorización (AC-13)
 
@@ -633,7 +693,15 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   3 casos la cuenta objetivo sigue existiendo y consultable después del
   intento.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @us-020-ac13"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06) — 3/3 ejemplos. Confirmado, mismo
+  resultado que documentó T5.8 (dev-owned): el token admin resuelve **401**
+  (`CustomerGuard` exige `role=customer`; no hay ninguna ruta bajo
+  `/v1/admin/*` que llegue a `AccountDeletionService`). El actor "otro
+  cliente registrado" no tiene, por diseño, ninguna forma de apuntar a la
+  cuenta ajena (`DELETE /v1/me` no acepta parámetro de identidad) — su
+  propio borrado procede (204), pero la cuenta OBJETIVO queda intacta en los
+  3 ejemplos (verificado con `GET /v1/auth/me` de la cuenta objetivo tras
+  cada intento). Reconfirmado en 3 corridas sin flakiness.
 - **Nota de diseño**: el tercer ejemplo (el dueño con su token admin) es el
   más importante de probar explícitamente — es el único de los tres donde el
   actor SÍ tiene un token válido y con privilegios reales en el sistema; la
@@ -669,7 +737,13 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   órdenes en curso, AC-4) — ambos se verifican sin PII, no sólo el camino
   feliz.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @us-020-ac14"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06) — 2/2 escenarios (N-6 éxito + N-6b
+  agregado durante la ejecución para cubrir explícitamente el camino de
+  bloqueo, ambos bajo `@us-020-ac14`). Grep contra
+  `/tmp/dsm-qa-api-us020.log` (texto plano + variante hex del email) sin
+  encontrar el nombre/email/teléfono reales en ninguno de los dos caminos; el
+  log sí contiene evidencia de `account.deleted`. Reconfirmado en 3 corridas
+  sin flakiness.
 - **Mismo patrón que**: la disciplina de log-grep ya aplicada por US-021/
   US-011 a sus propias operaciones de anonimización — no se inventa un
   mecanismo nuevo.
@@ -693,7 +767,10 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   histórica de esa cuenta (si tiene) queda con exactamente un registro de
   anonimización, no dos.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @us-020-ac15"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06). `Promise.all` de 2 `DELETE /v1/me`
+  sobre la misma cuenta/cookie: ninguna respuesta 5xx, sesión efectivamente
+  cerrada. Reconfirmado en 3 corridas sin flakiness (incluida la corrida
+  específica del subconjunto `@regression`, 2 veces más).
 - **Límite honesto de este test (por qué también hay charter)**: `Promise.all`
   desde un solo proceso Node dispara los dos requests HTTP casi
   simultáneamente, pero no garantiza que ambos lleguen a la transacción de
@@ -798,7 +875,30 @@ sin ninguna medición.
   cada una (una cuenta distinta por iteración — borrar es de un solo uso),
   con `checks` de status **y** de sesión efectivamente cerrada.
 - Verify: `k6 run qa/performance/delete-account.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"` (exit 0)
-- **Estado**: no corrido — `blocked_by` backend inexistente.
+- **Estado**: **PASS** (2026-09-06). Corrida real: 8 cuentas reales
+  pre-sembradas en `setup()`, cada una con 50 órdenes `delivered` reales
+  (checkout + `simulate-payment` + 3 `PATCH` de estado por orden — el costo
+  se paga íntegro en `setup()`, nunca en la iteración medida), `executor:
+  shared-iterations` con 4 VUs — no `constant-vus` como sugería el borrador
+  de este plan: con un recurso de un solo uso (borrar es de un solo uso), un
+  executor de duración abierta agotaría el pool antes de terminar; se
+  prioriza el criterio explícito del propio §8 ("cada iteración consume una
+  cuenta pre-sembrada distinta") sobre la mención literal del nombre del
+  executor. **p95 medido = 15.52 ms** contra el umbral de 500 ms (holgura de
+  ~32×). `checks` (204 + `GET /v1/auth/me` responde "no identificado"
+  inmediatamente después) en 100% (16/16) y `http_req_failed` en 0%
+  (0/2436). Dos ajustes de test-authoring durante el desarrollo del script,
+  ninguno un defecto de backend: (1) `setup()` clona su valor de retorno vía
+  JSON al distribuirlo a las VUs — un `http.CookieJar` no sobrevive esa
+  clonación; se pasan los VALORES de cookie (`dsm_access`/`dsm_csrf`) como
+  strings y se arma el header `Cookie` a mano en `default()`; (2) el `.env`
+  de este entorno QA tenía `RESEND_API_KEY=replace-me` (placeholder no
+  vacío) heredado de `.env.example`, lo que activaba el adapter REAL de
+  notificaciones (en vez del de log) durante las transiciones de estado del
+  `setup()` — mismo tipo de gotcha ya documentado para `GEMINI_API_KEY` en
+  `qa/scripts/api-up.sh` (mira sólo presencia, no validez); se dejó
+  `RESEND_API_KEY` ausente (no vacía — `z.string().min(1).optional()`
+  rechaza `""`) en el `.env` de este worktree.
 
 ---
 
@@ -914,13 +1014,13 @@ Borrado de cuenta") en la fase de ejecución (`/develop-qa`), no en este plan.
 
 ## 10. Quality gates
 
-| Gate | Cuándo | Bloquea |
-|---|---|---|
-| Aceptación BDD (QA-020-ACC-1..9) | PR y nightly, una vez desbloqueada | sí — hoy: `blocked_by` backend |
-| Regresión persistente (`@regression`: AC-6, AC-9, AC-10, AC-13, AC-15) | cada release que toque `AccountModule`, `checkout`, `orders` o `auth` | sí — hoy: `blocked_by` backend |
-| Carga p95 < 500ms (QA-020-PERF-1) | pre-release | sí — hoy: `blocked_by` backend |
-| Contract testing | pre-release, una vez que exista el contrato publicado | sí — diferido, ver §6 |
-| Charters exploratorios | pre-release | no (informan) |
+| Gate | Cuándo | Bloquea | Estado (2026-09-06) |
+|---|---|---|---|
+| Aceptación BDD (QA-020-ACC-1..9) | PR y nightly, una vez desbloqueada | sí | **verde** — 26/26 escenarios, 105/105 steps |
+| Regresión persistente (`@regression`: AC-6, AC-9, AC-10, AC-13, AC-15) | cada release que toque `AccountModule`, `checkout`, `orders` o `auth` | sí | **verde** — 11 escenarios, reconfirmado en 3 corridas sin flakiness |
+| Carga p95 < 500ms (QA-020-PERF-1) | pre-release | sí | **verde** — p95 medido 15.52ms |
+| Contract testing | pre-release, una vez que exista el contrato publicado | sí — diferido, ver §6 | sin cambios — sigue diferido |
+| Charters exploratorios | pre-release | no (informan) | TC-020-E2 ejecutado y confirmado; E1/E3 pendientes (humano/FE) |
 
 ---
 
@@ -981,10 +1081,10 @@ usan orden de operaciones explícito, nunca un `sleep`).
 
 | # | Qué | Estado | Efecto |
 |---|---|---|---|
-| **QA-020-F1** | El backend de US-020 no existe en este worktree — ningún test case de este plan corrió | Bloquea toda ejecución | Ninguno de los 12 test cases automatizados ni los 3 charters tiene evidencia de corrida; ver §0/§5.0 |
-| **QA-020-F2** | Sin `design.md` real del backend, 4 supuestos de mecanismo interno quedan sin verificar (§0, "Supuestos de diseño a reconciliar") | Informativo, no bloquea el plan | Ninguno de los 4 supuestos cambia el comportamiento observable que los escenarios verifican — sólo nombres de campo/enum a reconciliar |
-| **QA-020-F3** | No hay `US-020-...-frontend-web` planificado — AC-7 y la accesibilidad del flujo quedan sin cobertura de este plan | Diferido, no oculto (§1.2/§5.2) | El futuro `qa-plan.md` de frontend hereda AC-7 y accesibilidad como su responsabilidad explícita |
-| **QA-020-F4** | No hay contrato OpenAPI publicado del endpoint de borrado — sin contract test posible hoy | Diferido, no oculto (§6) | Se agrega en la primera revisión de este plan que corra con el backend real |
+| **QA-020-F1** | ~~El backend de US-020 no existe en este worktree~~ | **Resuelto (2026-09-06)** | Backend mergeado a `main` (PR #93); los 9 test cases Cucumber + QA-020-PERF-1 corrieron contra la API real, 26/26 escenarios en verde, ver §5/§8 |
+| **QA-020-F2** | ~~Sin `design.md` real del backend, 4 supuestos de mecanismo interno quedan sin verificar~~ | **Resuelto** | Los 4 supuestos ya se habían reconciliado en §0 antes de ejecutar; la ejecución real no encontró ninguna divergencia adicional de comportamiento observable — sólo los 2 ajustes de test-authoring documentados en ACC-2/ACC-4 (§5.2/§5.4) |
+| **QA-020-F3** | No hay `US-020-...-frontend-web` planificado — AC-7 y la accesibilidad del flujo quedan sin cobertura de este plan | Diferido, no oculto (§1.2/§5.2) | El futuro `qa-plan.md` de frontend hereda AC-7 y accesibilidad como su responsabilidad explícita. Sigue sin cambios — no hay ese change todavía |
+| **QA-020-F4** | El OpenAPI publicado (`apps/api/docs/api/openapi.yaml`) **ya declara** `DELETE /me` (T6.2 del backend) — el contract test en sí sigue diferido a propósito (§6: "diferido, no ausente", fuera del alcance decidido para esta ejecución de `/develop-qa`) | Diferido, no oculto (§6) | El contrato existe y se revisó manualmente para QA-020-ACC-5 (AC-11); un contract test formal contra él queda para una iteración futura de este plan |
 
 ---
 
@@ -1026,7 +1126,7 @@ usan orden de operaciones explícito, nunca un `sleep`).
 
 | Dependencia | Estado | Efecto |
 |---|---|---|
-| `US-020-borrado-cuenta-datos-personales-backend` | **Pusheado, sin mergear** (07, `origin/feat/US-020-...-backend`, PR #93 con auto-merge) — `design.md` ya leído y reconciliado (§0), pero el código no está en `main` de este worktree | Bloquea el 100% de la ejecución de este plan hasta que #93 mergee |
+| `US-020-borrado-cuenta-datos-personales-backend` | **Mergeado a `main`** (PR #93) | Resuelto — este plan corrió completo contra el backend real, ver §5/§8 |
 | `US-020-borrado-cuenta-datos-personales-frontend-web` | No planificado | Bloquea AC-7 y accesibilidad — diferido a un futuro plan de QA de frontend (§1.2) |
 | Delta cruzado sobre `openspec/specs/ordenes/contracts/openapi.yaml` (`AdminOrderDetail.anonymization_reason` necesita el 3er valor `account_deletion`) | Declarado en el `design.md` real del backend, a aplicar por su propio `/archive-change` | No bloquea este plan de QA — anotado acá para que no se pierda al archivar |
 | `US-014-registro-login-backend` | Archivado | Resuelto — origen de `customer-auth.ts` (las tres puertas de AC-10 ya corren contra este mecanismo hoy, para otros propósitos) |
