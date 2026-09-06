@@ -95,7 +95,7 @@
 
 ## Fase 3 — Componente `OrderAnonymizeAction`
 
-- [ ] T3.1 Componente base — botón + `ConfirmDialog` + estado busy/error/message
+- [x] T3.1 Componente base — botón + `ConfirmDialog` + estado busy/error/message
   - **Depends on**: T2.1.
   - **Pattern**: `per frontend-standards.md §11.bis.5 — destructive action confirmation` +
     mismo esqueleto que `apps/web/src/features/products/ProductActions.tsx` (reuso directo
@@ -109,7 +109,7 @@
     casos: "no renderiza nada si la orden ya está anonimizada", "abre el ConfirmDialog al
     click", "el botón de confirmar está deshabilitado hasta tipear la palabra exacta" —
     `vitest run` verde.
-- [ ] T3.2 Wiring de la mutación — éxito y error
+- [x] T3.2 Wiring de la mutación — éxito y error
   - **Depends on**: T3.1.
   - **Exit criterion**: al confirmar, llama a `ordersService.anonymize(id)`; en éxito,
     hace un segundo `ordersService.get(id)` y llama a `onAnonymized(refreshed)`; en error,
@@ -121,7 +121,7 @@
     `onAnonymized` con el objeto refrescado), error 404, error 500/network — `vitest run`
     verde. `msw-setup` skill: handlers via `server.use`, reset en `afterEach` (ya
     configurado en `apps/web/src/test/setup.ts`, sin tocar).
-- [ ] T3.3 Copy y tono
+- [x] T3.3 Copy y tono
   - **Pattern**: `per design-system.md §10.2 — voz/tono "práctico y confiable"`, mismo
     registro que "¿Seguro que querés cancelar esta orden? Esta acción no se puede
     deshacer.". Copy exacto: título "Anonimizar datos del comprador", descripción "Se van a
@@ -171,7 +171,7 @@
 
 ## Fase 5 — Observabilidad
 
-- [ ] T5.1 Eventos `order_anonymize_*`
+- [x] T5.1 Eventos `order_anonymize_*`
   - **Pattern**: `per observability-patterns skill §9.5` + mismo criterio que
     `order_status_change_*` — sólo `{ order_id }`, nunca PII ni `anonymization_reason` en
     el payload (ver `design.md` §Observabilidad para el razonamiento completo).
@@ -192,7 +192,7 @@
     orden está anonimizada (con `OrderAnonymizeAction` no renderizado, por AC-8) y cuando
     no lo está (con el botón + diálogo cerrado visibles).
   - **Verify**: `apps/web/src/features/orders/a11y.test.tsx` — nuevo `it(...)` — `vitest run` verde.
-- [ ] T6.2 Foco del `ConfirmDialog` reusado — sin regresión
+- [x] T6.2 Foco del `ConfirmDialog` reusado — sin regresión
   - **Pattern**: `ConfirmDialog` ya tiene sus propios tests
     (`apps/web/src/components/ui/ui.test.tsx` probablemente cubre foco/Escape) — esta task
     es verificar que reusarlo desde `OrderAnonymizeAction` no rompe ese comportamiento, no
