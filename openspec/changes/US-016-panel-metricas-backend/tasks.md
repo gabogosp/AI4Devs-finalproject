@@ -60,7 +60,7 @@ language: es
 
 ## Fase 1: Dominio — allowlist de "venta", errores, rango temporal — 0,8 h
 
-- [ ] T1.1 `sale-statuses.ts` — allowlist de estados que cuentan como venta (AC-8)
+- [x] T1.1 `sale-statuses.ts` — allowlist de estados que cuentan como venta (AC-8)
   - **Pattern**: const `as const` + tipo derivado, mismo estilo que
     `FulfillmentStatus` de `orders/order-state.ts` — `per design.md §D2`
     (misma allowlist de 4 estados que `OrdersAdminService.list`, `cancelled`
