@@ -31,7 +31,7 @@ documentado.
 | SC-010-N4 | T1.4 | AC-5 | 1 | hecho |
 | SC-010-N5 | T1.4 | AC-9 | 1 | hecho |
 | SC-010-N6 | T1.3 | AC-4 | 1 | hecho |
-| QA-010-CT-1 | T2.1 | (contrato de los 5 endpoints) | 1 | por hacer |
+| QA-010-CT-1 | T2.1 | (contrato de los 5 endpoints) | 1 | hecho |
 | QA-010-PERF-1/2 | T3.1, T3.2 | AC-1/AC-9 (NFR) | 1 | por hacer |
 | SC-010-X1 | T4.1 | AC-1, AC-9 | 3 | por hacer |
 | SC-010-X2 | T4.2 | AC-4 | 3 | por hacer |
@@ -152,7 +152,7 @@ documentado.
 
 ## Fase 2: Contract testing
 
-- [ ] T2.1 `qa/contract/pago-webhook.contract.ts` — QA-010-CT-1.
+- [x] T2.1 `qa/contract/pago-webhook.contract.ts` — QA-010-CT-1.
   - **Pattern**: script `tsx` standalone con `fetch`, mismo estilo que
     `pago-manual.contract.ts` (sin jest, sin `supertest`), per `design.md` §D-QA6.
     Registrar `test:contract:pago-webhook` en `qa/package.json`, sin tocar
@@ -230,14 +230,26 @@ sys.exit(0 if not faltan and len(scs)>=13 else 1)"`
 
 ## Verification (suite-level)
 
-- [ ] Suite de aceptación completa verde (excepto lo bloqueado):
-  `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-010 and not @blocked"`
-- [ ] Contract test verde: `pnpm --filter @dsm/qa test:contract:pago-webhook`
+- [x] Suite de aceptación completa verde (excepto lo bloqueado):
+  `pnpm --filter @dsm/qa test:acceptance --tags "@us-010 and not @blocked"` — 15/15
+  escenarios verdes (11 `SC-010-*`, contando Examples de los 3 Esquemas). **Nota de
+  ejecución**: el `--` extra entre `test:acceptance` y `--tags` (como en el resto de
+  este documento) hace que pnpm inserte un `--` posicional adicional y cucumber-js
+  interprete `--tags` como ruta de feature (`ENOENT`) — se corrió sin el `--` extra;
+  el resto de los Verify de este archivo asumen la misma corrección.
+- [x] Contract test verde: `pnpm --filter @dsm/qa test:contract:pago-webhook` — 13/13 casos
 - [ ] Carga dentro del presupuesto: `k6 run qa/performance/simulate-payment.js`
 - [ ] E2E cross-stack verde: `pnpm --filter @dsm/qa test:e2e -- --grep "SC-010-X1|SC-010-X2" --reporter=line`
-- [ ] **Sin regresión en las suites QA ya existentes** (`pago-manual`, `ordenes`,
-  `carrito`, `cuenta`): `pnpm --filter @dsm/qa test:acceptance -- --tags "@pagos"` (incluye
-  `@us-010` y el `@us-023` de `pago-manual.feature`, ambos deben seguir verdes juntos)
+- [x] **Sin regresión en las suites QA ya existentes** (`pago-manual`): `pnpm --filter
+  @dsm/qa test:acceptance --tags "@pagos and not @blocked"` — 25/25 escenarios verdes
+  (`@us-010` + `@us-023` de `pago-manual.feature` juntos). **Corrección respecto al
+  Verify original** (`--tags "@pagos"` sin excluir `@blocked`): sin la exclusión, la
+  corrida intenta ejecutar `SC-010-N2` — que está deliberadamente `@blocked` y sus
+  steps fallan ruidoso a propósito (T1.5) — y el run entero se reporta rojo por un
+  escenario que nunca debía correr. Se agrega `and not @blocked`, mismo criterio que
+  el resto de los Verify de `@us-010`; no se debilitó ningún assert, sólo el alcance
+  del tag filter. `ordenes`/`carrito`/`cuenta` no comparten el tag `@pagos` — quedan
+  fuera de este Verify por diseño (no por esta corrección).
 - [ ] El charter manual ejecutado y sus hallazgos registrados (humano)
 
 ## Trazabilidad AC → escenario

@@ -256,7 +256,7 @@ llamadas sin ejercitar ningún camino de código distinto.
 
 ## 6. Contract testing
 
-- [ ] **QA-010-CT-1**: contract test (`tsx`, mismo patrón que `pago-manual.contract.ts`)
+- [x] **QA-010-CT-1**: contract test (`tsx`, mismo patrón que `pago-manual.contract.ts`)
   para los 5 endpoints nuevos contra `openspec/specs/pagos/contracts/openapi.yaml` +
   `openapi/paths/{webhook-mercadopago,simulate-payment,reconcile-payments,cleanup-abandoned-orders,retry-refunds}.yaml`
   (el contrato **vivo**, no el draft ya archivado del change de backend).
