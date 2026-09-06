@@ -2955,3 +2955,52 @@
   # ACCOUNT_DELETION_RATE_LIMIT_MAX en qa/scripts/api-up.sh, y mismatch de archivo de
   # log (marcaDeLog/leerLogApi) en N-6/N-6b de borrado-cuenta.steps.ts. 26/26 escenarios
   # verdes en 4 corridas + k6 p95≈15.4ms vs umbral 500ms.
+
+- name: US-024-edicion-perfil-cliente-qa
+  us-id: US-024
+  discipline: qa
+  variant: null
+  status: draft   # /plan-qa --standalone 2026-09-06: qa-plan.md escrito ANTES de BE/FE
+  # (ninguno planificado todavía) — Modo B, pedido explícito de la coordinadora para
+  # paralelizar trabajo que no depende del build. 7/7 AC de la US cubiertos (1
+  # escenario Gherkin c/u). Todo test-case que necesita código real queda
+  # Blocked-by: BE-US-024/FE-US-024 explícito en qa-plan.md §7 — nada se finge
+  # ejecutable. `/develop-qa US-024` bloqueado hasta que al menos BE-US-024 exista.
+  parent-us: docs/user-stories/US-024-edicion-perfil-cliente.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 1   # sólo escribir el plan (7 AC, ya resueltos por el enrich) — no incluye
+  # ejecución, que es /develop-qa una vez BE/FE existan.
+  assignee: claude-code
+  branch: feat/US-024-025-qa-plans
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-025-resenas-calificaciones-productos-qa
+  us-id: US-025
+  discipline: qa
+  variant: null
+  status: draft   # /plan-qa --standalone 2026-09-06: mismo criterio que
+  # US-024-edicion-perfil-cliente-qa (change hermano paralelo). 9/9 AC cubiertos.
+  # Elegibilidad (AC-1/AC-6) probada con el seed real crearOrdenEnEstado(...,
+  # 'delivered') que ya existe en qa/support/seed-ordenes.ts. Blocked-by:
+  # BE-US-025/FE-US-025 explícito en qa-plan.md §12.
+  parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 1.5   # 9 AC (más que US-024) + smoke de carga opcional (D-QA3) — sólo
+  # escribir el plan, no ejecutarlo.
+  assignee: claude-code
+  branch: feat/US-024-025-qa-plans
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null

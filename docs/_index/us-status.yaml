@@ -892,6 +892,11 @@
   # directamente a Ready en la misma sesión (decisiones de producto confirmadas con el
   # dueño: nombre + avatar por URL pegada, sin upload real — no hay pipeline de subida de
   # imágenes construido en ningún lado del código pese a que `R2_*` está en `.env`).
+  #
+  # NOTA (2026-09-06, /plan-qa --standalone): qa-plan escrito en paralelo, ANTES de
+  # BE/FE (openspec/changes/US-024-edicion-perfil-cliente-qa/, status: draft en
+  # openspec-changes.yaml). 7/7 AC cubiertos. No cambia el status de la US — sigue
+  # `Ready` hasta que algún discipline change abra.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]
@@ -908,6 +913,12 @@
   # la parte genuinamente nueva (prd-capacity: null). Enriquecida a Ready con 3 decisiones
   # de producto confirmadas: sólo compradores con orden `delivered` pueden reseñar,
   # estrellas 1-5 + comentario opcional, moderación básica del dueño (ocultar, no editar).
+  #
+  # NOTA (2026-09-06, /plan-qa --standalone): qa-plan escrito en paralelo, ANTES de
+  # BE/FE (openspec/changes/US-025-resenas-calificaciones-productos-qa/, status:
+  # draft). 9/9 AC cubiertos, elegibilidad probada con el seed real
+  # `crearOrdenEnEstado(..., 'delivered')` ya existente. No cambia el status de la
+  # US — sigue `Ready` hasta que algún discipline change abra.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]
