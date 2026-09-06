@@ -17,7 +17,8 @@
   "pnpm": {
     "overrides": {
       "multer": "^2.0.0",
-      "postcss": "8.5.18"
+      "postcss": "8.5.18",
+      "handlebars": "4.7.9"
     }
   }
 }
