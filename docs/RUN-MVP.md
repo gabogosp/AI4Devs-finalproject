@@ -17,12 +17,19 @@ Un **e-commerce navegable de punta a punta** para la ferretería/refrigeración:
   *(La búsqueda semántica requiere `GEMINI_API_KEY`; sin ella degrada a full-text — igual funciona.)*
 - **Registro / login / sesión de cliente** (US-014): cookies HttpOnly + refresh rotado + CSRF.
 - **Carrito** (US-007): agregar/editar/quitar, badge en el top-nav, y **"Coordinar compra por
-  WhatsApp"** como cierre (el checkout con pago llega en la próxima entrega).
+  WhatsApp"** en la ficha de producto.
+- **Checkout de invitado** (US-008): datos del comprador + consentimiento → crea la orden en
+  `pending_payment`. **Pago** (US-009/US-010/US-023): MercadoPago real (si hay credenciales) o
+  pago manual/offline gestionado por el dueño desde el panel.
+- **Historial de compras del cliente** (US-015): `/mi-cuenta/compras` — el cliente logueado ve
+  sus propias órdenes y el detalle de cada una.
+- **Panel del dueño** (US-012/US-013): listado y detalle de órdenes pagadas, avanzar estado de
+  fulfillment, cancelar con reembolso.
 - **Import masivo** de inventario CSV/Excel (US-006) + **CTA WhatsApp** en toda página (US-018) +
   **páginas legales + consentimiento** (US-017).
 
-**Roadmap (planeado, no en esta entrega):** checkout guest (US-008), pago MercadoPago (US-009),
-webhook + orden + stock (US-010), infra cloud (US-019). Sus planes viven en `openspec/changes/`.
+**Roadmap (planeado, no en esta entrega):** infra cloud (US-019). Su plan vive en
+`openspec/changes/`.
 
 ## Requisitos
 
@@ -55,25 +62,36 @@ pnpm --filter @dsm/db exec prisma generate
 pnpm --filter @dsm/db exec prisma migrate deploy
 pnpm --filter @dsm/db seed
 
-# 5. Build de producción (verifica que es "ejecutable")
+# 5. Build de producción (verifica que es "ejecutable") — API_INTERNAL_ORIGIN
+#    también acá: Next.js resuelve los rewrites de next.config.mjs en cada
+#    request de `next start`, no los congela en build, pero mantenerla
+#    presente en ambos pasos evita que el build y el arranque diverjan.
 pnpm --filter @dsm/api build
-pnpm --filter @dsm/web build
+API_INTERNAL_ORIGIN=http://localhost:3000 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 pnpm --filter @dsm/web build
 
 # 6a. Levantar la API (puerto 3000) — nest build deja el output anidado:
 node apps/api/dist/apps/api/src/main.js
 #    → en otra terminal:
-# 6b. Levantar el storefront (puerto 3200)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web start
+# 6b. Levantar el storefront (puerto 3200) — API_INTERNAL_ORIGIN es OBLIGATORIA
+#     (server-only, sin NEXT_PUBLIC_): sin ella los rewrites same-origin de
+#     /v1/auth/*, /v1/cart/*, /v1/checkout/* y /v1/me/* (ADR-0013) apuntan a
+#     undefined y login, carrito, checkout e historial de compras devuelven 404
+#     — hay que buildear (paso 5) con esta misma variable ya exportada, porque
+#     API_INTERNAL_ORIGIN se lee en cada request de `next start`, no sólo en
+#     build.
+API_INTERNAL_ORIGIN=http://localhost:3000 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web start
 ```
 
 > **Puertos:** la API usa 3000 y el web 3200. Evitamos 3100 porque suele estar ocupado por
 > contenedores de otros proyectos (p.ej. un Loki). Si el 3000 ya tiene la API corriendo, saltá 6a.
 >
-> **CORS:** el storefront es SSR (los fetch salen del server, sin CORS). Si vas a usar el **panel
-> admin** (llamadas desde el browser), arrancá la API con `CORS_ALLOWED_ORIGINS=http://localhost:3200`.
+> **CORS:** el storefront usa rewrites same-origin para login/carrito/checkout/historial (sin
+> CORS real, ver arriba). Si vas a usar el **panel admin** (Bearer token en memoria, llamadas
+> directas del browser a la API — sí es cross-origin), arrancá la API con
+> `CORS_ALLOWED_ORIGINS=http://localhost:3200`.
 >
 > Alternativa rápida en modo dev (sin build): `pnpm --filter @dsm/api start:dev` y
-> `NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web dev`.
+> `API_INTERNAL_ORIGIN=http://localhost:3000 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web dev`.
 
 ## URLs
 
@@ -141,12 +159,17 @@ navegador lo rechaza y el import es **inalcanzable desde cualquier browser real*
 3. **Ficha con stock** → `/productos/compresor-1-4-hp` → nombre, precio ARS, categoría, descripción
    (enriquecida por IA si hubo enrichment), **agregar al carrito** + **WhatsApp**. "Ver código
    fuente" → metadatos + JSON-LD `schema.org/Product`.
-4. **Carrito** → agregar varios → badge en el top-nav → `/carrito` → editar cantidades → **"Coordinar
-   compra por WhatsApp"**.
-5. **Registro / login** → `/ingresar` → crear cuenta / iniciar sesión (sesión con cookie HttpOnly).
-6. **Ficha SIN stock** → `/productos/taladro-percutor-650w` (AC-4) · **sin imagen** → placeholder (AC-6)
+4. **Registro / login** → `/crear-cuenta` o `/ingresar` (sesión con cookie HttpOnly).
+5. **Carrito** → agregar varios → badge en el top-nav → `/carrito` → editar cantidades → **"Ir al
+   pago"**.
+6. **Checkout** → `/checkout` → datos del comprador + consentimiento → confirma el pedido (queda
+   `pending_payment` sin pago configurado) → **"Coordinar compra por WhatsApp"**.
+7. **Historial de compras** (con la cuenta logueada del paso 4) → `/mi-cuenta/compras` → ve sus
+   propias órdenes ya pagadas y el detalle de cada una.
+8. **Ficha SIN stock** → `/productos/taladro-percutor-650w` (AC-4) · **sin imagen** → placeholder (AC-6)
    · **404 real** → `/productos/cable-unipolar-2-5mm-x100m` (draft) o slug inexistente.
-7. **Panel admin** → `/admin/acceso` → `ADMIN_BOOTSTRAP_TOKEN` → gestionar/publicar productos (loop completo).
+9. **Panel admin** → `/admin/acceso` → `ADMIN_BOOTSTRAP_TOKEN` → gestionar/publicar productos,
+   ver órdenes pendientes de pago y pagadas, avanzar el fulfillment (`/admin/ordenes`).
 
 ## Datos sembrados
 
@@ -157,8 +180,12 @@ navegador lo rechaza y el import es **inalcanzable desde cualquier browser real*
 | FER-001 | taladro-percutor-650w | published | **0** (sin stock) |
 | ELE-001 | cable-unipolar-2-5mm-x100m | **draft** (→ 404) | 20 |
 
-## Estado de calidad (verificado)
+## Estado de calidad
 
-- Tests: **499** (API) + **233** (web) verdes.
-- `pnpm --filter @dsm/api build` y `pnpm --filter @dsm/web build`: OK.
-- `pnpm -r lint && pnpm -r typecheck`: limpio.
+> Los números de tests de esta sección quedaron desactualizados (eran de la Entrega 1, sólo
+> catálogo/storefront/búsqueda) y se retiraron en vez de reemplazarlos por otra cifra sin
+> volver a correr la suite completa — no maquillar con un número no verificado. Lo que sí se
+> reverificó para esta entrega (2026-09-06): `pnpm --filter @dsm/api build` y
+> `pnpm --filter @dsm/web build` — ambos OK; smoke manual del recorrido completo (búsqueda,
+> registro/login, carrito, checkout, historial de compras, panel admin) contra el build real
+> — verde.
