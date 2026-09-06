@@ -195,6 +195,17 @@ const initialResetTokens = () =>
 /** Sesiones vivas por token de acceso, para que `/auth/me` y logout sean reales. */
 let sessions = new Map();
 /**
+ * Tokens de acceso que ya pasaron por `DELETE /v1/me` (US-020 AC-15).
+ *
+ * Sin esto, una segunda confirmación con la MISMA cookie caería al 401 de
+ * "sin sesión" (la primera llamada ya borró la entrada de `sessions`) — el
+ * stub estaría reproduciendo un error donde el contrato real es idempotente.
+ * El stub no reproduce la anonimización real (design.md §D8), pero sí tiene
+ * que reproducir el contrato de status code: una segunda confirmación sobre
+ * una cuenta ya borrada responde 204, no 401.
+ */
+let cuentasBorradas = new Set();
+/**
  * Último token de reset **por email**, expuesto en `/__last-reset-token?email=`.
  *
  * Indexado por cuenta y no como un global de última escritura: con
@@ -445,6 +456,7 @@ const server = createServer(async (req, res) => {
       customers = initialCustomers();
       resetTokens = initialResetTokens();
       sessions = new Map();
+      cuentasBorradas = new Set();
       ultimoResetToken = new Map();
     }
     // El log NO se limpia acá a propósito: es diagnóstico append-only, no
@@ -596,6 +608,59 @@ const server = createServer(async (req, res) => {
     }
 
     return notFound(res);
+  }
+
+  // --- Borrado de cuenta y datos personales (US-020) ---
+  //
+  // Mismo criterio que la superficie de auth de arriba: cookies con
+  // atributos reales, CSRF double-submit, un header de fuerza
+  // (`x-force-blocking-orders`, análogo a `x-force-rate-limit` de auth) para
+  // simular el 409 sin tener que sembrar una orden real.
+  if (path === '/v1/me' && req.method === 'DELETE') {
+    const cookies = leerCookies(req);
+    const sesion = sessions.get(cookies.dsm_access);
+    if (!sesion) {
+      if (cookies.dsm_access && cuentasBorradas.has(cookies.dsm_access)) {
+        // AC-15: idempotencia — una segunda confirmación sobre una cuenta ya
+        // borrada responde 204 sin error ni segundo efecto.
+        res.statusCode = 204;
+        return res.end();
+      }
+      return problem(res, 401, 'dsm:auth/unauthenticated', 'Unauthorized', {});
+    }
+    const csrfHeader = req.headers['x-csrf-token'];
+    if (!req.headers.origin || csrfHeader !== sesion.csrf) {
+      return problem(res, 403, 'dsm:auth/csrf-failed', 'Forbidden', {});
+    }
+    if (req.headers['x-force-blocking-orders'] === '1') {
+      // El caso que design.md §D2 documentó como el más probable y el que el
+      // enum publicado no declara (a propósito: el stub, a diferencia del
+      // contrato, SÍ tiene que reproducir el comportamiento REAL del
+      // backend). La cookie de sesión NO se limpia en este camino.
+      return json(res, 409, {
+        type: 'dsm:account/active-orders',
+        title: 'Conflict',
+        status: 409,
+        detail: 'Tenés pedidos en curso',
+        blocking_orders: [
+          {
+            order_number: 1234,
+            status: 'pending_payment',
+            total_ars_cents: 500000,
+            created_at: '2026-01-01T00:00:00Z',
+          },
+        ],
+      });
+    }
+    sessions.delete(cookies.dsm_access);
+    cuentasBorradas.add(cookies.dsm_access);
+    res.setHeader('Set-Cookie', [
+      'dsm_access=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0',
+      'dsm_refresh=; HttpOnly; SameSite=Lax; Path=/v1/auth; Max-Age=0',
+      'dsm_csrf=; SameSite=Lax; Path=/; Max-Age=0',
+    ]);
+    res.statusCode = 204;
+    return res.end();
   }
 
   // --- Superficie pública de categorías (US-002) ---

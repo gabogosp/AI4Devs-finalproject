@@ -116,7 +116,17 @@ export type BusinessEvent =
   | 'order_history_shown'
   | 'order_history_load_more_clicked'
   | 'order_detail_shown'
-  | 'order_detail_not_found';
+  | 'order_detail_not_found'
+  // Borrado de cuenta y datos personales (US-020 AC-1/AC-4/AC-9/AC-14).
+  // Superficie de cliente, no de operador — van en `PUBLIC_EVENTS`, mismo
+  // criterio que `order_history_*`. Sin PII: ninguno lleva nombre, email,
+  // teléfono ni el detalle (`order_number`/importe) de los pedidos
+  // bloqueantes — sólo el nombre del evento, mismo criterio que
+  // `login_failed`.
+  | 'account_delete_attempted'
+  | 'account_delete_succeeded'
+  | 'account_delete_blocked'
+  | 'account_delete_failed';
 
 export interface EventProps {
   operator_id?: string;
@@ -170,6 +180,12 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'order_history_load_more_clicked',
   'order_detail_shown',
   'order_detail_not_found',
+  // Los emite el cliente autenticado borrando su propia cuenta — no el
+  // dueño. Mismo criterio que los de auth/historial.
+  'account_delete_attempted',
+  'account_delete_succeeded',
+  'account_delete_blocked',
+  'account_delete_failed',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {
