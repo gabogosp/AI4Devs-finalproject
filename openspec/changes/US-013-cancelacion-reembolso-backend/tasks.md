@@ -341,7 +341,7 @@ language: es
     `CancelOrderResponse`/`Problem`.
   - **Verify**: `test -f openspec/changes/US-013-cancelacion-reembolso-backend/contracts/openapi/cancel-order.yaml`
 
-- [ ] **T9.2 — Actualizar `apps/api/docs/api/openapi.yaml` (publicado, vivo)**
+- [x] **T9.2 — Actualizar `apps/api/docs/api/openapi.yaml` (publicado, vivo)**
   - **Pattern**: agregar `paths./admin/orders/{id}/cancel` (mismo estilo que
     el bloque `/admin/orders/{orderId}/confirm-payment` ya existente en este
     mismo archivo) + `components.schemas.CancelOrderResponse` (self-contained,
