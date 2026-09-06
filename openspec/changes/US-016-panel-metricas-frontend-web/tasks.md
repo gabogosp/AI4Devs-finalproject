@@ -292,13 +292,16 @@
 
 ## Verificación (suite-level)
 
-- [ ] Todos los tests unitarios/componente pasan:
+- [x] Todos los tests unitarios/componente pasan:
       `pnpm --filter @dsm/web test` (`vitest run`, forma terminante).
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`.
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`.
-- [ ] E2E de este change pasa:
+      — 152 archivos / 947 tests verdes.
+- [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`.
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`.
+- [x] E2E de este change pasa:
       `pnpm --filter @dsm/web exec playwright test e2e/metrics-happy-path.spec.ts e2e/metrics-empty-state.spec.ts`.
-- [ ] Codegen en sync (gate `frontend-codegen-fresh`):
+      — 2/2 verdes.
+- [x] Codegen en sync (gate `frontend-codegen-fresh`):
       `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated`.
-- [ ] Suite completa de `imports` sigue verde tras el refactor de Phase 2:
+- [x] Suite completa de `imports` sigue verde tras el refactor de Phase 2:
       `pnpm --filter @dsm/web exec vitest run src/features/imports`.
+      — 11 archivos / 98 tests verdes.
