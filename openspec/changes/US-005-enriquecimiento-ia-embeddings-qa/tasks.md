@@ -11,6 +11,12 @@ language: es
 > `qa/scripts/api-up.sh` deje de arrancar la instancia compartida con el enriquecimiento
 > habilitado (QA-005-F1), ninguna otra suite del harness — ni siquiera las que no tocan
 > `enrichment` — corre en un entorno confiable.
+>
+> **Nota de ejecución (`develop-qa`)**: este worktree comparte el host con otras sesiones de
+> otros worktrees, así que los puertos default (`3009`/`3925`/`3926`) estaban ocupados. La
+> corrida real de este plan usó `QA_API_PORT=39005`, `QA_ENRICHMENT_ENABLED_PORT=39025`,
+> `QA_ENRICHMENT_RATELIMIT_PORT=39026` — sin cambiar ningún default en el código (son env
+> overrides ya soportados por `design.md` §D-QA4), sólo para esta sesión.
 
 ## Mapa de cobertura (definición de cada caso)
 
@@ -20,17 +26,17 @@ documentado.
 
 | id | Task | AC | Capa | Estado |
 |---|---|---|---|---|
-| SC-005-H3 | T1.1 | AC-3 | 1 | pendiente |
-| SC-005-C5 | T1.1 | D6/AC-5 | 1 | pendiente |
-| SC-005-C6 | T1.1 | mecánica | 1 | pendiente |
-| SC-005-C8 | T1.1 | mecánica | 1 | pendiente |
-| SC-005-N1 | T1.1 | AC-7 (mecánica) | 1 | pendiente |
-| SC-005-C1 | T1.2 | AC-4 | 1 | pendiente |
-| SC-005-C2 | T1.3 | AC-5 | 1 | pendiente |
-| SC-005-C4 | T1.4 | mecánica | 1 | pendiente |
-| SC-005-C7 | T1.5 | AC-4 | 1 | pendiente |
-| SC-005-N4 | T1.6 | AC-9 | 1 | pendiente |
-| SC-005-N5 | T1.7 | AC-10 | 1 | pendiente |
+| SC-005-H3 | T1.1 | AC-3 | 1 | hecho |
+| SC-005-C5 | T1.1 | D6/AC-5 | 1 | hecho |
+| SC-005-C6 | T1.1 | mecánica | 1 | hecho |
+| SC-005-C8 | T1.1 | mecánica | 1 | hecho |
+| SC-005-N1 | T1.1 | AC-7 (mecánica) | 1 | hecho |
+| SC-005-C1 | T1.2 | AC-4 | 1 | hecho |
+| SC-005-C2 | T1.3 | AC-5 | 1 | hecho |
+| SC-005-C4 | T1.4 | mecánica | 1 | hecho |
+| SC-005-C7 | T1.5 | AC-4 | 1 | hecho |
+| SC-005-N4 | T1.6 | AC-9 | 1 | hecho |
+| SC-005-N5 | T1.7 | AC-10 | 1 | hecho |
 | SC-005-H1 | T1.8 | AC-1 | 1 | **bloqueado**, ver QA-005-F1/OQ-QA-005-1 |
 | SC-005-H2 | T1.8 | AC-2 | 1 | **bloqueado** |
 | SC-005-C3 | T1.8 | AC-6 | 1 | **bloqueado** |
@@ -45,17 +51,17 @@ documentado.
 
 ## Pre-requisitos
 
-- [ ] **Backend de US-005 archivado, capacidad `enriquecimiento-ia` viva.** No es una
+- [x] **Backend de US-005 archivado, capacidad `enriquecimiento-ia` viva.** No es una
   planificación pendiente — el código corre.
   - **Verify**: `test -d openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend && grep -qx "archived: true" openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-backend/proposal.md`
-- [ ] **`apps/api` compilado** (`levantarApiTemporal` arranca el build, no `ts-node`).
+- [x] **`apps/api` compilado** (`levantarApiTemporal` arranca el build, no `ts-node`).
   - **Verify**: `test -f apps/api/dist/apps/api/src/main.js || pnpm --filter @dsm/api build`
 
 ---
 
 ## Fase 0: Higiene de entorno (QA-005-F1) y soporte del harness
 
-- [ ] T0.1 Fix de `qa/scripts/api-up.sh` — la instancia compartida nunca llama a Gemini.
+- [x] T0.1 Fix de `qa/scripts/api-up.sh` — la instancia compartida nunca llama a Gemini.
   - **Pattern**: agregar `ENRICHMENT_ENABLED=false` y `ENRICHMENT_RATE_LIMIT_MAX=100000` al
     bloque `exec env ...` existente, con un comentario nuevo en el bloque de comentarios de
     cabecera (mismo estilo que `IMPORT_RATE_LIMIT_MAX`/`CHECKOUT_RATE_LIMIT_MAX` ya
@@ -66,7 +72,7 @@ documentado.
     `enrichment_attempts`/`enrichment_error_code` de ningún producto.
   - **Verify**: `grep -q "ENRICHMENT_ENABLED=false" qa/scripts/api-up.sh && grep -q "ENRICHMENT_RATE_LIMIT_MAX=100000" qa/scripts/api-up.sh && bash qa/scripts/api-up.sh & sleep 3; curl -sS -m 10 "http://localhost:${QA_API_PORT:-3009}/v1/admin/enrichment/status" -H "Authorization: Bearer $(node -e "console.log(require('jsonwebtoken').sign({role:'admin',sub:'admin'},process.env.JWT_SECRET||'dev-secret',{expiresIn:'5m'}))")" | grep -q '"runner_state":"disabled"'; kill %1`
 
-- [ ] T0.2 `qa/support/enrichment-db.ts` + `.smoke.ts` — lectura de estado interno y
+- [x] T0.2 `qa/support/enrichment-db.ts` + `.smoke.ts` — lectura de estado interno y
   adelanto de `enrichment_next_attempt_at`, excepciones angostas y documentadas.
   - **Pattern**: `prisma.product.findUniqueOrThrow({ where: { id }, select: { ... } })` para
     lectura; `prisma.product.update({ where: { id }, data: { enrichment_next_attempt_at:
@@ -82,8 +88,13 @@ documentado.
     (verificado leyendo la fila completa antes/después); `contarEmbeddings()` devuelve
     `SELECT count(*) FROM product_embeddings` como número.
   - **Verify**: `DATABASE_URL="${DATABASE_URL:-postgresql://dsm:dsm@localhost:55433/dsm?schema=public}" pnpm --filter @dsm/qa exec tsx support/enrichment-db.smoke.ts` (exit 0; el smoke siembra un producto real vía `admin-auth`+`builders`, lo lee, lo adelanta, y falla si cualquier otra columna cambió)
+  - **Desviación registrada** (`develop-qa`, T1.3): se agregó una 4ª función de solo-lectura,
+    `tieneEmbedding(productId)` (espejo de `EnrichmentRepository.hasEmbedding`), no declarada
+    en `qa-plan.md` §10 — SC-005-C2 necesita afirmar "sin fila en los embeddings" para UN
+    producto puntual, y `contarEmbeddings()` sólo da la verdad agregada. Misma excepción
+    angosta (sólo lectura, nunca escribe).
 
-- [ ] T0.3 `qa/support/seed-enrichment.ts` + `.smoke.ts` — productos publicados pendientes
+- [x] T0.3 `qa/support/seed-enrichment.ts` + `.smoke.ts` — productos publicados pendientes
   de enriquecer, un draft, y un lote.
   - **Pattern**: `POST /v1/admin/products` + `PATCH .../{id}` a `status: "published"`, mismo
     patrón que `seed-busqueda.ts`/`seed-categorias.ts` — API real, nunca INSERT directo.
@@ -97,7 +108,7 @@ documentado.
 
 ## Fase 1: Suite de aceptación (Cucumber-js + Playwright `APIRequestContext`)
 
-- [ ] T1.1 `qa/acceptance/features/enriquecimiento.feature` +
+- [x] T1.1 `qa/acceptance/features/enriquecimiento.feature` +
   `qa/acceptance/steps/enriquecimiento.steps.ts` — SC-005-H3, C5, C6, C8, N1 (mecánica,
   contra la instancia **compartida**, sin habilitar el proveedor).
   - **Pattern**: `Característica`/`Antecedentes`/`Escenario` en español, mismo estilo que
@@ -117,9 +128,17 @@ documentado.
     con `description_enriched` responde 200, y `leerEstadoEnriquecimiento` confirma
     `description_curated: true` + `enrichment_done: false`; un `PATCH` posterior sólo de
     `price_ars_cents` no cambia `description_curated`.
-  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and (@happy or @corner or @negative) and not @blocked and not @critical-path"` (cubre las 5 escenarios mecánicos de esta task; los `@critical-path` de T1.2-T1.7 se verifican en sus propias tasks)
+  - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and not @blocked" --name "SC-005-(H3|C5|C6|C8|N1)"` (cubre las 5 escenarios mecánicos de esta task; los `@critical-path` de T1.2-T1.7 se verifican en sus propias tasks)
+  - **Corrección registrada sobre el Verify original**: el filtro `and not @critical-path`
+    proponía excluir los escenarios `@critical-path`, pero `qa-plan.md` §4 tagea `SC-005-H3` Y
+    `SC-005-N1` como `@critical-path` (son mecánicos pero también críticos) — con el filtro
+    original, esos 2 de los 5 quedaban excluidos por error. Se corrigió a un filtro por
+    `--name` sobre los 5 IDs exactos de esta task, que sí los cubre a todos sin ambigüedad de
+    tags. Confirmado con la corrida completa (`--tags "@enriquecimiento and not @blocked"`,
+    sin filtro de nombre): 16/16 escenarios verdes (11 definiciones, con las 4+3 combinaciones
+    de los 2 Esquemas del Escenario).
 
-- [ ] T1.2 SC-005-C1 — backoff durable + cooldown, con proveedor real inválido (AC-4).
+- [x] T1.2 SC-005-C1 — backoff durable + cooldown, con proveedor real inválido (AC-4).
   - **Pattern**: `Before`/`After` scoped a `@needs-provider-enabled` que levanta/apaga una
     instancia temporal (perfil B, `design.md` §D-QA4: `ENRICHMENT_ENABLED=true`,
     `GEMINI_API_KEY` heredada de `.env`, `ENRICHMENT_RATE_LIMIT_MAX=100000`,
@@ -132,8 +151,18 @@ documentado.
     /status` inmediato muestra `runner_state: "cooldown"`, y un `POST /runs` disparado en ese
     momento responde 409 con `type: "dsm:enrichment/cooldown"`.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and @corner and @critical-path and not @blocked" --name "SC-005-C1"`
+  - **Desviación registrada sobre `design.md` §D-QA4** (perfil B): además de las 4 variables
+    declaradas, se agregaron `GEMINI_MAX_RPM=15` + `GEMINI_SEARCH_MAX_RPM=0` a la instancia
+    temporal. Motivo: el perfil `batch` de `GeminiHttpClient` serializa las salidas a
+    `60_000/GEMINI_MAX_RPM` ms (`rate-limiter.ts`); con el default real (5 RPM ⇒ 12s entre
+    llamadas), los 6 fallos reales de este escenario habrían tardado ~60-70s de reloj real,
+    contra el timeout del step de Cucumber. Se realoca temporalmente TODO el free tier al
+    enriquecimiento (la suma sigue en el techo real de 15, `env.validation.ts` no lo
+    rechaza) — inocuo: la clave es inválida, nunca consume cuota real de todos modos. Con el
+    ajuste, el escenario corre en ~21s (medido). Aplicado también a T1.3/T1.6/T1.7 (mismo
+    perfil B, misma función `levantarPerfilB()`).
 
-- [ ] T1.3 SC-005-C2 — abandono completo tras agotar los intentos (AC-5).
+- [x] T1.3 SC-005-C2 — abandono completo tras agotar los intentos (AC-5).
   - **Pattern**: perfil B (mismo helper que T1.2, instancia propia — no reusar la de T1.2,
     `flakiness-detection` señal 5); 1 producto sembrado; ciclo de
     `POST /runs` → `adelantarProximoIntento(id)` (T0.2) repetido hasta
@@ -144,7 +173,7 @@ documentado.
     endpoint público) sigue devolviéndolo.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and @corner and @critical-path and not @blocked" --name "SC-005-C2"`
 
-- [ ] T1.4 SC-005-C4 — 409 run-in-progress (mecánica).
+- [x] T1.4 SC-005-C4 — 409 run-in-progress (mecánica).
   - **Pattern**: perfil B, instancia propia; siembra un lote (≥10, para que la ventana entre
     el primer `POST` y el fin del batch sea suficiente); dos `POST /runs` disparados
     **sin espera artificial** entre sí (`Promise.all` o `await` inmediato, nunca `sleep`,
@@ -153,7 +182,7 @@ documentado.
     la segunda es 409 con `type: "dsm:enrichment/run-in-progress"`.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and @corner and @critical-path and not @blocked" --name "SC-005-C4"`
 
-- [ ] T1.5 SC-005-C7 — 429 con el presupuesto real (AC-4, control de superficie).
+- [x] T1.5 SC-005-C7 — 429 con el presupuesto real (AC-4, control de superficie).
   - **Pattern**: perfil C (`design.md` §D-QA4: `ENRICHMENT_ENABLED=false`, **sin** override
     de `ENRICHMENT_RATE_LIMIT_MAX` — queda el default real 6/min, puerto
     `QA_ENRICHMENT_RATELIMIT_PORT` default `3926`); 7 `POST /runs` consecutivos contra el
@@ -163,7 +192,7 @@ documentado.
     dentro de la ventana de 60s responde 429 con `Retry-After` y `RateLimit-*` presentes.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and @corner and not @blocked" --name "SC-005-C7"`
 
-- [ ] T1.6 SC-005-N4 — sin fuga del secreto, incluso fallando de verdad (AC-9).
+- [x] T1.6 SC-005-N4 — sin fuga del secreto, incluso fallando de verdad (AC-9).
   - **Pattern**: perfil B, instancia propia; dispara una corrida real (falla contra la
     clave inválida configurada) y agrega sobre **todo** lo devuelto por `GET /status` y
     `POST /runs` — la variante negativa que `security-standards.md §5` pide poder demostrar.
@@ -172,7 +201,7 @@ documentado.
     `key=`; `last_error_code` matchea `^dsm:enrichment/`.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and @negative and @critical-path and not @blocked" --name "SC-005-N4"`
 
-- [ ] T1.7 SC-005-N5 — nunca publica, éxito o falla (AC-10).
+- [x] T1.7 SC-005-N5 — nunca publica, éxito o falla (AC-10).
   - **Pattern**: perfil B, instancia propia; 1 producto sembrado en `draft`
     (`sembrarProductoDraft`, T0.3); dispara una corrida que lo toca.
   - **Exit criterion**: `GET /v1/admin/products/{id}` (o `leerEstadoEnriquecimiento` + una
@@ -181,7 +210,7 @@ documentado.
     falla para ese producto.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@enriquecimiento and @negative and @critical-path and not @blocked" --name "SC-005-N5"`
 
-- [ ] T1.8 SC-005-H1, H2, C3, N2, N3 — declarar el bloqueo, no simularlo.
+- [x] T1.8 SC-005-H1, H2, C3, N2, N3 — declarar el bloqueo, no simularlo.
   - **Exit criterion**: `enriquecimiento.feature` contiene los 5 escenarios tageados
     `@blocked` con el comentario que explica por qué cada uno necesita una respuesta
     **exitosa** real del proveedor (`design.md` §D-QA1); **no** se escribe ningún step que
