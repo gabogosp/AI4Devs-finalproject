@@ -163,7 +163,7 @@
 
 ## Phase 7 — TopProductsTable (AC-2, AC-4, AC-5, AC-6, AC-9)
 
-- [ ] T7.1 `src/features/metrics/TopProductsTable.tsx` — `'use client'`;
+- [x] T7.1 `src/features/metrics/TopProductsTable.tsx` — `'use client'`;
       TanStack Table sobre `TopProductsRow` (columnas: producto, SKU, cantidad
       vendida, monto ARS — `formatArs`); propio `AsyncState`; nota de
       `rangeClampNote`; botón export CSV; estado vacío explícito.
