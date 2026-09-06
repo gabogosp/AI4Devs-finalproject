@@ -119,7 +119,7 @@
 
 ## Phase 4: Plantillas (texto + HTML, con escapado)
 
-- [ ] T4.1 Crear `apps/api/src/orders/ports/notification-templates.ts` con
+- [x] T4.1 Crear `apps/api/src/orders/ports/notification-templates.ts` con
       `escapeHtml(s: string): string` (escapa `& < > " '`) y 4 pares de
       funciones puras `{tipo}Text(payload)` / `{tipo}Html(payload)`:
       `orderConfirmed`, `ownerNewOrder`, `orderReadyForPickup`,
