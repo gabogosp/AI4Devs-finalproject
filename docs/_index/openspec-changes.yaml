@@ -2399,7 +2399,7 @@
   us-id: US-013
   discipline: qa
   variant: null
-  status: in review   # /commit 2026-09-06 — 13/13 automatizados verdes, PR #73 abierto
+  status: archived   # /archive-change 2026-09-06 — última disciplina de US-013, US pasa a Done
   # (QA-013-E2E-3 encontró un defecto real, resuelto vía PR #72, re-verificado)
   parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
   linear-task-id: null
@@ -2467,6 +2467,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/73
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T12:53:33Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-013-cancelacion-reembolso-qa
