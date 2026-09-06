@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
@@ -7,6 +7,7 @@ import { setEventSink } from '@/lib/observability/events';
 import { OrdersList } from './OrdersList';
 import { OrderStatusActions } from './OrderStatusActions';
 import { OrderAnonymizeAction } from './OrderAnonymizeAction';
+import { OrderCancelAction } from './OrderCancelAction';
 import type { OrderDetail, OrderSummary, OrderStatus } from './ordersService';
 
 const API = 'http://localhost:3000';
@@ -169,5 +170,34 @@ describe('eventos del panel de órdenes (T9.1)', () => {
     expect(volcado).not.toContain(EMAIL_RECONOCIBLE);
     expect(volcado).not.toContain('anonymization_reason');
     expect(volcado).not.toContain('requested');
+  });
+
+  it('OrderCancelAction emite attempted antes del POST y succeeded al confirmar, sin buyer_name/buyer_email', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${API}/v1/admin/orders/${ID}/cancel`, () =>
+        HttpResponse.json({
+          ...orden('cancelled'),
+          refund: { status: 'refunded', provider: 'mercadopago' },
+        }),
+      ),
+    );
+    render(<OrderCancelAction order={{ id: ID, status: 'preparing' }} onCancelled={() => {}} />);
+
+    await user.click(screen.getByRole('button', { name: /^cancelar orden$/i }));
+    await user.type(screen.getByLabelText(/escribí "cancelar" para confirmar/i), 'CANCELAR');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^cancelar orden$/i }));
+
+    await waitFor(() =>
+      expect(eventos.some((e) => e.event === 'order_cancel_succeeded')).toBe(true),
+    );
+    const nombres = eventos.map((e) => e.event);
+    expect(nombres).toContain('order_cancel_attempted');
+    expect(nombres).toContain('order_cancel_succeeded');
+    expect(nombres).not.toContain('order_cancel_failed');
+
+    const volcado = JSON.stringify(eventos);
+    expect(volcado).not.toContain(NOMBRE_RECONOCIBLE);
+    expect(volcado).not.toContain(EMAIL_RECONOCIBLE);
   });
 });

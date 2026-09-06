@@ -234,7 +234,7 @@ language: es
     `operator_id: 'admin'` por defecto).
   - **Verify**: `pnpm --filter @dsm/web exec tsc --noEmit`
 
-- [ ] **T6.2 — `orders.events.test.tsx` — caso `OrderCancelAction`, sin PII**
+- [x] **T6.2 — `orders.events.test.tsx` — caso `OrderCancelAction`, sin PII**
   - **Pattern**: calcado al caso `OrderAnonymizeAction` ya presente en ese
     archivo — usa `buyer_name`/`buyer_email` "centinela" (valores
     reconocibles) y falla si aparecen en el volcado JSON de los eventos
