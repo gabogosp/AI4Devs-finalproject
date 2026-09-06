@@ -11,6 +11,7 @@
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
+    "seed:demo-rich": "tsx prisma/seed-demo-rich.ts",
     "generate": "prisma generate",
     "lint": "prisma validate",
     "typecheck": "tsc --noEmit"
