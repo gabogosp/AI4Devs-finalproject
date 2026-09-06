@@ -138,10 +138,10 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Verification (suite-level)
 
-- [ ] Todos los tests unitarios/integración pasan: `pnpm -r test`
-- [ ] Lint / typecheck limpios: `pnpm -r lint && pnpm -r typecheck`
-- [ ] E2E de `apps/web` verde: `pnpm --filter @dsm/web test:e2e`
-- [ ] E2E de `apps/api` (testcontainers) verde: `pnpm --filter @dsm/api test:e2e`
-- [ ] Build de producción verde: `pnpm --filter @dsm/web build`
-- [ ] Gate de auditoría en exit 0: `pnpm run audit:gate`
-- [ ] `vitest` 2→3: explícitamente resuelto (decisión del usuario tomada y ejecutada, o diferido con exclusión nominal) antes de considerar el change cerrado — no puede quedar en limbo sin ninguna de las dos.
+- [x] Todos los tests unitarios/integración pasan: `pnpm -r test` (apps/web 996/996, apps/api 1966/1966)
+- [x] Lint / typecheck limpios: `pnpm -r lint && pnpm -r typecheck`
+- [x] E2E de `apps/web` verde: `pnpm --filter @dsm/web test:e2e` (58/58, con `@playwright/test@1.49.1` — T4.1 bloqueado, ver proposal.md)
+- [x] E2E de `apps/api` (testcontainers) verde: `pnpm --filter @dsm/api test:e2e` (84/84 suites, 534/534 tests en la corrida limpia)
+- [x] Build de producción verde: `pnpm --filter @dsm/web build`
+- [x] Gate de auditoría en exit 0: `pnpm run audit:gate`
+- [x] `vitest` 2→3: explícitamente resuelto — spike aislado (T4.2, rama `spike/US-022-vitest-3`, blast radius cero) sin integrar; diferido con exclusión nominal en `scripts/.audit-exclusions.json` hasta que el usuario decida integrar el bump a esta rama. No queda en limbo: la decisión está documentada, sólo pendiente de ejecución.
