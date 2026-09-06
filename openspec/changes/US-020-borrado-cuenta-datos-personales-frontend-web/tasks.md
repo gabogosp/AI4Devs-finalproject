@@ -138,7 +138,7 @@ language: es
     ninguna llamada de red (a diferencia de `logout()`).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/SessionProvider.test.tsx -t "accountDeleted"`
 
-- [ ] **T3.4 — `DeleteAccountSection` — componente base: copy, gate de apertura, `Escape`/Cancelar sin red (AC-7)**
+- [x] **T3.4 — `DeleteAccountSection` — componente base: copy, gate de apertura, `Escape`/Cancelar sin red (AC-7)**
   - **Pattern**: `per design.md §D5` — calcado a `OrderAnonymizeAction.tsx`
     en estructura (estado local `confirmOpen`/`busy`/`error`, `ConfirmDialog`
     reusado sin modificar), con el copy exacto de `design.md §D5`.
@@ -248,7 +248,7 @@ language: es
 
 ## Fase 6 — Observabilidad (eventos sin PII)
 
-- [ ] **T6.1 — 4 literales nuevos en `BusinessEvent`, en `PUBLIC_EVENTS`**
+- [x] **T6.1 — 4 literales nuevos en `BusinessEvent`, en `PUBLIC_EVENTS`** (adelantada desde T3.4: el componente de D5 se construyó como una sola unidad y `track(...)` no compilaba sin estos literales)
   - **Pattern**: agregar al bloque comentado "Historial de compras del
     cliente (US-015)" en `apps/web/src/lib/observability/events.ts` — son
     de superficie de CLIENTE, no de operador (mismo criterio que
