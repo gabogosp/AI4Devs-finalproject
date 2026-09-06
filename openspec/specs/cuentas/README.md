@@ -126,8 +126,18 @@ Suite QA-owned (`US-014-registro-login-qa`), Modo A sibling — la capa nueva se
 por correr contra la **API real** (no `api-stub.mjs`, donde `bcrypt` es una comparación
 de strings, el rate-limit se dispara con un header y la rotación vive en un `Map`):
 
-- **E2E de navegador** (Playwright, `qa/e2e/`): 13/13 escenarios verdes — registro con
+- **API real** (Playwright, `qa/e2e/cuenta-cliente.spec.ts`, API context — corrección de
+  etiqueta: el `qa-plan.md` original lo llamaba "E2E de navegador", pero corre sobre
+  `APIRequestContext`, sin un solo `page.goto`): 13/13 escenarios verdes — registro con
   sesión inmediata, login, logout que invalida de verdad, recuperación de punta a punta.
+- **E2E de navegador real** (`qa/e2e/cuenta-acceso-cross-stack.spec.ts`, follow-up
+  post-archive, sweep tras `historial-compras` PR #89): el hueco que dejaba la fila
+  anterior — navegador de verdad + API real + app **construida**, no el stub de
+  `apps/web/e2e/auth-journey.spec.ts` (Layer 2, dev-owned) ni el `APIRequestContext` de
+  arriba. 2/2 verdes: registro con cookies `httpOnly` reales, logout que invalida de
+  verdad, dos vueltas de login. `/v1/auth/*` ya tenía su rewrite same-origin (ADR-0013)
+  desde US-008 — este spec es la prueba viva de que la cookie viaja ida y vuelta contra
+  el build real, no sólo que el código la declara.
 - **Seguridad observable** (Playwright, API context): anti-enumeración medida sobre
   **status + cuerpo + latencia** entre caso existente e inexistente (banda amplia, no un
   umbral fino — sería flaky); rotación y reuso del refresh; contraseña nunca expuesta,
