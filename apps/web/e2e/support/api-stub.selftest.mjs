@@ -298,6 +298,68 @@ try {
   check('AC-10: 429 forzado trae Retry-After', forzado.status === 429 &&
     forzado.headers.get('retry-after') === '42');
 
+  // --- Borrado de cuenta y datos personales (US-020 T7.1/T7.2) ---
+  await fetch(`${BASE}/__reset?scope=auth`, { method: 'POST' });
+
+  const sinSesionDelete = await fetch(`${BASE}/v1/me`, { method: 'DELETE' });
+  check('DELETE /v1/me sin sesión → 401', sinSesionDelete.status === 401);
+
+  const loginParaBorrado = await postAuth('login', {
+    email: 'ana@example.com',
+    password: 'Contrasena-Valida-1',
+  });
+  const cookiesBorrado = loginParaBorrado.headers.getSetCookie();
+  const accessBorrado = cookiesBorrado.find((c) => c.startsWith('dsm_access=')).split(';')[0];
+  const csrfBorrado = cookiesBorrado
+    .find((c) => c.startsWith('dsm_csrf='))
+    .split(';')[0]
+    .split('=')[1];
+
+  const sinCsrfDelete = await fetch(`${BASE}/v1/me`, {
+    method: 'DELETE',
+    headers: { Cookie: accessBorrado, Origin: BASE },
+  });
+  check('DELETE /v1/me con sesión pero sin X-CSRF-Token → 403', sinCsrfDelete.status === 403);
+
+  const forzadoBloqueo = await fetch(`${BASE}/v1/me`, {
+    method: 'DELETE',
+    headers: {
+      Cookie: accessBorrado,
+      Origin: BASE,
+      'X-CSRF-Token': csrfBorrado,
+      'X-Force-Blocking-Orders': '1',
+    },
+  });
+  const cuerpoBloqueo = await forzadoBloqueo.json();
+  check(
+    'DELETE /v1/me con x-force-blocking-orders → 409 con blocking_orders (pending_payment)',
+    forzadoBloqueo.status === 409 &&
+      Array.isArray(cuerpoBloqueo.blocking_orders) &&
+      cuerpoBloqueo.blocking_orders.some((o) => o.status === 'pending_payment'),
+    JSON.stringify(cuerpoBloqueo),
+  );
+  check(
+    'el 409 de bloqueo NO limpia la sesión (la cuenta sigue viva)',
+    forzadoBloqueo.headers.getSetCookie().length === 0,
+  );
+
+  const meAntesDeBorrar = await fetch(`${BASE}/v1/auth/me`, { headers: { Cookie: accessBorrado } });
+  check('la sesión sigue viva tras el 409 de bloqueo', meAntesDeBorrar.status === 200);
+
+  const borradoReal = await fetch(`${BASE}/v1/me`, {
+    method: 'DELETE',
+    headers: { Cookie: accessBorrado, Origin: BASE, 'X-CSRF-Token': csrfBorrado },
+  });
+  check('DELETE /v1/me con sesión y CSRF válidos → 204', borradoReal.status === 204);
+  check(
+    'el 204 limpia las 3 cookies de sesión (Max-Age=0)',
+    borradoReal.headers.getSetCookie().length === 3 &&
+      borradoReal.headers.getSetCookie().every((c) => c.includes('Max-Age=0')),
+  );
+
+  const meDespuesDeBorrar = await fetch(`${BASE}/v1/auth/me`, { headers: { Cookie: accessBorrado } });
+  check('tras el borrado la sesión ya no sirve → 401', meDespuesDeBorrar.status === 401);
+
   // Aislamiento: resetear auth NO puede tocar el catálogo ni la PDP.
   await fetch(`${BASE}/v1/admin/products/33333333-3333-4333-8333-333333333333`, {
     method: 'PATCH',

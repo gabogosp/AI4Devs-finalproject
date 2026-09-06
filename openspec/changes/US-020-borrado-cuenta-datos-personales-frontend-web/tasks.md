@@ -297,7 +297,7 @@ language: es
 > esta fase y el bug real de rewrite ausente lo encontró QA recién en PR
 > #89. Esta fase es responsabilidad de **frontend-web**, no se difiere.
 
-- [ ] **T7.1 — `api-stub.mjs` gana `DELETE /v1/me` (204, cookies limpias, 401, 403) + checks en `api-stub.selftest.mjs`**
+- [x] **T7.1 — `api-stub.mjs` gana `DELETE /v1/me` (204, cookies limpias, 401, 403) + checks en `api-stub.selftest.mjs`**
   - **Pattern**: `per design.md §D8` — mismo criterio que la superficie de
     auth existente (cookies con atributos reales, sesión en el `Map`
     `sessions`). El stub es "un oráculo sin verificar" si no se prueba por su
@@ -310,7 +310,7 @@ language: es
     CSRF válido, `403`.
   - **Verify**: `node apps/web/e2e/support/api-stub.selftest.mjs` (exit 0; agrega ≥3 `check(...)` nuevos para `/v1/me` — 204+cookies limpias, 401 sin sesión, 403 sin CSRF)
 
-- [ ] **T7.2 — `api-stub.mjs` gana el header de fuerza `x-force-blocking-orders` (409 determinista) + check en `api-stub.selftest.mjs`**
+- [x] **T7.2 — `api-stub.mjs` gana el header de fuerza `x-force-blocking-orders` (409 determinista) + check en `api-stub.selftest.mjs`**
   - **Pattern**: `per design.md §D8` — mismo criterio que
     `x-force-rate-limit` ya existente en la superficie de auth: determinista,
     sin sembrar una orden real.
