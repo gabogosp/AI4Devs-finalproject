@@ -31,7 +31,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Fase 1 — Reconciliación de hallazgos nuevos
 
-- [ ] T1.1 Re-auditar en fresco y reconciliar contra la tabla de la US §10 + los 4 hallazgos nuevos que la US ya anticipa (`browserslist`×2, `path-to-regexp`, `@faker-js/faker`). Ninguno es de producción, pero cuentan para AC-5.
+- [x] T1.1 Re-auditar en fresco y reconciliar contra la tabla de la US §10 + los 4 hallazgos nuevos que la US ya anticipa (`browserslist`×2, `path-to-regexp`, `@faker-js/faker`). Ninguno es de producción, pero cuentan para AC-5.
   - **Exit criterion**: cada advisory `high`/`critical` presente en el audit fresco está o bien cubierto por una tarea de las Fases 2–5 de este `tasks.md`, o bien tiene una entrada planificada para `scripts/.audit-exclusions.json` (Fase 6) con motivo, dueño y fecha de revisión.
   - **Verify**: `pnpm audit --audit-level=high --json > /tmp/us-022-fresh-audit.json && node -e "const a=require('/tmp/us-022-fresh-audit.json'); console.log(Object.keys(a.advisories ?? {}).length, 'advisories')"` — el número de advisories listado debe quedar en cero al final de Fase 8 (T8.1), no acá; esta verificación es sólo de inventario.
 
