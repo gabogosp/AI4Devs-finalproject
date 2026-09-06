@@ -1461,7 +1461,7 @@
   # artefacto construido porque breached-passwords.txt no se copiaba a dist/ (fix e327332).
   # T1.2 en adelante BLOQUEADO por entorno: api-up.sh promete elevar AUTH_RATE_LIMIT_MAX y
   # no surte efecto, así que el registro da 429 y toda la suite empieza registrando.
-  status: in progress
+  status: archived   # /archive-change 2026-09-06 — última disciplina de US-014, US pasa a Done
   parent-us: docs/user-stories/US-014-registro-login.md
   linear-task-id: null
   audit-baseline: null
@@ -1491,15 +1491,25 @@
   # que no cubre login; no hay NFR numérico ratificado para esa ruta (OQ-QA-5, medido
   # p95=621,93ms con bcrypt cost 12 costando ~250ms por diseño). PR abierto igual, con el
   # gap documentado en el test plan — decisión del PO.
+  #
+  # 2026-09-06 (PR #86): OQ-QA-5 resuelto — el PO ratificó un presupuesto propio de login,
+  # p95 ≤ 800ms, aceptando el costo de bcrypt como parte del presupuesto. Re-corrido k6
+  # contra la API real (Postgres descartable propio): p95 = 654,41ms, 200/200 checks,
+  # thresholds passed. T4.1 cerrada. 18/20 checkboxes de tasks.md — quedan 2 sin marcar,
+  # documentados como deuda conocida (no bloqueante) en openspec/specs/cuentas/README.md:
+  # regresión de suites QA existentes (no re-corrida, cubierta de facto por CI continua en
+  # cada PR posterior) y los 2 charters manuales TC-170/TC-171 (execution_mode: manual,
+  # verificado que qa/exploratory/us-014-cuentas.md dice "pendiente de ejecución" —
+  # asignados a la fase de prueba local/visual del usuario, no bloquean Done).
   estimate-hours: 6.5
   assignee: sin-asignar
   branch: feat/US-014-registro-login-qa
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/9
   pr-opened-at: 2026-08-29
   created: 2026-08-23
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T14:12:47Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-014-registro-login-qa
 
 - name: US-012-panel-ordenes-dueno-frontend-web
   us-id: US-012
