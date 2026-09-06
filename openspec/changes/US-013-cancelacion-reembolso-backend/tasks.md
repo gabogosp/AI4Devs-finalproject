@@ -58,7 +58,7 @@ language: es
 
 ## Fase 1 — Errores de dominio
 
-- [ ] **T1.1 — `OrderCannotBeCancelledError` (409) + razón `already-delivered`**
+- [x] **T1.1 — `OrderCannotBeCancelledError` (409) + razón `already-delivered`**
   - **Pattern**: clase de dominio calcada a `OrderNotPendingPaymentError`
     (`payment-confirmation-errors.ts`) — `per backend-node-standards.md §6 —
     errores de dominio tipados, RFC 7807`:

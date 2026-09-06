@@ -1,7 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 
-export type PaymentsRejectedReason = 'not-pending-payment' | 'insufficient-stock';
+export type PaymentsRejectedReason =
+  | 'not-pending-payment'
+  | 'insufficient-stock'
+  | 'already-delivered';
 
 export type PaymentsProvider = 'mercadopago' | 'simulated_dsm';
 
