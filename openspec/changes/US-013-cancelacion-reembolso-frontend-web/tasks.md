@@ -63,7 +63,7 @@ language: es
 
 ## Fase 2 — Repositorio (`ordersService.cancel`)
 
-- [ ] **T2.1 — `ordersService.cancel(id)`**
+- [x] **T2.1 — `ordersService.cancel(id)`**
   - **Pattern**: mismo shape que `anonymize(id)` (una operación generada +
     `parseContract`), con el alias de import que resuelve la colisión de
     nombres `CancelOrderResponse` (Zod vs tipo) — `per design.md §D1`:
