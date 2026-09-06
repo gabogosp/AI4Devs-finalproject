@@ -415,7 +415,7 @@ language: es
     (el spec extendido corre completo, sin regresión sobre las rutas
     preexistentes)
 
-- [ ] T7.3 AC-8 — sólo pagadas, probado end-to-end contra los 6 estados
+- [x] T7.3 AC-8 — sólo pagadas, probado end-to-end contra los 6 estados
   - **Exit criterion**: con 6 órdenes sembradas (una por cada uno de los 6
     valores de `status`, mismo `created_at` dentro del rango pedido), los 3
     endpoints de lectura excluyen **siempre** las de `pending_payment` y
