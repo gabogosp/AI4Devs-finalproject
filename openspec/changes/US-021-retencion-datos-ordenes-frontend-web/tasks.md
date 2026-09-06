@@ -136,7 +136,7 @@
 
 ## Fase 4 — Integración en `OrderDetail`
 
-- [ ] T4.1 Sección de contacto condicional (AC-4/AC-5)
+- [x] T4.1 Sección de contacto condicional (AC-4/AC-5)
   - **Depends on**: T0.2, T3.2.
   - **Pattern**: `per frontend-standards.md §11.bis.4 — audit trail surfacing` (mostrar
     cuándo + por qué junto al dato, no en un log aparte). Ver snippet completo en
@@ -150,7 +150,7 @@
   - **Verify**: `apps/web/src/features/orders/OrderDetail.test.tsx` — 2 casos nuevos: orden
     no anonimizada (regresión: sigue mostrando buyer_email) y orden anonimizada (muestra la
     indicación, NO muestra buyer_email/buyer_phone/buyer_name reales) — `vitest run` verde.
-- [ ] T4.2 Montar `OrderAnonymizeAction` dentro de `OrderDetail`
+- [x] T4.2 Montar `OrderAnonymizeAction` dentro de `OrderDetail`
   - **Depends on**: T4.1.
   - **Exit criterion**: `OrderDetail` pasa `{ id, anonymizedAt, anonymizationReason }` a
     `OrderAnonymizeAction` y usa el mismo `onConfirmed` que ya usa `OrderStatusActions` para
@@ -159,7 +159,7 @@
   - **Verify**: `OrderDetail.test.tsx` — caso "tras confirmar la anonimización, la sección
     de contacto se actualiza sin recargar la página completa (no hay un segundo `render`)"
     — `vitest run` verde.
-- [ ] T4.3 Helper de formato de fecha (o reuso)
+- [x] T4.3 Helper de formato de fecha (o reuso)
   - **Pattern**: verificar primero si `OrderStatusHistory.tsx` ya tiene un helper de
     formato de `changed_at`; si existe, reusarlo tal cual (no duplicar formato de fecha en
     dos lugares del mismo feature). Si no existe, crear
