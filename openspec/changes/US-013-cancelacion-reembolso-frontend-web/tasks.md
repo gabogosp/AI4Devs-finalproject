@@ -172,7 +172,7 @@ language: es
     abierto** (mismo criterio que `OrderAnonymizeAction`).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/OrderCancelAction.test.tsx -t "T4.1"`
 
-- [ ] **T4.2 — Idempotencia visual: doble-click no dispara un segundo `POST`**
+- [x] **T4.2 — Idempotencia visual: doble-click no dispara un segundo `POST`**
   - **Pattern**: calcado al test equivalente de `OrderAnonymizeAction.test.tsx`
     ("idempotencia visual") — `per frontend-resilience-patterns` #3/#4/#9,
     `design.md §Context` (F51): `server.use` con una promesa que no resuelve
