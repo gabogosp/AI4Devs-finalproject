@@ -273,7 +273,7 @@ language: es
     este change y sin ningún conocimiento de `customerId`, no necesitan
     cambiar para seguir pasando.
   - **Verify**: `git diff --quiet -- apps/api/src/checkout/checkout.service.spec.ts apps/api/src/checkout/checkout.module.spec.ts apps/api/src/checkout/checkout-errors.spec.ts apps/api/src/checkout/e2e-checkout-cache.spec.ts apps/api/src/checkout/e2e-checkout-pii.spec.ts apps/api/src/checkout/e2e-checkout-ratelimit.spec.ts apps/api/src/checkout/e2e-checkout-security.spec.ts apps/api/src/checkout/e2e-checkout-validation.spec.ts apps/api/src/checkout/ac2-order-metrics-preserved.spec.ts apps/api/src/checkout/ac2-price-snapshot.spec.ts apps/api/src/checkout/ac6-order-not-deleted.spec.ts apps/api/src/checkout/ac6-stock-untouched.spec.ts && pnpm --filter @dsm/api test -- --testPathPattern="checkout"`
-- [ ] T5.6 Nuevo: checkout con sesión de cliente → `customer_id` en base
+- [x] T5.6 Nuevo: checkout con sesión de cliente → `customer_id` en base
   (e2e, feliz)
   - **Pattern**: `bootTestApp([CheckoutModule, AuthModule])`, cookie de
     `customerAccessCookie()` (T5.4) + `POST /v1/checkout` con carrito válido
@@ -282,14 +282,14 @@ language: es
   - **Exit criterion**: la respuesta HTTP del 201 **no** incluye `customer_id`
     en ninguna clave (verificado con `Object.keys(res.body)`).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-checkout-customer-link`
-- [ ] T5.7 AC-1/AC-3/AC-7: listado del historial (e2e)
+- [x] T5.7 AC-1/AC-3/AC-7: listado del historial (e2e)
   - **Pattern**: 2 órdenes propias dentro de retención + 1 fuera + 1 ajena +
     1 `pending_payment` propia → `GET /v1/me/orders` devuelve sólo las 2,
     orden `-created_at`; con 0 órdenes, `{ data: [], pagination.total: 0 }`.
   - **Exit criterion**: el body nunca incluye el UUID interno de ninguna
     orden en ninguna clave.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-orders-history-list`
-- [ ] T5.8 AC-2/AC-4/AC-5: detalle del historial (e2e)
+- [x] T5.8 AC-2/AC-4/AC-5: detalle del historial (e2e)
   - **Pattern**: `GET /v1/me/orders/:order_number` sin cookie → 401; con
     cookie de OTRO cliente sobre un `order_number` que no es suyo → 404; con
     cookie propia → 200 con `items`/`fulfillment`/`status`.
@@ -297,7 +297,7 @@ language: es
     no matchea ninguna orden) devuelven el MISMO `type`/`status` RFC 7807 —
     indistinguibles.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-orders-history-detail`
-- [ ] T5.9 AC-7 en el borde: orden justo en el corte de retención
+- [x] T5.9 AC-7 en el borde: orden justo en el corte de retención
   - **Pattern**: orden con `created_at` = cutoff exacto (incluida, `gte`) y
     orden con `created_at` = cutoff - 1ms (excluida) — prueba de límite sobre
     `computeRetentionCutoff` + `listByCustomer`/`findByOrderNumberForCustomer`.
