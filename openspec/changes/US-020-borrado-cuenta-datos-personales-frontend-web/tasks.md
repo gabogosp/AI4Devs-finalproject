@@ -49,7 +49,7 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — `apps/web` limpio antes de empezar**
+- [x] **T0.1 — `apps/web` limpio antes de empezar**
   - **Exit criterion**: no hay cambios sin commitear en
     `apps/web/src/features/account/`, `apps/web/src/lib/http/errors.ts`,
     `apps/web/src/lib/observability/events.ts`, `apps/web/e2e/`,
@@ -57,13 +57,13 @@ language: es
     worktree.
   - **Verify**: `git status --porcelain apps/web/src/features/account apps/web/src/lib/http/errors.ts apps/web/src/lib/observability/events.ts apps/web/e2e "apps/web/app/(storefront)/mi-cuenta"` vacío
 
-- [ ] **T0.2 — El cliente generado ya tiene `deleteAccount`/`AccountHasActiveOrdersProblem` (regenerado por el orquestador, no por este change)**
+- [x] **T0.2 — El cliente generado ya tiene `deleteAccount`/`AccountHasActiveOrdersProblem` (regenerado por el orquestador, no por este change)**
   - **Exit criterion**: `apps/web/src/api/generated/endpoints.ts` exporta
     `deleteAccount`; `apps/web/src/api/generated/model/accountHasActiveOrdersProblem.ts`
     existe; `apps/web/src/api/generated/zod.ts` exporta `DeleteAccountResponse`.
   - **Verify**: `grep -q "export const deleteAccount " apps/web/src/api/generated/endpoints.ts && test -f apps/web/src/api/generated/model/accountHasActiveOrdersProblem.ts && grep -q "^export const DeleteAccountResponse " apps/web/src/api/generated/zod.ts`
 
-- [ ] **T0.3 — El rewrite `/v1/me/:path*` ya existe (PR #89, no de este change)**
+- [x] **T0.3 — El rewrite `/v1/me/:path*` ya existe (PR #89, no de este change)**
   - **Exit criterion**: `next.config.mjs` tiene una entrada de `rewrites()`
     con `source: '/v1/me/:path*'` — este change NO la agrega, sólo la
     consume y la verifica (T7.1-T7.4).

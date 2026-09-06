@@ -2785,7 +2785,7 @@
   us-id: US-020
   discipline: frontend-web
   variant: null
-  status: draft   # /plan-frontend-web-ticket US-020 (2026-09-06) — plan escrito, sin PR todavía
+  status: in progress   # /develop-frontend-web US-020 (2026-09-06) — pre-requisitos verificados, tasks en curso
   parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión
   audit-baseline: null
