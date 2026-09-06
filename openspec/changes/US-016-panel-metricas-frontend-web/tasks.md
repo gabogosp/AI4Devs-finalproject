@@ -104,7 +104,7 @@
 
 ## Phase 5 — Filtro de rango + nota de acotado (AC-4, AC-9)
 
-- [ ] T5.1 `src/features/metrics/rangeClampNote.ts` — helper puro
+- [x] T5.1 `src/features/metrics/rangeClampNote.ts` — helper puro
       `describeClamp(requested, effective): string | null`, reusado por los 3
       widgets (evita 3 copias divergentes del mismo texto).
   - **Exit criterion**: `null` cuando `requested` es `undefined` o coincide con
