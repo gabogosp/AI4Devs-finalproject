@@ -267,7 +267,7 @@ language: es
     que `login_failed`).
   - **Verify**: `pnpm --filter @dsm/web exec tsc --noEmit`
 
-- [ ] **T6.2 — `account.events.test.tsx` (nuevo) — sin PII, secuencia correcta**
+- [x] **T6.2 — `account.events.test.tsx` (nuevo) — sin PII, secuencia correcta**
   - **Pattern**: calcado a `orders.events.test.tsx` (nombre/email
     "centinela" reconocibles; falla si aparecen en el volcado JSON de los
     eventos capturados) — `per design.md` referencia a ese archivo.
