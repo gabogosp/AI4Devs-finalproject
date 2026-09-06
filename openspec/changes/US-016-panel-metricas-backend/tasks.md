@@ -246,7 +246,14 @@ language: es
 
 ## Fase 4: Observabilidad — `ReportsEventsService` — 0,4 h
 
-- [ ] T4.1 `ReportsEventsService` — nuevo, mismo esqueleto que `OrderEventsService`
+- [x] T4.1 `ReportsEventsService` — nuevo, mismo esqueleto que `OrderEventsService`
+  - **DRIFT DOCUMENTADO**: el exit criterion original pedía
+    `dsm_reports_events_total{event="...",dataset="..."}` (2 labels).
+    `MetricsService.counterFor` (sin tocar, per Non-goals) sólo admite la
+    etiqueta `event` — misma convención que TODOS los `*-events.service.ts`
+    existentes (`OrderEventsService`, `SearchEventsService`: "La ÚNICA
+    etiqueta es `event`"). Resuelto siguiendo ese precedente: `dataset` va al
+    log, no a la métrica. Ver docstring de `report-events.service.ts`.
   - **Pattern**: `per design.md §D10` — delega el contador en `MetricsService`
     (`@Optional()`, el de `observability/`), firma que sólo acepta el
     `dataset` (enum de 3 valores) como dimensión, nunca PII ni un rango de
