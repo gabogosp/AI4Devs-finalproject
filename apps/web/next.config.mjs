@@ -27,16 +27,17 @@ const securityHeaders = [
  * filtrar topología sin ganar nada (next-standards §8).
  *
  * Falla ruidoso si falta en producción: un rewrite que apunta a `undefined`
- * devuelve 404, y ese síntoma no dice nada sobre la causa. Desde US-008 gobierna
- * **tres** superficies (`/v1/auth/*`, `/v1/cart/*` y `/v1/checkout/*`), así que
- * un deploy sin ella rompe el login, el carrito **y** el checkout.
+ * devuelve 404, y ese síntoma no dice nada sobre la causa. Desde US-015 gobierna
+ * **cuatro** superficies (`/v1/auth/*`, `/v1/cart/*`, `/v1/checkout/*` y
+ * `/v1/me/*`), así que un deploy sin ella rompe el login, el carrito, el
+ * checkout **y** el historial de compras.
  */
 function apiOrigin() {
   const origin = process.env.API_INTERNAL_ORIGIN;
   if (origin) return origin;
   if (process.env.NODE_ENV === 'production') {
     throw new Error(
-      'API_INTERNAL_ORIGIN es obligatoria: sin ella los rewrites de /v1/auth/*, /v1/cart/* y /v1/checkout/* apuntan a undefined, y el login, el carrito y el checkout devuelven 404.',
+      'API_INTERNAL_ORIGIN es obligatoria: sin ella los rewrites de /v1/auth/*, /v1/cart/*, /v1/checkout/* y /v1/me/* apuntan a undefined, y el login, el carrito, el checkout y el historial de compras devuelven 404.',
     );
   }
   return 'http://localhost:3000';
@@ -73,6 +74,15 @@ const nextConfig = {
    * Sin esta segunda entrada el carrito funciona en local y **está roto en
    * producción**, con el peor perfil de defecto posible: invisible hasta el
    * deploy.
+   *
+   * **El historial de compras hereda el mecanismo (US-015).**
+   * `orderHistoryService.ts` ya marca sus llamadas `session: 'customer'`
+   * (mismo sujeto que la sesión), así que `customFetch` ya las trataba como
+   * same-origin — pero la entrada de `/v1/me/*` nunca se agregó acá. Mismo
+   * perfil de defecto que el del carrito: invisible en Layer 1/2 (mockeados
+   * por URL, no enrutados de verdad) y sólo detectable contra la app
+   * construida (encontrado por el E2E cross-stack de US-015, no por ningún
+   * test unitario o de componente).
    */
   async rewrites() {
     return [
@@ -87,6 +97,10 @@ const nextConfig = {
       {
         source: '/v1/checkout/:path*',
         destination: `${apiOrigin()}/v1/checkout/:path*`,
+      },
+      {
+        source: '/v1/me/:path*',
+        destination: `${apiOrigin()}/v1/me/:path*`,
       },
     ];
   },
