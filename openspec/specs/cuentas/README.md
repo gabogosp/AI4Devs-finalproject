@@ -58,8 +58,14 @@ identidad (`customers` con `role: customer|admin`):
   `POST /admin/auth/login` acepta ahora `{email, password}` además del
   bootstrap token, sin tocar `AdminGuard` ni el contrato `role=admin`.
 - **`CustomerResponseDto`** expone exactamente `{id, email, name, phone,
-  created_at}` — nunca `password_hash`, `role`, contadores de lockout ni
-  `deleted_at` (AC-8).
+  avatar_url, created_at}` — nunca `password_hash`, `role`, contadores de
+  lockout ni `deleted_at` (AC-8).
+- **Edición de perfil** (US-024 backend, `PATCH /v1/me`): `name` editable
+  (no vacío/no sólo-espacios) y `avatar_url` por URL pegada (http/https
+  validada con `@IsUrl` real, `null` la limpia) — mismo par de guards
+  (`CustomerGuard`+`CsrfGuard`) e idéntica fuente estructural de identidad
+  (`req.customerId`) que `DELETE /v1/me` (US-020). El email sigue sin ser
+  editable desde acá (`additionalProperties: false`).
 
 Una **UI de cliente** sobre esta superficie (US-014 frontend-web, rutas
 `/ingresar`, `/crear-cuenta`, `/recuperar`, `/recuperar/confirmar`,

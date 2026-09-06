@@ -76,6 +76,7 @@ Superficie cubierta: `/ingresar`, `/crear-cuenta`, `/recuperar`,
 | R-16 | El header muestra "Ingresar" desde el primer frame para el anónimo (mayoría), sin parpadeo; el autenticado ve un placeholder del mismo ancho durante la hidratación — sin CLS. | Design §D3 |
 | R-17 | `X-CSRF-Token` se adjunta sólo en los métodos no seguros de `logout`/`refresh` — nunca en `register`/`login`/`reset`. | Design §D5 |
 | R-18 | `/recuperar/confirmar` borra el token de la URL (`history.replaceState`) apenas lo lee. | Design §D11 |
+| R-19 | `PATCH /v1/me` (US-024, backend) permite editar `name` y `avatar_url` (URL pegada, http/https, validada con `@IsUrl` real). `avatar_url: null` limpia el avatar. `Customer` (schema público) gana `avatar_url` como campo aditivo — se propaga a `register`/`login`/`GET /auth/me`. | Backend PR #128 |
 
 ### Negative-space (lo que NO debe pasar)
 
@@ -86,6 +87,7 @@ Superficie cubierta: `/ingresar`, `/crear-cuenta`, `/recuperar`,
 | N-10 | `POST /auth/refresh` nunca se reintenta ante error de red — reintentar un token de un solo uso dispara la detección de reuso del backend. |
 | N-11 | Ningún evento de observabilidad (`account_registered`, `login_succeeded`, `login_failed`, `logout`, `password_reset_requested`, `password_reset_completed`, `session_expired`) lleva `customer_id`, email, contraseña, ni valor de cookie. |
 | N-12 | El `next` de `/ingresar?next=…` se sanea a ruta relativa del mismo origen — nunca un open redirect. |
+| N-13 | `PATCH /v1/me` no acepta `email` en el body (`additionalProperties: false` → 422) y opera EXCLUSIVAMENTE sobre `req.customerId` de la sesión — ningún parámetro de body/query/path puede apuntar a otro cliente (US-024 AC-6/AC-7). |
 
 ### No funcionales
 
