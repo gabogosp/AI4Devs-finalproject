@@ -478,6 +478,11 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   granularidad y `RangeFilterForm` son alcanzables y operables sólo con teclado (`Tab`/
   `Enter`), con foco visible.
 - Verify: `pnpm --filter @dsm/qa test:a11y -- --grep "metricas" --reporter=list` (exit 0)
+- **Estado**: verde — 3/3 tests (con datos reales + chart pintado, 3 estados vacíos
+  reales, teclado). `qa/e2e/metricas-a11y.spec.ts`. Las aserciones "con datos" no
+  buscan un producto por nombre (una base con historial acumulado no garantiza que
+  entre en el `limit` default del ranking) — auditan el markup "con datos" en
+  general, no una fila específica.
 
 ### 5.5 Carga (k6)
 
