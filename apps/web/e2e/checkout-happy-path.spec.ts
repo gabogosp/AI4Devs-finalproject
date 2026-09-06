@@ -35,6 +35,17 @@ test.describe('Checkout — camino feliz (T7.3)', () => {
 
     await expect(page.getByRole('heading', { name: /pedido quedó registrado/i })).toBeVisible();
     await expect(page.getByText(`#${body.order_number}`)).toBeVisible();
+
+    // US-023/PR#117 — el pago de DSM es manual/offline: la confirmación
+    // reemplaza el viejo botón "Continuar al pago" (disabled, Deferred:
+    // US-009) por un link real de WhatsApp con el order_number en el
+    // mensaje — es el dato que el dueño necesita para ubicar la orden desde
+    // PendingPaymentsPanel.
+    const linkWhatsApp = page.getByRole('link', { name: /coordinar el pago por whatsapp/i });
+    await expect(linkWhatsApp).toBeVisible();
+    const href = await linkWhatsApp.getAttribute('href');
+    expect(href).toContain('wa.me/');
+    expect(decodeURIComponent(href ?? '')).toContain(`#${body.order_number}`);
   });
 
   test('sin consentimiento marcado, el submit no avanza ni crea la orden', async ({ page }) => {
