@@ -513,6 +513,13 @@ suposición de este plan.
   sembrados por `seed-metricas.ts`, con `checks` de status **y** de shape del body
   (`k6-load-scaffolding` §Checks vs thresholds — un 200 con body vacío no pasa el gate).
 - Verify: `k6 run qa/performance/reports-read.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"` (exit 0)
+- **Estado**: verde — 3 thresholds cumplidos con margen amplio contra 100 órdenes
+  activas sembradas (`seed-reports-load.ts`, 2 VUs/20s): p95 real 608µs (`sales`),
+  596µs (`summary`), 655µs (`top-products`) — muy por debajo del presupuesto de
+  300ms, mismo orden de magnitud que `US-012-panel-ordenes-dueno-qa` (p95 real
+  1.81 ms). `checks` 100%, `http_req_failed` 0%. `qa/performance/reports-read.js` +
+  `qa/performance/seed-reports-load.ts`; `reports_read` agregado a
+  `qa/performance/lib/thresholds.js`.
 
 Se agrega `reports_read` a `qa/performance/lib/thresholds.js` (fuente única de
 presupuestos, mismo criterio que `list_orders`/`order_transition` de US-012).

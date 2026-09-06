@@ -134,9 +134,25 @@ export const order_transition = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * Lectura de los 3 datasets del panel de métricas de US-016 (QA-016-PERF-1).
+ * El número sale de la US §9 ("Latencia p95 lectura < 300ms"), heredado de
+ * PRD §4/E2E §17/design.md §D8 — mismo NFR que `list_orders`, sin condicional.
+ * Tags por endpoint (`k6-load-scaffolding` §Per-scenario thresholds): el
+ * endpoint más lento no se esconde detrás de un agregado global.
+ */
+export const reports_read = {
+  'http_req_duration{endpoint:reports_sales}': ['p(95)<300'],
+  'http_req_duration{endpoint:reports_top_products}': ['p(95)<300'],
+  'http_req_duration{endpoint:reports_summary}': ['p(95)<300'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
-// (`auth_login`), US-023 (`confirm_payment`) y US-012 (`list_orders`/
-// `order_transition`): las suites QA extienden el mismo archivo compartido.
+// (`auth_login`), US-023 (`confirm_payment`), US-012 (`list_orders`/
+// `order_transition`) y US-016 (`reports_read`): las suites QA extienden el
+// mismo archivo compartido.
 export default {
   list_products,
   storefront_product,
@@ -146,5 +162,6 @@ export default {
   confirm_payment,
   list_orders,
   order_transition,
+  reports_read,
   MIN_SKUS,
 };
