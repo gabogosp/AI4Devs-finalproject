@@ -141,7 +141,7 @@
   - **Exit criterion**: dado un array de `SalesRow`, renderiza sin error un
     `Bar` y un `Line` con los `yAxisId` cruzados correctamente.
   - **Verify**: `pnpm --filter @dsm/web exec vitest run src/features/metrics/charts/SalesComposedChart.test.tsx`.
-- [ ] T6.3 `src/features/metrics/SalesChart.tsx` — `'use client'`; propio
+- [x] T6.3 `src/features/metrics/SalesChart.tsx` — `'use client'`; propio
       `AsyncState<SalesResponse>`; selector de granularidad (`<select>`,
       aplica de inmediato — a diferencia del rango, es un único valor
       discreto); carga `SalesComposedChart` vía
