@@ -138,7 +138,7 @@
 
 ## Fase 5 — Routing e integración
 
-- [ ] T5.1 Páginas de listado y detalle bajo `(storefront)/mi-cuenta/compras`
+- [x] T5.1 Páginas de listado y detalle bajo `(storefront)/mi-cuenta/compras`
   - **Depends on**: T3.1, T4.1.
   - **Pattern**: `per ADR-0010 — namespace storefront vs admin` (confirmado: `/mi-cuenta/*` es
     storefront, sin conflicto de namespace) + mismo esqueleto que
@@ -158,7 +158,7 @@
     el feature nuevo) verificando que, con `state.kind === 'anonymous'`, ni
     `PurchaseHistoryList` ni `PurchaseDetail` llegan a montarse (ningún `fetch` a
     `/v1/me/orders*` se dispara) — `vitest run` verde.
-- [ ] T5.2 Cerrar el placeholder de `AccountPanel`
+- [x] T5.2 Cerrar el placeholder de `AccountPanel`
   - **Depends on**: T5.1.
   - **Pattern**: reemplaza el bloque `<section>` "Tus compras — Próximamente" (líneas 40-45
     actuales de `AccountPanel.tsx`) por un link real. Snippet exacto en `design.md` §Approach.
