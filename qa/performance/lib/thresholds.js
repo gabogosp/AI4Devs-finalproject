@@ -82,16 +82,17 @@ export const checkout = {
 };
 
 /**
- * Login de cuenta de cliente de US-014 (TC-160). **Presupuesto NO ratificado**
- * (OQ-QA-5, `openspec/changes/US-014-registro-login-qa/proposal.md`): el PRD
- * §4 fija «p95 de escritura (carrito/orden) < 500 ms», pero esa fila dice
- * literalmente "carrito/orden" — no cubre login — y US-014 §9 no fija ningún
- * número de latencia para esta ruta, sólo NFRs cualitativos. Se copia el
- * mismo valor que `cart_write` como placeholder hasta que PO/Arquitecto
- * ratifiquen un budget propio de login (o confirmen que no aplica); medido
- * contra la API real da p95 ≈ 621,93 ms, con bcrypt cost 12 costando ~250 ms
- * **por diseño** (mitigación de fuerza bruta) — así que con este valor el
- * threshold falla a propósito y no debe tomarse como gate cerrado.
+ * Login de cuenta de cliente de US-014 (TC-160). **Presupuesto propio,
+ * ratificado por el PO 2026-09-06** (OQ-QA-5, resuelto —
+ * `openspec/changes/US-014-registro-login-qa/proposal.md`): el PRD §4 fija
+ * «p95 de escritura (carrito/orden) < 500 ms», pero esa fila dice
+ * literalmente "carrito/orden" — no cubre login — y US-014 §9 no fijaba
+ * ningún número de latencia para esta ruta, sólo NFRs cualitativos. El PO
+ * ratificó **p95 ≤ 800 ms** como budget propio de login, aceptando
+ * expresamente el costo de `bcrypt` cost 12 (~250 ms **por diseño**,
+ * mitigación de fuerza bruta) como parte del presupuesto — no un defecto a
+ * optimizar. Medido contra la API real: p95 ≈ 621,93 ms, con margen real
+ * bajo los 800 ms.
  *
  * `rate_limited` con `count<1` es la misma guarda de honestidad que
  * `cart_write`: `/v1/auth/login` tiene su propio `@Throttle` de **10 intentos
@@ -102,7 +103,7 @@ export const checkout = {
  * ese límite — si aparece un 429 igual, el resultado no se publica.
  */
 export const auth_login = {
-  'http_req_duration{endpoint:auth_login}': ['p(95)<500'],
+  'http_req_duration{endpoint:auth_login}': ['p(95)<800'],
   http_req_failed: ['rate<0.01'],
   checks: ['rate>0.99'],
   rate_limited: ['count<1'],
