@@ -2859,8 +2859,15 @@
   # (ya Ready, sin preguntas de producto abiertas) más su §9/§10, no de un
   # design.md de backend que todavía no existe. Los 12 test cases
   # automatizados + 3 charters quedan `blocked_by` ese backend — ninguno
-  # corrió. Ver qa-plan.md §0 para los 4 supuestos de mecanismo interno a
-  # reconciliar cuando el design.md real del backend llegue a este worktree.
+  # corrió.
+  #
+  # RECONCILIADO 2026-09-06: 07 pusheó su rama (PR #93, sin mergear) antes de
+  # cerrar este plan — se fetcheó y se leyó design.md real sin tocar el
+  # working tree. Los 4 supuestos de §0 quedaron confirmados (endpoint real
+  # DELETE /v1/me 204, email de anonimización determinístico por customerId,
+  # enum account_deletion, revocación vía repos de US-014); las 3 open
+  # questions de §14 quedaron Resolved. Ningún AC ni Gherkin cambió — sigue
+  # blocked_by el merge de #93 para ejecutar.
   #
   # DECISIÓN K6: SÍ se arma la suite de carga (QA-020-PERF-1), a diferencia
   # de precedentes recientes de este repo (US-011/US-021 declararon "no k6")
