@@ -416,6 +416,11 @@ TC-013-E1 parcial).
   (`dsm:payments/order-not-found`) coincidan con los schemas declarados en
   `apps/api/docs/api/openapi.yaml`, sin campos ausentes ni de más.
 - Verify: `pnpm --filter @dsm/qa test:contract:cancel-order` (exit 0)
+- **Estado**: verde — `pnpm exec tsx contract/cancel-order.contract.ts` →
+  `✓ cancel-order conforma el contrato — 6/6 casos` contra la API real
+  (Postgres descartable propio). Requiere `QA_WEB_BASE_URL` exportado además
+  de `QA_API_BASE_URL` — el checkout de siembra (`seed-metricas.ts`) valida
+  el `Origin` contra la allowlist de CORS.
 
 ### 5.3 E2E de navegador cross-stack (Playwright, backend + frontend reales)
 
