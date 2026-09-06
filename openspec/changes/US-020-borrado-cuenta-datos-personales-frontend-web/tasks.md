@@ -218,7 +218,7 @@ language: es
 
 ## Fase 5 — Wiring del error de bloqueo (AC-4/AC-9) + cierre del diálogo (D7)
 
-- [ ] **T5.1 — 409 con `blockingOrders`: lista de pedidos + mensaje específico; diálogo se cierra (D7)**
+- [x] **T5.1 — 409 con `blockingOrders`: lista de pedidos + mensaje específico; diálogo se cierra (D7)**
   - **Pattern**: `per design.md §D5/§D6/§D7` — lookup local
     `BLOCKING_STATUS_LABEL: Record<string, string>` (NO `OrderStatusBadge`,
     ver D2/D6), fallback al valor crudo si no está en el lookup; en CUALQUIER
@@ -231,13 +231,13 @@ language: es
     queda CERRADO (no atenuado detrás de un overlay).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/DeleteAccountSection.test.tsx -t "T5.1"`
 
-- [ ] **T5.2 — Error genérico (401/403/429/network/500): mensaje genérico, diálogo cerrado**
+- [x] **T5.2 — Error genérico (401/403/429/network/500): mensaje genérico, diálogo cerrado**
   - **Exit criterion**: cualquier error que NO sea `conflict` con
     `blockingOrders` muestra "No se pudo eliminar tu cuenta. Reintentá." y
     cierra el diálogo — mismo criterio de D7.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/DeleteAccountSection.test.tsx -t "T5.2"`
 
-- [ ] **T5.3 — Idempotencia visual: doble-click no dispara un segundo `DELETE`**
+- [x] **T5.3 — Idempotencia visual: doble-click no dispara un segundo `DELETE`**
   - **Pattern**: calcado al test equivalente de `OrderAnonymizeAction.test.tsx`
     ("idempotencia visual") — `per frontend-resilience-patterns` #3/#4/#9:
     `server.use` con una promesa que no resuelve hasta que el test la
