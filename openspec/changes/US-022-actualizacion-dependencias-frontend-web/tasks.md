@@ -37,7 +37,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Fase 2 — Producción: `next`, `sharp`, `postcss`
 
-- [ ] T2.1 Bump `next` en `apps/web/package.json` de `15.1.6` a `15.5.21`.
+- [x] T2.1 Bump `next` en `apps/web/package.json` de `15.1.6` a `15.5.21`.
   - **Pattern**: edición directa del campo `dependencies.next` (bump dentro de línea, sin `pnpm.overrides` — es el paquete directo, no una transitiva) — `per design.md D1`.
   - **Exit criterion**: `apps/web/package.json` declara `"next": "15.5.21"`; `pnpm-lock.yaml` resuelve `next@15.5.21` sin el aviso `deprecated` que hoy trae `next@15.1.6`.
   - **Verify**: `pnpm install && grep -A2 "^  next@15.5.21" pnpm-lock.yaml | grep -c deprecated` (debe imprimir `0`)
