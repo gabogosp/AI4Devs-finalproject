@@ -34,3 +34,24 @@ escritor de `orders.customer_id` en `POST /v1/checkout`.
 |---|---|---|
 | NFR-1 | `GET /v1/me/orders` — p95 < 300ms (PRD §4, heredado). | k6, medido p95 = 3.29ms. |
 | NFR-2 | El historial tiene su propio presupuesto de rate-limit (`ORDERS_HISTORY_RATE_LIMIT_MAX`/`_TTL_MS`), sin consumir el cupo de auth/storefront/cart/checkout/enrichment/search/payments_simulate. | Suite dev-owned + contract testing. |
+
+## Desde US-015 frontend-web — Historial de compras del cliente (archivada 2026-09-06)
+
+Superficie cubierta: `/mi-cuenta/compras` (listado), `/mi-cuenta/compras/{orderNumber}` (detalle).
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-7 | El listado muestra fecha, estado y total de cada orden, ordenado de la más reciente a la más antigua (sin reordenar en cliente — el orden lo fija la API). | AC-1 |
+| R-8 | Paginación por "Cargar más" (append), sin sort/filtro interactivo. | AC-1 |
+| R-9 | Sin compras, se muestra un estado vacío con invitación a comprar. | AC-3 |
+| R-10 | El detalle muestra ítems (cantidad, precio), estado actual y modalidad de retiro. | AC-2 |
+| R-11 | Cierra el placeholder "Próximamente" que `US-014-registro-login-frontend-web-v2` había dejado en `AccountPanel` para esta US. | — |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-3 | Cero violaciones serias/críticas de accesibilidad (axe-core) en los 3 estados (listado, vacío, detalle). | `a11y.test.tsx`, verde. |
+| NFR-4 | Sin sesión, cero requests a `/v1/me/orders*` — el guard de cuenta bloquea antes de cualquier fetch. | Test de integración dedicado. |

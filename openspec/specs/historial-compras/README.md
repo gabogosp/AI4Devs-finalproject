@@ -1,10 +1,9 @@
 # Capacidad: Historial de compras (CAP-8)
 
-**Estado**: backend entregado — lectura del historial del cliente autenticado + el
-escritor de `orders.customer_id` en el checkout. Nace de
-`US-015-historial-compras-backend` (mergeada, PR #70/#71). El FE
-(`US-015-historial-compras-frontend-web`, mergeada, PR #74) todavía no archivó al
-momento de escribir esta sección — se suma en el próximo `/archive-change`.
+**Estado**: entregada — lectura del historial del cliente autenticado + el escritor de
+`orders.customer_id` en el checkout, más las dos pantallas del panel del cliente. Nace de
+`US-015-historial-compras-backend` (mergeada, PR #70/#71) y
+`US-015-historial-compras-frontend-web` (mergeada, PR #74).
 
 Estado declarado del sistema para la capacidad CAP-8 del PRD §2.1 cap. 8. Este directorio
 es el **acumulado** de los changes archivados: se extiende en cada `/archive-change`,
@@ -43,6 +42,14 @@ Dos superficies nuevas, ninguna con módulo propio dedicado (viven en `checkout/
   responde 404, indistinguible de "no existe" (IDOR, `threat-modeling-lite`).
 - **Índice compuesto** `orders(customer_id, created_at)` (migración aditiva, reemplaza
   el de una sola columna) — mismo patrón que `PasswordResetToken` ya usa en el schema.
+- **FE** — `/mi-cuenta/compras` (listado, "Cargar más" en vez de tabla — design-system
+  §7.9 es sólo backoffice y AC-1 prohíbe sort/filtro client-side) +
+  `/mi-cuenta/compras/{orderNumber}` (detalle), bajo `(storefront)` per ADR-0010. Cierra
+  el placeholder "Próximamente" que `US-014-registro-login-frontend-web-v2` había
+  dejado explícito en `AccountPanel` para esta US. Sin componentes de infraestructura
+  nuevos — reusa `CustomerGuard` (guard de cuenta), `OrderStatusBadge`, `AsyncState`,
+  `formatArs`/`formatDateTime` y la infraestructura de `track`/`BusinessEvent`. Cero
+  DTO/Zod/mock escrito a mano — todo generado desde el contrato ya publicado (orval).
 
 ## Contrato publicado con un follow-up dedicado (gap conocido, ya cerrado)
 

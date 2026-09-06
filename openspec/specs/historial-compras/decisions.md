@@ -27,6 +27,15 @@ vigentes y el E2E §20).
 | D6 | Índice compuesto `orders(customer_id, created_at)` reemplaza el índice de una sola columna sobre `customer_id`, en vez de agregar un segundo índice en paralelo. | El listado siempre filtra por `customer_id` Y ordena por `created_at` — un índice compuesto cubre ambos accesos con una sola estructura; mantener los dos índices por separado sería peso de escritura sin beneficio de lectura adicional. Mismo patrón que `PasswordResetToken` ya usa. |
 | D7 | Contrato publicado en un follow-up dedicado (`fix/US-015-publish-order-history-contract`, PR #71), no como task del backend original. | El `tasks.md` original (T6.1) sólo verificaba que los yaml draft lintearan limpio — un gap de proceso, no una decisión de diseño. Se cerró como fix independiente, verificado campo por campo contra el DTO/controller reales antes de publicar, mismo patrón que `US-021-retencion-datos-ordenes-backend` ya había necesitado. |
 
+### Desde US-015 frontend-web (archivada 2026-09-06)
+
+| Id | Decisión | Fundamento |
+|---|---|---|
+| D8 | Paginación "Cargar más" (append), no una tabla con paginación numerada. | `design-system.md` §7.9 (Table con paginación) es explícitamente un patrón de backoffice; AC-1 fija el orden y prohíbe sort/filtro interactivo del lado del cliente — no hay ninguna interacción que justifique una tabla completa. |
+| D9 | Namespace `/mi-cuenta/compras` bajo `(storefront)`, no bajo `/admin`. | ADR-0010 ya declara `/mi-cuenta/*` como storefront (US-014); es la cuenta del cliente, no del dueño — mismo criterio que el resto de esa route group. |
+| D10 | Cero componentes de infraestructura nuevos — reusa `CustomerGuard`, `OrderStatusBadge`, `AsyncState`, `formatArs`/`formatDateTime`, `track`/`BusinessEvent`. | El panel del cliente (`AccountPanel`) y el módulo `orders/` del panel admin ya resolvieron estos patrones; duplicarlos para una feature de sólo lectura sería el anti-patrón que `frontend-standards.md` ya prohíbe. |
+| D11 | 401 a mitad de sesión y 404 en el detalle se muestran como error inline reintentable (`role="alert"`), sin refresh automático silencioso. | Mismo alcance que el `OrderDetail` del panel admin hoy — no hay AC que pida una reautenticación transparente, y un refresh silencioso escondería al usuario que su sesión venció. |
+
 ## Desviaciones conscientes registradas
 
 | Desviación | Motivo |
