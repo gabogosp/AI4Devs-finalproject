@@ -5,15 +5,26 @@
  * Panel del dueño: categorías y productos, máquina de estado y RBAC admin. Errores en envelope RFC 7807 (`application/problem+json`, `type` `dsm:catalog/*`).
  * OpenAPI spec version: 1.0.0
  */
+import type { AdminOrderDetailAnonymizationReason } from './adminOrderDetailAnonymizationReason';
 import type { AdminOrderDetailFulfillment } from './adminOrderDetailFulfillment';
 import type { AdminOrderItem } from './adminOrderItem';
 import type { AdminOrderStatusChange } from './adminOrderStatusChange';
 import type { AdminOrderSummary } from './adminOrderSummary';
 
-export type AdminOrderDetail = AdminOrderSummary & {
+export type AdminOrderDetail = AdminOrderSummary & ({
   buyer_email: string;
   buyer_phone: string;
   fulfillment: AdminOrderDetailFulfillment;
   items: AdminOrderItem[];
   status_history: AdminOrderStatusChange[];
-};
+  /**
+     * Momento de anonimización (US-021). null si la orden nunca se anonimizó.
+     * @nullable
+     */
+  anonymized_at: string | null;
+  /**
+     * Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).
+     * @nullable
+     */
+  anonymization_reason: AdminOrderDetailAnonymizationReason;
+});
