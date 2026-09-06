@@ -2149,6 +2149,58 @@
   archived-at: null
   archive-path: null
 
+# Planificado 2026-09-06 (/plan-frontend-web-ticket US-015). Linear MCP no conectado —
+# creación de task/comentario en el tracker omitida, sin simular.
+- name: US-015-historial-compras-frontend-web
+  us-id: US-015
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-015-historial-compras.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # PR #71 (publica el contrato de US-015 en apps/api/docs/api/openapi.yaml + regenera
+  # apps/web/src/api/generated/) ya estaba MERGEADO a main (commit 2a0eb62,
+  # 2026-09-06T12:23:24Z) al momento de planificar. Esta rama, creada antes de ese fetch,
+  # estaba 2 commits detrás — se actualizó con `git fetch origin main && git merge
+  # --ff-only origin/main` ANTES de escribir design.md (fast-forward limpio, sin commits
+  # propios que perder). El gate de contrato de la Fase 0 de tasks.md es por lo tanto una
+  # verificación, no un bloqueo (a diferencia de US-021, donde T0.1 sí bloqueaba de verdad).
+  #
+  # DISEÑO: dos pantallas nuevas bajo (storefront)/mi-cuenta/compras/ (ADR-0010 confirma
+  # que /mi-cuenta/* es storefront, sin conflicto de namespace con /admin/*) — listado
+  # (PurchaseHistoryList, "Cargar más" en vez de TanStack Table: design-system §7.9 es
+  # explícitamente panel del dueño, y AC-1 prohíbe sort/filtro interactivo) + detalle
+  # (PurchaseDetail, 404 unificado para inexistente/ajena/fuera-de-retención, mismo
+  # criterio IDOR que ya aplica el backend). Reusa CustomerGuard, OrderStatusBadge (sin
+  # modificar — estructuralmente compatible, misma unión de 5 literales de status),
+  # formatArs/formatDateTime, AsyncState, parseContract. Cierra el placeholder
+  # "Próximamente" que AccountPanel (US-014) dejó explícito para esta US.
+  #
+  # AC-4/AC-6/AC-7 son garantías del backend (WHERE con customer_id + corte de retención,
+  # ver design.md del backend) — este change no agrega lógica de autorización/fecha propia.
+  #
+  # Sin ADR nuevo: no hay cambio de topología de sesión (ADR-0013 sigue gobernando) ni de
+  # namespace (ADR-0010 ya cubre /mi-cuenta/* como storefront).
+  #
+  # Sin Playwright E2E nuevo (mismo nivel de pirámide que features/orders/ — Vitest + RTL +
+  # MSW + axe-core) y sin README nuevo (ni features/orders/ ni features/account/ tienen uno
+  # hoy — sólo features/cart/, YAGNI de crear uno sólo para este feature).
+  #
+  # Sin open questions bloqueantes — 2 decisiones de diseño con default razonable
+  # documentadas en design.md §Trade-offs (paginación "Cargar más", sin refresh automático
+  # ante un 401 a mitad de sesión).
+  estimate-hours: 4.5
+  assignee: claude-code
+  branch: null
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-016-panel-metricas-frontend-web
   us-id: US-016
   discipline: frontend-web
