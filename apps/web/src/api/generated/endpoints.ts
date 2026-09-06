@@ -10,6 +10,9 @@ import type {
   AdminLoginResponse,
   AdminOrderDetail,
   AdminOrderList,
+  AdminReportsSales,
+  AdminReportsSummary,
+  AdminReportsTopProducts,
   CartEnvelope,
   CartRateLimitedResponse,
   Category,
@@ -25,6 +28,12 @@ import type {
   EnrichmentRateLimitedResponse,
   EnrichmentRunAccepted,
   EnrichmentStatus,
+  ExportAdminReportsSalesParams,
+  ExportAdminReportsSummaryParams,
+  ExportAdminReportsTopProductsParams,
+  GetAdminReportsSalesParams,
+  GetAdminReportsSummaryParams,
+  GetAdminReportsTopProductsParams,
   GetImportParams,
   ImportCreated,
   ImportJob,
@@ -1996,6 +2005,372 @@ export const searchProducts = async (params: SearchProductsParams, options?: Par
 );}
 
 
+
+export type getAdminReportsSalesResponse200 = {
+  data: AdminReportsSales
+  status: 200
+}
+
+export type getAdminReportsSalesResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getAdminReportsSalesResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getAdminReportsSalesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getAdminReportsSalesResponseSuccess = (getAdminReportsSalesResponse200) & {
+  headers: Headers;
+};
+export type getAdminReportsSalesResponseError = (getAdminReportsSalesResponse401 | getAdminReportsSalesResponse403 | getAdminReportsSalesResponse422) & {
+  headers: Headers;
+};
+
+export type getAdminReportsSalesResponse = (getAdminReportsSalesResponseSuccess | getAdminReportsSalesResponseError)
+
+export const getGetAdminReportsSalesUrl = (params?: GetAdminReportsSalesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/reports/sales?${stringifiedParams}` : `/v1/admin/reports/sales`
+}
+
+/**
+ * Agrupa por día/semana/mes. Sólo cuentan las 4 órdenes activas (AC-8). Sin `created_at_from`/`created_at_to`, default a los últimos 30 días. Un `created_at_from` anterior al piso de retención vigente (ORDER_RETENTION_MONTHS, default 12) se acota silenciosamente al piso (AC-9) — la respuesta lleva el rango EFECTIVO en `range`. Un rango sin órdenes responde 200 con `data: []` (AC-5), nunca error.
+ * @summary Evolución de ventas en el tiempo (US-016 AC-1, AC-4, AC-5, AC-9)
+ */
+export const getAdminReportsSales = async (params?: GetAdminReportsSalesParams, options?: Parameters<typeof customFetch>[1]): Promise<getAdminReportsSalesResponse> => {
+
+  return customFetch<getAdminReportsSalesResponse>(getGetAdminReportsSalesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type exportAdminReportsSalesResponse200 = {
+  data: string
+  status: 200
+}
+
+export type exportAdminReportsSalesResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type exportAdminReportsSalesResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type exportAdminReportsSalesResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type exportAdminReportsSalesResponseSuccess = (exportAdminReportsSalesResponse200) & {
+  headers: Headers;
+};
+export type exportAdminReportsSalesResponseError = (exportAdminReportsSalesResponse401 | exportAdminReportsSalesResponse403 | exportAdminReportsSalesResponse422) & {
+  headers: Headers;
+};
+
+export type exportAdminReportsSalesResponse = (exportAdminReportsSalesResponseSuccess | exportAdminReportsSalesResponseError)
+
+export const getExportAdminReportsSalesUrl = (params?: ExportAdminReportsSalesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/reports/sales/export?${stringifiedParams}` : `/v1/admin/reports/sales/export`
+}
+
+/**
+ * Mismos query params y misma agregación que GET /admin/reports/sales — no hay una segunda fuente de verdad para los números exportados. Celdas neutralizadas contra inyección de fórmulas (RFC 4180 + prefijo de comilla, `security-standards.md §6.3`).
+ * @summary CSV de la evolución de ventas (US-016 AC-6)
+ */
+export const exportAdminReportsSales = async (params?: ExportAdminReportsSalesParams, options?: Parameters<typeof customFetch>[1]): Promise<exportAdminReportsSalesResponse> => {
+
+  return customFetch<exportAdminReportsSalesResponse>(getExportAdminReportsSalesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getAdminReportsTopProductsResponse200 = {
+  data: AdminReportsTopProducts
+  status: 200
+}
+
+export type getAdminReportsTopProductsResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getAdminReportsTopProductsResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getAdminReportsTopProductsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getAdminReportsTopProductsResponseSuccess = (getAdminReportsTopProductsResponse200) & {
+  headers: Headers;
+};
+export type getAdminReportsTopProductsResponseError = (getAdminReportsTopProductsResponse401 | getAdminReportsTopProductsResponse403 | getAdminReportsTopProductsResponse422) & {
+  headers: Headers;
+};
+
+export type getAdminReportsTopProductsResponse = (getAdminReportsTopProductsResponseSuccess | getAdminReportsTopProductsResponseError)
+
+export const getGetAdminReportsTopProductsUrl = (params?: GetAdminReportsTopProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/reports/top-products?${stringifiedParams}` : `/v1/admin/reports/top-products`
+}
+
+/**
+ * Agrupa por el snapshot de order_items (product_name/product_sku al momento de la venta), sin JOIN a products — un producto renombrado a mitad de período puede aparecer como dos filas (trade-off aceptado, sin AC que pida consolidarlo). Sólo cuentan las 4 órdenes activas (AC-8).
+ * @summary Productos más pedidos por cantidad vendida (US-016 AC-2, AC-4, AC-5, AC-9)
+ */
+export const getAdminReportsTopProducts = async (params?: GetAdminReportsTopProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<getAdminReportsTopProductsResponse> => {
+
+  return customFetch<getAdminReportsTopProductsResponse>(getGetAdminReportsTopProductsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type exportAdminReportsTopProductsResponse200 = {
+  data: string
+  status: 200
+}
+
+export type exportAdminReportsTopProductsResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type exportAdminReportsTopProductsResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type exportAdminReportsTopProductsResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type exportAdminReportsTopProductsResponseSuccess = (exportAdminReportsTopProductsResponse200) & {
+  headers: Headers;
+};
+export type exportAdminReportsTopProductsResponseError = (exportAdminReportsTopProductsResponse401 | exportAdminReportsTopProductsResponse403 | exportAdminReportsTopProductsResponse422) & {
+  headers: Headers;
+};
+
+export type exportAdminReportsTopProductsResponse = (exportAdminReportsTopProductsResponseSuccess | exportAdminReportsTopProductsResponseError)
+
+export const getExportAdminReportsTopProductsUrl = (params?: ExportAdminReportsTopProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/reports/top-products/export?${stringifiedParams}` : `/v1/admin/reports/top-products/export`
+}
+
+/**
+ * Mismos query params y misma agregación que GET /admin/reports/top-products. product_name/product_sku neutralizados contra inyección de fórmulas (texto libre cargado por el dueño vía catálogo/import masivo).
+ * @summary CSV del ranking de productos más pedidos (US-016 AC-6)
+ */
+export const exportAdminReportsTopProducts = async (params?: ExportAdminReportsTopProductsParams, options?: Parameters<typeof customFetch>[1]): Promise<exportAdminReportsTopProductsResponse> => {
+
+  return customFetch<exportAdminReportsTopProductsResponse>(getExportAdminReportsTopProductsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getAdminReportsSummaryResponse200 = {
+  data: AdminReportsSummary
+  status: 200
+}
+
+export type getAdminReportsSummaryResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getAdminReportsSummaryResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type getAdminReportsSummaryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type getAdminReportsSummaryResponseSuccess = (getAdminReportsSummaryResponse200) & {
+  headers: Headers;
+};
+export type getAdminReportsSummaryResponseError = (getAdminReportsSummaryResponse401 | getAdminReportsSummaryResponse403 | getAdminReportsSummaryResponse422) & {
+  headers: Headers;
+};
+
+export type getAdminReportsSummaryResponse = (getAdminReportsSummaryResponseSuccess | getAdminReportsSummaryResponseError)
+
+export const getGetAdminReportsSummaryUrl = (params?: GetAdminReportsSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/reports/summary?${stringifiedParams}` : `/v1/admin/reports/summary`
+}
+
+/**
+ * Sólo cuentan las 4 órdenes activas (AC-8). breakdown_by_status SIEMPRE trae las 4 claves (new/preparing/ready/delivered), zero-fill incluido — un período sin datos responde 200 con todo en cero (AC-5), nunca error ni un objeto incompleto.
+ * @summary Resumen del período — órdenes, monto, desglose por estado (US-016 AC-3, AC-5, AC-9)
+ */
+export const getAdminReportsSummary = async (params?: GetAdminReportsSummaryParams, options?: Parameters<typeof customFetch>[1]): Promise<getAdminReportsSummaryResponse> => {
+
+  return customFetch<getAdminReportsSummaryResponse>(getGetAdminReportsSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type exportAdminReportsSummaryResponse200 = {
+  data: string
+  status: 200
+}
+
+export type exportAdminReportsSummaryResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type exportAdminReportsSummaryResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type exportAdminReportsSummaryResponse422 = {
+  data: Problem
+  status: 422
+}
+
+export type exportAdminReportsSummaryResponseSuccess = (exportAdminReportsSummaryResponse200) & {
+  headers: Headers;
+};
+export type exportAdminReportsSummaryResponseError = (exportAdminReportsSummaryResponse401 | exportAdminReportsSummaryResponse403 | exportAdminReportsSummaryResponse422) & {
+  headers: Headers;
+};
+
+export type exportAdminReportsSummaryResponse = (exportAdminReportsSummaryResponseSuccess | exportAdminReportsSummaryResponseError)
+
+export const getExportAdminReportsSummaryUrl = (params?: ExportAdminReportsSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/admin/reports/summary/export?${stringifiedParams}` : `/v1/admin/reports/summary/export`
+}
+
+/**
+ * Mismos query params y misma agregación que GET /admin/reports/summary: una fila por estado activo (con zero-fill) + una fila `total`.
+ * @summary CSV del resumen del período (US-016 AC-6)
+ */
+export const exportAdminReportsSummary = async (params?: ExportAdminReportsSummaryParams, options?: Parameters<typeof customFetch>[1]): Promise<exportAdminReportsSummaryResponse> => {
+
+  return customFetch<exportAdminReportsSummaryResponse>(getExportAdminReportsSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
 export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
 export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
@@ -2057,6 +2432,18 @@ export const getGetEnrichmentStatusResponseMock = (overrideResponse: Partial<Ext
 export const getStartEnrichmentRunResponseMock = (overrideResponse: Partial<Extract<EnrichmentRunAccepted, object>> = {}): EnrichmentRunAccepted => ({run_id: faker.string.uuid(), accepted: faker.helpers.arrayElement([true] as const), ...overrideResponse})
 
 export const getSearchProductsResponseMock = (overrideResponse: Partial<Extract<SearchResponse, object>> = {}): SearchResponse => ({results: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), in_stock: faker.datatype.boolean(), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), score: faker.number.float({min: 0, max: 1, fractionDigits: 2})})), confidence: faker.helpers.arrayElement(['high','low','none'] as const), interpreted_as: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), degraded: faker.datatype.boolean(), fallback: faker.helpers.arrayElement([faker.helpers.arrayElement([{suggested_categories: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})}))},null,]), null]), ...overrideResponse})
+
+export const getGetAdminReportsSalesResponseMock = (overrideResponse: Partial<Extract<AdminReportsSales, object>> = {}): AdminReportsSales => ({range: {from: faker.date.past().toISOString().slice(0, 19) + 'Z', to: faker.date.past().toISOString().slice(0, 19) + 'Z'}, granularity: faker.helpers.arrayElement(['day','week','month'] as const), data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({period_date: faker.date.past().toISOString().slice(0, 10), orders_count: faker.number.int(), total_ars_cents: faker.number.int()})), ...overrideResponse})
+
+export const getExportAdminReportsSalesResponseMock = (): string => (faker.word.sample())
+
+export const getGetAdminReportsTopProductsResponseMock = (overrideResponse: Partial<Extract<AdminReportsTopProducts, object>> = {}): AdminReportsTopProducts => ({range: {from: faker.date.past().toISOString().slice(0, 19) + 'Z', to: faker.date.past().toISOString().slice(0, 19) + 'Z'}, data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_id: faker.string.uuid(), product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity_sold: faker.number.int(), revenue_ars_cents: faker.number.int()})), ...overrideResponse})
+
+export const getExportAdminReportsTopProductsResponseMock = (): string => (faker.word.sample())
+
+export const getGetAdminReportsSummaryResponseMock = (overrideResponse: Partial<Extract<AdminReportsSummary, object>> = {}): AdminReportsSummary => ({range: {from: faker.date.past().toISOString().slice(0, 19) + 'Z', to: faker.date.past().toISOString().slice(0, 19) + 'Z'}, orders_count: faker.number.int(), total_ars_cents: faker.number.int(), breakdown_by_status: {new: {count: faker.number.int(), total_ars_cents: faker.number.int()}, preparing: {count: faker.number.int(), total_ars_cents: faker.number.int()}, ready: {count: faker.number.int(), total_ars_cents: faker.number.int()}, delivered: {count: faker.number.int(), total_ars_cents: faker.number.int()}}, ...overrideResponse})
+
+export const getExportAdminReportsSummaryResponseMock = (): string => (faker.word.sample())
 
 
 export const getRegisterCustomerMockHandler = (overrideResponse?: CustomerEnvelope | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CustomerEnvelope> | CustomerEnvelope), options?: RequestHandlerOptions) => {
@@ -2461,6 +2848,81 @@ export const getSearchProductsMockHandler = (overrideResponse?: SearchResponse |
       })
   }, options)
 }
+
+export const getGetAdminReportsSalesMockHandler = (overrideResponse?: AdminReportsSales | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<AdminReportsSales> | AdminReportsSales), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/reports/sales', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetAdminReportsSalesResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getExportAdminReportsSalesMockHandler = (overrideResponse?: string | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<string> | string), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/reports/sales/export', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const resolvedBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getExportAdminReportsSalesResponseMock();
+    const textBody = typeof resolvedBody === 'string' ? resolvedBody : JSON.stringify(resolvedBody ?? null);
+    return HttpResponse.text(textBody,
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetAdminReportsTopProductsMockHandler = (overrideResponse?: AdminReportsTopProducts | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<AdminReportsTopProducts> | AdminReportsTopProducts), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/reports/top-products', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetAdminReportsTopProductsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getExportAdminReportsTopProductsMockHandler = (overrideResponse?: string | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<string> | string), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/reports/top-products/export', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const resolvedBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getExportAdminReportsTopProductsResponseMock();
+    const textBody = typeof resolvedBody === 'string' ? resolvedBody : JSON.stringify(resolvedBody ?? null);
+    return HttpResponse.text(textBody,
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetAdminReportsSummaryMockHandler = (overrideResponse?: AdminReportsSummary | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<AdminReportsSummary> | AdminReportsSummary), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/reports/summary', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetAdminReportsSummaryResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getExportAdminReportsSummaryMockHandler = (overrideResponse?: string | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<string> | string), options?: RequestHandlerOptions) => {
+  return http.get('*/admin/reports/summary/export', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+  const resolvedBody = overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getExportAdminReportsSummaryResponseMock();
+    const textBody = typeof resolvedBody === 'string' ? resolvedBody : JSON.stringify(resolvedBody ?? null);
+    return HttpResponse.text(textBody,
+      { status: 200
+      })
+  }, options)
+}
 export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getRegisterCustomerMockHandler(),
   getLoginCustomerMockHandler(),
@@ -2495,5 +2957,11 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getGetImportReportMockHandler(),
   getGetEnrichmentStatusMockHandler(),
   getStartEnrichmentRunMockHandler(),
-  getSearchProductsMockHandler()
+  getSearchProductsMockHandler(),
+  getGetAdminReportsSalesMockHandler(),
+  getExportAdminReportsSalesMockHandler(),
+  getGetAdminReportsTopProductsMockHandler(),
+  getExportAdminReportsTopProductsMockHandler(),
+  getGetAdminReportsSummaryMockHandler(),
+  getExportAdminReportsSummaryMockHandler()
 ]
