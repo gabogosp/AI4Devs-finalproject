@@ -92,7 +92,16 @@ export type BusinessEvent =
   // alguien agregue un campo de más mañana pensando que ya hay precedente).
   | 'order_anonymize_attempted'
   | 'order_anonymize_succeeded'
-  | 'order_anonymize_failed';
+  | 'order_anonymize_failed'
+  // Panel de métricas (US-016 §9 — "registrar uso del panel"). Backoffice —
+  // van con `operator_id: 'admin'`, no entran en PUBLIC_EVENTS.
+  // `metrics_export_downloaded` lleva `{ dataset }` con un enum acotado a los
+  // 3 datasets, nunca un rango de fechas: un rango libre en la propiedad
+  // ensuciaría los breadcrumbs con cardinalidad libre
+  // (`observability-patterns` skill §3.3).
+  | 'metrics_shown'
+  | 'metrics_range_changed'
+  | 'metrics_export_downloaded';
 
 export interface EventProps {
   operator_id?: string;

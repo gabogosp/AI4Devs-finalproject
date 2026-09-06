@@ -222,7 +222,7 @@
 
 ## Phase 10 — Observabilidad (US §9 — "registrar uso del panel")
 
-- [ ] T10.1 Agregar `metrics_shown`, `metrics_range_changed`,
+- [x] T10.1 Agregar `metrics_shown`, `metrics_range_changed`,
       `metrics_export_downloaded` a `BusinessEvent`
       (`src/lib/observability/events.ts`), sin agregarlos a `PUBLIC_EVENTS`
       (son del panel del dueño, `operator_id: 'admin'` por default — mismo
