@@ -32,4 +32,13 @@ export const WHATSAPP_MESSAGES = {
    * a esta pieza no debe cambiar nada observable.
    */
   product: (name: string) => `Hola! Quería consultar por "${name}".`,
+  /**
+   * Handoff post-checkout (US-008/US-023): el pago de DSM es manual/offline
+   * (transferencia o efectivo), coordinado por WhatsApp — no hay pasarela
+   * online (US-009 queda `Blocked`, sin credenciales). El número de pedido va
+   * en el mensaje porque es lo único que el dueño necesita para ubicar la
+   * orden y confirmarla desde `PendingPaymentsPanel` (US-012/US-023).
+   */
+  order: (orderNumber: number) =>
+    `¡Hola! Quería coordinar el pago de mi pedido #${orderNumber}.`,
 } as const;
