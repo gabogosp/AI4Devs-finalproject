@@ -237,7 +237,7 @@
 
 ## Phase 11 — Accesibilidad (design-system §11, WCAG 2.1 AA)
 
-- [ ] T11.1 `src/features/metrics/a11y.test.tsx` — monta `MetricsDashboard`
+- [x] T11.1 `src/features/metrics/a11y.test.tsx` — monta `MetricsDashboard`
       con los 3 endpoints devolviendo datos (MSW), corre `axe` (regla
       `region` desactivada, mismo criterio que `orders/a11y.test.tsx`), 0
       violaciones. Repite el chequeo con los 3 endpoints devolviendo arrays
