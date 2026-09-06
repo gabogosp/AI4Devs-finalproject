@@ -85,6 +85,18 @@
 #                          archivo: se eleva por consistencia, aunque con `ENRICHMENT_ENABLED=
 #                          false` casi ningún escenario de esta instancia compartida llama
 #                          `POST /runs` (y `GET /status` no consume este presupuesto).
+#   ACCOUNT_DELETION_RATE_LIMIT_MAX  US-020 (`@borrado-cuenta`): el presupuesto de
+#                          producción es angosto a propósito (5/hora, `AccountThrottlerGuard`)
+#                          — es una acción rara y destructiva, sin motivo legítimo para
+#                          repetirse. Pero `borrado-cuenta.feature` dispara `DELETE /v1/me` en
+#                          la mayoría de sus 26 escenarios (cada uno crea su propia cuenta y la
+#                          borra) — muy por encima de 5 en una sola corrida, y el contador es
+#                          en memoria del proceso, así que se acumula entre re-corridas de la
+#                          suite durante el desarrollo (encontrado real: al 2do/3er re-run
+#                          consecutivo contra la misma instancia, escenarios que antes pasaban
+#                          empiezan a recibir 429 en vez del 204/409 que realmente prueban, y
+#                          el assert de N-6 sobre el evento `account.deleted` falla porque el
+#                          borrado ni siquiera corrió). El límite real sigue cubierto dev-owned.
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -125,4 +137,5 @@ exec env \
   ORDER_ANONYMIZE_RATE_LIMIT_MAX=100000 \
   ENRICHMENT_ENABLED=false \
   ENRICHMENT_RATE_LIMIT_MAX=100000 \
+  ACCOUNT_DELETION_RATE_LIMIT_MAX=100000 \
   node "$MAIN"

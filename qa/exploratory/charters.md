@@ -733,3 +733,95 @@
   error no felices) expone `buyerEmail`/`buyerName`, o un hallazgo puntual
   con la ruta exacta y el `payload` filtrado, para priorizar un fix antes de
   la primera promoción con `RESEND_API_KEY` real.
+
+# US-020 — Borrado de cuenta y datos personales (derecho al olvido)
+
+## TC-020-E1 — Borrar muchas cuentas en ráfaga buscando una colisión de valor único (AC-6)
+
+- **Misión**: sondear AC-6 más allá de las dos cuentas que
+  `QA-020-ACC-2`/A-3/A-3b ejercitan de forma automatizada — disparar el
+  borrado de decenas de cuentas reales en ráfaga rápida (más de lo que un
+  test automatizado de 2 cuentas puede ejercitar razonablemente) buscando
+  cualquier patrón de colisión en el valor de reemplazo del email
+  (`cuenta-borrada+{customerId}@anonimizado.dsm.invalid`), y revisar a
+  simple vista la forma de esos valores.
+- **Áreas**: la fuente de unicidad del valor de reemplazo — confirmado por
+  `design.md` real: el sufijo es el propio UUID (`customerId`) de la fila,
+  no un timestamp ni un contador. Explorar si, aun así, dos borrados que
+  llegan en el mismo milisegundo revelan algún patrón previsible en el UUID
+  usado (p. ej. generación no criptográfica del id del cliente en el alta).
+- **Riesgos**: un mecanismo de unicidad basado en un valor previsible (en vez
+  de un UUID v4 real) podría filtrar información sobre el orden de alta de
+  las cuentas, o abrir una vía de enumeración — algo que un test de 2 cuentas
+  secuenciales nunca revelaría.
+- **Justificación manual**: explorar "¿hay un patrón visible en N valores?"
+  es un juicio humano, no una aserción determinista de un solo caso.
+- **Salida esperada**: confirmación de que el valor de reemplazo no revela
+  ningún patrón explotable, o un hallazgo puntual (p. ej. un id no
+  suficientemente aleatorio) para priorizar antes de exponer el endpoint en
+  producción.
+
+## TC-020-E2 — Revisión de código: el guard de órdenes en curso corre dentro de la transacción (AC-9)
+
+- **Misión — re-escopada tras reconciliación contra el `design.md` real
+  (`AccountDeletionService.deleteAccount`)**: el propio documento confirma
+  que `listBlockingForCustomer` corre como **primera lectura dentro de la
+  misma `$transaction`** que el resto del borrado — el escenario "ideal" que
+  este charter originalmente contemplaba como timing experiment. La ventana
+  de carrera residual (microsegundos dentro de esa transacción) queda
+  aceptada y no medida con evidencia real (sin `SERIALIZABLE`/
+  `SELECT FOR UPDATE`, mismo criterio que `cancel-order.service.ts`) — no hay
+  fault-injection en este repo para ensancharla, y forzarla no es un
+  objetivo de este change. Este charter se reduce a una **revisión de
+  código**, ya ejecutada como parte de esta sesión de `/develop-qa`:
+  confirmar que `listBlockingForCustomer` es efectivamente la primera
+  operación dentro del callback de `$transaction` en
+  `apps/api/src/account/account-deletion.service.ts` (no una lectura previa
+  fuera de ella).
+- **Resultado de la revisión (2026-09-06)**: **confirmado**. En
+  `AccountDeletionService.deleteAccount`, `this.prisma.$transaction(async
+  (tx) => { const blocking = await this.orders.listBlockingForCustomer(customerId, tx); ...`
+  — la lectura de órdenes bloqueantes es, literalmente, la primera línea del
+  callback, antes de `customers.anonymize`/`refreshTokens.revokeAllForCustomer`/
+  `passwordResetTokens.deleteAllForCustomer`/`carts.unlinkAllForCustomer`/
+  `orders.anonymizeAllForCustomer`. No hay ningún camino de código que la
+  cachee desde una lectura anterior a la transacción.
+- **Áreas**: el único punto que sigue siendo responsabilidad de QA es
+  confirmar que ningún PR futuro mueva esa lectura fuera de la transacción
+  sin que nadie lo note — candidato a un comentario de "no mover" en el PR,
+  no a un test.
+- **Riesgos**: si algún día ese guard se saca de la transacción (p. ej. por
+  una refactorización que lo cachea desde la pantalla), la ventana de carrera
+  vuelve a ser de segundos/minutos — este charter es la única red que lo
+  detectaría, dado que `QA-020-ACC-3` (N-1a/N-1b) prueba el comportamiento
+  observable con orden de operaciones explícito, no la ubicación del código
+  que lo garantiza.
+- **Justificación manual**: es una verificación puntual de código en el
+  momento del PR, no una aserción automatizable en runtime.
+
+## TC-020-E3 — Dos pestañas reales de un navegador confirmando el borrado al mismo tiempo (AC-15)
+
+- **Misión**: el día que exista el frontend de esta US (`US-020-...-frontend-web`,
+  no planificado todavía — `qa-plan.md` §1.2), reproducir literalmente el
+  escenario que el propio AC-15 describe — "la misma sesión abierta en dos
+  pestañas" — con un navegador real, dos pestañas reales, confirmando el
+  diálogo destructivo casi al mismo tiempo, y observar qué ve el usuario en
+  la pestaña que "pierde" la carrera (¿un error genérico confuso, o un
+  mensaje que reconoce que la otra pestaña ya lo hizo?).
+- **Áreas**: la experiencia de usuario del perdedor de la carrera (además del
+  comportamiento del servidor, que `QA-020-ACC-9`/N-7 ya prueba —
+  confirmado en esta sesión: dos `DELETE /v1/me` casi simultáneas sobre la
+  misma cuenta responden 204 las dos, sin 5xx, con un solo efecto); el
+  estado de la UI de la pestaña que pierde (¿queda colgada, muestra un
+  error, redirige igual que la que ganó?).
+- **Riesgos**: sin este charter, nadie observó nunca la experiencia real de
+  usuario del caso "dos pestañas" — sólo el efecto en el servidor.
+- **Justificación manual**: depende del frontend (no planificado todavía,
+  `qa-plan.md` §1.2) y de timing/percepción humana, no de una aserción de
+  API.
+- **Salida esperada**: cuando exista el FE, confirmación de que ninguna de
+  las dos pestañas queda en un estado confuso o roto, y una nota de UX si
+  hace falta un mensaje explícito para la pestaña que pierde la carrera.
+- **Estado (2026-09-06)**: no ejecutable todavía — bloqueado por la ausencia
+  del frontend de esta US (mismo motivo que documenta el gap FE de
+  `qa-plan.md` §1.2). Queda pendiente para cuando exista `/plan-frontend-web-ticket US-020`.
