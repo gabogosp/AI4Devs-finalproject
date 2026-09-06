@@ -351,7 +351,7 @@ language: es
 
 ## Fase 10 — Documentación
 
-- [ ] **T10.1 — Actualizar `payments/README.md` y `orders/README.md`**
+- [x] **T10.1 — Actualizar `payments/README.md` y `orders/README.md`**
   - **Pattern**: sección nueva "Qué se sumó con US-013" en
     `payments/README.md` (mismo estilo que la sección "Qué se sumó con
     US-010"); nota cruzada en `orders/README.md` señalando que la cancelación

@@ -27,6 +27,31 @@ el medio simulado (`simulate-payment.controller.ts`), el cliente HTTP
 (`admin-jobs.controller.ts`: reconciliación, limpieza de abandonadas,
 reintento de reembolsos) — ninguno existía antes de este change.
 
+## Qué es nuevo (US-013)
+
+`POST /v1/admin/orders/{id}/cancel` (`cancel-order.controller.ts` +
+`cancel-order.service.ts`): cancelación manual del dueño sobre una orden
+pagada no entregada (`new`/`preparing`/`ready` → `cancelled`), con reintegro
+de stock (`StockRepository.incrementForOrder`, inverso de
+`decrementForOrder`), reembolso del pago aprobado (real vía
+`MercadoPagoClient.refund` para `mercadopago`, no-op para
+`simulated_dsm`/`manual`) y aviso al comprador (seam
+`NotificationPort.orderCancelledByOwner`, entrega real `Deferred: US-011`).
+
+**Vive acá, no en `orders/`**, aunque comparte el prefijo de ruta
+`/v1/admin/orders` con `OrdersController` — necesita `StockRepository` (de
+`stock/`) y `PaymentsRepository`/`MercadoPagoClient` (de acá) en la MISMA
+transacción que la transición de estado. Construirlo en `orders/` obligaría
+a `OrdersModule` a importar `PaymentsModule`, creando el ciclo
+`orders → payments → orders` (`payments` ya importa `orders` desde US-010).
+Mismo razonamiento que ya llevó a `PaymentConfirmationController` a vivir
+acá compartiendo el mismo prefijo.
+
+Reusa tal cual el reembolso durable de US-010: una falla de
+`MercadoPagoClient.refund` deja el pago `refund_pending`, recogido después
+por `POST /admin/payments/retry-refunds` (`RefundRetryService`) — sin
+ningún cambio a ese job, no distingue por qué una fila quedó pendiente.
+
 ## Por qué `MercadoPagoClient` no tiene `createPreference`
 
 La versión anterior de este plan asumía que US-009 construía el cliente
