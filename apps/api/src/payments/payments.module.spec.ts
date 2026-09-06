@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { bootTestApp } from '../../test/e2e-app';
 import { CheckoutModule } from '../checkout/checkout.module';
 import { StockModule } from '../stock/stock.module';
+import { CancelOrderService } from './cancel-order.service';
 import { ConfirmOrderService } from './confirm-order.service';
 import { PaymentsModule } from './payments.module';
 
@@ -22,5 +23,11 @@ describe('PaymentsModule (T13.1)', () => {
     app = await bootTestApp([CheckoutModule, StockModule, PaymentsModule]);
 
     expect(app.get(ConfirmOrderService)).toBeInstanceOf(ConfirmOrderService);
+  });
+
+  it('resuelve CancelOrderService (US-013 T7.3) — incluida la inyección de OrderStatusHistoryRepository vía OrdersModule, sin forwardRef', async () => {
+    app = await bootTestApp([CheckoutModule, StockModule, PaymentsModule]);
+
+    expect(app.get(CancelOrderService)).toBeInstanceOf(CancelOrderService);
   });
 });

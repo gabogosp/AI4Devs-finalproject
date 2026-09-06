@@ -292,7 +292,7 @@ language: es
     el shape de `CancelOrderResponseDto`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-cancel-order`
 
-- [ ] **T7.3 — Registrar en `payments.module.ts`**
+- [x] **T7.3 — Registrar en `payments.module.ts`**
   - **Pattern**: agregar `CancelOrderService` a `providers`,
     `OrderCancellationController` a `controllers` — sin nuevo `imports`
     (`CheckoutModule`/`StockModule`/`OrdersModule` ya están, `design.md` §D1).

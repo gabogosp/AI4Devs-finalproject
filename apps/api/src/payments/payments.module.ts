@@ -7,6 +7,8 @@ import { PaymentsEventsService } from '../observability/payments-events.service'
 import { PrismaModule } from '../prisma/prisma.module';
 import { StockModule } from '../stock/stock.module';
 import { AdminJobsController } from './admin-jobs.controller';
+import { CancelOrderService } from './cancel-order.service';
+import { OrderCancellationController } from './cancel-order.controller';
 import { CleanupAbandonedOrdersService } from './cleanup-abandoned-orders.service';
 import { ConfirmOrderService } from './confirm-order.service';
 import { MercadoPagoClient } from './mercadopago/mercadopago-client';
@@ -33,9 +35,11 @@ import { MercadoPagoWebhookController } from './webhooks/mercadopago-webhook.con
     MercadoPagoWebhookController,
     SimulatePaymentController,
     AdminJobsController,
+    OrderCancellationController,
   ],
   providers: [
     ConfirmOrderService,
+    CancelOrderService,
     PaymentsRepository,
     PaymentsEventsService,
     PaymentsSimulateThrottlerGuard,
