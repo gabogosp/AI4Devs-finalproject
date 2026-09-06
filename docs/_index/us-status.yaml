@@ -776,8 +776,9 @@
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
-  status: In Review   # /commit 2026-09-06: ambas disciplinas con PR — FE (#95) mergeado,
-  # QA (#102) abierto. US avanza a In Review (todas las disciplinas alcanzaron PR).
+  status: Done   # /archive-change 2026-09-06: FE (PR #95) y QA (PR #102) mergeados y
+  # archivados — las 2 disciplinas declaradas resueltas. Sin capacidades/contratos
+  # nuevos (bump de dependencias + revalidación, sin superficie visible).
   priority: High
   prd-capacity: null            # no nace del PRD: hallazgo del gate de seguridad de US-006
   disciplines: [FE, QA]
@@ -786,7 +787,8 @@
   created: 2026-08-23
   ready-at: 2026-09-06
   in-progress-at: 2026-09-06    # primera planificación (frontend-web-developer, /plan-frontend-web-ticket)
-  in-review-at: 2026-09-06      # FE (PR #95, mergeado) + QA (PR #102, abierto)
+  in-review-at: 2026-09-06      # FE (PR #95) + QA (PR #102)
+  done-at: 2026-09-06
   blocked_by: []
 - id: US-023
   slug: pago-manual-offline
