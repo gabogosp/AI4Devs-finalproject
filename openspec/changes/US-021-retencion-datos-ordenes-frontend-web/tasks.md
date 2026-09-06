@@ -185,7 +185,7 @@
 
 ## Fase 6 — Accesibilidad
 
-- [ ] T6.1 Auditoría axe-core del `OrderDetail` con orden anonimizada
+- [x] T6.1 Auditoría axe-core del `OrderDetail` con orden anonimizada
   - **Pattern**: extender `apps/web/src/features/orders/a11y.test.tsx` (no crear un archivo
     nuevo) con un tercer caso, mismo `auditar()` helper ya definido ahí.
   - **Exit criterion**: cero violaciones `serious`/`critical` en `OrderDetail` cuando la

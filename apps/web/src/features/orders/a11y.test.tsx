@@ -39,7 +39,7 @@ function summary(): OrderSummary {
   };
 }
 
-function detalle(): Order {
+function detalle(over: Partial<Order> = {}): Order {
   return {
     ...summary(),
     status: 'preparing',
@@ -48,6 +48,7 @@ function detalle(): Order {
     fulfillment: 'pickup',
     anonymized_at: null,
     anonymization_reason: null,
+    ...over,
     items: [
       {
         product_name: 'Compresor Embraco',
@@ -85,6 +86,29 @@ describe('Accesibilidad del panel de órdenes (T10.1)', () => {
     server.use(http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(detalle())));
     const { container } = render(<OrderDetail id={ID} />);
     await screen.findByText('Compresor Embraco');
+
+    const resultados = await auditar(container);
+    const graves = resultados.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    );
+    expect(graves).toEqual([]);
+  });
+
+  it('OrderDetail (orden anonimizada, T6.1) no tiene violaciones serious/critical — sin OrderAnonymizeAction (AC-8) y con la sección de contacto reemplazada', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/orders/${ID}`, () =>
+        HttpResponse.json(
+          detalle({
+            anonymized_at: '2026-09-05T12:00:00.000Z',
+            anonymization_reason: 'retention_policy',
+          }),
+        ),
+      ),
+    );
+    const { container } = render(<OrderDetail id={ID} />);
+    await screen.findByText('Compresor Embraco');
+    expect(screen.getByText(/anonimizados/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /anonimizar datos del comprador/i })).not.toBeInTheDocument();
 
     const resultados = await auditar(container);
     const graves = resultados.violations.filter(
