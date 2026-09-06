@@ -53,6 +53,16 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
 
+      # La suite de aceptación (Cucumber) visita páginas con Playwright
+      # (`CatalogWorld.visitar`, `acceptance/steps/world.ts`) — no sólo los
+      # steps de E2E/a11y de más abajo. Sin este install, TODO escenario que
+      # visite una página falla con "Executable doesn't exist" apenas arranca
+      # el browser, antes de que ninguna aserción de negocio corra. Movido acá
+      # (antes vivía sólo condicionado a `qa/e2e/*.config.ts`, demasiado tarde
+      # para la suite de aceptación) — instalar una vez cubre ambos consumidores.
+      - name: Playwright browsers
+        run: pnpm --filter @dsm/qa exec playwright install --with-deps chromium
+
       # `qa/acceptance/steps/enriquecimiento.steps.ts` lee `GEMINI_API_KEY` de
       # un `.env` en la raíz a nivel de MÓDULO (corre al importar el step,
       # antes de que cualquier escenario arranque) — sin este archivo, cucumber
@@ -134,8 +144,10 @@ jobs:
           npx wait-on -t 120000 http://localhost:3100
 
       - name: E2E cross-stack (Playwright)
+        # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
+        # de nuevo acá sería un no-op lento, no una corrección.
         if: hashFiles('qa/e2e/playwright.config.ts') != ''
-        run: pnpm --filter @dsm/qa exec playwright install --with-deps chromium && pnpm --filter @dsm/qa test:e2e
+        run: pnpm --filter @dsm/qa test:e2e
 
       - name: Accesibilidad (axe-core)
         if: hashFiles('qa/e2e/playwright.a11y.config.ts') != ''
