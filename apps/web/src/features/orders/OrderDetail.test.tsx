@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
@@ -207,5 +207,80 @@ describe('OrderDetail — T7.2 (el historial refleja el cambio sin un segundo GE
     await screen.findByRole('button', { name: /marcar como lista/i });
     expect(screen.getAllByRole('listitem')).toHaveLength(2);
     expect(getCount).toBe(1); // sin un segundo GET — el PATCH ya trajo el detalle completo
+  });
+});
+
+describe('OrderDetail — T5.2 (OrderCancelAction montado: visibilidad condicional + reconciliación)', () => {
+  it.each(['new', 'preparing', 'ready'] as const)(
+    'con status=%s, el botón "Cancelar orden" es visible',
+    async (status) => {
+      server.use(http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(orden({ status }))));
+
+      render(<OrderDetail id={ID} />);
+
+      expect(await screen.findByRole('button', { name: /^cancelar orden$/i })).toBeInTheDocument();
+    },
+  );
+
+  it('con status=delivered, el botón "Cancelar orden" NO es visible', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(orden({ status: 'delivered' }))),
+    );
+
+    render(<OrderDetail id={ID} />);
+
+    await screen.findByText('Comprador de Prueba');
+    expect(screen.queryByRole('button', { name: /^cancelar orden$/i })).not.toBeInTheDocument();
+  });
+
+  it('tras cancelar con éxito, OrderStatusHistory muestra la fila nueva (to_status=cancelled) SIN un segundo GET', async () => {
+    const user = userEvent.setup();
+    let getCount = 0;
+    const inicial = orden({
+      status: 'preparing',
+      status_history: [
+        {
+          from_status: null,
+          to_status: 'new',
+          changed_by: null,
+          changed_at: '2026-08-30T10:00:00.000Z',
+        },
+      ],
+    });
+    server.use(
+      http.get(`${API}/v1/admin/orders/${ID}`, () => {
+        getCount += 1;
+        return HttpResponse.json(inicial);
+      }),
+      http.post(`${API}/v1/admin/orders/${ID}/cancel`, () =>
+        HttpResponse.json({
+          ...orden({
+            status: 'cancelled',
+            status_history: [
+              ...inicial.status_history,
+              {
+                from_status: 'preparing',
+                to_status: 'cancelled',
+                changed_by: 'admin',
+                changed_at: '2026-08-30T10:10:00.000Z',
+              },
+            ],
+          }),
+          refund: { status: 'refunded', provider: 'mercadopago' },
+        }),
+      ),
+    );
+
+    render(<OrderDetail id={ID} />);
+    await screen.findByText('Comprador de Prueba');
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    expect(getCount).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: /^cancelar orden$/i }));
+    await user.type(screen.getByLabelText(/escribí "cancelar" para confirmar/i), 'CANCELAR');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^cancelar orden$/i }));
+
+    await waitFor(() => expect(screen.getAllByRole('listitem')).toHaveLength(2));
+    expect(getCount).toBe(1); // sin un segundo GET — la respuesta ya es self-contained
   });
 });

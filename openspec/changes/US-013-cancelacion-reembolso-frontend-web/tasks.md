@@ -210,7 +210,7 @@ language: es
     T5.2, que corre a continuación sobre el mismo archivo).
   - **Verify**: `pnpm --filter @dsm/web exec tsc --noEmit`
 
-- [ ] **T5.2 — `OrderDetail.test.tsx` — visibilidad condicional + reconciliación**
+- [x] **T5.2 — `OrderDetail.test.tsx` — visibilidad condicional + reconciliación**
   - **Exit criterion**: con la orden en `new`/`preparing`/`ready`, el botón
     "Cancelar orden" es visible; con `delivered`, NO es visible; tras invocar
     la mutación con éxito, `OrderStatusHistory` muestra la fila nueva
