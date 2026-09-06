@@ -909,6 +909,7 @@
   linear-issue-id: null
   created: 2026-09-06
   ready-at: 2026-09-06
+  in-progress-at: 2026-09-06   # primera planificación (/plan-frontend-web-ticket, frontend-web-developer)
   blocked_by: [US-014]   # necesita Customer/mi-cuenta (Done)
 - id: US-025
   slug: resenas-calificaciones-productos
