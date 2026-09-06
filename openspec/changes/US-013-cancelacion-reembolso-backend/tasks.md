@@ -157,7 +157,7 @@ language: es
 
 ## Fase 3 — `NotificationPort`: método nuevo (AC-4)
 
-- [ ] **T3.1 — `orderCancelledByOwner` en `NotificationPort` + `LoggingNotificationAdapter`**
+- [x] **T3.1 — `orderCancelledByOwner` en `NotificationPort` + `LoggingNotificationAdapter`**
   - **Pattern**: quinto método del puerto, mismo shape que
     `orderCancelledNoStock` — `per backend-node-standards.md §3 — puerto por
     token de DI`, sin PII en el adapter (`per observability-standards.md §9`):
