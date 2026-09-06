@@ -22,9 +22,20 @@ export class StorefrontProductDto {
   image_url!: string | null;
   /** AC-3/AC-4: comprable/no-comprable, derivado de `stock > 0`. Sin nivel. */
   in_stock!: boolean;
+  /**
+   * Indicador aproximado de "pocas unidades" (decisión del PO) — `0 < stock <=
+   * STOREFRONT_LOW_STOCK_THRESHOLD`. Deliberadamente booleano, no el número: el
+   * mismo threat-model que ya rige `in_stock` (no filtrar el inventario real al
+   * público) se mantiene — el FE sólo puede elegir entre dos copys, nunca leer
+   * cuántas unidades quedan.
+   */
+  low_stock!: boolean;
   category!: { name: string; slug: string };
 
-  static from(p: Product & { category: Category }): StorefrontProductDto {
+  static from(
+    p: Product & { category: Category },
+    lowStockThreshold: number,
+  ): StorefrontProductDto {
     return {
       slug: p.slug,
       sku: p.sku,
@@ -34,6 +45,7 @@ export class StorefrontProductDto {
       currency: 'ARS',
       image_url: p.image_url,
       in_stock: p.stock > 0,
+      low_stock: p.stock > 0 && p.stock <= lowStockThreshold,
       category: { name: p.category.name, slug: p.category.slug },
     };
   }

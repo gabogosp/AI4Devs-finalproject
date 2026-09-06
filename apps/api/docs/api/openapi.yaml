@@ -2050,7 +2050,7 @@ components:
     StorefrontProduct:
       type: object
       description: 'Ficha pública (US-003): sólo campos SEO; sin id/stock/status/timestamps.'
-      required: [slug, sku, name, description, price_ars_cents, currency, image_url, in_stock, category]
+      required: [slug, sku, name, description, price_ars_cents, currency, image_url, in_stock, low_stock, category]
       properties:
         slug:
           type: string
@@ -2075,6 +2075,13 @@ components:
         in_stock:
           type: boolean
           description: 'Derivado de stock mayor a 0 (AC-3/AC-4); sin exponer el nivel.'
+        low_stock:
+          type: boolean
+          description: >-
+            Indicador aproximado de "pocas unidades" (C2b, decisión del PO) —
+            `0 < stock <= STOREFRONT_LOW_STOCK_THRESHOLD`. Booleano a
+            propósito, nunca el número real: mismo threat-model que
+            `in_stock`, no filtrar el inventario exacto al público.
         category:
           type: object
           required: [name, slug]

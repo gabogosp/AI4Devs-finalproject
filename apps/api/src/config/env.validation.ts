@@ -48,6 +48,14 @@ export const envSchema = z.object({
   STOREFRONT_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000), // 1 min
   STOREFRONT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(60),
 
+  /**
+   * Banda "pocas unidades" de la ficha pública (`StorefrontProductDto.low_stock`).
+   * Decisión del PO: mostrar un indicador aproximado sin exponer el número real
+   * de stock (mismo threat-model que ya rige `in_stock: boolean` — no filtrar
+   * inventario/gestión al público). `0 < stock <= umbral` → `low_stock: true`.
+   */
+  STOREFRONT_LOW_STOCK_THRESHOLD: z.coerce.number().int().positive().default(5),
+
   // §7.3 + ADR-0011 — superficie de auth de clientes (US-014). Defaults seguros;
   // un valor inválido hace FALLAR el arranque, nunca cae al default en silencio.
   AUTH_ACCESS_TTL_MIN: z.coerce.number().int().positive().default(15),

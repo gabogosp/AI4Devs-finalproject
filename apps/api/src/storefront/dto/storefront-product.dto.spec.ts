@@ -37,25 +37,27 @@ describe('StorefrontProductDto.from', () => {
     ...over,
   });
 
+  const UMBRAL = 5;
+
   it('stock>0 → in_stock:true (AC-3)', () => {
-    expect(StorefrontProductDto.from(base({ stock: 5 })).in_stock).toBe(true);
+    expect(StorefrontProductDto.from(base({ stock: 5 }), UMBRAL).in_stock).toBe(true);
   });
 
   it('stock=0 → in_stock:false (AC-4)', () => {
-    expect(StorefrontProductDto.from(base({ stock: 0 })).in_stock).toBe(false);
+    expect(StorefrontProductDto.from(base({ stock: 0 }), UMBRAL).in_stock).toBe(false);
   });
 
   it('image_url=null se pasa tal cual (AC-6)', () => {
-    expect(StorefrontProductDto.from(base({ image_url: null })).image_url).toBeNull();
+    expect(StorefrontProductDto.from(base({ image_url: null }), UMBRAL).image_url).toBeNull();
   });
 
   it('description = description_raw (AC-5)', () => {
-    const dto = StorefrontProductDto.from(base({ description_raw: 'texto base' }));
+    const dto = StorefrontProductDto.from(base({ description_raw: 'texto base' }), UMBRAL);
     expect(dto.description).toBe('texto base');
   });
 
   it('mapea sku/name/precio/currency/categoría', () => {
-    const dto = StorefrontProductDto.from(base());
+    const dto = StorefrontProductDto.from(base(), UMBRAL);
     expect(dto).toMatchObject({
       sku: 'REF-001',
       name: 'Heladera',
@@ -66,9 +68,31 @@ describe('StorefrontProductDto.from', () => {
   });
 
   it('NO expone campos de administración (OQ-BE-3)', () => {
-    const dto = StorefrontProductDto.from(base()) as unknown as Record<string, unknown>;
+    const dto = StorefrontProductDto.from(base(), UMBRAL) as unknown as Record<string, unknown>;
     for (const key of ['id', 'stock', 'status', 'category_id', 'created_at', 'updated_at']) {
       expect(dto).not.toHaveProperty(key);
     }
+  });
+
+  // C2b — indicador aproximado "pocas unidades", nunca el número real.
+  describe('low_stock (C2b)', () => {
+    it('0 < stock <= umbral → low_stock:true', () => {
+      expect(StorefrontProductDto.from(base({ stock: 1 }), UMBRAL).low_stock).toBe(true);
+      expect(StorefrontProductDto.from(base({ stock: UMBRAL }), UMBRAL).low_stock).toBe(true);
+    });
+
+    it('stock > umbral → low_stock:false', () => {
+      expect(StorefrontProductDto.from(base({ stock: UMBRAL + 1 }), UMBRAL).low_stock).toBe(false);
+    });
+
+    it('stock=0 → low_stock:false (es "sin stock", no "pocas unidades" — in_stock ya lo cubre)', () => {
+      expect(StorefrontProductDto.from(base({ stock: 0 }), UMBRAL).low_stock).toBe(false);
+    });
+
+    it('nunca expone el número real de stock, sólo el booleano', () => {
+      const dto = StorefrontProductDto.from(base({ stock: 3 }), UMBRAL) as unknown as Record<string, unknown>;
+      expect(dto).not.toHaveProperty('stock');
+      expect(typeof dto.low_stock).toBe('boolean');
+    });
   });
 });

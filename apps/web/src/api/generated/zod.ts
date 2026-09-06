@@ -473,6 +473,7 @@ export const StorefrontGetProductResponse = zod.object({
   "currency": zod.enum(['ARS']),
   "image_url": zod.string().nullable(),
   "in_stock": zod.boolean().describe('Derivado de stock mayor a 0 (AC-3\/AC-4); sin exponer el nivel.'),
+  "low_stock": zod.boolean().describe('Indicador aproximado de \"pocas unidades\" (C2b, decisión del PO) — `0 < stock <= STOREFRONT_LOW_STOCK_THRESHOLD`. Booleano a propósito, nunca el número real: mismo threat-model que `in_stock`, no filtrar el inventario exacto al público.'),
   "category": zod.object({
   "name": zod.string(),
   "slug": zod.string()
