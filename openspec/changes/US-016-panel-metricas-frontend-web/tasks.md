@@ -82,7 +82,7 @@
 
 ## Phase 4 — Servicio de dominio
 
-- [ ] T4.1 `src/features/metrics/metricsService.ts` — envuelve las 6
+- [x] T4.1 `src/features/metrics/metricsService.ts` — envuelve las 6
       operaciones generadas + `parseContract`, re-exporta tipos de dominio
       (`SalesTimeseries`, `TopProductsRanking`, `PeriodSummary`, etc., a partir
       de los tipos generados — nunca declarados a mano).
