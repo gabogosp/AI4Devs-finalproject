@@ -12,6 +12,12 @@ info:
     (`anonymize-order.yaml` + `retention-sweep.yaml`) — el spec publicado del
     servicio (`apps/api/docs/api/openapi.yaml`) no llegó a incluir estos 2
     endpoints (brecha conocida, ver `decisions.md`).
+
+    Extendido por `US-020-borrado-cuenta-datos-personales-backend` (2026-09-06)
+    con un tercer endpoint: `DELETE /me` — autoservicio del CLIENTE (no del
+    dueño), seguridad por `sessionCookie` en vez de `adminBearer` (única
+    excepción de seguridad de esta capacidad, ver `security` a nivel de
+    operación en `paths/delete-account.yaml`).
   contact:
     name: DSM
     url: https://example.com
@@ -21,6 +27,12 @@ servers:
 tags:
   - name: admin-orders-retention
     description: Retención y anonimización de PII de órdenes (US-021). Sólo admin.
+  - name: account
+    description: >-
+      Borrado de cuenta y datos personales del cliente autenticado — derecho
+      al olvido (US-020, Ley 25.326). Autoservicio: sólo el titular con
+      sesión propia. A diferencia del resto de esta capacidad (admin sobre
+      compradores invitados), acá lo dispara el propio cliente.
 security:
   - adminBearer: []
 components:
@@ -30,6 +42,13 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: >-
+        Access token de cliente, corto y HttpOnly (US-014). Sólo lo usa
+        `DELETE /me` de esta capacidad — el resto es `adminBearer`.
   responses:
     RateLimited:
       description: |
@@ -58,8 +77,11 @@ components:
           description: Momento en que se anonimizó (AC-4 — queda registrado y es auditable).
         anonymization_reason:
           type: string
-          enum: [retention_policy, requested]
-          description: Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).
+          enum: [retention_policy, requested, account_deletion]
+          description: >-
+            Distingue si fue por plazo cumplido, a pedido del comprador, o
+            por borrado de cuenta del titular (AC-4 de esta capacidad;
+            `account_deletion` lo agrega US-020, AC-3/AC-8/AC-12 de esa US).
     RetentionSweepResult:
       type: object
       required: [anonymized_count, reason]
@@ -87,8 +109,32 @@ components:
         detail:
           type: string
           description: '**Nunca** contiene PII del comprador.'
+    OrderHistorySummary:
+      description: >-
+        US-020 — mismo shape que `GET /v1/me/orders` (capacidad
+        `historial-compras`, US-015): sin PII adicional, sólo lo que el
+        titular ya ve en su propio historial.
+      type: object
+      properties:
+        order_number: { type: integer }
+        status: { type: string, enum: [pending_payment, new, preparing, ready] }
+        total_ars_cents: { type: integer }
+        created_at: { type: string, format: date-time }
+    AccountHasActiveOrdersProblem:
+      description: >-
+        US-020 AC-4/AC-9 — el 409 de `DELETE /me` cuando el titular tiene
+        órdenes en curso.
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            blocking_orders:
+              type: array
+              items: { $ref: '#/components/schemas/OrderHistorySummary' }
 paths:
   /admin/orders/{id}/anonymize:
     $ref: ./openapi/paths/anonymize-order.yaml
   /admin/orders/retention-sweep:
     $ref: ./openapi/paths/retention-sweep.yaml
+  /me:
+    $ref: ./openapi/paths/delete-account.yaml

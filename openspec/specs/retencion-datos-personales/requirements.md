@@ -36,6 +36,35 @@ Superficie cubierta: `POST /admin/orders/{id}/anonymize`,
 | NFR-1 | `POST /admin/orders/retention-sweep` responde síncrono (no `202`+polling) — el volumen esperado (algunos cientos de órdenes/mes, una sola sucursal) hace que un `UPDATE` de conjunto se resuelva en milisegundos. | Suite dev-owned; gatillo de revisión documentado si el volumen crece dos órdenes de magnitud. |
 | NFR-2 | Rate-limit: `retention-sweep` 5/hora/IP (deliberadamente angosto — un disparador externo mal configurado en loop no debe convertir esto en carga recurrente); `:id/anonymize` 30/min/IP (acción humana puntual del dueño). | Suite dev-owned, reusa el cubo `auth`. |
 
+## Desde US-020 backend — Borrado de cuenta y datos personales (archivada 2026-09-06)
+
+Superficie cubierta: `DELETE /me` — a diferencia del resto de esta capacidad
+(acción admin sobre un comprador invitado), acá lo dispara el propio titular
+sobre su propia cuenta.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-8 | `DELETE /me` anonimiza `customers` (name/email/phone sobrescritos, `deleted_at` sellado) — autoservicio, inmediato, síncrono, irreversible. | AC-1, AC-2, AC-11 |
+| R-9 | El email queda liberado para re-registro — placeholder **único por fila** (`cuenta-borrada+{customerId}@anonimizado.dsm.invalid`), a diferencia del placeholder FIJO que R-3 ya declaraba para `orders.buyer_email` (que no tiene `UNIQUE`). | AC-5, AC-6 |
+| R-10 | Revoca todas las sesiones (`refresh_tokens`) y enlaces de recuperación pendientes (`password_reset_tokens`) de la cuenta, en todos los dispositivos. | AC-10 |
+| R-11 | Desvincula (no borra) los carritos de la cuenta — pasan a ser anónimos y expiran por su propia ventana. | AC-2 |
+| R-12 | Anonimiza todas las órdenes históricas no anonimizadas del titular en un único `UPDATE` de conjunto, reusando el mecanismo de R-3/R-4 con `anonymization_reason='account_deletion'` (tercer valor, ver R-4 actualizado abajo). | AC-3, AC-8, AC-12 |
+| R-13 | Si el titular tiene al menos una orden `pending_payment`\|`new`\|`preparing`\|`ready`, el borrado se rechaza con 409 y el detalle de esas órdenes — verificado **al ejecutar**, dentro de la misma transacción que las escrituras, no al mostrar la pantalla. | AC-4, AC-9 |
+| R-14 | Sólo el titular con su propia sesión de cliente (`sessionCookie`) puede borrar su cuenta — la ruta no acepta ningún parámetro de identidad, el `customerId` sale estructuralmente del JWT. | AC-13 |
+
+`R-4` se actualiza: `anonymization_reason` ahora tiene 3 valores válidos
+(`retention_policy`\|`requested`\|`account_deletion`), no 2 — ver el `CHECK`
+ensanchado y el enum del contrato vivo.
+
+### Negative-space (lo que NO debe pasar) — agregado por US-020
+
+| # | Requisito |
+|---|---|
+| N-5 | Ningún log ni evento de un `DELETE /me` completo (incluyendo el 409 de bloqueo) contiene el `name`/`email`/`phone` recién borrados, ni siquiera transformados. |
+| N-6 | Confirmar el borrado dos veces (doble clic, dos pestañas) produce un solo efecto — mismo mecanismo de guarda por `WHERE deleted_at IS NULL` que N-4 ya declaraba para las órdenes, aplicado ahora también a `customers`. |
+
 ### Diferidos con dueño
 
 | # | Requisito | Dueño / disparador |

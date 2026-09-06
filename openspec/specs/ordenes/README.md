@@ -96,6 +96,15 @@ si esta capacidad tuviera que importar `PaymentsRepository`/`MercadoPagoClient`.
 | [`US-012-panel-ordenes-dueno-frontend-web`](../../changes/US-012-panel-ordenes-dueno-frontend-web/) | FE | Listado, detalle, avanzar estado con UI optimista, `PendingPaymentsPanel`. Mergeado (PR #22 + #31), pendiente `/archive-change` propio |
 | [`US-012-panel-ordenes-dueno-qa`](../../changes/archive/US-012-panel-ordenes-dueno-qa/) | QA | Suite cross-stack: aceptación BDD (13), E2E de navegador (5), accesibilidad (5), carga (2), charters (2) — 24/24 verdes |
 
+**Delta cruzado (2026-09-06, `US-020-borrado-cuenta-datos-personales-backend`,
+capacidad ajena — `retencion-datos-personales`)**: `AdminOrderDetail.
+anonymization_reason` ensancha su enum de `[retention_policy, requested]` a
+`[retention_policy, requested, account_deletion]` — una orden anonimizada
+por el borrado de cuenta de su titular ahora es un valor válido que `GET
+/v1/admin/orders/{id}` puede devolver. Este README (capacidad `ordenes`) no
+posee el endpoint que produce ese valor; el detalle vive en
+[`retencion-datos-personales/README.md`](../retencion-datos-personales/README.md).
+
 ## Estado de la provisión
 
 La capacidad corre hoy en **entorno local** (`docker-compose`). La provisión de nube
