@@ -1,4 +1,5 @@
 import { track } from '@/lib/observability/events';
+import { downloadCsv } from '@/lib/http/downloadCsv';
 import { importsService } from './importsService';
 
 /**
@@ -20,19 +21,6 @@ export async function descargarReporte(
 ): Promise<void> {
   const { csv, filename } = await importsService.downloadReport(id);
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  try {
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = filename;
-    // No se agrega al DOM: `click()` sobre un elemento desconectado alcanza para
-    // disparar la descarga y evita dejar basura si algo falla en el medio.
-    enlace.click();
-    track('import_report_downloaded', { failed_count: failedCount });
-  } finally {
-    // Sin revocar, cada descarga deja el CSV completo retenido en memoria hasta
-    // que se cierre la pestaña.
-    URL.revokeObjectURL(url);
-  }
+  downloadCsv(csv, filename);
+  track('import_report_downloaded', { failed_count: failedCount });
 }

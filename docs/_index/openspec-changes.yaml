@@ -2068,3 +2068,36 @@
   completed-at: 2026-09-06T01:07:51Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-frontend-web/
+
+- name: US-016-panel-metricas-frontend-web
+  us-id: US-016
+  discipline: frontend-web
+  variant: null
+  status: in review   # /commit 2026-09-05 — 25/25 tasks + 6/6 verificación suite-level (152 archivos/947 tests, typecheck+lint limpios, 2/2 E2E, imports sin regresión), PR abierto
+  parent-us: docs/user-stories/US-016-panel-metricas.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Consume el contrato admin-reports publicado por US-016-panel-metricas-backend
+  # (PR #55, in review) — sin dependencia de código del backend más allá del
+  # cliente ya regenerado (heredado vía rama, `pnpm --filter @dsm/web codegen`).
+  # Feature nueva src/features/metrics/ (3 widgets independientes:
+  # SalesChart/TopProductsTable/SummaryCards, cada uno con su propio AsyncState)
+  # + refactor compartido (Extract Method) de la descarga de CSV entre imports y
+  # metrics + recharts como dependencia nueva (design-system §9, ya Approved).
+  # 13 fases, ~28 tasks closure-grade.
+  #
+  # DECISIÓN DE NAMING: la feature FE se llama `metrics` (no `reports` como el
+  # módulo backend) — sin colisión de clase en el FE; la asimetría de nombres
+  # es intencional (design.md Decisión 1).
+  estimate-hours: null   # US §7 presupuesta FE en 8-12h sin desglosar Recharts +
+  # refactor compartido + a11y + E2E; se prefiere null a repetir el patrón de
+  # subestimación ya señalado en la entrada de backend, hasta reconciliar con
+  # el conteo real de tasks al desarrollar.
+  branch: feat/US-016-panel-metricas-dueno-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/59
+  pr-opened-at: 2026-09-05
+  created: 2026-09-05
+  completed-at: null
+  archived-at: null
+  archive-path: null
