@@ -23,7 +23,7 @@
 
 ## Fase 0 — Pre-flight y gate de contrato
 
-- [ ] T0.1 Verificar la publicación del contrato de backend (ya resuelto — verificación, no bloqueo)
+- [x] T0.1 Verificar la publicación del contrato de backend (ya resuelto — verificación, no bloqueo)
   - **Depends on**: nada — primera task.
   - **Exit criterion**: `apps/api/docs/api/openapi.yaml` contiene los `operationId`
     `listOrderHistory` y `getOrderHistoryDetail`, Y `apps/web/src/api/generated/model/index.ts`
@@ -34,7 +34,7 @@
     Si cualquiera da 0, **detener la ejecución del resto de este `tasks.md`** y reportar el
     bloqueo — nunca continuar con un DTO/Zod/mock escrito a mano como sustituto (prohibido por
     `frontend-standards.md` §3.2).
-- [ ] T0.2 Confirmar rama y ausencia de changes en conflicto
+- [x] T0.2 Confirmar rama y ausencia de changes en conflicto
   - **Exit criterion**: rama `feat/US-015-historial-compras-frontend-web` creada desde `main`
     actualizado (ya incluye `2a0eb62`); ningún otro change abierto en `openspec/changes/` toca
     `apps/web/src/features/order-history/` ni `apps/web/app/(storefront)/mi-cuenta/compras/`.
@@ -42,14 +42,14 @@
 
 ## Fase 1 — Codegen (verificación de frescura, sin regenerar)
 
-- [ ] T1.1 Confirmar que el cliente generado no requiere regeneración
+- [x] T1.1 Confirmar que el cliente generado no requiere regeneración
   - **Depends on**: T0.1.
   - **Pattern**: `per openapi-client-codegen skill — regenerate, never hand-edit`. No se corre
     codegen en este change (ya se corrió en PR #71) — sólo se verifica ausencia de diff.
   - **Exit criterion**: `pnpm --filter @dsm/web codegen` no produce cambios en
     `apps/web/src/api/generated/` (el contrato no cambió desde PR #71).
   - **Verify**: `pnpm --filter @dsm/web codegen && git diff --exit-code apps/web/src/api/generated/` → exit 0 (sin diff).
-- [ ] T1.2 Confirmar que el gate `frontend-codegen-fresh` de CI cubre este change
+- [x] T1.2 Confirmar que el gate `frontend-codegen-fresh` de CI cubre este change
   - **Exit criterion**: `.github/workflows/frontend-codegen-fresh.yml` ya corre sobre `apps/web`
     — no hace falta wiring nuevo.
   - **Verify**: `grep -q "apps/web" .github/workflows/frontend-codegen-fresh.yml`.

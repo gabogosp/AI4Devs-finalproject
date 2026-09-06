@@ -2155,7 +2155,8 @@
   us-id: US-015
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in progress   # /develop-frontend-web 2026-09-06 — T0.1/T0.2/T1.1/T1.2 verdes
+  # (gate de contrato trivial, ya resuelto al planificar; codegen sin diff).
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
