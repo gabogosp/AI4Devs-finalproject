@@ -46,15 +46,33 @@ language: es
 
 | Suite | Comando | Specs/Features | Escenarios/Tests | Golpea `apps/web` servido? |
 |---|---|---|---|---|
-| Aceptación BDD | `pnpm --filter @dsm/qa test:acceptance` | 14 `.feature` | **136** (`Escenario`/`Esquema del escenario`, contando Ejemplos) | Sí (World levanta un browser real para escenarios de UI desde US-003+, y siempre habla con la API real) |
-| E2E SSR/SEO/funcional | `pnpm --filter @dsm/qa test:e2e` | 16 specs (excluye `*a11y*` por `testMatch`) | **68** | Sí — es la suite que exige el front construido y servido (`categoria-ssr-seo.spec.ts`, `pdp-ssr-seo.spec.ts` explícitamente) |
-| Accesibilidad WCAG AA | `pnpm --filter @dsm/qa test:a11y` | 9 specs (`*a11y*.spec.ts`) | **38** | Sí — axe-core corre contra el DOM renderizado del panel real |
+| Aceptación BDD | `pnpm --filter @dsm/qa test:acceptance` | 14 `.feature` | ~~136~~ → **172** (`Escenario`/`Esquema del escenario`, contando Ejemplos; ver nota) | Sí (World levanta un browser real para escenarios de UI desde US-003+, y siempre habla con la API real) |
+| E2E SSR/SEO/funcional | `pnpm --filter @dsm/qa test:e2e` | 16 specs (excluye `*a11y*` por `testMatch`) | **68** (confirmado) | Sí — es la suite que exige el front construido y servido (`categoria-ssr-seo.spec.ts`, `pdp-ssr-seo.spec.ts` explícitamente) |
+| Accesibilidad WCAG AA | `pnpm --filter @dsm/qa test:a11y` | 9 specs (`*a11y*.spec.ts`) | **38** (confirmado) | Sí — axe-core corre contra el DOM renderizado del panel real |
 | Contract testing | `pnpm --filter @dsm/qa test:contract*` | 9 scripts `tsx` | — | No — `fetch` directo a `QA_API_BASE_URL` (`design.md` D-QA2) |
 | Carga (k6) | `pnpm --filter @dsm/qa test:load*` | 9 scripts | — | No — todos usan `QA_API_BASE_URL` (`design.md` D-QA2) |
 | Funcional (Newman) | `pnpm --filter @dsm/qa test:functional` | 1 colección, 14 requests | — | No — API directa; el único paquete tocado (`handlebars`) ya se revalidó en el `tasks.md` de FE |
 
-**Total revalidado por este plan: 242 escenarios/tests** (136 + 68 + 38),
-across 3 suites, contra el stack ya mergeado a `main`.
+> **Corrección de conteo (ejecución 2026-09-06, `/develop-qa`)**: la cifra de
+> 136 fue una foto de planificación; el conteo real medido con
+> `cucumber-js --dry-run` es **178 escenarios totales** (incluye `Esquema del
+> escenario` expandido por `Ejemplos`), de los cuales **6 están tageados
+> `@blocked`** (5 en `enriquecimiento.feature` — necesitan un `GEMINI_API_KEY`
+> real, sin el cual `SC-005-H1/H2/C3/N2/N3` no tienen nada que ejercitar — y 1
+> en `pago-webhook.feature`, `SC-010-N2`, necesita una cuenta sandbox de
+> MercadoPago). `tasks.md`/`qa-plan.md` originales sólo excluían `@deferred`
+> (que hoy no matchea ningún escenario: verificado con
+> `cucumber-js --tags "@deferred" --dry-run` → 0), no `@blocked` — así que el
+> filtro correcto para "todo lo que es ejecutable en este entorno" es
+> `--tags "not @deferred and not @blocked"` → **172 escenarios**. Los 6
+> `@blocked` no son un hallazgo nuevo: ya estaban documentados como bloqueo de
+> entorno pre-existente en el propio `.feature` (comentario de cabecera de
+> `enriquecimiento.feature`/`pago-webhook.feature`), sólo faltaba reflejarlos
+> en el filtro de este plan.
+
+**Total revalidado por este plan: 278 escenarios/tests** (172 + 68 + 38),
+across 3 suites, contra el stack ya mergeado a `main` — corrige el `242`
+original (136+68+38) por la razón de arriba.
 
 ## 2. Mapeo de la pirámide de test (capas QA-owned en negrita)
 
@@ -200,7 +218,7 @@ nuevo.
 
 | Suite | Target | Rationale |
 |---|---|---|
-| Aceptación BDD | ≥136 escenarios verdes | Conteo vigente al planificar; "igual o mayor, nunca menor" (US §9 / AC-4, mismo criterio que `tasks.md` de FE T3.1) |
+| Aceptación BDD | ≥172 escenarios verdes (corregido de 136, ver nota §1) | Conteo real medido al ejecutar; "igual o mayor, nunca menor" (US §9 / AC-4, mismo criterio que `tasks.md` de FE T3.1) |
 | E2E SSR/SEO/funcional | ≥68 tests verdes | Ídem — incluye específicamente AC-3 (SSR/sitemap/metadatos) |
 | Accesibilidad WCAG AA | ≥38 tests verdes | Ídem — ninguna violación WCAG AA nueva |
 

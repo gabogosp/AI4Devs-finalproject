@@ -65,7 +65,7 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
 
 ## Fase 1 — Revalidación de la suite de aceptación BDD (Layer 3)
 
-- [ ] T-QA1 Correr la suite completa de Cucumber contra el stack bumpeado y
+- [x] T-QA1 Correr la suite completa de Cucumber contra el stack bumpeado y
   comparar el conteo contra el baseline vigente (14 features, 136
   escenarios — `qa-plan.md` §1).
   - **Exit criterion**: la suite termina en exit 0; el reporte de Cucumber
@@ -75,6 +75,56 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
     antes de cerrar la task (el conteo documentado es una foto tomada al
     planificar, no una cifra que deba forzarse).
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred" 2>&1 | tee /tmp/us-022-qa-acceptance.log && grep -E "^[0-9]+ scenarios" /tmp/us-022-qa-acceptance.log`
+  - **Nota de ejecución (2026-09-06)**: conteo corregido en `qa-plan.md` §1
+    (136 → 172, ver nota ahí — `@blocked` no se estaba excluyendo). Hallazgo
+    mecánico de tooling: `pnpm --filter @dsm/qa test:acceptance -- --tags
+    "..."` **ignora silenciosamente** el `--tags` pasado por CLI (pnpm inserta
+    un `--` extra que rompe el parseo de `yargs` de cucumber-js, cae al
+    default `not @deferred` del config) — el `--tags` real sólo aplica
+    invocando `cucumber-js` directo (`cd qa && NODE_OPTIONS="--import tsx"
+    npx cucumber-js --config acceptance/cucumber.mjs --tags "..."`), sin
+    pasar por el script de `pnpm`. Sin este rodeo, `--tags "not @deferred and
+    not @blocked"` nunca se aplica.
+    Resultado final (DB reseteada, `prisma migrate reset --force`, para
+    aislar de residuos de corridas previas en esta misma sesión):
+    **172 escenarios, 167 verdes, 5 no-verdes** — ninguno atribuible al bump
+    de dependencias (apps/api no fue tocado por el change de FE):
+    - `SC-008-X3` (`checkout.feature`) — 5 steps `Undefined`: gap de
+      scaffolding preexistente de `US-008-checkout-guest-qa` (el `.feature`
+      documenta que la aserción cross-stack real vive en `QA-008-E2E-1`
+      —Playwright—, y este escenario BDD nunca tuvo sus steps implementados).
+      No corregido (tocar `qa/` está fuera de alcance de este change).
+    - `SC-010-N5` ×2 — `Multiple step definitions match`: colisión real y
+      preexistente entre un step genérico `{string}` (`cancelacion-ordenes.
+      steps.ts:324`) y un regex específico (`pago-webhook.steps.ts:605`). Bug
+      de la suite QA (ambigüedad de Cucumber), no del código de producto. No
+      corregido.
+    - `N-3 · TC-614` (`importar.feature`) — el conteo de catálogo cambió en 1
+      pese a dos rechazos de autorización (`5475 !== 5474`); reproducido una
+      sola vez, no se aisló si es una carrera cross-scenario (otro escenario
+      de la misma corrida completando un import asíncrono) o un defecto real.
+      Reportado para revisión — no diagnosticado a fondo por alcance de
+      tiempo.
+    - `SC-021-H1` (`retencion-ordenes.feature`) — `anonymized_count` vino 3 en
+      vez de 1, **incluso con la base de datos recién reseteada** (no es
+      residuo de corridas anteriores): el barrido de retención opera sobre
+      TODA la tabla `orders`, y otros `.feature`/specs que corren antes en la
+      misma suite (alfabéticamente, `retencion-ordenes.feature` es el
+      último) también generan datos — hay que auditar si alguno backdatea
+      órdenes más allá de los 12 meses de `ORDER_RETENTION_MONTHS` para otro
+      propósito. Mismo patrón de fragilidad que el ranking de `metricas.feature`
+      (ver abajo). Reportado, no diagnosticado a fondo.
+    - `H-1`/`H-2`/`C-2` de `metricas.feature` (ya no fallan en la corrida
+      final con DB limpia, pero SÍ fallaron en corridas intermedias con DB
+      compartida entre reintentos): el ranking de `top-products` tiene
+      `LIMIT 10` (`reports.repository.ts`); con muchos escenarios sembrando
+      productos en la misma DB de larga vida, los de baja cantidad de un
+      escenario puntual quedan fuera del top-10. Es fragilidad de diseño de
+      test preexistente (asume inmunidad a datos compartidos que el `LIMIT`
+      no garantiza), no un defecto de producto ni del bump.
+    Preexistentes 6 `@blocked` (5 `enriquecimiento.feature` sin
+    `GEMINI_API_KEY` real, 1 `pago-webhook.feature` sin sandbox MP) —
+    excluidos del conteo de 172, ya documentados en el propio `.feature`.
 
 ## Fase 2 — Revalidación E2E cross-stack SSR/SEO y funcional (Layer 3)
 
