@@ -2207,7 +2207,7 @@
   us-id: US-013
   discipline: frontend-web
   variant: null
-  status: Draft
+  status: in review   # /commit 2026-09-06 — 17/17 tasks + suite completa apps/web 153/153 verde, PR #67 abierto
   parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
   linear-task-id: null
   audit-baseline: null
@@ -2245,10 +2245,10 @@
   # US §7 presupuesta FE-US-013 en 4-6h tradicional — este plan queda por
   # debajo por la reutilización total de ConfirmDialog (sin modificar) y por
   # no requerir codegen nuevo (ya regenerado antes de este plan).
-  assignee: null
-  branch: null
-  pr-url: null
-  pr-opened-at: null
+  assignee: claude-code
+  branch: feat/US-013-cancelacion-reembolso-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/67
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
   archived-at: null
