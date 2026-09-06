@@ -35,7 +35,7 @@ documentado.
 | QA-010-PERF-1/2 | T3.1, T3.2 | AC-1/AC-9 (NFR) | 1 | hecho |
 | SC-010-X1 | T4.1 | AC-1, AC-9 | 3 | hecho |
 | SC-010-X2 | T4.2 | AC-4 | 3 | hecho |
-| QA-010-EXP-1 | T5.1 | (exploratorio) | — | por hacer |
+| QA-010-EXP-1 | T5.1 | (exploratorio) | — | hecho (charter escrito, ejecución humana pendiente) |
 
 ---
 
@@ -207,13 +207,13 @@ documentado.
 
 ## Fase 5: Exploratorio y cierre
 
-- [ ] T5.1 Charter `qa/exploratory/us-010-pagos-webhook.md` — QA-010-EXP-1 (manual).
+- [x] T5.1 Charter `qa/exploratory/us-010-pagos-webhook.md` — QA-010-EXP-1 (manual).
   - **Exit criterion**: documenta los 3 charters de `qa-plan.md` §10 con su tiempo
     asignado, el riesgo que exploran y dónde se registran los hallazgos. Queda como
     checklist humano; `/develop-qa` no lo scaffoldea.
   - **Verify**: `test -f qa/exploratory/us-010-pagos-webhook.md && grep -c "^## Charter" qa/exploratory/us-010-pagos-webhook.md | grep -qx 3`
 
-- [ ] T5.2 Trazabilidad AC → escenario, sin huecos.
+- [x] T5.2 Trazabilidad AC → escenario, sin huecos.
   - **Exit criterion**: los 11 AC de US-010 aparecen en la matriz de `qa-plan.md` §3 con
     al menos un escenario (ejecutable o `blocked` explícito); cada `SC-`/`QA-` de la
     matriz existe como escenario Gherkin, contract test, script k6, spec Playwright o
@@ -250,7 +250,7 @@ sys.exit(0 if not faltan and len(scs)>=13 else 1)"`
   el resto de los Verify de `@us-010`; no se debilitó ningún assert, sólo el alcance
   del tag filter. `ordenes`/`carrito`/`cuenta` no comparten el tag `@pagos` — quedan
   fuera de este Verify por diseño (no por esta corrección).
-- [ ] El charter manual ejecutado y sus hallazgos registrados (humano)
+- [ ] El charter manual ejecutado y sus hallazgos registrados (humano) — charter ESCRITO (T5.1); ejecución queda para el humano, per instrucciones de esta corrida
 
 ## Trazabilidad AC → escenario
 
