@@ -40,9 +40,12 @@ import type {
   ImportJob,
   ImportRateLimitedResponse,
   ListAdminOrdersParams,
+  ListOrderHistoryParams,
   ListProductsParams,
   LoginRequest,
   OrderAnonymizationResult,
+  OrderHistoryDetail,
+  OrderHistoryListResponse,
   PaymentConfirmed,
   PendingPaymentOrder,
   Problem,
@@ -1799,6 +1802,116 @@ export const runOrderRetentionSweep = async ( options?: Parameters<typeof custom
 
 
 
+export type listOrderHistoryResponse200 = {
+  data: OrderHistoryListResponse
+  status: 200
+}
+
+export type listOrderHistoryResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type listOrderHistoryResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type listOrderHistoryResponseSuccess = (listOrderHistoryResponse200) & {
+  headers: Headers;
+};
+export type listOrderHistoryResponseError = (listOrderHistoryResponse401 | listOrderHistoryResponse429) & {
+  headers: Headers;
+};
+
+export type listOrderHistoryResponse = (listOrderHistoryResponseSuccess | listOrderHistoryResponseError)
+
+export const getListOrderHistoryUrl = (params?: ListOrderHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/me/orders?${stringifiedParams}` : `/v1/me/orders`
+}
+
+/**
+ * Ordenadas de la más reciente a la más antigua, dentro de la ventana de retención vigente (AC-7). Excluye `pending_payment` (checkout iniciado y nunca pagado no es una "compra"). Sin `sort` ni `status` parametrizables: AC-1 fija el orden y el filtro como reglas de negocio, no como opciones del cliente.
+ * @summary Listar mis órdenes (US-015 AC-1)
+ */
+export const listOrderHistory = async (params?: ListOrderHistoryParams, options?: Parameters<typeof customFetch>[1]): Promise<listOrderHistoryResponse> => {
+
+  return customFetch<listOrderHistoryResponse>(getListOrderHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getOrderHistoryDetailResponse200 = {
+  data: OrderHistoryDetail
+  status: 200
+}
+
+export type getOrderHistoryDetailResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getOrderHistoryDetailResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getOrderHistoryDetailResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type getOrderHistoryDetailResponseSuccess = (getOrderHistoryDetailResponse200) & {
+  headers: Headers;
+};
+export type getOrderHistoryDetailResponseError = (getOrderHistoryDetailResponse401 | getOrderHistoryDetailResponse404 | getOrderHistoryDetailResponse429) & {
+  headers: Headers;
+};
+
+export type getOrderHistoryDetailResponse = (getOrderHistoryDetailResponseSuccess | getOrderHistoryDetailResponseError)
+
+export const getGetOrderHistoryDetailUrl = (orderNumber: number,) => {
+
+
+
+
+  return `/v1/me/orders/${orderNumber}`
+}
+
+/**
+ * Ítems con cantidades y precios, estado actual y retiro en sucursal. La propiedad (`customer_id`) y la ventana de retención (AC-7) se verifican en la misma consulta que resuelve la orden.
+ * @summary Detalle de una compra propia (US-015 AC-2)
+ */
+export const getOrderHistoryDetail = async (orderNumber: number, options?: Parameters<typeof customFetch>[1]): Promise<getOrderHistoryDetailResponse> => {
+
+  return customFetch<getOrderHistoryDetailResponse>(getGetOrderHistoryDetailUrl(orderNumber),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export type createImportResponse200 = {
   data: ImportCreated
   status: 200
@@ -2607,6 +2720,10 @@ export const getAnonymizeOrderResponseMock = (overrideResponse: Partial<Extract<
 
 export const getRunOrderRetentionSweepResponseMock = (overrideResponse: Partial<Extract<RetentionSweepResult, object>> = {}): RetentionSweepResult => ({anonymized_count: faker.number.int({min: 0}), reason: faker.helpers.arrayElement(['retention_policy'] as const), ...overrideResponse})
 
+export const getListOrderHistoryResponseMock = (overrideResponse: Partial<Extract<OrderHistoryListResponse, object>> = {}): OrderHistoryListResponse => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({order_number: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
+
+export const getGetOrderHistoryDetailResponseMock = (): OrderHistoryDetail => ({...{order_number: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{fulfillment: faker.string.alpha({length: {min: 10, max: 20}}), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()}))},})
+
 export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
 
 export const getGetImportResponseMock = (overrideResponse: Partial<Extract<ImportJob, object>> = {}): ImportJob => ({id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), filename: faker.string.alpha({length: {min: 10, max: 20}}), source_format: faker.helpers.arrayElement(['csv','xlsx'] as const), total_rows: faker.helpers.arrayElement([faker.number.int(), null]), processed_rows: faker.number.int(), created_count: faker.number.int(), updated_count: faker.number.int(), failed_count: faker.number.int(), categories_created_count: faker.number.int(), error_code: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_message: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), report_truncated: faker.datatype.boolean(), started_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), finished_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', errors: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({row_number: faker.number.int(), sku: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), field: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), error_code: faker.string.alpha({length: {min: 10, max: 20}}), error_message: faker.string.alpha({length: {min: 10, max: 20}})})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
@@ -2998,6 +3115,30 @@ export const getRunOrderRetentionSweepMockHandler = (overrideResponse?: Retentio
   }, options)
 }
 
+export const getListOrderHistoryMockHandler = (overrideResponse?: OrderHistoryListResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<OrderHistoryListResponse> | OrderHistoryListResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/me/orders', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getListOrderHistoryResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetOrderHistoryDetailMockHandler = (overrideResponse?: OrderHistoryDetail | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<OrderHistoryDetail> | OrderHistoryDetail), options?: RequestHandlerOptions) => {
+  return http.get('*/me/orders/:orderNumber', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetOrderHistoryDetailResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
   return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -3177,6 +3318,8 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getCancelOrderMockHandler(),
   getAnonymizeOrderMockHandler(),
   getRunOrderRetentionSweepMockHandler(),
+  getListOrderHistoryMockHandler(),
+  getGetOrderHistoryDetailMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),

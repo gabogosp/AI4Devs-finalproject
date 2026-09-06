@@ -827,6 +827,67 @@ export const RunOrderRetentionSweepResponse = zod.object({
 
 
 /**
+ * Ordenadas de la más reciente a la más antigua, dentro de la ventana de retención vigente (AC-7). Excluye `pending_payment` (checkout iniciado y nunca pagado no es una "compra"). Sin `sort` ni `status` parametrizables: AC-1 fija el orden y el filtro como reglas de negocio, no como opciones del cliente.
+ * @summary Listar mis órdenes (US-015 AC-1)
+ */
+export const listOrderHistoryQueryLimitDefault = 20;
+export const listOrderHistoryQueryLimitMax = 100;
+
+export const listOrderHistoryQueryOffsetDefault = 0;
+export const listOrderHistoryQueryOffsetMin = 0;
+
+
+
+export const ListOrderHistoryQueryParams = zod.object({
+  "limit": zod.number().int().min(1).max(listOrderHistoryQueryLimitMax).default(listOrderHistoryQueryLimitDefault),
+  "offset": zod.number().int().min(listOrderHistoryQueryOffsetMin).default(listOrderHistoryQueryOffsetDefault)
+})
+
+export const ListOrderHistoryResponse = zod.object({
+  "data": zod.array(zod.object({
+  "order_number": zod.number().int().describe('Identificador público y legible (\"Pedido'),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']),
+  "total_ars_cents": zod.number().int(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño.')),
+  "pagination": zod.object({
+  "limit": zod.number().int(),
+  "offset": zod.number().int(),
+  "total": zod.number().int()
+})
+})
+
+
+/**
+ * Ítems con cantidades y precios, estado actual y retiro en sucursal. La propiedad (`customer_id`) y la ventana de retención (AC-7) se verifican en la misma consulta que resuelve la orden.
+ * @summary Detalle de una compra propia (US-015 AC-2)
+ */
+export const getOrderHistoryDetailPathOrderNumberMin = 1000;
+
+
+
+export const GetOrderHistoryDetailParams = zod.object({
+  "order_number": zod.number().int().min(getOrderHistoryDetailPathOrderNumberMin).describe('Identificador público legible de la orden (\"Pedido')
+})
+
+export const GetOrderHistoryDetailResponse = zod.object({
+  "order_number": zod.number().int().describe('Identificador público y legible (\"Pedido'),
+  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']),
+  "total_ars_cents": zod.number().int(),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño.').and(zod.object({
+  "fulfillment": zod.string().describe('Modalidad de retiro\/entrega (hoy sólo \"pickup\" en sucursal).'),
+  "items": zod.array(zod.object({
+  "product_name": zod.string(),
+  "product_sku": zod.string(),
+  "quantity": zod.number().int(),
+  "unit_price_ars_cents": zod.number().int(),
+  "subtotal_ars_cents": zod.number().int()
+}))
+}))
+
+
+/**
  * Recibe un CSV (UTF-8) o XLSX en `multipart/form-data` con un único campo `file`. El formato se decide por CONTENIDO (magic bytes), no por la extensión ni por el Content-Type. El archivo se valida ANTES de crear el trabajo (AC-6): un formato, encoding, encabezado o tamaño inválidos devuelven 4xx sin crear el trabajo ni tocar un solo producto. Columnas v1: requeridas `sku`, `nombre`, `precio`, `stock`, `categoria`; opcionales `descripcion`, `imagen_url`; las desconocidas se ignoran. El ENCABEZADO tiene que declarar las cinco requeridas, pero sus CELDAS pueden ir vacías en una actualización: vacío significa "no cambiar ese campo" (así funciona el archivo de ajuste de precios). En una fila de alta, una celda requerida vacía la rechaza con missing_required. El precio va en ARS con hasta 2 decimales y el separador de miles se RECHAZA. Sólo un import vigente a la vez (409); un reintento con la misma `Idempotency-Key` devuelve 200 con el mismo trabajo.
  * @summary Subir un archivo de catálogo e iniciar la importación (AC-1, AC-7)
  */
