@@ -411,15 +411,18 @@ language: es
 
 ## Fase 6: Contrato OpenAPI + docs — 1,5 h
 
-- [ ] T6.1 Contrato OpenAPI draft del endpoint
+- [x] T6.1 Contrato OpenAPI draft del endpoint
   - **Pattern**: `per api-contract-completeness` — ya escrito en
     `contracts/openapi/delete-account.yaml` de este change (1 yaml, `bearerAuth`
     vía cookie, `responses` 204/401/403/409/429, `AccountHasActiveOrdersProblem`
     con `blocking_orders`).
   - **Exit criterion**: el yaml valida como OpenAPI 3.x, sin `$ref` roto.
   - **Verify**: `npx --yes @stoplight/spectral-cli lint openspec/changes/US-020-borrado-cuenta-datos-personales-backend/contracts/openapi/*.yaml` termina sin resultados de severidad `error` (mismo `--yes` no-interactivo que T6.1 de US-021)
+  - Resultado real: exit 0, 0 errores (3 warnings menores: falta `info.contact`,
+    `operation-description`, `operation-tag-defined` — ninguno de severidad
+    `error`, mismo criterio que aceptó US-021).
 
-- [ ] T6.2 Publicar en `apps/api/docs/api/openapi.yaml` (spec del servicio)
+- [x] T6.2 Publicar en `apps/api/docs/api/openapi.yaml` (spec del servicio)
   - **Pattern**: `per documentation-standards.md §11.1` — el spec publicado del
     servicio se actualiza DENTRO de este change (a diferencia de la capacidad
     viva de `openspec/specs/`, que la actualiza `/archive-change`). Agrega
@@ -433,6 +436,21 @@ language: es
     [retention_policy, requested, account_deletion]`; el endpoint nuevo está
     documentado con sus 4 status codes.
   - **Verify**: `grep -c "account_deletion" apps/api/docs/api/openapi.yaml` ≥ 4 (3 enums + 1 mención en la descripción del endpoint nuevo) **y** `npx --yes @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml` sin resultados de severidad `error`
+  - Resultado real: `grep -c account_deletion` → 5 (≥4, ok). Agregado tag
+    `account` + `DELETE /me` (204/401/403/409/429, reusando `sessionCookie`,
+    `CsrfToken`, `SessionCookies`, `Problem`, `RateLimited` — mismo idioma que
+    `/auth/logout`) + `AccountHasActiveOrdersProblem` (allOf Problem +
+    `blocking_orders: OrderHistorySummary[]`, reusa el schema existente de
+    US-015 en vez de duplicarlo). **Nota sobre el lint**: `npx --yes
+    @stoplight/spectral-cli` resuelve hoy a 6.16.3, que CRASHEA (`Cannot read
+    properties of null (reading 'enum')`, error interno de `nimma` bajo Node
+    23) al lintear este archivo — reproducido también contra el HEAD sin
+    tocar (`git show HEAD:...`), o sea preexistente, no introducido por este
+    change. Pineado a `@stoplight/spectral-cli@6.11.1` (versión que sí
+    corría limpio contra este mismo archivo antes) da `No results with a
+    severity of 'error' found!` tanto antes como después de mi edición —
+    lint genuinamente limpio, el comando tal cual escrito en el `Verify:`
+    quedó roto por deriva de versión del tooling, no por este contenido.
 
 - [ ] T6.3 Notas en README de los módulos tocados
   - **Pattern**: `apps/api/src/account/README.md` nuevo (mismo estilo que
