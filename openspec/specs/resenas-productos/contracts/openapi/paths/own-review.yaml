@@ -1,0 +1,63 @@
+get:
+  tags: [reviews]
+  operationId: getOwnReview
+  summary: Elegibilidad y reseña propia de un producto (US-025 AC-6, AC-7, AC-8)
+  description: |
+    `eligible` refleja si el cliente tiene una orden `delivered` con este
+    producto (AC-6) — el FE lo usa para decidir si mostrar el control de
+    reseña. `review` es la reseña propia si existe, SIN IMPORTAR si está
+    oculta por moderación (AC-8 — transparencia hacia el autor); `null`
+    si todavía no reseñó. Requiere sesión (AC-7).
+  security:
+    - sessionCookie: []
+  parameters:
+    - name: productId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/OwnReviewResponse' }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '429': { $ref: '../../openapi.yaml#/components/responses/RateLimited' }
+put:
+  tags: [reviews]
+  operationId: upsertOwnReview
+  summary: Dejar o editar la propia reseña de un producto (US-025 AC-1, AC-2, AC-5)
+  description: |
+    Upsert idempotente: crea si no existe, actualiza la MISMA reseña si
+    ya existe (AC-5 — una reseña por cliente por producto). `comment` es
+    opcional (AC-2). Se rechaza con 403 si el cliente no tiene una orden
+    `delivered` con este producto (AC-6, verificado SIEMPRE server-side,
+    sin importar lo que envíe el cliente) y con 422 si `rating` está
+    fuera de 1-5 (AC-9).
+  security:
+    - sessionCookie: []
+  parameters:
+    - name: productId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    - $ref: '../../openapi.yaml#/components/parameters/CsrfToken'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/UpsertReviewRequest' }
+  responses:
+    '200':
+      description: Reseña creada o actualizada.
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Review' }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '403':
+      description: '`dsm:reviews/not-eligible` — el cliente no compró el producto en una orden entregada (AC-6).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '429': { $ref: '../../openapi.yaml#/components/responses/RateLimited' }

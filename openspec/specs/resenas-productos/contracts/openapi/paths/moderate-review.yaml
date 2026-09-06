@@ -1,0 +1,29 @@
+patch:
+  tags: [admin-reviews]
+  operationId: moderateReview
+  summary: Ocultar/mostrar una reseña (US-025 AC-8)
+  description: |
+    Soft-flag de moderación — nunca borra la fila ni edita el contenido.
+    `hidden: true` la excluye del agregado y de la lista pública; el
+    autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como
+    oculta (transparencia, no censura invisible).
+  security:
+    - adminBearer: []
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/ModerateReviewRequest' }
+  responses:
+    '200':
+      description: Reseña actualizada.
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Review' }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '404': { $ref: '../../openapi.yaml#/components/responses/Problem' }
