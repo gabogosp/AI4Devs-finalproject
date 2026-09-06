@@ -10,8 +10,9 @@ import { OrdersHistoryThrottlerGuard } from './orders-history-throttler.guard';
 import { OrderStatusHistoryRepository } from './order-status-history.repository';
 import { OrderEventsService } from '../observability/order-events.service';
 import { OrdersHistoryEventsService } from '../observability/orders-history-events.service';
+import { NotificationEventsService } from '../observability/notification-events.service';
 import { NOTIFICATION_PORT } from './ports/notification.port';
-import { LoggingNotificationAdapter } from './ports/logging-notification.adapter';
+import { notificationPortProvider } from './ports/notification.provider';
 
 /**
  * Panel admin de órdenes (US-012, design.md §D1) + historial de compras del
@@ -21,6 +22,11 @@ import { LoggingNotificationAdapter } from './ports/logging-notification.adapter
  * dirección acíclica, sin referencias diferidas (`orders → checkout`,
  * `checkout` no conoce `orders`). US-015 no agrega ningún import nuevo: los
  * dos ya estaban acá.
+ *
+ * `NOTIFICATION_PORT` resuelve por entorno (US-011 T7.2, `notification.provider.ts`)
+ * — con `RESEND_API_KEY` presente, al adapter real de Resend; sin ella, al de
+ * log (local/CI sin credenciales). Mismo patrón que
+ * `passwordResetMailerProvider` en `AuthModule`.
  */
 @Module({
   imports: [PrismaModule, AuthModule, CheckoutModule],
@@ -32,7 +38,8 @@ import { LoggingNotificationAdapter } from './ports/logging-notification.adapter
     OrderStatusHistoryRepository,
     OrderEventsService,
     OrdersHistoryEventsService,
-    { provide: NOTIFICATION_PORT, useClass: LoggingNotificationAdapter },
+    NotificationEventsService,
+    notificationPortProvider,
   ],
   // US-010 T8.1: PaymentsModule inyecta NOTIFICATION_PORT (nuevo edge
   // payments → orders, acíclico — orders no importa payments). US-013 T4.1:

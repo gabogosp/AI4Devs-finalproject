@@ -225,7 +225,7 @@
     `LoggingNotificationAdapter` y loguea un `warn` que menciona que no se
     envían los avisos.
   - **Verify**: `pnpm --filter api exec jest resend-notification-adapter.spec.ts --ci -t "selección del adapter por entorno"`
-- [ ] T7.2 En `apps/api/src/orders/orders.module.ts`: reemplazar
+- [x] T7.2 En `apps/api/src/orders/orders.module.ts`: reemplazar
       `{ provide: NOTIFICATION_PORT, useClass: LoggingNotificationAdapter }`
       por `notificationPortProvider` (T7.1); agregar `NotificationEventsService`
       (T5.1) a `providers`. Actualizar el comentario de cabecera del módulo
@@ -245,7 +245,7 @@
     esos archivos de test.
   - **Verify**: `pnpm --filter api exec jest --ci` (suite completa — gate de
     regresión de la única tarea que toca el wiring de DI compartido)
-- [ ] T8.1 Actualizar el docstring de
+- [x] T8.1 Actualizar el docstring de
       `apps/api/src/orders/ports/logging-notification.adapter.ts`: quitar el
       bloque `TODO(US-011): reemplazar por el adapter de Resend cuando esa US
       aterrice` (ya aterrizó) y reemplazarlo por una línea que describa su
