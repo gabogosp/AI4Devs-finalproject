@@ -1904,3 +1904,42 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-021-retencion-datos-ordenes-frontend-web
+  us-id: US-021
+  discipline: frontend-web
+  variant: null
+  status: Draft   # /plan-frontend-web-ticket 2026-09-05 — el gap de contrato de T0.1
+  # (ver design.md "El gap de contrato") YA SE RESOLVIÓ: PR #52
+  # (fix/US-021-publish-order-anonymization-contract, mergeado a main 91aa3f1) publicó
+  # los 2 paths + los 2 campos en apps/api/docs/api/openapi.yaml, sincronizó
+  # openspec/specs/ordenes/ y regeneró el cliente de @dsm/web. T0.1/T0.2 quedan
+  # ejecutables — /develop-frontend-web ya no está bloqueado.
+  parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
+  audit-baseline: null
+  audit-derived: false
+  # ALCANCE: acción "Anonimizar datos del comprador" dentro de OrderDetail (extiende el
+  # módulo apps/web/src/features/orders/ que ya existe desde US-012, sin ruta ni pantalla
+  # nueva). Reusa @/components/ui/ConfirmDialog (mismo patrón que ProductActions.archive)
+  # para la confirmación destructiva de dos pasos (AC-3); sección de contacto condicional
+  # que muestra "cuándo"/"por qué motivo" en vez de nombre/email/teléfono cuando la orden
+  # está anonimizada (AC-4/AC-5); AC-9 (FE) ya cubierta por el AdminGuard existente en
+  # apps/web/app/(admin)/layout.tsx, sin cambios. `POST /admin/orders/retention-sweep`
+  # queda EXPLÍCITAMENTE fuera de alcance — ningún AC pide un botón de barrido masivo en
+  # el panel del dueño, es una palanca operativa (rate-limit 5/hora), no una interacción
+  # de negocio.
+  #
+  # US §7 presupuesta FE-US-021 en 2-3 h — subestimado (mismo patrón que BE-US-021):
+  # además del componente + wiring, este change agrega el gate de contrato (Fase 0),
+  # tests MSW de éxito/error/idempotencia visual, extensión del a11y test suite existente
+  # y 3 eventos de observabilidad nuevos sin PII.
+  estimate-hours: 5.5
+  assignee: claude-code
+  branch: null
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-05
+  completed-at: null
+  archived-at: null
+  archive-path: null
