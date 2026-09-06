@@ -885,3 +885,34 @@
   # como manual/blocked antes de que PR #31 aterrizara — ahora que el componente existe,
   # alguien puede des-diferirlo y automatizarlo.
   blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment` (satisfecho). US-012: el panel donde vive la acción — Fase 12 (FE) construida vía PR #31, cubre AC-2 de esta US (satisfecho).
+- id: US-024
+  slug: edicion-perfil-cliente
+  status: Ready   # 2026-09-06: US nueva, nacida de un hallazgo de la prueba visual del
+  # dueño (no del PRD — prd-capacity: null, mismo patrón que US-009/US-022). Enriquecida
+  # directamente a Ready en la misma sesión (decisiones de producto confirmadas con el
+  # dueño: nombre + avatar por URL pegada, sin upload real — no hay pipeline de subida de
+  # imágenes construido en ningún lado del código pese a que `R2_*` está en `.env`).
+  priority: Medium
+  prd-capacity: null
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-09-06
+  ready-at: 2026-09-06
+  blocked_by: [US-014]   # necesita Customer/mi-cuenta (Done)
+- id: US-025
+  slug: resenas-calificaciones-productos
+  status: Ready   # 2026-09-06: US nueva, nacida de un hallazgo de la prueba visual del
+  # dueño ("copiar de Mercado Libre" — descripción + reseñas + estrellas; la descripción ya
+  # existía en código, sólo faltaba dato de demo, resuelto aparte en PR #119). Reseñas es
+  # la parte genuinamente nueva (prd-capacity: null). Enriquecida a Ready con 3 decisiones
+  # de producto confirmadas: sólo compradores con orden `delivered` pueden reseñar,
+  # estrellas 1-5 + comentario opcional, moderación básica del dueño (ocultar, no editar).
+  priority: Medium
+  prd-capacity: null
+  disciplines: [BE, FE, QA]
+  parent-prd: docs/product/prd.md
+  linear-issue-id: null
+  created: 2026-09-06
+  ready-at: 2026-09-06
+  blocked_by: [US-008, US-013, US-014]   # necesita checkout + estado delivered + cuentas (las 3 Done)
