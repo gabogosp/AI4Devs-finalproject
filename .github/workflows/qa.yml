@@ -147,6 +147,12 @@ jobs:
           # Server-only (sin `NEXT_PUBLIC_`) a propósito: gobierna los rewrites
           # de `/v1/auth/*` y `/v1/cart/*`, que el navegador nunca llama directo.
           API_INTERNAL_ORIGIN: http://localhost:3000
+          # `apps/web/src/lib/env.ts` le da su PROPIO default a esta var
+          # (`http://localhost:3000`, el puerto de la API, no el del sitio) —
+          # sin ella acá, el sitemap y los canonicals se generan con el origen
+          # equivocado (TC-204, `categoria-ssr-seo.spec.ts`: esperaba `:3100`,
+          # recibía `:3000`). Se inlinea en build, como `NEXT_PUBLIC_API_BASE_URL`.
+          NEXT_PUBLIC_SITE_URL: http://localhost:3100
           # `next start` toma el puerto de PORT. Se evita `-- -p 3100`: pnpm
           # reenvía el `--` literal y el flag no llega (mismo tropiezo que T1.1).
           PORT: '3100'
