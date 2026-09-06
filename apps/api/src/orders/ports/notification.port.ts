@@ -5,11 +5,21 @@ export interface OrderReadyForPickupPayload {
   buyerEmail: string;
 }
 
+export interface OrderConfirmedItem {
+  productName: string;
+  quantity: number;
+  unitPriceArsCents: number;
+}
+
 export interface OrderConfirmedPayload {
   orderId: string;
   orderNumber: number;
   buyerName: string;
   buyerEmail: string;
+  /** US-011 AC-1 — detalle de ítems para el email de confirmación. */
+  items: OrderConfirmedItem[];
+  /** US-011 AC-1 — total para el email de confirmación. */
+  totalArsCents: number;
 }
 
 export interface OwnerNewOrderPayload {

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Order, Payment, Prisma } from '@dsm/db';
-import { OrdersRepository } from '../checkout/orders.repository';
+import { Payment, Prisma } from '@dsm/db';
+import { OrdersRepository, OrderWithItems } from '../checkout/orders.repository';
 import { NOTIFICATION_PORT, NotificationPort } from '../orders/ports/notification.port';
 import { PaymentsEventsService } from '../observability/payments-events.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -72,7 +72,7 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
       throw new OrderNotPendingPaymentError(orden.status);
     }
 
-    let ordenConfirmada: Order | undefined;
+    let ordenConfirmada: OrderWithItems | undefined;
 
     try {
       const resultado = await this.prisma.$transaction(async (tx) => {
@@ -155,7 +155,7 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
   /** T5.3 — notificaciones tras el commit, sólo para providers automáticos. */
   private async notificarConfirmacion(
     resultado: ConfirmedPayment,
-    orden: Order,
+    orden: OrderWithItems,
   ): Promise<void> {
     try {
       await this.notifications?.orderConfirmed({
@@ -163,6 +163,12 @@ export class ConfirmOrderService implements PaymentConfirmationPort {
         orderNumber: resultado.orderNumber,
         buyerName: orden.buyer_name,
         buyerEmail: orden.buyer_email,
+        items: orden.items.map((item) => ({
+          productName: item.product_name,
+          quantity: item.quantity,
+          unitPriceArsCents: item.unit_price_ars_cents,
+        })),
+        totalArsCents: orden.total_ars_cents,
       });
       await this.notifications?.ownerNewOrder({
         orderId: resultado.orderId,

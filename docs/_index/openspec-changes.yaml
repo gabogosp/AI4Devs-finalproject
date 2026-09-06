@@ -2565,7 +2565,7 @@
   us-id: US-011
   discipline: backend
   variant: null
-  status: Draft   # /plan-backend-ticket US-011 (2026-09-06) — proposal/tasks/design escritos, sin ejecutar
+  status: In Progress   # /develop-backend US-011 (2026-09-06) — ejecución de tasks.md en curso
   parent-us: docs/user-stories/US-011-notificaciones-email.md
   linear-task-id: null
   audit-baseline: null

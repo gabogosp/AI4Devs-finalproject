@@ -29,7 +29,7 @@
 
 ## Phase 1: Puerto — extensión mínima del payload (OQ-2)
 
-- [ ] T1.1 Ampliar `OrderConfirmedPayload` con `items` y `totalArsCents`;
+- [x] T1.1 Ampliar `OrderConfirmedPayload` con `items` y `totalArsCents`;
       ensanchar el tipo del parámetro `orden` de
       `ConfirmOrderService.notificarConfirmacion` de `Order` a `OrderWithItems`
       (ya es el tipo real en runtime — `transitionToNewIfPending` devuelve
@@ -47,7 +47,7 @@
     y `totalArsCents: number`; `ConfirmOrderService` compila sin agregar
     ninguna query nueva a la base.
   - **Verify**: `pnpm --filter api exec tsc --noEmit -p tsconfig.json`
-- [ ] T1.2 Extender la aserción existente en
+- [x] T1.2 Extender la aserción existente en
       `confirm-order.service.provider.spec.ts` ("notifica orderConfirmed +
       ownerNewOrder tras el commit (T5.3)") para además comprobar
       `items`/`totalArsCents` en el `objectContaining` de `orderConfirmed`.

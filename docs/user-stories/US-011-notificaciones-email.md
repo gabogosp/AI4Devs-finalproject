@@ -4,7 +4,7 @@ id: US-011
 slug: notificaciones-email
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: High
 estimate-tshirt: S
 story_points_traditional: 5
@@ -12,8 +12,9 @@ story_points_ai_assisted: 2
 estimation_basis: "BE integración de email transaccional (Resend) + 3 plantillas + envío asíncrono con reintentos/idempotencia (Cohn 2005 §8, 5) × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-09-06
 ready-at: 2026-06-15
+in-progress-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [BE, QA]
 linear-issue-id: null
