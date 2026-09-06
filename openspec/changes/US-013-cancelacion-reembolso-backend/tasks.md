@@ -208,7 +208,7 @@ language: es
     `PaymentsEventsService` inyectados.
   - **Verify**: `pnpm --filter @dsm/api typecheck`
 
-- [ ] **T5.2 — `cancel-order.service.spec.ts` (Postgres real, mismo estilo que `confirm-order.service.spec.ts`)**
+- [x] **T5.2 — `cancel-order.service.spec.ts` (Postgres real, mismo estilo que `confirm-order.service.spec.ts`)**
   - **Pattern**: construcción directa sin DI (`new CancelOrderService(prisma,
     orders, stock, payments, history, events, notifications, mercadoPago)`),
     `MercadoPagoClient` como `jest.Mocked<Pick<MercadoPagoClient, 'refund'>>`
