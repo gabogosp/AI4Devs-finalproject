@@ -214,6 +214,40 @@ describe('OrderCancelAction — T4.1 (mensajes de error)', () => {
   });
 });
 
+describe('OrderCancelAction — regresión QA-013-E2E-3 (mensaje sobrevive al re-render del padre)', () => {
+  it('el mensaje de éxito sigue visible cuando el padre re-renderiza con order.status="cancelled" (mismo prop que pasaría OrderDetail vía onCancelled)', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${API}/v1/admin/orders/${ID}/cancel`, () =>
+        HttpResponse.json({
+          ...orden({ status: 'cancelled' }),
+          refund: { status: 'refunded', provider: 'mercadopago' },
+        }),
+      ),
+    );
+
+    const { rerender } = render(
+      <OrderCancelAction order={{ id: ID, status: 'preparing' }} onCancelled={() => {}} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /^cancelar orden$/i }));
+    await user.type(screen.getByLabelText(/escribí "cancelar" para confirmar/i), 'CANCELAR');
+    await user.click(botonConfirmarDelDialogo());
+
+    await screen.findByRole('status');
+
+    // Simula lo que OrderDetail hace de verdad: onCancelled → setState → el
+    // padre re-renderiza este componente con el order.status YA actualizado.
+    rerender(<OrderCancelAction order={{ id: ID, status: 'cancelled' }} onCancelled={() => {}} />);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Se canceló la orden y se reintegró el pago.',
+    );
+    // El gate SÍ sigue ocultando una nueva cancelación (AC-7 — no se reofrece la acción).
+    expect(screen.queryByRole('button', { name: /^cancelar orden$/i })).not.toBeInTheDocument();
+  });
+});
+
 describe('OrderCancelAction — T4.2 (idempotencia visual)', () => {
   it('el botón de confirmar queda deshabilitado mientras la mutación está en curso — un doble-click no dispara un segundo POST', async () => {
     const user = userEvent.setup();
