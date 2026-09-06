@@ -6,6 +6,10 @@ discipline: backend
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-06
+merged_commit: 72afc73113f2fb4f7898d609c3ce228ac2f4bbc9
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/55
 ---
 
 # Proposal — Panel de métricas del dueño (backend)

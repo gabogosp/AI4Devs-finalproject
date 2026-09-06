@@ -1978,7 +1978,7 @@
   us-id: US-016
   discipline: backend
   variant: null
-  status: in review   # /commit 2026-09-05 — 23/23 tasks + 9/9 verificación suite-level, PR #55 abierto
+  status: archived   # /archive-change 2026-09-06 — capacidad nueva openspec/specs/metricas/ (CAP-9)
   parent-us: docs/user-stories/US-016-panel-metricas.md
   linear-task-id: null
   audit-baseline: null
@@ -2031,9 +2031,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/55
   pr-opened-at: 2026-09-05
   created: 2026-09-05
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T01:25:11Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-016-panel-metricas-backend
 
 - name: US-021-retencion-datos-ordenes-frontend-web
   us-id: US-021

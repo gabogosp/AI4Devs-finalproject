@@ -1,0 +1,34 @@
+get:
+  operationId: exportAdminReportsSales
+  tags: [admin-reports]
+  summary: CSV de la evolución de ventas (US-016 AC-6)
+  description: >-
+    Mismos query params y misma agregación que GET /admin/reports/sales —
+    no hay una segunda fuente de verdad para los números exportados.
+    Celdas neutralizadas contra inyección de fórmulas (RFC 4180 + prefijo
+    de comilla, `security-standards.md §6.3`).
+  parameters:
+    - name: created_at_from
+      in: query
+      schema: { type: string, format: date-time }
+    - name: created_at_to
+      in: query
+      schema: { type: string, format: date-time }
+    - name: granularity
+      in: query
+      schema: { type: string, enum: [day, week, month], default: day }
+  responses:
+    '200':
+      description: 'CSV: period_date,orders_count,total_ars_cents'
+      headers:
+        Content-Disposition: { schema: { type: string }, description: 'attachment; filename="reports-sales-{from}-{to}.csv"' }
+      content:
+        text/csv:
+          schema: { type: string }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '403': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '422':
+      description: 'dsm:reports/invalid-range.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

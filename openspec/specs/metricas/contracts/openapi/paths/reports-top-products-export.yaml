@@ -1,0 +1,33 @@
+get:
+  operationId: exportAdminReportsTopProducts
+  tags: [admin-reports]
+  summary: CSV del ranking de productos más pedidos (US-016 AC-6)
+  description: >-
+    Mismos query params y misma agregación que GET /admin/reports/top-products.
+    product_name/product_sku neutralizados contra inyección de fórmulas
+    (texto libre cargado por el dueño vía catálogo/import masivo).
+  parameters:
+    - name: created_at_from
+      in: query
+      schema: { type: string, format: date-time }
+    - name: created_at_to
+      in: query
+      schema: { type: string, format: date-time }
+    - name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+  responses:
+    '200':
+      description: 'CSV: product_id,product_name,product_sku,quantity_sold,revenue_ars_cents'
+      headers:
+        Content-Disposition: { schema: { type: string }, description: 'attachment; filename="reports-top-products-{from}-{to}.csv"' }
+      content:
+        text/csv:
+          schema: { type: string }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '403': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '422':
+      description: 'dsm:reports/invalid-range.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

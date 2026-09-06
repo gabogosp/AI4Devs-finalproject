@@ -1,0 +1,29 @@
+get:
+  operationId: getAdminReportsSummary
+  tags: [admin-reports]
+  summary: Resumen del período — órdenes, monto, desglose por estado (US-016 AC-3, AC-5, AC-9)
+  description: >-
+    Sólo cuentan las 4 órdenes activas (AC-8). breakdown_by_status SIEMPRE
+    trae las 4 claves (new/preparing/ready/delivered), zero-fill incluido
+    — un período sin datos responde 200 con todo en cero (AC-5), nunca error
+    ni un objeto incompleto.
+  parameters:
+    - name: created_at_from
+      in: query
+      schema: { type: string, format: date-time }
+    - name: created_at_to
+      in: query
+      schema: { type: string, format: date-time }
+  responses:
+    '200':
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AdminReportsSummary' }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '403': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '422':
+      description: 'dsm:reports/invalid-range.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
