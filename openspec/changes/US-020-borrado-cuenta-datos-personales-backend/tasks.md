@@ -171,7 +171,7 @@ language: es
 
 ## Fase 2: Errores + eventos — 1,0 h
 
-- [ ] T2.1 `AccountHasActiveOrdersError` (409 RFC 7807, con `blocking_orders`)
+- [x] T2.1 `AccountHasActiveOrdersError` (409 RFC 7807, con `blocking_orders`)
   - **Pattern**: `apps/api/src/account/account-errors.ts` — `per
     backend-node-standards.md §6`. Usa `extensions` de `DomainError` (mismo
     mecanismo que el 409 de stock del carrito) para llevar `blocking_orders:
@@ -181,7 +181,7 @@ language: es
     `OrderHistorySummaryDto` (US-015) — sin campos adicionales.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=account-errors` en 0
 
-- [ ] T2.2 `AccountEventsService` (cero PII)
+- [x] T2.2 `AccountEventsService` (cero PII)
   - **Pattern**: `apps/api/src/observability/account-events.service.ts`, mismo
     esqueleto que `OrdersRetentionEventsService`/`AuthEventsService` — ver
     `design.md` §Approach ("Observabilidad"). La firma no acepta ningún
