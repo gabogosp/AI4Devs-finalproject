@@ -5,6 +5,10 @@ parent-us: US-015
 discipline: qa
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: c9166df
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/79
 ---
 
 # US-015 QA — Historial de compras del cliente registrado

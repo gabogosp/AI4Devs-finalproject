@@ -6,6 +6,18 @@ language: es
 
 # US-015 QA — Design
 
+> **Nota de archivado (2026-09-06)**: este change se archiva ANTES que
+> `US-015-historial-compras-backend` y `US-015-historial-compras-frontend-web` (ambos
+> `in review`, PR #70/#71 y #74 mergeados a `main`, pero sin su propio `/archive-change`
+> todavía) — orden inverso al patrón habitual de este repo (BE crea la capacidad,
+> QA/FE la extienden). Por eso `openspec/specs/historial-compras/` **todavía no existe**:
+> deliberadamente NO se crea acá, para no adelantarse a la forma que el archive de BE le
+> dé a esa capacidad (README/requirements/decisions/contrato vivo). **Pendiente**: cuando
+> se corra `/archive-change US-015-historial-compras-backend`, agregar a la capacidad
+> recién creada una sección "Qué verificó QA" con el contenido de este change (16
+> escenarios BDD, 9 casos de contrato, k6 p95=3.29ms, 3 charters) — mismo patrón que
+> `openspec/specs/pagos/README.md`/`openspec/specs/enriquecimiento-ia/README.md` ya usan.
+
 ## Context
 
 Este plan diseña la arquitectura de test para las dos superficies que
