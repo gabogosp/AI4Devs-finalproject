@@ -163,7 +163,7 @@ language: es
     sin ningún `await` entre medio que rompa el batching.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/DeleteAccountSection.test.tsx -t "T4.1"`
 
-- [ ] **T4.2 — `AccountDeletedNotice` (componente nuevo)**
+- [x] **T4.2 — `AccountDeletedNotice` (componente nuevo)**
   - **Pattern**: `per design.md §"Component breakdown"` — `role="status"`
     `aria-live="polite"` (confirmación, no interrupción), foco al propio
     `<h2 tabIndex={-1}>` al montar (design-system §11 — foco gestionado al
