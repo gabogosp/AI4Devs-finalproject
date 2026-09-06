@@ -45,8 +45,8 @@ export function SalesComposedChart({ rows, granularity }: SalesComposedChartProp
           tickFormatter={(v: number) => formatArs(v)}
         />
         <Tooltip
-          formatter={(value: number, name: string) =>
-            name === 'total_ars_cents' ? formatArs(value) : value
+          formatter={(value, name) =>
+            name === 'total_ars_cents' ? formatArs(Number(value)) : value
           }
         />
         <Legend />
