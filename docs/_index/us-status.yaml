@@ -378,6 +378,15 @@
   # suite completa apps/web 153/153 archivos/968/968 tests, lint+typecheck limpios,
   # codegen fresco, PR #67 abierto. `status` de la US se queda en `In Progress` (QA
   # todavía sin planificar).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-qa): BE (#66) y FE (#67)
+  # ya mergeados a main. QA (última disciplina) llega a in-review — 13/13 test cases
+  # automatizados verdes + 2 charters documentados, PR #73 abierto. QA-013-E2E-3
+  # encontró un defecto real en apps/web (mensaje de resultado de cancelar nunca se
+  # veía), resuelto por separado en PR #72 (ya mergeado) y re-verificado. Las 3
+  # disciplinas tienen PR — `status` de la US se queda en `In Progress` (sin
+  # precedente de `In Review` a nivel US en este índice); avanza a `Done` recién
+  # cuando las 3 disciplinas queden archivadas (`/archive-change`).
 - id: US-014
   slug: registro-login
   status: In Progress
