@@ -64,7 +64,7 @@ Ninguna AC queda diferida.
 
 ## Fase 1 — Dominio / capa de servicio
 
-- [ ] T1.1 Crear `apps/web/src/lib/format/avatar.ts` con `initialsFrom(name)`
+- [x] T1.1 Crear `apps/web/src/lib/format/avatar.ts` con `initialsFrom(name)`
   y `avatarColor(id)` — funciones puras, sin React, mismo criterio que
   `currency.ts`/`datetime.ts` del mismo directorio.
   - **Pattern**: `per design.md §"Placeholder determinístico — algoritmo"` —
@@ -74,7 +74,7 @@ Ninguna AC queda diferida.
     (primera + última palabra); `avatarColor(id)` devuelve el mismo string
     para el mismo `id` en llamadas repetidas.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/lib/format/avatar.test.ts`
-- [ ] T1.2 Crear `apps/web/src/components/ui/Avatar.tsx` — componente
+- [x] T1.2 Crear `apps/web/src/components/ui/Avatar.tsx` — componente
   compartido con fallback `onError` a iniciales (nunca el ícono roto nativo).
   - **Pattern**: `frontend-resilience-patterns` skill, patrón #11 (image
     error fallback) — `<img onError={() => setBroken(true)} />`, render
@@ -84,7 +84,7 @@ Ninguna AC queda diferida.
     `<img>`; si el `<img>` dispara `onError`, se re-renderiza como iniciales
     sin romper el layout (mismo tamaño).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/components/ui/Avatar.test.tsx`
-- [ ] T1.3 Agregar `updateProfile(input: { name: string; avatar_url: string | null }): Promise<Customer>`
+- [x] T1.3 Agregar `updateProfile(input: { name: string; avatar_url: string | null }): Promise<Customer>`
   a `accountService.ts`, llamando la operación generada de `PATCH /me` con
   `conSesion` (mismo criterio que `deleteAccount()`/`me()` del mismo archivo)
   y validando la respuesta con `parseContract` contra el schema Zod generado.
@@ -96,7 +96,7 @@ Ninguna AC queda diferida.
     fuera de `accountService.ts` importa `@/api/generated/endpoints`
     directamente (mismo grep que ya corre T1.1 de `US-014-registro-login-frontend-web`).
   - **Verify**: `grep -c "customer_id\|: *id" apps/web/src/features/account/accountService.ts | grep -q "^0$" ; ! grep -rl "@/api/generated/endpoints" apps/web/src/features/account/ProfileForm.tsx apps/web/src/features/account/AccountPanel.tsx 2>/dev/null`
-- [ ] T1.4 Extender `SessionContextValue` en `SessionProvider.tsx` con
+- [x] T1.4 Extender `SessionContextValue` en `SessionProvider.tsx` con
   `updateCustomer(patch: Partial<Customer>): void`.
   - **Pattern**: `per SessionProvider.tsx` (líneas 44-47, `onAuthenticated`) —
     `useCallback` que hace `setState(s => s.kind === 'authenticated' ? { ...s, customer: { ...s.customer, ...patch } } : s)`.
@@ -107,7 +107,7 @@ Ninguna AC queda diferida.
 
 ## Fase 2 — Componentes UI
 
-- [ ] T2.1 Crear `ProfileForm.tsx` en `apps/web/src/features/account/` —
+- [x] T2.1 Crear `ProfileForm.tsx` en `apps/web/src/features/account/` —
   formulario nombre + avatar URL, `react-hook-form` + `zodResolver`.
   - **Pattern**: `per ProductForm.tsx` línea 25 —
     `image_url: z.string().url('URL inválida').optional().or(z.literal(''))`
@@ -127,7 +127,7 @@ Ninguna AC queda diferida.
     null` en el body (AC-3); un 422 del backend con `field: 'name'` o
     `field: 'avatar_url'` marca el campo correspondiente vía `setError`.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/ProfileForm.test.tsx`
-- [ ] T2.2 Integrar `<Avatar>` en `ProfileForm`/`AccountPanel`, alimentado
+- [x] T2.2 Integrar `<Avatar>` en `ProfileForm`/`AccountPanel`, alimentado
   por el `customer` confirmado de `useSession()` (no por el valor tipeado sin
   guardar — OQ-FE-2, default sin live-preview).
   - **Exit criterion**: tras un `updateProfile` exitoso, el `<Avatar>` visible
@@ -136,7 +136,7 @@ Ninguna AC queda diferida.
   - **Verify**: cubierto por los casos AC-2/AC-3 de `ProfileForm.test.tsx`
     (mismo archivo que T2.1) — assert sobre el `src`/rol del `<Avatar>`
     renderizado tras `waitFor` del banner de éxito.
-- [ ] T2.3 Modificar `AccountPanel.tsx`: sustituir el `dd` estático de
+- [x] T2.3 Modificar `AccountPanel.tsx`: sustituir el `dd` estático de
   "Nombre" por `<ProfileForm>`; mantener el `dl` de Email (AC-6, sin ningún
   control de edición) y "Cliente desde" sin cambios; montar `<Avatar>` sobre
   el bloque.
@@ -145,7 +145,7 @@ Ninguna AC queda diferida.
     texto de sólo lectura (AC-6 verificado por ausencia, mismo criterio que
     `design.md` §D5 de US-020 para el botón de borrar).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/AccountPanel.test.tsx`
-- [ ] T2.4 Agregar `profile_edit_attempted`, `profile_edit_succeeded`,
+- [x] T2.4 Agregar `profile_edit_attempted`, `profile_edit_succeeded`,
   `profile_edit_failed` a `BusinessEvent` y a `PUBLIC_EVENTS` en
   `apps/web/src/lib/observability/events.ts`.
   - **Pattern**: `per events.ts` líneas 126-129/185-188 (`account_delete_*`)
@@ -154,7 +154,7 @@ Ninguna AC queda diferida.
   - **Exit criterion**: los 3 eventos están en `PUBLIC_EVENTS` (no llevan
     `operator_id: 'admin'` — son superficie de cliente, no de backoffice).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/lib/observability/events.test.ts` (si no existe un test dedicado, extender `account.events.test.tsx` en T3.7 y correr ese archivo)
-- [ ] T2.5 Precargar `buyer.name` en `CheckoutForm.tsx` con el nombre de la
+- [x] T2.5 Precargar `buyer.name` en `CheckoutForm.tsx` con el nombre de la
   sesión activa (AC-1, segunda mitad — hallazgo 2026-09-06, confirmado con
   backend: `orders.buyer_name` nunca sale de `Customer.name`, sólo de lo que
   manda este form; hoy no tiene ninguna noción de sesión).
@@ -169,7 +169,7 @@ Ninguna AC queda diferida.
     `customer.name`. La matriz completa de escenarios (no-clobber incluido)
     la cubre T3.8.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/checkout/CheckoutForm.test.tsx`
-- [ ] T2.6 Envolver los `render(...)` de `CheckoutForm.test.tsx`,
+- [x] T2.6 Envolver los `render(...)` de `CheckoutForm.test.tsx`,
   `checkoutA11y.test.tsx` y `CheckoutPage.test.tsx` en `<SessionProvider>`
   (mecánico — con `SessionProvider` en su estado default `anonymous`, ninguna
   aserción existente cambia).
@@ -179,17 +179,17 @@ Ninguna AC queda diferida.
 
 ## Fase 3 — Tests unitarios / componente / a11y
 
-- [ ] T3.1 `apps/web/src/lib/format/avatar.test.ts` — determinismo de
+- [x] T3.1 `apps/web/src/lib/format/avatar.test.ts` — determinismo de
   `avatarColor` (mismo id → mismo string en 2 llamadas), casos de
   `initialsFrom` (nombre de una palabra, dos palabras, con espacios extra).
   - **Exit criterion**: 100% de los casos anteriores cubiertos.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/lib/format/avatar.test.ts`
-- [ ] T3.2 `apps/web/src/components/ui/Avatar.test.tsx` — sin `avatarUrl`
+- [x] T3.2 `apps/web/src/components/ui/Avatar.test.tsx` — sin `avatarUrl`
   renderiza iniciales; con `avatarUrl` renderiza `<img>`; `fireEvent.error`
   sobre el `<img>` degrada a iniciales (AC-3 a nivel componente).
   - **Exit criterion**: los 3 casos anteriores en verde.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/components/ui/Avatar.test.tsx`
-- [ ] T3.3 `apps/web/src/features/account/ProfileForm.test.tsx` — matriz
+- [x] T3.3 `apps/web/src/features/account/ProfileForm.test.tsx` — matriz
   completa de AC:
   - AC-1: submit con nombre nuevo → banner de éxito → `useSession().state.customer.name`
     actualizado sin nueva llamada a `GET /auth/me`.
@@ -208,28 +208,28 @@ Ninguna AC queda diferida.
     `ProductForm.tsx`).
   - **Exit criterion**: los 9 casos anteriores en verde.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/ProfileForm.test.tsx`
-- [ ] T3.4 Actualizar `AccountPanel.test.tsx` — reemplazar la aserción sobre
+- [x] T3.4 Actualizar `AccountPanel.test.tsx` — reemplazar la aserción sobre
   el `dd` estático de nombre por la presencia de `<ProfileForm>` (input con
   label "Nombre" pre-cargado con `customer.name`); agregar caso AC-6
   (ningún `input`/`button` asociado al email).
   - **Exit criterion**: la suite existente sigue verde + el caso AC-6 nuevo.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/AccountPanel.test.tsx`
-- [ ] T3.5 Actualizar `SessionProvider.test.tsx` con el caso de `updateCustomer`
+- [x] T3.5 Actualizar `SessionProvider.test.tsx` con el caso de `updateCustomer`
   descrito en T1.4.
   - **Exit criterion**: caso en verde.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/SessionProvider.test.tsx`
-- [ ] T3.6 Extender `a11y.test.tsx` — montar `AccountPanel` con `ProfileForm`
+- [x] T3.6 Extender `a11y.test.tsx` — montar `AccountPanel` con `ProfileForm`
   y correr `axe(container)`; verificar navegación por teclado hasta el botón
   "Guardar" (`Tab` sucesivos, foco visible).
   - **Exit criterion**: `expect(await axe(container)).toHaveNoViolations()`
     sobre el árbol con `ProfileForm` montado, sin nuevas violaciones.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/a11y.test.tsx`
-- [ ] T3.7 Extender `account.events.test.tsx` con los 3 eventos nuevos de
+- [x] T3.7 Extender `account.events.test.tsx` con los 3 eventos nuevos de
   T2.4 (presentes en `PUBLIC_EVENTS`, sin propiedades PII en el payload
   emitido).
   - **Exit criterion**: caso en verde para los 3 eventos.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/account.events.test.tsx`
-- [ ] T3.8 `CheckoutForm.test.tsx` — matriz completa de la precarga de
+- [x] T3.8 `CheckoutForm.test.tsx` — matriz completa de la precarga de
   `buyer.name` (AC-1, T2.5):
   - Anónimo (`SessionProvider` default `anonymous`): `buyer.name` arranca
     vacío — comportamiento idéntico al actual, sin regresión.

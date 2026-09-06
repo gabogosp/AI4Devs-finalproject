@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Cart } from '@/api/generated/model';
+import { SessionProvider } from '@/features/account/SessionProvider';
 import { CartProvider } from '@/features/cart/CartProvider';
 import { cartService } from '@/features/cart/cartService';
 import type { CheckoutCreated } from './checkoutService';
@@ -58,9 +59,11 @@ const vacio = (): Cart => ({
 
 const montar = () =>
   render(
-    <CartProvider>
-      <CheckoutPage />
-    </CartProvider>,
+    <SessionProvider>
+      <CartProvider>
+        <CheckoutPage />
+      </CartProvider>
+    </SessionProvider>,
   );
 
 const orden: CheckoutCreated = {

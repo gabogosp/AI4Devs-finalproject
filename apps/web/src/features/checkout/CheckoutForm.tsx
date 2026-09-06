@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { track } from '@/lib/observability/events';
 import Link from 'next/link';
+import { useSession } from '@/features/account/SessionProvider';
 import { checkoutBannerFor } from './checkoutCopy';
 import { checkoutResolver, type CheckoutFormValues } from './checkoutResolver';
 import type { CheckoutCreated } from './checkoutService';
@@ -32,6 +33,9 @@ const DEFAULT_VALUES: CheckoutFormValues = {
  */
 export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const { state, submit } = useCheckout();
+  const { state: sessionState } = useSession();
+  const customerName =
+    sessionState.kind === 'authenticated' ? sessionState.customer.name : undefined;
   const {
     register,
     handleSubmit,
@@ -40,7 +44,23 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<CheckoutFormValues>({ resolver: checkoutResolver, defaultValues: DEFAULT_VALUES });
+  } = useForm<CheckoutFormValues>({
+    resolver: checkoutResolver,
+    defaultValues: DEFAULT_VALUES,
+    // AC-1 (US-024): con sesión activa, `buyer.name` arranca precargado con
+    // el nombre del cliente — `orders.buyer_name` nunca sale de
+    // `Customer.name` del lado del servidor, sale de este form (design.md
+    // de US-024-edicion-perfil-cliente-frontend-web §"Precarga de
+    // buyer.name"). `values` (no `defaultValues`, que sólo aplica una vez al
+    // montar) porque `useSession()` puede resolver DESPUÉS del primer
+    // render; `keepDirtyValues` para no pisar una edición manual si la
+    // persona ya escribió algo antes de que la sesión resuelva. Invitado
+    // (`customerName` undefined) → comportamiento idéntico al actual.
+    values: customerName
+      ? { ...DEFAULT_VALUES, buyer: { ...DEFAULT_VALUES.buyer, name: customerName } }
+      : undefined,
+    resetOptions: { keepDirtyValues: true },
+  });
 
   const consent = watch('consent');
   const notificado = useRef(false);

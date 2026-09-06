@@ -113,6 +113,30 @@ describe('Accesibilidad de las pantallas de cuenta (T3.4)', () => {
     expect(screen.getByRole('button', { name: /ingresar/i })).toHaveFocus();
   });
 
+  it('ProfileForm (US-024, C2a) se recorre por teclado hasta "Guardar", con foco visible', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));
+
+    envolver(<AccountPanel />);
+    const nombre = await screen.findByLabelText(/^nombre/i);
+    // `/avatar/i` a secas también matchea el `aria-label` del placeholder de
+    // `<Avatar>` ("Avatar de Ana Gómez") — se acota al label real del campo.
+    const avatar = screen.getByLabelText(/avatar \(url\)/i);
+    const guardar = screen.getByRole('button', { name: /^guardar$/i });
+
+    nombre.focus();
+    expect(nombre).toHaveFocus();
+    await userEvent.tab();
+    expect(avatar).toHaveFocus();
+    await userEvent.tab();
+    expect(guardar).toHaveFocus();
+
+    // Foco VISIBLE: alcanzable pero invisible no sirve para navegar (mismo
+    // criterio que TC-731 del carrito).
+    const contorno = getComputedStyle(guardar);
+    expect(`${contorno.outlineStyle}|${contorno.boxShadow}`).not.toBe('none|none');
+  });
+
   it('la sección "Eliminar mi cuenta" (US-020), con el diálogo cerrado y abierto, no tiene violaciones', async () => {
     window.localStorage.setItem(SESSION_HINT_KEY, '1');
     server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));

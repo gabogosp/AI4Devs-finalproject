@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
 import { setEventSink } from '@/lib/observability/events';
 import { DeleteAccountSection } from './DeleteAccountSection';
+import { ProfileForm } from './ProfileForm';
 import { SessionProvider } from './SessionProvider';
 import { SESSION_HINT_KEY } from './sessionState';
 
@@ -119,6 +120,87 @@ describe('eventos del borrado de cuenta (US-020 T6.2, AC-14)', () => {
     server.use(http.delete(`${SITE}/v1/me`, () => new HttpResponse(null, { status: 204 })));
 
     await montarYAbrir(user);
+
+    await waitFor(() => expect(eventos.length).toBeGreaterThan(0));
+    for (const e of eventos) {
+      expect(e.props).toEqual({});
+    }
+  });
+});
+
+describe('eventos de la edición de perfil (US-024 T2.4)', () => {
+  let eventos: Array<{ event: string; props: Record<string, unknown> }>;
+
+  beforeEach(() => {
+    eventos = [];
+    setEventSink((event, props) => eventos.push({ event, props: props as Record<string, unknown> }));
+  });
+  afterEach(() => {
+    setEventSink(() => {});
+    window.localStorage.clear();
+  });
+
+  it('camino de éxito: attempted antes de succeeded, sin PII', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(
+      http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)),
+      http.patch(`${SITE}/v1/me`, () => HttpResponse.json(customer)),
+    );
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider>
+        <ProfileForm customer={customer} />
+      </SessionProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /^guardar$/i }));
+
+    await waitFor(() => expect(eventos.some((e) => e.event === 'profile_edit_succeeded')).toBe(true));
+    expect(eventos.map((e) => e.event)).toEqual([
+      'profile_edit_attempted',
+      'profile_edit_succeeded',
+    ]);
+    const volcado = JSON.stringify(eventos);
+    expect(volcado).not.toContain(NOMBRE_RECONOCIBLE);
+    expect(volcado).not.toContain(EMAIL_RECONOCIBLE);
+  });
+
+  it('camino de falla: attempted seguido de failed, nunca succeeded', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(
+      http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)),
+      http.patch(`${SITE}/v1/me`, () => HttpResponse.error()),
+    );
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider>
+        <ProfileForm customer={customer} />
+      </SessionProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /^guardar$/i }));
+
+    await waitFor(() => expect(eventos.some((e) => e.event === 'profile_edit_failed')).toBe(true));
+    expect(eventos.map((e) => e.event)).toEqual(['profile_edit_attempted', 'profile_edit_failed']);
+  });
+
+  it('ninguno de los 2 eventos lleva propiedades ni PII', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(
+      http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)),
+      http.patch(`${SITE}/v1/me`, () => HttpResponse.json(customer)),
+    );
+    const user = userEvent.setup();
+
+    render(
+      <SessionProvider>
+        <ProfileForm customer={customer} />
+      </SessionProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: /^guardar$/i }));
 
     await waitFor(() => expect(eventos.length).toBeGreaterThan(0));
     for (const e of eventos) {

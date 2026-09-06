@@ -1,10 +1,16 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/test/server';
 import { AppErrorException } from '@/lib/http/errors';
+import { SessionProvider } from '@/features/account/SessionProvider';
+import { SESSION_HINT_KEY } from '@/features/account/sessionState';
 import type { CheckoutCreated } from './checkoutService';
 import { checkoutService } from './checkoutService';
 import { CheckoutForm } from './CheckoutForm';
+
+const SITE = 'http://localhost:3000';
 
 vi.mock('./checkoutService', () => ({
   checkoutService: { submit: vi.fn() },
@@ -12,7 +18,10 @@ vi.mock('./checkoutService', () => ({
 
 const servicio = vi.mocked(checkoutService);
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  window.localStorage.clear();
+});
 
 const orden: CheckoutCreated = {
   order_token: 'a'.repeat(64),
@@ -31,7 +40,7 @@ async function completarValido(user: ReturnType<typeof userEvent.setup>) {
 
 describe('CheckoutForm — validación cliente (AC-3, AC-4)', () => {
   it('submit vacío: 3 errores inline + el del checkbox, sin llamar al servicio', async () => {
-    render(<CheckoutForm onSuccess={vi.fn()} />);
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
@@ -53,7 +62,7 @@ describe('CheckoutForm — errores del servidor (D5)', () => {
         fieldErrors: [{ field: 'buyer.email', message: 'Ese email no es válido para nosotros' }],
       }),
     );
-    render(<CheckoutForm onSuccess={vi.fn()} />);
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
     const user = userEvent.setup();
     await completarValido(user);
 
@@ -72,7 +81,7 @@ describe('CheckoutForm — errores del servidor (D5)', () => {
         problemType: 'dsm:checkout/cart-not-purchasable',
       }),
     );
-    render(<CheckoutForm onSuccess={vi.fn()} />);
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
     const user = userEvent.setup();
     await completarValido(user);
 
@@ -90,7 +99,7 @@ describe('CheckoutForm — errores del servidor (D5)', () => {
     servicio.submit.mockRejectedValue(
       new AppErrorException({ kind: 'forbidden', message: 'x' }),
     );
-    render(<CheckoutForm onSuccess={vi.fn()} />);
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
     const user = userEvent.setup();
     await completarValido(user);
 
@@ -102,7 +111,7 @@ describe('CheckoutForm — errores del servidor (D5)', () => {
   it('éxito: invoca onSuccess con el CheckoutCreated', async () => {
     servicio.submit.mockResolvedValue(orden);
     const onSuccess = vi.fn();
-    render(<CheckoutForm onSuccess={onSuccess} />);
+    render(<SessionProvider><CheckoutForm onSuccess={onSuccess} /></SessionProvider>);
     const user = userEvent.setup();
     await completarValido(user);
 
@@ -118,7 +127,7 @@ describe('CheckoutForm — errores del servidor (D5)', () => {
         resolver = r;
       }),
     );
-    render(<CheckoutForm onSuccess={vi.fn()} />);
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
     const user = userEvent.setup();
     await completarValido(user);
 
@@ -131,5 +140,68 @@ describe('CheckoutForm — errores del servidor (D5)', () => {
     // Se resuelve antes de terminar: una promesa pendiente filtra trabajo al
     // test siguiente y lo cuelga (mismo criterio que CartPage.test.tsx).
     await waitFor(() => resolver(orden));
+  });
+});
+
+describe('CheckoutForm — precarga de buyer.name desde la sesión (US-024 AC-1, T2.5)', () => {
+  const customer = {
+    id: '55555555-5555-4555-8555-555555555555',
+    email: 'ana@example.com',
+    name: 'Ana Gómez',
+    phone: null,
+    avatar_url: null,
+    created_at: '2026-08-22T12:00:00Z',
+  };
+
+  it('anónimo: buyer.name arranca vacío, comportamiento idéntico al actual', async () => {
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
+
+    expect(screen.getByLabelText(/nombre/i)).toHaveValue('');
+  });
+
+  it('logueado: buyer.name arranca precargado con el nombre de la sesión', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));
+
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
+
+    await waitFor(() => expect(screen.getByLabelText(/nombre/i)).toHaveValue('Ana Gómez'));
+  });
+
+  it('el campo sigue editable estando logueado (comprar para otra persona)', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));
+
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
+    await waitFor(() => expect(screen.getByLabelText(/nombre/i)).toHaveValue('Ana Gómez'));
+
+    const user = userEvent.setup();
+    await user.clear(screen.getByLabelText(/nombre/i));
+    await user.type(screen.getByLabelText(/nombre/i), 'Otra Persona');
+
+    expect(screen.getByLabelText(/nombre/i)).toHaveValue('Otra Persona');
+  });
+
+  it('si la persona escribe ANTES de que la sesión resuelva, su edición no se pierde (keepDirtyValues real)', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(
+      http.get(`${SITE}/v1/auth/me`, async () => {
+        // Resolución demorada: da tiempo a escribir antes de que la sesión
+        // pase a `authenticated` — el escenario real que `keepDirtyValues`
+        // existe para cubrir.
+        await new Promise((r) => setTimeout(r, 50));
+        return HttpResponse.json(customer);
+      }),
+    );
+
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
+
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText(/nombre/i), 'Escrito Antes');
+
+    // Esperar a que la sesión efectivamente resuelva (más que el delay de arriba).
+    await act(() => new Promise((r) => setTimeout(r, 100)));
+
+    expect(screen.getByLabelText(/nombre/i)).toHaveValue('Escrito Antes');
   });
 });

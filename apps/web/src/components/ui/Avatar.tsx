@@ -36,9 +36,10 @@ export function Avatar({ name, customerId, avatarUrl, size = 'md' }: AvatarProps
 
   if (mostrarImagen) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria pegada
-      // por la persona (US §4): `next/image` exige un dominio conocido para
-      // optimizar, y esta imagen puede venir de cualquier host.
+      // URL arbitraria pegada por la persona (US §4): `next/image` exige un
+      // dominio conocido para optimizar, y esta imagen puede venir de
+      // cualquier host.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={avatarUrl!}
         alt={`Avatar de ${name}`}
