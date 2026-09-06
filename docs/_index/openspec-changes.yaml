@@ -2202,3 +2202,54 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-013-cancelacion-reembolso-frontend-web
+  us-id: US-013
+  discipline: frontend-web
+  variant: null
+  status: Draft
+  parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Planificado 2026-09-06 (frontend-web-developer). Cubre el único AC diferido
+  # explícitamente por el backend (PR #66, mergeado): AC-6, confirmación de dos
+  # pasos antes de cancelar. Agrega la acción "Cancelar orden" al detalle de
+  # orden que US-012 ya construyó (apps/web/src/features/orders/OrderDetail.tsx),
+  # reusando ConfirmDialog (apps/web/src/components/ui/ConfirmDialog.tsx) SIN
+  # modificarlo — ya tiene 2 consumidores en producción (ProductActions.archive
+  # de US-001, OrderAnonymizeAction de la anonimización de órdenes). Sin
+  # componente de confirmación nuevo, sin ruta nueva, sin ADR.
+  #
+  # Cliente/Zod/MSW ya regenerados por el orquestador antes de este plan
+  # (apps/web/src/api/generated/ ya tiene cancelOrder + CancelOrderResponse) —
+  # este change no regenera nada, sólo verifica frescura (T1.1 de tasks.md).
+  #
+  # CancelOrderResponse (self-contained, D6 del backend) se reconcilia DIRECTO
+  # en OrderDetail (mismo patrón que OrderStatusActions.onConfirmed, sin
+  # segundo GET) — a diferencia de OrderAnonymizeAction, cuyo endpoint SÍ
+  # devuelve un shape parcial y por eso refetchea. La razón está en el
+  # contrato de cada endpoint (design.md §D2).
+  #
+  # AC-9 (sólo admin) fuera de alcance: AdminGuard de FE (app/(admin)/layout.tsx)
+  # y de backend ya gatean la superficie completa, sin cambios.
+  #
+  # Sin Playwright E2E nuevo (mismo nivel de pirámide que el resto de
+  # features/orders/ — Vitest + RTL + MSW + axe-core) y sin cambios en el
+  # README de apps/web (evaluado y descartado explícitamente en proposal.md:
+  # ni ProductActions.archive ni OrderAnonymizeAction — los 2 precedentes de
+  # esta misma confirmación de dos pasos — están documentados ahí tampoco).
+  #
+  # Sin open questions bloqueantes.
+  estimate-hours: 3.5   # AI-asistido, 17 tasks / 7 fases + pre-requisitos. La
+  # US §7 presupuesta FE-US-013 en 4-6h tradicional — este plan queda por
+  # debajo por la reutilización total de ConfirmDialog (sin modificar) y por
+  # no requerir codegen nuevo (ya regenerado antes de este plan).
+  assignee: null
+  branch: null
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
