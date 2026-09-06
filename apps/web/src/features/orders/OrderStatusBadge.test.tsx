@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import type { OrderStatus } from './ordersService';
+import type { PurchaseStatus } from '../order-history/orderHistoryService';
 
 describe('OrderStatusBadge (T3.1, design-system §7.7)', () => {
-  const CASOS: Array<[OrderStatus, string]> = [
+  const CASOS: Array<[OrderStatus | PurchaseStatus, string]> = [
+    ['pending_payment', 'Pendiente de pago'],
     ['new', 'Nueva'],
     ['preparing', 'Preparando'],
     ['ready', 'Lista para retirar'],
@@ -17,14 +19,14 @@ describe('OrderStatusBadge (T3.1, design-system §7.7)', () => {
     expect(screen.getByText(textoEsperado)).toBeInTheDocument();
   });
 
-  it('los 5 estados producen 5 textos distintos (nunca sólo color)', () => {
+  it('los 6 estados producen 6 textos distintos (nunca sólo color)', () => {
     const textos = CASOS.map(([status]) => {
       const { unmount, container } = render(<OrderStatusBadge status={status} />);
       const texto = container.textContent;
       unmount();
       return texto;
     });
-    expect(new Set(textos).size).toBe(5);
+    expect(new Set(textos).size).toBe(6);
   });
 
   it('preparing y ready comparten clase de color pero difieren en texto', () => {

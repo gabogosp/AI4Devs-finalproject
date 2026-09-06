@@ -10,6 +10,7 @@ export type OrderHistorySummaryStatus = typeof OrderHistorySummaryStatus[keyof t
 
 
 export const OrderHistorySummaryStatus = {
+  pending_payment: 'pending_payment',
   new: 'new',
   preparing: 'preparing',
   ready: 'ready',
