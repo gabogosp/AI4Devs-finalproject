@@ -159,7 +159,7 @@ language: es
     renderiza un `<ul>` vacío sin explicación).
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewsList`
 
-- [ ] **T-A9 — `ReviewsSection.tsx` + `.test.tsx` (orquestador, los 4 `viewerState`)**
+- [x] **T-A9 — `ReviewsSection.tsx` + `.test.tsx` (orquestador, los 4 `viewerState`)**
   - **Pattern**: `per design.md §D2` — unión discriminada `ViewerReviewState`, nunca dos
     booleanos (`isGuest`/`isEligible`) combinados a mano.
   - **Exit criterion**: con `viewerState.kind === 'guest'` renderiza `ReviewGuestPrompt` y NO
