@@ -2615,3 +2615,53 @@
   pr-url: null
   pr-opened-at: null
   created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-022-actualizacion-dependencias-frontend-web
+  us-id: US-022
+  discipline: frontend-web
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-022-actualizacion-dependencias-frontend.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # No nace del PRD: hallazgo del gate de seguridad de US-006 (pnpm audit
+  # monorepo-wide, 2026-08-23, tras el override de multer commit a4ea348).
+  # Cierra next 15.1.6 -> 15.5.21 (2 critical + 11 high, RCE en React flight +
+  # bypass de autorización en middleware), agrega sharp explícito (^0.35.0),
+  # bump de postcss + override de la copia interna que next fija, override de
+  # undici (viene de testcontainers en apps/api, no de apps/web — ver design.md
+  # D4), bump de @playwright/test (minor), y el resto de transitivas
+  # (handlebars/node-forge/tar-fs/brace-expansion/js-yaml/flatted/fast-uri/
+  # picomatch/glob/tmp/lodash/underscore/nanoid/vite) vía pnpm.overrides —
+  # mismo mecanismo que multer, preferido sobre forzar un major del padre.
+  #
+  # 24 tasks / 8 fases. `vitest` 2.1.8 -> 3.2.6 (único major, 2 critical,
+  # sólo dev) queda BLOQUEADA sin ejecutar — T4.2 — hasta que el usuario
+  # resuelva la pregunta abierta en proposal.md (3 opciones planteadas, no
+  # decidida acá). Cualquier pnpm.overrides de Fase 5 que rompa algo al
+  # aplicarse lleva la misma cláusula de escalamiento explícita, nunca
+  # workaround unilateral — instrucción directa del coordinador humano.
+  #
+  # Gate de AC-5 (audit ejecutable en exit 0): scripts/check-audit-exclusions.mjs
+  # + scripts/.audit-exclusions.json (raíz), mismo estilo que
+  # apps/web/scripts/check-whatsapp-configured.mjs. Sin wiring a CI (US-019).
+  #
+  # Sin superficie visible, sin ADR (bump de minor + aplicación de un mecanismo
+  # ya precedente no ameritan uno per documentation-standards.md §8.1), sin
+  # cambios de README.
+  estimate-hours: 8.5   # AI-asistido / 24 tasks-8 fases. US §7 presupuesta
+  # FE-US-022 en 3-5h tradicional — este plan excede ese techo por trabajo que
+  # la US no cuantifica: revalidación de suite completa monorepo-wide (apps/web
+  # + apps/api vía testcontainers + qa/ vía newman) repetida por fase, más el
+  # gate de auditoría nuevo desde cero.
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
