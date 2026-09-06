@@ -20,14 +20,14 @@ Característica: Webhook de MercadoPago, medio simulado y decremento de stock (U
 
   # ─── HAPPY PATH ───
 
-  @happy @critical-path
+  @happy @critical-path @us-011
   Escenario: SC-010-H1 — El medio simulado confirma la orden y decrementa el stock (AC-1, AC-9)
     Cuando se confirma el pago de esa orden por el medio simulado "DSM"
     Entonces recibo 200 con la orden confirmada
     Y el stock de cada producto de la orden queda decrementado exactamente en la cantidad pedida
     Y queda registrado un pago aprobado para esa orden
 
-  @happy
+  @happy @us-011
   Escenario: SC-010-H2 — La confirmación dispara las notificaciones al comprador y al dueño (AC-2)
     Cuando se confirma el pago de esa orden por el medio simulado "DSM"
     Entonces el puerto de notificaciones recibe exactamente un aviso de confirmación para el comprador
@@ -93,22 +93,25 @@ Característica: Webhook de MercadoPago, medio simulado y decremento de stock (U
   # black-box. La rama de negocio ya está probada dev-owned
   # (`confirm-order.service.spec.ts`, sin cambios por este change).
 
-  @negative @critical-path
-  Escenario: SC-010-N3 — Aprobado sin stock suficiente: la orden se cancela y el reembolso no se pierde (AC-4)
+  @negative @critical-path @us-011
+  Escenario: SC-010-N3 — Aprobado sin stock suficiente: la orden se cancela y el reembolso no se pierde (AC-4, AC-4 de US-011)
     Dado que el stock de un producto de la orden bajó por debajo de lo pedido después del checkout
     Cuando se confirma el pago de esa orden por el medio simulado "DSM"
     Entonces recibo el rechazo por auto-cancelación por falta de stock
     Y la orden queda "cancelled"
     Y el pago queda reembolsado
     Y el stock del producto no decrementó
+    Y el puerto de notificaciones recibe exactamente un aviso de cancelación por falta de stock para ese comprador
 
-  @negative @critical-path
-  Escenario: SC-010-N4 — Repetir la confirmación de una orden ya confirmada no duplica efectos (AC-5)
+  @negative @critical-path @us-011
+  Escenario: SC-010-N4 — Repetir la confirmación de una orden ya confirmada no duplica efectos (AC-5, AC-7 de US-011)
     Dado que la orden ya fue confirmada por el medio simulado "DSM"
     Cuando se repite la confirmación de esa misma orden
     Entonces recibo el rechazo por estado ya no pendiente
     Y el stock no se decrementa una segunda vez
     Y sigue existiendo exactamente un pago registrado para esa orden
+    Y el puerto de notificaciones recibe exactamente un aviso de confirmación para el comprador
+    Y exactamente un aviso de orden nueva para el dueño
 
   @negative
   Esquema del escenario: SC-010-N5 — El medio simulado rechaza lo que no debe confirmar (AC-9, control de superficie)
