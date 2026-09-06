@@ -95,7 +95,7 @@
     devuelven `{ csv: string; filename: string }` usando
     `filenameFromContentDisposition`, igual que `importsService.downloadReport`).
   - **Verify**: `pnpm --filter @dsm/web typecheck`.
-- [ ] T4.2 Tests unitarios de `metricsService` con MSW: éxito de los 6
+- [x] T4.2 Tests unitarios de `metricsService` con MSW: éxito de los 6
       endpoints + mapeo de 422 `dsm:reports/invalid-range` a
       `AppError.kind === 'validation'`.
   - **Pattern**: MSW `server.use(...)` por test — per `msw-setup` skill.
