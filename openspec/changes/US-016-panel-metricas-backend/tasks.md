@@ -371,7 +371,7 @@ language: es
     Prometheus, sin este change montado en aislamiento— sigue devolviendo
     `text/plain; version=0.0.4`, sin regresión de ruta)
 
-- [ ] T6.3 `AppModule` importa `ReportsModule`
+- [x] T6.3 `AppModule` importa `ReportsModule`
   - **Exit criterion**: `apps/api/src/app.module.ts` agrega `ReportsModule`
     al array `imports`. La app arranca sin `forwardRef`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-reports-bootstrap`

@@ -17,6 +17,7 @@ import { CheckoutModule } from './checkout/checkout.module';
 import { OrdersModule } from './orders/orders.module';
 import { StockModule } from './stock/stock.module';
 import { PaymentsModule } from './payments/payments.module';
+import { ReportsModule } from './reports/reports.module';
 
 /**
  * Módulo raíz de `@dsm/api`. Cross-cutting (config validado, logging pino,
@@ -58,6 +59,7 @@ import { PaymentsModule } from './payments/payments.module';
     OrdersModule,
     StockModule,
     PaymentsModule,
+    ReportsModule,
   ],
   controllers: [],
   providers: [],
