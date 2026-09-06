@@ -657,7 +657,12 @@
   blocked_by: []          # gated en dependencias externas (cuentas/billing), no en otra US
 - id: US-020
   slug: borrado-cuenta-datos-personales
-  status: In Progress
+  # /archive-change US-020-borrado-cuenta-datos-personales-frontend-web (2026-09-06, PR #96
+  # mergeado 7c19fe2): FE archivada, extiende openspec/specs/retencion-datos-personales/
+  # con la UI de /mi-cuenta. BE (PR #93) y FE (PR #96) ya archivadas — sólo QA (declarada
+  # en disciplines) sigue activa, en desarrollo. status: QA per el criterio del skill
+  # archive-change (disciplina QA pendiente → QA, no Done).
+  status: QA
   priority: Medium
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]

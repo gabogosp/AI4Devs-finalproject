@@ -79,6 +79,18 @@ sigue sin backend al momento de este change):
   sobre `customers.deleted_at`.
 - Detalle completo:
   [`US-020-borrado-cuenta-datos-personales-backend`](../../changes/archive/US-020-borrado-cuenta-datos-personales-backend/).
+- **UI en `/mi-cuenta`** (frontend-web, archivado): sección "Eliminar mi
+  cuenta" — botón destructivo + confirmación de dos pasos (`ConfirmDialog`
+  reusado, sin componente nuevo), copy explícito de qué se borra/qué
+  sobrevive, manejo del `409` (`blocking_orders`: número, estado e importe
+  de cada pedido bloqueante) y pantalla de confirmación post-borrado que
+  cierra la sesión en pantalla sin volver a llamar al backend (el `204` del
+  `DELETE` ya limpió las cookies). Agrega además un E2E dev-owned de
+  topología (`account-deletion-topology.spec.ts`) que verifica el rewrite
+  same-origin de `/v1/me/:path*` contra la app **construida** — cierra
+  preventivamente el mismo tipo de hueco que dejó pasar a producción el bug
+  real de PR #89 (ver `decisions.md` "Desde US-020 frontend-web"). Detalle
+  completo: [`US-020-borrado-cuenta-datos-personales-frontend-web`](../../changes/archive/US-020-borrado-cuenta-datos-personales-frontend-web/).
 
 ## Qué NO está vivo todavía
 
@@ -122,12 +134,12 @@ de esos 2, no de la capacidad entera). `DELETE /me` (US-020) es distinto:
 |---|---|---|
 | [`US-021-retencion-datos-ordenes-backend`](../../changes/archive/US-021-retencion-datos-ordenes-backend/) | BE | Migración aditiva (`anonymized_at`/`anonymization_reason` + 2 `CHECK`), `OrdersRetentionService`/`Controller`/`Runner`, 2 endpoints admin, idempotencia estructural |
 | [`US-020-borrado-cuenta-datos-personales-backend`](../../changes/archive/US-020-borrado-cuenta-datos-personales-backend/) | BE | `DELETE /me` (autoservicio del cliente), `AccountModule`/`AccountDeletionService`, tercer valor de `anonymization_reason` (`account_deletion`), reuso íntegro del mecanismo de anonimización de órdenes de US-021 |
+| [`US-020-borrado-cuenta-datos-personales-frontend-web`](../../changes/archive/US-020-borrado-cuenta-datos-personales-frontend-web/) | FE | Sección "Eliminar mi cuenta" en `/mi-cuenta` (`ConfirmDialog` reusado), manejo del `409`/`blocking_orders`, `MiCuentaScreen`/`AccountDeletedNotice` nuevos, E2E dev-owned de topología para `/v1/me` |
 
-Sin disciplinas FE/QA propias todavía para ninguno de los 2 changes.
+Sin disciplina QA propia todavía para ninguno de los 2 changes.
 `US-021-retencion-datos-ordenes-qa` está en desarrollo (otra sesión);
-`US-020-borrado-cuenta-datos-personales-frontend-web`/`-qa` tampoco existen
-como change todavía (la US-020 declara `[BE, FE, QA]` — el backend es la
-primera disciplina en cerrar).
+`US-020-borrado-cuenta-datos-personales-qa` está en desarrollo (otra sesión) —
+la US-020 declara `[BE, FE, QA]`, BE y FE ya cerraron.
 
 ## Estado de la provisión
 

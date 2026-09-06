@@ -13,7 +13,10 @@ audit-derived: false
 > **Ticket**: US-020 — Borrado de cuenta y datos personales (derecho al olvido, Ley 25.326)
 > **Author**: frontend-web-developer agent
 > **Date**: 2026-09-06
-> **Status**: Proposed
+> **Status**: Archived (2026-09-06) — `archived: true`, `archived_at: 2026-09-06`,
+> `merged_commit: 7c19fe2ff84a6f542bed2b7907fcb9ba7ec13319`,
+> `pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/96`. 27/27 tasks
+> cerradas.
 > **Affected layers**: componente de acción destructiva, estado de sesión
 > (`SessionProvider`), mapeo de errores (`lib/http/errors.ts`), wiring de la
 > página `/mi-cuenta`, observabilidad, E2E dev-owned de topología
