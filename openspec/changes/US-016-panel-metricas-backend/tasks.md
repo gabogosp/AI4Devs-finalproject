@@ -450,7 +450,7 @@ language: es
 
 ## Fase 8: Contratos y documentación — 0,7 h
 
-- [ ] T8.1 OpenAPI publicado
+- [x] T8.1 OpenAPI publicado
   - **Exit criterion**: `apps/api/docs/api/openapi.yaml` declara el tag
     `admin-reports` y los 6 paths (`/admin/reports/sales[/export]`,
     `/admin/reports/top-products[/export]`, `/admin/reports/summary[/export]`)
