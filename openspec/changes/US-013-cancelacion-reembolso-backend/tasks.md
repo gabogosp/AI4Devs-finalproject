@@ -237,7 +237,7 @@ language: es
 
 ## Fase 6 — Observabilidad
 
-- [ ] **T6.1 — `PaymentsEventsService.emitOwnerCancelled` + razón `already-delivered`**
+- [x] **T6.1 — `PaymentsEventsService.emitOwnerCancelled` + razón `already-delivered`** *(adelantada — es dependencia de T5.1)*
   - **Pattern**: mismo esqueleto que `emitAutoCancelled` — `per
     observability-standards.md §9`, sin PII, sólo `orderId`:
     ```ts

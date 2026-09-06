@@ -26,9 +26,11 @@ describe('PaymentsEventsService (payments-events)', () => {
     events.emitRejected('order-1', 'not-pending-payment');
     events.emitRejected('order-2', 'insufficient-stock');
     events.emitRejected('order-3', 'insufficient-stock');
+    events.emitRejected('order-4', 'already-delivered');
 
     expect(await events.countRejected('not-pending-payment')).toBe(1);
     expect(await events.countRejected('insufficient-stock')).toBe(2);
+    expect(await events.countRejected('already-delivered')).toBe(1);
   });
 
   it('la línea de log de emitConfirmed lleva EXACTAMENTE event, entity_id — nada más', () => {
@@ -109,6 +111,23 @@ describe('PaymentsEventsService — eventos nuevos (US-010 T12.1)', () => {
       event: 'payments.refund_failed',
       entity_id: 'order-1',
       payment_id: 'payment-1',
+    });
+  });
+
+  it('emitOwnerCancelled incrementa su propio contador y loguea sólo order_id (US-013 T6.1)', async () => {
+    const metrics = new MetricsService();
+    const events = new PaymentsEventsService(metrics);
+    const capturado: Array<Record<string, unknown>> = [];
+    jest
+      .spyOn(events['logger'], 'log')
+      .mockImplementation((p: unknown) => void capturado.push(p as Record<string, unknown>));
+
+    events.emitOwnerCancelled('order-1');
+
+    expect(await metrics.value('payments', 'payments.owner_cancelled')).toBe(1);
+    expect(capturado[0]).toEqual({
+      event: 'payments.owner_cancelled',
+      entity_id: 'order-1',
     });
   });
 
