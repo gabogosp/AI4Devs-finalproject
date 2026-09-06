@@ -5,13 +5,13 @@
 
 ## Pre-flight
 
-- [ ] T0.1 Confirmar rama `feat/US-016-panel-metricas-dueno-frontend-web` (o
+- [x] T0.1 Confirmar rama `feat/US-016-panel-metricas-dueno-frontend-web` (o
       la que corresponda per `git-workflow-standards.md`) y que no hay otro
       change abierto en `openspec/changes/` que toque `src/features/metrics/`.
   - **Exit criterion**: rama activa correcta; `openspec/changes/` sin change
     duplicado para US-016 frontend-web.
   - **Verify**: `git branch --show-current` + `ls openspec/changes/ | grep US-016`.
-- [ ] T0.2 Confirmar que el contrato `admin-reports` sigue publicado en
+- [x] T0.2 Confirmar que el contrato `admin-reports` sigue publicado en
       `apps/api/docs/api/openapi.yaml` tal como lo dejó
       `US-016-panel-metricas-backend` (PR #55 podría haber cambiado shapes
       desde la planificación) y que el cliente generado ya lo refleja.
