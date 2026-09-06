@@ -75,7 +75,7 @@ language: es
     (spec chico: `expect(SALE_STATUSES).toEqual(['new','preparing','ready','delivered'])`
     — no sólo que el módulo importe, F50)
 
-- [ ] T1.2 `reports-errors.ts` — `ReportsInvalidRangeError` (422)
+- [x] T1.2 `reports-errors.ts` — `ReportsInvalidRangeError` (422)
   - **Pattern**: extiende `DomainError` de `common/errors/domain-errors.ts`,
     sin tipos de NestJS — `per backend-node-standards.md §6`.
     ```ts
