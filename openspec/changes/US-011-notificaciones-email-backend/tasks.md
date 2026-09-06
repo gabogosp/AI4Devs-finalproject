@@ -96,7 +96,7 @@
 
 ## Phase 3: Backoff / clasificación de errores transitorios
 
-- [ ] T3.1 Crear `apps/api/src/orders/ports/notification-backoff.ts` con
+- [x] T3.1 Crear `apps/api/src/orders/ports/notification-backoff.ts` con
       `backoffDelayMs(attempt, opts)` (copiado de
       `payments/mercadopago/backoff.ts`, duplicación chica y deliberada, mismo
       criterio que ese archivo documenta) y
