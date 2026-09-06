@@ -321,7 +321,7 @@ llamadas sin ejercitar ningún camino de código distinto.
 
 ## 8. E2E cross-stack (Layer 3)
 
-- [ ] **QA-010-E2E-1**: `qa/e2e/pago-webhook-cross-stack.spec.ts` — SC-010-X1.
+- [x] **QA-010-E2E-1**: `qa/e2e/pago-webhook-cross-stack.spec.ts` — SC-010-X1.
 
   ```yaml
   id: QA-010-E2E-1
@@ -341,7 +341,7 @@ llamadas sin ejercitar ningún camino de código distinto.
     como "nueva" y que el stock del catálogo del dueño refleja el decremento.
   - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "SC-010-X1" --reporter=line`
 
-- [ ] **QA-010-E2E-2**: mismo archivo — SC-010-X2.
+- [x] **QA-010-E2E-2**: mismo archivo — SC-010-X2.
 
   ```yaml
   id: QA-010-E2E-2
