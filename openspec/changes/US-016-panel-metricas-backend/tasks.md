@@ -387,7 +387,7 @@ language: es
 > realidad (ventas infladas con canceladas, o un panel que se cae en vez de
 > mostrar "sin datos").
 
-- [ ] T7.1 AC-5 — período sin datos, en los 3 datasets y sus 3 exports
+- [x] T7.1 AC-5 — período sin datos, en los 3 datasets y sus 3 exports
   - **Exit criterion**: con la base sin ninguna orden en el rango pedido
     (rango futuro, ej. `created_at_from` = mañana), los 6 endpoints
     responden **200** — nunca 404/500. `/sales` → `data: []`.
