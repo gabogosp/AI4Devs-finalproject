@@ -2643,7 +2643,7 @@
   us-id: US-020
   discipline: backend
   variant: null
-  status: draft   # /plan-backend-ticket US-020 (2026-09-06) — proposal/design/tasks escritos, sin desarrollar
+  status: in review   # /develop-backend US-020 (2026-09-06) — 27/27 tasks cerradas, PR #93 abierto
   parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
   audit-baseline: null
@@ -2718,10 +2718,10 @@
   # desde cero (módulo + guard de throttling + 5 métodos en 4 repos de 3 módulos + 10
   # specs de invariantes cross-AC en Fase 5) no está presupuestada por la US, que sólo
   # ve el MECANISMO de anonimización reusado (~2h, igual que en US-021).
-  assignee: sin-asignar
+  assignee: claude-code
   branch: feat/US-020-borrado-cuenta-datos-personales-backend
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/93
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
   archived-at: null

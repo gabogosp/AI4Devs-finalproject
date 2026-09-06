@@ -5,7 +5,7 @@ slug: borrado-cuenta-datos-personales
 parent-prd: docs/product/prd.md
 prd-capacity: 13
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: M
 story_points_traditional: 8
@@ -15,6 +15,7 @@ language: es
 created: 2026-08-18
 updated: 2026-09-06
 ready-at: 2026-09-06
+in-progress-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
