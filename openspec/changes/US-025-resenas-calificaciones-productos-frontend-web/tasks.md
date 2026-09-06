@@ -108,7 +108,7 @@ language: es
 
 ### Componentes presentacionales
 
-- [ ] **T-A3 — `StarRatingInput.tsx` + `StarRatingInput.test.tsx`**
+- [x] **T-A3 — `StarRatingInput.tsx` + `StarRatingInput.test.tsx`**
   - **Pattern**: `per design.md §D3` — `role="radiogroup"` contenedor, cada estrella
     `role="radio"` + `aria-checked` + `aria-label="{n} de 5 estrellas"`, navegación por flechas
     dentro del grupo (WAI-ARIA radiogroup pattern), tokens `text-warning`/`text-muted` (reusados
