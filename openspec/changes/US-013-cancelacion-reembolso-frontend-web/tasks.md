@@ -153,7 +153,7 @@ language: es
 
 ## Fase 4 — Errores + idempotencia visual
 
-- [ ] **T4.1 — Mensajes de error: 409 (específico) vs 404/network/500 (genéricos)**
+- [x] **T4.1 — Mensajes de error: 409 (específico) vs 404/network/500 (genéricos)**
   - **Pattern**: `per design.md §D5` — `isAppError(err, 'conflict')` primero
     (mensaje específico), luego `isAppError(err, 'notFound')` (mismo copy que
     `OrderAnonymizeAction`), default genérico:
