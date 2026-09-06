@@ -29,6 +29,18 @@ export interface PendingPaymentOrderSeed {
   quantity: number;
   /** Stock del producto justo ANTES del checkout (después de sembrarlo, antes de comprarlo). */
   stockBefore: number;
+  /**
+   * Secreto de un solo uso devuelto por `POST /v1/checkout` (US-010,
+   * `qa-plan.md` §9) — campo ADITIVO: US-023 nunca lo necesitó (su
+   * `confirm-payment` autoriza por sesión admin + `orderId`), pero
+   * `POST /v1/checkout/simulate-payment` (US-010) autoriza exclusivamente
+   * por este token, nunca por `id`. Agregarlo acá no cambia ni un campo
+   * existente — es la única pieza que este change necesita agregar al seed
+   * de US-023, tal como `design.md` §D-QA3 previó ("agrega la llamada a
+   * simulate-payment... no como cambio al seed" — este campo es lectura
+   * pura de algo que el checkout real YA devolvía y se descartaba).
+   */
+  orderToken: string;
 }
 
 export interface SeedPendingPaymentOrderOpts {
@@ -81,8 +93,11 @@ export async function seedPendingPaymentOrder(
         `${JSON.stringify(checkoutRes.body)}`,
     );
   }
-  const { order_number: orderNumber, total_ars_cents: totalArsCents } =
-    checkoutRes.body;
+  const {
+    order_number: orderNumber,
+    total_ars_cents: totalArsCents,
+    order_token: orderToken,
+  } = checkoutRes.body;
 
   // 3. Resolver el UUID interno vía GET /pending-payment (AC-2), nunca por DB.
   const pendientes = await apiCall<
@@ -111,5 +126,6 @@ export async function seedPendingPaymentOrder(
     productSlug: creado.slug,
     quantity: qty,
     stockBefore: stockInicial,
+    orderToken,
   };
 }

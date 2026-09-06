@@ -171,7 +171,9 @@
   blocked_by: [US-008]              # US-008 sigue sin planificar: el change de US-009 arranca con pre-requisito en rojo
 - id: US-010
   slug: orden-webhook-stock
-  status: In Progress
+  status: In Review   # /commit 2026-09-05: QA (segunda y última disciplina declarada) llega
+  # a in-review, PR #57. BE ya archivado (dea4f25). Ambas disciplinas de `disciplines: [BE,
+  # QA]` tienen PR — la US avanza de In Progress a In Review.
   priority: High
   prd-capacity: 6
   disciplines: [BE, QA]
