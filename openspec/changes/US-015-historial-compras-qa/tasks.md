@@ -109,7 +109,7 @@ checklist humano.
 
 ## Fase 2: Suite de aceptación — corner
 
-- [ ] T2.1 SC-015-C1 (retención en el borde exacto, AC-7).
+- [x] T2.1 SC-015-C1 (retención en el borde exacto, AC-7).
   - **Pattern**: `compraLogueada()` (T0.1) para producir la orden, luego
     `backdateOrder(orderId, horas)` (`backdate-order.ts`, US-010, sin
     modificar) para dejar `created_at` exactamente en el corte de 12 meses y,
@@ -120,7 +120,7 @@ checklist humano.
     detalle responde 404 — sin off-by-one.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015 and @corner and @critical-path"`
 
-- [ ] T2.2 SC-015-C2, SC-015-C3 (paginación — offset fuera de rango, parámetros
+- [x] T2.2 SC-015-C2, SC-015-C3 (paginación — offset fuera de rango, parámetros
   inválidos).
   - **Pattern**: `compraLogueada()` una vez → `GET /v1/me/orders?offset=<N>`
     con `N` mayor al total (SC-015-C2, boundary) y con
@@ -135,7 +135,7 @@ checklist humano.
     orden visible con parámetros válidos, antes y después).
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015 and @corner and not @critical-path"`
 
-- [ ] T2.3 SC-015-C4 (compra pending_payment excluida, regla de negocio de
+- [x] T2.3 SC-015-C4 (compra pending_payment excluida, regla de negocio de
   AC-1).
   - **Pattern**: `compraLogueadaPendiente()` (T0.1) — la orden queda
     `pending_payment`, nunca confirmada.
@@ -145,7 +145,7 @@ checklist humano.
     "compra" en el sentido de AC-1, `design.md` de backend §Approach).
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015 and @corner and @critical-path"` (mismo tag que T2.1; corren juntos)
 
-- [ ] T2.4 SC-015-C5 (orden anonimizada sigue visible, default documentado).
+- [x] T2.4 SC-015-C5 (orden anonimizada sigue visible, default documentado).
   - **Pattern**: `compraLogueada()` (T0.1) → resolver el `id` interno vía
     `GET /v1/admin/orders` (US-012, expone `id` en `AdminOrderSummaryDto`) con
     `adminAuthWithSource()` (`admin-auth.ts`) → `dispararAnonimizacion(w, id)`
