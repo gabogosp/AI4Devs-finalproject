@@ -248,7 +248,7 @@
 
 ## Phase 12 — E2E (dev-authored smoke, per `qa-frontend-standards.md` §2.1)
 
-- [ ] T12.1 `apps/web/e2e/metrics-happy-path.spec.ts` — login admin (reusa el
+- [x] T12.1 `apps/web/e2e/metrics-happy-path.spec.ts` — login admin (reusa el
       fixture/patrón de autenticación de los specs existentes, e.g.
       `checkout-happy-path.spec.ts`/`auth-journey.spec.ts`), navega a
       `/admin/metricas`, asserta que el chart, la tabla de top-products y las
@@ -260,7 +260,7 @@
     stub (`e2e/support/api-stub.mjs`, mismo mecanismo que el resto de la
     suite).
   - **Verify**: `pnpm --filter @dsm/web exec playwright test e2e/metrics-happy-path.spec.ts`.
-- [ ] T12.2 `apps/web/e2e/metrics-empty-state.spec.ts` — un rango sin órdenes
+- [x] T12.2 `apps/web/e2e/metrics-empty-state.spec.ts` — un rango sin órdenes
       (vía stub) muestra el mensaje de estado vacío en los 3 widgets, sin
       ningún `role="alert"` de error.
   - **Exit criterion**: cero elementos `role="alert"` visibles; el texto de
