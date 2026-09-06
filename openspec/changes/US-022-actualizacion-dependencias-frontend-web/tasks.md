@@ -132,7 +132,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Documentación
 
-- [ ] T9.1 Confirmar que no hace falta tocar ningún README ni crear ningún ADR (ya evaluado en `design.md` — ninguna decisión de este change califica per `documentation-standards.md` §8.1).
+- [x] T9.1 Confirmar que no hace falta tocar ningún README ni crear ningún ADR (ya evaluado en `design.md` — ninguna decisión de este change califica per `documentation-standards.md` §8.1).
   - **Exit criterion**: `apps/web/README.md` no requiere edición (no documenta versiones de dependencias); no existe ningún ADR nuevo bajo `docs/architecture/decisions/`.
   - **Verify**: `git status --porcelain docs/architecture/decisions/ apps/web/README.md` (debe imprimir vacío al final del change)
 
