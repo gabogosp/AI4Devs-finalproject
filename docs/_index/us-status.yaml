@@ -129,7 +129,21 @@
   # NO pasa a Done: el DoD de la US (gate QA → Done) exige regresión verde en staging,
   # AC manuales verificados por QA y firma del PO — ninguno tildado todavía; archivar
   # las tres disciplinas cierra el código, no el gate humano.
-  status: QA
+  #
+  # NOTA (2026-09-06, gate 1 del cierre de dev): TC-731 (`qa/e2e/carrito.spec.ts`, nav.
+  # por teclado) había sido reportado como posible regresión real del bump de next
+  # (US-022 QA). Diagnóstico final (PR #113, mergeado): el defecto era del TEST
+  # (fragilidad por acumulación de categorías entre corridas), NO del carrito — el
+  # carrito por teclado funciona bien (7 Tabs al botón, foco visible, Enter OK). D-6
+  # (verificación manual de consola limpia) sigue siendo un ítem humano — no se pudo
+  # automatizar acá (extensión de Chrome no conectada en esta sesión); queda cubierto
+  # por la firma del PO, no por una verificación de Claude vía browser.
+  # Hallazgo separado, NO parte del DoD del carrito: falta un skip-link en la
+  # navegación de categorías (a11y app-wide) — el usuario pidió arreglarlo ahora,
+  # como trabajo aparte (no bloquea este cierre).
+  # Con TC-731 descartado y la firma explícita del PO confirmada por el usuario,
+  # `status` avanza a `Done`.
+  status: Done
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]
@@ -138,6 +152,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-20        # primera planificación (/plan-backend-ticket)
+  done-at: 2026-09-06
   blocked_by: [US-003]
 - id: US-008
   slug: checkout-guest
