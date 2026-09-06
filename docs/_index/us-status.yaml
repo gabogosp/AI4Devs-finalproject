@@ -445,9 +445,8 @@
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras
-  status: In Review   # /commit 2026-09-06: QA (tercera y última disciplina declarada) llega
-  # a in-review, PR #79. Las 3/3 disciplinas de `disciplines: [BE, FE, QA]` tienen PR
-  # abierto (BE #70/#71, FE #74, QA #79) — la US avanza de In Progress a In Review.
+  status: Done   # /archive-change US-015-historial-compras-frontend-web 2026-09-06 —
+                 # 3/3 disciplinas archivadas (BE, FE, QA). done-at abajo.
   # NOTA histórica: primera planificación 2026-09-06 (/plan-backend-ticket, disciplina BE).
   # Alcance ampliado por decisión del PO: BE construye también el escritor de
   # `orders.customer_id` que US-008 dejó diferido a esta US (ver
@@ -480,6 +479,15 @@
   # `openspec/specs/checkout/decisions.md` (OptionalCustomerGuard) sin tocar su
   # contrato público. `status` de la US sigue sin avanzar: falta archivar FE (PR #74,
   # `in review`) — 2/3 disciplinas archivadas.
+  #
+  # NOTA (2026-09-06, /archive-change US-015-historial-compras-frontend-web, PR #74
+  # mergeado 65ced11): disciplina FE archivada
+  # (openspec/changes/archive/US-015-historial-compras-frontend-web/). Extiende
+  # `openspec/specs/historial-compras/` con la sección FE (rutas `/mi-cuenta/compras`,
+  # decisiones D8-D11) — sin delta de contrato de API (consumo puro del contrato que BE
+  # ya publicó). Con esto, las 3/3 disciplinas quedan archivadas (BE, FE, QA) — `status`
+  # avanza a `Done`.
+  done-at: 2026-09-06
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas
