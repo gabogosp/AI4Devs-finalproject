@@ -37,6 +37,7 @@ import type {
   GetAdminReportsSummaryParams,
   GetAdminReportsTopProductsParams,
   GetImportParams,
+  GetPublicReviewsParams,
   ImportCreated,
   ImportJob,
   ImportRateLimitedResponse,
@@ -44,20 +45,24 @@ import type {
   ListOrderHistoryParams,
   ListProductsParams,
   LoginRequest,
+  ModerateReviewRequest,
   OrderAnonymizationResult,
   OrderHistoryDetail,
   OrderHistoryListResponse,
+  OwnReviewResponse,
   PaymentConfirmed,
   PendingPaymentOrder,
   Problem,
   ProblemResponse,
   Product,
   ProductList,
+  PublicReviewsResponse,
   RateLimitedResponse,
   RegisterRequest,
   ResetConfirm,
   ResetRequest,
   RetentionSweepResult,
+  Review,
   SearchProductsParams,
   SearchRateLimitedResponse,
   SearchResponse,
@@ -69,7 +74,9 @@ import type {
   StorefrontProductPage,
   UpdateAdminOrderStatus,
   UpdateCategory,
-  UpdateProduct
+  UpdateProduct,
+  UpdateProfileRequest,
+  UpsertReviewRequest
 } from './model';
 
 import {
@@ -1145,6 +1152,64 @@ export const storefrontGetProduct = async (slug: string, options?: Parameters<ty
 
 
 
+export type getPublicReviewsResponse200 = {
+  data: PublicReviewsResponse
+  status: 200
+}
+
+export type getPublicReviewsResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type getPublicReviewsResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type getPublicReviewsResponseSuccess = (getPublicReviewsResponse200) & {
+  headers: Headers;
+};
+export type getPublicReviewsResponseError = (getPublicReviewsResponse404 | getPublicReviewsResponse429) & {
+  headers: Headers;
+};
+
+export type getPublicReviewsResponse = (getPublicReviewsResponseSuccess | getPublicReviewsResponseError)
+
+export const getGetPublicReviewsUrl = (slug: string,
+    params?: GetPublicReviewsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/products/${slug}/reviews?${stringifiedParams}` : `/v1/products/${slug}/reviews`
+}
+
+/**
+ * Ruta PÚBLICA sin auth. SIEMPRE excluye reseñas ocultas (moderación, AC-8) del agregado y de la lista. `average: null` + `count: 0` distingue "sin reseñas" (AC-4) de "reseñas con promedio bajo" (nunca `0` cuando hay al menos una). Mismo criterio de 404 que la ficha (draft/archived/inexistente → 404 uniforme).
+ * @summary Reseñas públicas de un producto publicado (US-025 AC-3, AC-4)
+ */
+export const getPublicReviews = async (slug: string,
+    params?: GetPublicReviewsParams, options?: Parameters<typeof customFetch>[1]): Promise<getPublicReviewsResponse> => {
+
+  return customFetch<getPublicReviewsResponse>(getGetPublicReviewsUrl(slug,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
 export type storefrontListCategoriesResponse200 = {
   data: CategoryTree
   status: 200
@@ -1972,6 +2037,224 @@ export const deleteAccount = async ( options?: Parameters<typeof customFetch>[1]
 
 
 
+export type updateProfileResponse200 = {
+  data: Customer
+  status: 200
+}
+
+export type updateProfileResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type updateProfileResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type updateProfileResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type updateProfileResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type updateProfileResponseSuccess = (updateProfileResponse200) & {
+  headers: Headers;
+};
+export type updateProfileResponseError = (updateProfileResponse401 | updateProfileResponse403 | updateProfileResponse422 | updateProfileResponse429) & {
+  headers: Headers;
+};
+
+export type updateProfileResponse = (updateProfileResponseSuccess | updateProfileResponseError)
+
+export const getUpdateProfileUrl = () => {
+
+
+
+
+  return `/v1/me`
+}
+
+/**
+ * Ambos campos van SIEMPRE presentes (formulario completo, no un patch parcial): `name` no vacío/no sólo-espacios (AC-4) y `avatar_url` es `null` para quitar el avatar (AC-3) o una URL http/https válida para setearlo (AC-2) — cualquier otro valor no-null se rechaza (AC-5). El email NO es parte del body: enviarlo es 422 por `additionalProperties: false` (AC-6). La identidad sale exclusivamente de la sesión, nunca de un parámetro del request (AC-7).
+ * @summary Editar nombre y avatar del cliente autenticado (US-024 AC-1, AC-2, AC-3)
+ */
+export const updateProfile = async (updateProfileRequest: UpdateProfileRequest, options?: Parameters<typeof customFetch>[1]): Promise<updateProfileResponse> => {
+
+  return customFetch<updateProfileResponse>(getUpdateProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateProfileRequest)
+  }
+);}
+
+
+
+export type getOwnReviewResponse200 = {
+  data: OwnReviewResponse
+  status: 200
+}
+
+export type getOwnReviewResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type getOwnReviewResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type getOwnReviewResponseSuccess = (getOwnReviewResponse200) & {
+  headers: Headers;
+};
+export type getOwnReviewResponseError = (getOwnReviewResponse401 | getOwnReviewResponse429) & {
+  headers: Headers;
+};
+
+export type getOwnReviewResponse = (getOwnReviewResponseSuccess | getOwnReviewResponseError)
+
+export const getGetOwnReviewUrl = (productId: string,) => {
+
+
+
+
+  return `/v1/me/reviews/${productId}`
+}
+
+/**
+ * `eligible` refleja si el cliente tiene una orden `delivered` con este producto (AC-6) — el FE lo usa para decidir si mostrar el control de reseña. `review` es la reseña propia si existe, SIN IMPORTAR si está oculta por moderación (AC-8 — transparencia hacia el autor); `null` si todavía no reseñó. Requiere sesión (AC-7).
+ * @summary Elegibilidad y reseña propia de un producto (US-025 AC-6, AC-7, AC-8)
+ */
+export const getOwnReview = async (productId: string, options?: Parameters<typeof customFetch>[1]): Promise<getOwnReviewResponse> => {
+
+  return customFetch<getOwnReviewResponse>(getGetOwnReviewUrl(productId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type upsertOwnReviewResponse200 = {
+  data: Review
+  status: 200
+}
+
+export type upsertOwnReviewResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type upsertOwnReviewResponse403 = {
+  data: Problem
+  status: 403
+}
+
+export type upsertOwnReviewResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type upsertOwnReviewResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type upsertOwnReviewResponseSuccess = (upsertOwnReviewResponse200) & {
+  headers: Headers;
+};
+export type upsertOwnReviewResponseError = (upsertOwnReviewResponse401 | upsertOwnReviewResponse403 | upsertOwnReviewResponse422 | upsertOwnReviewResponse429) & {
+  headers: Headers;
+};
+
+export type upsertOwnReviewResponse = (upsertOwnReviewResponseSuccess | upsertOwnReviewResponseError)
+
+export const getUpsertOwnReviewUrl = (productId: string,) => {
+
+
+
+
+  return `/v1/me/reviews/${productId}`
+}
+
+/**
+ * Upsert idempotente: crea si no existe, actualiza la MISMA reseña si ya existe (AC-5 — una reseña por cliente por producto). `comment` es opcional (AC-2). Se rechaza con 403 si el cliente no tiene una orden `delivered` con este producto (AC-6, verificado SIEMPRE server-side, sin importar lo que envíe el cliente) y con 422 si `rating` está fuera de 1-5 (AC-9).
+ * @summary Dejar o editar la propia reseña de un producto (US-025 AC-1, AC-2, AC-5)
+ */
+export const upsertOwnReview = async (productId: string,
+    upsertReviewRequest: UpsertReviewRequest, options?: Parameters<typeof customFetch>[1]): Promise<upsertOwnReviewResponse> => {
+
+  return customFetch<upsertOwnReviewResponse>(getUpsertOwnReviewUrl(productId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(upsertReviewRequest)
+  }
+);}
+
+
+
+export type moderateReviewResponse200 = {
+  data: Review
+  status: 200
+}
+
+export type moderateReviewResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type moderateReviewResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type moderateReviewResponseSuccess = (moderateReviewResponse200) & {
+  headers: Headers;
+};
+export type moderateReviewResponseError = (moderateReviewResponse401 | moderateReviewResponse404) & {
+  headers: Headers;
+};
+
+export type moderateReviewResponse = (moderateReviewResponseSuccess | moderateReviewResponseError)
+
+export const getModerateReviewUrl = (id: string,) => {
+
+
+
+
+  return `/v1/admin/reviews/${id}`
+}
+
+/**
+ * Soft-flag de moderación — nunca borra la fila ni edita el contenido. `hidden: true` la excluye del agregado y de la lista pública; el autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como oculta (transparencia, no censura invisible).
+ * @summary Ocultar/mostrar una reseña (US-025 AC-8)
+ */
+export const moderateReview = async (id: string,
+    moderateReviewRequest: ModerateReviewRequest, options?: Parameters<typeof customFetch>[1]): Promise<moderateReviewResponse> => {
+
+  return customFetch<moderateReviewResponse>(getModerateReviewUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(moderateReviewRequest)
+  }
+);}
+
+
+
 export type createImportResponse200 = {
   data: ImportCreated
   status: 200
@@ -2724,13 +3007,13 @@ export const exportAdminReportsSummary = async (params?: ExportAdminReportsSumma
 );}
 
 
-export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
-export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
-export const getRefreshSessionResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+export const getRefreshSessionResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
-export const getGetCurrentCustomerResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getGetCurrentCustomerResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getAdminLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
@@ -2755,6 +3038,8 @@ export const getGetAdminOrderResponseMock = (): AdminOrderDetail => ({...{id: fa
 export const getUpdateAdminOrderStatusResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), anonymized_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), anonymization_reason: faker.helpers.arrayElement([faker.helpers.arrayElement(['retention_policy','requested','account_deletion'] as const), null])},})
 
 export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), low_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
+
+export const getGetPublicReviewsResponseMock = (overrideResponse: Partial<Extract<PublicReviewsResponse, object>> = {}): PublicReviewsResponse => ({average: faker.helpers.arrayElement([faker.number.float({fractionDigits: 2}), null]), count: faker.number.int(), data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), customer_name: faker.string.alpha({length: {min: 10, max: 20}}), rating: faker.number.int({min: 1, max: 5}), comment: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
 export const getStorefrontListCategoriesResponseMock = (overrideResponse: Partial<Extract<CategoryTree, object>> = {}): CategoryTree => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), children: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}})}))})), ...overrideResponse})
 
@@ -2783,6 +3068,14 @@ export const getRunOrderRetentionSweepResponseMock = (overrideResponse: Partial<
 export const getListOrderHistoryResponseMock = (overrideResponse: Partial<Extract<OrderHistoryListResponse, object>> = {}): OrderHistoryListResponse => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({order_number: faker.number.int(), status: faker.helpers.arrayElement(['pending_payment','new','preparing','ready','delivered','cancelled'] as const), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
 export const getGetOrderHistoryDetailResponseMock = (): OrderHistoryDetail => ({...{order_number: faker.number.int(), status: faker.helpers.arrayElement(['pending_payment','new','preparing','ready','delivered','cancelled'] as const), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{fulfillment: faker.string.alpha({length: {min: 10, max: 20}}), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()}))},})
+
+export const getUpdateProfileResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getGetOwnReviewResponseMock = (overrideResponse: Partial<Extract<OwnReviewResponse, object>> = {}): OwnReviewResponse => ({eligible: faker.datatype.boolean(), review: {...{id: faker.string.uuid(), rating: faker.number.int({min: 1, max: 5}), comment: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), hidden: faker.datatype.boolean(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},}, ...overrideResponse})
+
+export const getUpsertOwnReviewResponseMock = (overrideResponse: Partial<Extract<Review, object>> = {}): Review => ({id: faker.string.uuid(), rating: faker.number.int({min: 1, max: 5}), comment: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), hidden: faker.datatype.boolean(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+
+export const getModerateReviewResponseMock = (overrideResponse: Partial<Extract<Review, object>> = {}): Review => ({id: faker.string.uuid(), rating: faker.number.int({min: 1, max: 5}), comment: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), hidden: faker.datatype.boolean(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', updated_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
 
@@ -3031,6 +3324,18 @@ export const getStorefrontGetProductMockHandler = (overrideResponse?: Storefront
   }, options)
 }
 
+export const getGetPublicReviewsMockHandler = (overrideResponse?: PublicReviewsResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<PublicReviewsResponse> | PublicReviewsResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/products/:slug/reviews', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetPublicReviewsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getStorefrontListCategoriesMockHandler = (overrideResponse?: CategoryTree | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<CategoryTree> | CategoryTree), options?: RequestHandlerOptions) => {
   return http.get('*/categories', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
@@ -3209,6 +3514,54 @@ export const getDeleteAccountMockHandler = (overrideResponse?: void | ((info: Pa
   }, options)
 }
 
+export const getUpdateProfileMockHandler = (overrideResponse?: Customer | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Customer> | Customer), options?: RequestHandlerOptions) => {
+  return http.patch('*/me', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateProfileResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getGetOwnReviewMockHandler = (overrideResponse?: OwnReviewResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<OwnReviewResponse> | OwnReviewResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/me/reviews/:productId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getGetOwnReviewResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getUpsertOwnReviewMockHandler = (overrideResponse?: Review | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<Review> | Review), options?: RequestHandlerOptions) => {
+  return http.put('*/me/reviews/:productId', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpsertOwnReviewResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getModerateReviewMockHandler = (overrideResponse?: Review | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Review> | Review), options?: RequestHandlerOptions) => {
+  return http.patch('*/admin/reviews/:id', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getModerateReviewResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
   return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -3376,6 +3729,7 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getGetAdminOrderMockHandler(),
   getUpdateAdminOrderStatusMockHandler(),
   getStorefrontGetProductMockHandler(),
+  getGetPublicReviewsMockHandler(),
   getStorefrontListCategoriesMockHandler(),
   getStorefrontGetCategoryMockHandler(),
   getStorefrontListCategoryProductsMockHandler(),
@@ -3391,6 +3745,10 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getListOrderHistoryMockHandler(),
   getGetOrderHistoryDetailMockHandler(),
   getDeleteAccountMockHandler(),
+  getUpdateProfileMockHandler(),
+  getGetOwnReviewMockHandler(),
+  getUpsertOwnReviewMockHandler(),
+  getModerateReviewMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),

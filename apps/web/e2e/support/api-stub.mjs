@@ -230,6 +230,7 @@ const vistaPublica = (c) => ({
   email: c.email,
   name: c.name,
   phone: c.phone ?? null,
+  avatar_url: c.avatar_url ?? null,
   created_at: c.created_at ?? '2026-01-01T00:00:00Z',
 });
 
