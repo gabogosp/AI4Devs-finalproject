@@ -1926,12 +1926,11 @@
   us-id: US-021
   discipline: frontend-web
   variant: null
-  status: In Progress   # /develop-frontend-web 2026-09-05 — T0.1/T0.2/T0.3 cerradas
-  # (ver design.md "El gap de contrato") YA SE RESOLVIÓ: PR #52
-  # (fix/US-021-publish-order-anonymization-contract, mergeado a main 91aa3f1) publicó
-  # los 2 paths + los 2 campos en apps/api/docs/api/openapi.yaml, sincronizó
-  # openspec/specs/ordenes/ y regeneró el cliente de @dsm/web. T0.1/T0.2 quedan
-  # ejecutables — /develop-frontend-web ya no está bloqueado.
+  status: in review   # /commit 2026-09-05 — 27/27 tasks cerradas (Fase 0-7 + verificación
+  # de suite), PR #54 abierto. El gap de contrato de T0.1 (ver design.md "El gap de
+  # contrato") se resolvió en PR #52 (mergeado, 91aa3f1) antes de ejecutar
+  # /develop-frontend-web. Pendiente no bloqueante del pre-merge checklist: verificación
+  # manual en navegador de console errors/warnings (no automatizada en esta corrida).
   parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
   audit-baseline: null
@@ -1953,9 +1952,9 @@
   # y 3 eventos de observabilidad nuevos sin PII.
   estimate-hours: 5.5
   assignee: claude-code
-  branch: null
-  pr-url: null
-  pr-opened-at: null
+  branch: feat/US-021-retencion-datos-ordenes-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/54
+  pr-opened-at: 2026-09-05
   created: 2026-09-05
   completed-at: null
   archived-at: null
