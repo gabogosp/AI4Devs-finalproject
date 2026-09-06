@@ -125,7 +125,7 @@
 
 ## Phase 6 — SalesChart (AC-1, AC-4, AC-5, AC-6, AC-9)
 
-- [ ] T6.1 `src/features/metrics/formatPeriod.ts` — helper puro que formatea
+- [x] T6.1 `src/features/metrics/formatPeriod.ts` — helper puro que formatea
       `period_date` según `granularity` (`day` → `DD/MM`; `week` → "semana del
       DD/MM"; `month` → `MMM AAAA`, `Intl.DateTimeFormat('es-AR', …)`).
   - **Exit criterion**: un caso por granularidad con fecha fija.
