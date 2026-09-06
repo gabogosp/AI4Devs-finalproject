@@ -2835,3 +2835,45 @@
   completed-at: 2026-09-06T16:30:48Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-frontend-web
+
+- name: US-020-borrado-cuenta-datos-personales-qa
+  us-id: US-020
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # MODO A — sibling propio (no embebido), mismo motivo documentado por
+  # US-016-panel-metricas-qa/US-013-cancelacion-reembolso-qa: check-pr-scope.sh
+  # exige que el directorio del change coincida con la rama/PR, y la rama de
+  # esta disciplina es feat/US-020-borrado-cuenta-datos-personales-qa, que no
+  # coincidiría con ningún directorio de código de esta US. Único artefacto:
+  # qa-plan.md (sin proposal/tasks/design propios, Modo A no los requiere).
+  #
+  # EXCEPCIÓN ESTRUCTURAL DECLARADA: planificado ANTES de que exista
+  # US-020-borrado-cuenta-datos-personales-backend en este worktree — ese
+  # backend se está construyendo en paralelo en otro worktree/rama, no en
+  # `main`. Este qa-plan.md se deriva directamente de los 15 AC de la US
+  # (ya Ready, sin preguntas de producto abiertas) más su §9/§10, no de un
+  # design.md de backend que todavía no existe. Los 12 test cases
+  # automatizados + 3 charters quedan `blocked_by` ese backend — ninguno
+  # corrió. Ver qa-plan.md §0 para los 4 supuestos de mecanismo interno a
+  # reconciliar cuando el design.md real del backend llegue a este worktree.
+  #
+  # DECISIÓN K6: SÍ se arma la suite de carga (QA-020-PERF-1), a diferencia
+  # de precedentes recientes de este repo (US-011/US-021 declararon "no k6")
+  # — la propia US fija un NFR numérico cuantificado sin TBD (p95 < 500ms
+  # para una cuenta con hasta 50 órdenes, US §9).
+  estimate-hours: 4.0   # AI-asistido, mismo criterio que US-021 (dominante BE
+  # × 0.45, Peng 2023) — 15 AC en Gherkin (9 escenarios + 2 esquemas con
+  # ejemplos), 1 suite k6 con NFR propio, 3 charters exploratorios.
+  assignee: claude-code
+  branch: feat/US-020-borrado-cuenta-datos-personales-qa
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
