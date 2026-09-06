@@ -193,7 +193,7 @@
 
 ## Fase 7 — Accesibilidad
 
-- [ ] T7.1 Auditoría axe-core de `PurchaseHistoryList` y `PurchaseDetail`
+- [x] T7.1 Auditoría axe-core de `PurchaseHistoryList` y `PurchaseDetail`
   - **Pattern**: nuevo `apps/web/src/features/order-history/a11y.test.tsx`, mismo `auditar()`
     helper que `apps/web/src/features/orders/a11y.test.tsx` (copiar el helper, no importarlo
     cruzado entre features — cada feature es dueño de su propio test de a11y).
