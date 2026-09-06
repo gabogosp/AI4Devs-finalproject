@@ -171,7 +171,7 @@
 
 ## Fase 6 — Observabilidad
 
-- [ ] T6.1 Eventos `order_history_*` / `order_detail_*`
+- [x] T6.1 Eventos `order_history_*` / `order_detail_*`
   - **Pattern**: `per observability-patterns skill §9.5` + mismo criterio que `cart_viewed`
     (superficie de cliente, no de operador — van en `PUBLIC_EVENTS`, nunca con `operator_id:
     'admin'` por defecto). Ninguno lleva PII: `OrderHistorySummary`/`OrderHistoryDetail` no

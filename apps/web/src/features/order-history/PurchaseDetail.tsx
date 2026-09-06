@@ -6,6 +6,7 @@ import type { AsyncState } from '@/lib/async';
 import { AppErrorException, networkError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/Button';
 import { formatArs } from '@/lib/format/currency';
+import { track } from '@/lib/observability/events';
 import { OrderStatusBadge } from '@/features/orders/OrderStatusBadge';
 import { orderHistoryService, type OrderHistoryDetail } from './orderHistoryService';
 
@@ -50,6 +51,14 @@ export function PurchaseDetail({ orderNumber }: { orderNumber: string }) {
   useEffect(() => {
     if (state.status === 'success') headingRef.current?.focus();
   }, [state.status]);
+
+  useEffect(() => {
+    if (state.status === 'success') {
+      track('order_detail_shown', { order_number: state.data.order_number });
+    } else if (state.status === 'error' && state.error.kind === 'notFound') {
+      track('order_detail_not_found', { order_number: parsed });
+    }
+  }, [state, parsed]);
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (

@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { AsyncState } from '@/lib/async';
 import { AppErrorException, networkError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/Button';
 import { formatArs } from '@/lib/format/currency';
 import { formatDateTime } from '@/lib/format/datetime';
+import { track } from '@/lib/observability/events';
 import { OrderStatusBadge } from '@/features/orders/OrderStatusBadge';
 import { orderHistoryService, type OrderHistorySummary } from './orderHistoryService';
 import { PurchaseHistoryEmptyState } from './PurchaseHistoryEmptyState';
@@ -29,6 +30,7 @@ export function PurchaseHistoryList() {
     AsyncState<{ items: OrderHistorySummary[]; total: number }>
   >({ status: 'idle' });
   const [offset, setOffset] = useState(0);
+  const vistaRegistrada = useRef(false);
 
   const load = useCallback(async (nextOffset: number, append: boolean) => {
     setState((prev) => (append && prev.status === 'success' ? prev : { status: 'loading' }));
@@ -53,6 +55,14 @@ export function PurchaseHistoryList() {
   useEffect(() => {
     void load(0, false);
   }, [load]);
+
+  // Una sola vez por montaje exitoso, no en cada re-render (p.ej. tras "Cargar
+  // más", que también deja `state.status === 'success'`).
+  useEffect(() => {
+    if (state.status !== 'success' || vistaRegistrada.current) return;
+    vistaRegistrada.current = true;
+    track('order_history_shown', { item_count: state.data.items.length });
+  }, [state]);
 
   if (state.status === 'idle' || state.status === 'loading') {
     return (
@@ -108,6 +118,7 @@ export function PurchaseHistoryList() {
           onClick={() => {
             const next = offset + PAGE_SIZE;
             setOffset(next);
+            track('order_history_load_more_clicked');
             void load(next, true);
           }}
         >
