@@ -383,6 +383,9 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   (`RangeFilterForm` real) dispara `page.waitForResponse` a los 3 endpoints reales y
   los valores se actualizan.
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "metricas dataset real" --reporter=list` (exit 0)
+- **Estado**: verde — 1/1 test, contra backend+frontend reales (Postgres descartable
+  truncado antes de la corrida para que `orders_count=4`/montos sean exactos, no un
+  delta). `qa/e2e/metricas.spec.ts`.
 
 ```yaml
 - id: QA-016-E2E-2
@@ -398,6 +401,7 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   cualquier fecha del año 2000 como vacío" — dato real ausente), los 3 widgets muestran
   su mensaje de estado vacío y `getByRole('alert')` con texto no vacío tiene cuenta 0.
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "metricas vacio real" --reporter=list` (exit 0)
+- **Estado**: verde — 1/1 test.
 
 ```yaml
 - id: QA-016-E2E-3
@@ -414,6 +418,8 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   su contenido (leído del path del download) coincide con los valores mostrados en el
   widget en ese momento — contra el backend real, sin mock de `Blob`/`URL.createObjectURL`.
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "metricas descarga csv real" --reporter=list` (exit 0)
+- **Estado**: verde — 1/1 test, descarga real (`page.waitForEvent('download')`) de los
+  3 widgets, contenido leído del path real y comparado contra lo mostrado en el DOM.
 
 ```yaml
 - id: QA-016-E2E-4
@@ -428,6 +434,7 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
 - Exit criterion: un visitante sin sesión que navega directo a `/admin/metricas` no ve
   el dashboard; una cuenta de cliente real (US-014, login real) tampoco.
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "metricas sin sesion" --reporter=list` (exit 0)
+- **Estado**: verde — 2/2 tests (visitante sin sesión + cuenta de cliente real US-014).
 
 ```yaml
 - id: QA-016-E2E-5
@@ -444,6 +451,8 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   ventana de retención vigente y un pedido de rango de 24 meses, el widget muestra la
   nota "Mostrando desde…" con la fecha efectiva, no la pedida.
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "metricas rango acotado" --reporter=list` (exit 0)
+- **Estado**: verde — 1/1 test, con la orden real backdateada a 13 meses (única
+  excepción adicional al bridge de `@dsm/db`, junto con H-2 — ver §6/§7).
 
 ### 5.4 Accesibilidad L3 (axe-core + teclado, página servida con Recharts real)
 
