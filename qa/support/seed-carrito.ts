@@ -1,6 +1,61 @@
 import { adminAuth } from './admin-auth';
 import { apiCall } from './api';
-import { nuevaCategoria, nuevoProducto } from './builders';
+import { nuevoProducto } from './builders';
+
+interface CategoriaListada {
+  id: string;
+  name: string;
+}
+
+/** Nombre fijo de la categoría compartida — ver `categoriaDeLaSuiteDeCarrito`. */
+const CATEGORIA_COMPARTIDA = 'QA — carrito (categoría compartida, no borrar)';
+
+/**
+ * `POST /v1/admin/categories` no tiene DELETE (`categories.controller.ts` no
+ * lo expone — decisión de negocio real, no un gap de esta suite) y
+ * `carrito.spec.ts` corre `beforeAll` una vez por *worker* de Playwright: sin
+ * reutilizar, cada corrida deja una categoría nueva y huérfana en la DB de QA,
+ * para siempre.
+ *
+ * Encontrado real (TC-731, 2026-09-06): tras muchas corridas repetidas contra
+ * la misma DB persistente, `CategoryNav` (que lista TODAS las categorías sin
+ * límite, en el header de TODAS las páginas del storefront) acumuló 78
+ * entradas — bastante para agotar el presupuesto de `Tab` de TC-731 antes de
+ * llegar siquiera al carrito. Reproducido y confirmado: la falla no dependía
+ * del bump de `next` (US-022 ya lo había descartado bien), dependía del
+ * tamaño acumulado del catálogo de esta DB.
+ *
+ * Fix: idempotente por **nombre fijo**, no por corrida. Busca antes de crear
+ * y tolera la carrera entre workers — `slug` es único (deriva del `name`
+ * server-side), así que dos workers creando al mismo tiempo hacen que uno
+ * reciba un `ConflictError` (409): se re-busca y se usa la que ganó la
+ * carrera, en vez de fallar.
+ */
+async function categoriaDeLaSuiteDeCarrito(token: string): Promise<CategoriaListada> {
+  const buscar = async (): Promise<CategoriaListada | undefined> => {
+    const listado = await apiCall<CategoriaListada[]>(
+      '/v1/admin/categories',
+      'GET',
+      token,
+    );
+    return listado.find((c) => c.name === CATEGORIA_COMPARTIDA);
+  };
+
+  const existente = await buscar();
+  if (existente) return existente;
+
+  try {
+    return await apiCall<CategoriaListada>('/v1/admin/categories', 'POST', token, {
+      name: CATEGORIA_COMPARTIDA,
+    });
+  } catch (err) {
+    const esConflictoDeCarrera = err instanceof Error && /→ 409\b/.test(err.message);
+    if (!esConflictoDeCarrera) throw err;
+    const ganadora = await buscar();
+    if (!ganadora) throw err;
+    return ganadora;
+  }
+}
 
 export interface ProductoSembrado {
   id: string;
@@ -50,12 +105,7 @@ export const STOCK_INVARIANTE = 3;
 export async function seedCarrito(): Promise<SeedCarrito> {
   const token = await adminAuth();
 
-  const category = await apiCall<{ id: string }>(
-    '/v1/admin/categories',
-    'POST',
-    token,
-    nuevaCategoria(),
-  );
+  const category = await categoriaDeLaSuiteDeCarrito(token);
 
   const crear = (over: Record<string, unknown>) =>
     apiCall<ProductoSembrado>(
