@@ -1,0 +1,30 @@
+get:
+  tags: [reviews]
+  operationId: getPublicReviews
+  summary: Reseñas públicas de un producto publicado (US-025 AC-3, AC-4)
+  description: |
+    Ruta PÚBLICA sin auth. SIEMPRE excluye reseñas ocultas (moderación,
+    AC-8) del agregado y de la lista. `average: null` + `count: 0`
+    distingue "sin reseñas" (AC-4) de "reseñas con promedio bajo" (nunca
+    `0` cuando hay al menos una). Mismo criterio de 404 que la ficha
+    (draft/archived/inexistente → 404 uniforme).
+  security: []
+  parameters:
+    - name: slug
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+    - name: limit
+      in: query
+      schema: { type: integer, minimum: 1, default: 20 }
+    - name: offset
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+  responses:
+    '200':
+      description: Agregado + lista paginada de reseñas visibles.
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/PublicReviewsResponse' }
+    '404': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '429': { $ref: '../../openapi.yaml#/components/responses/RateLimited' }

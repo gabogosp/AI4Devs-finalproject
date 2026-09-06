@@ -5,6 +5,10 @@ parent-us: US-025
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 58b9fdfffa30ee715fffb5fbfeaa75da34009c70
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/130
 ---
 
 # US-025 Backend — Reseñas y calificaciones de productos

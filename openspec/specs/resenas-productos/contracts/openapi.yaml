@@ -1,0 +1,144 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Reseñas de producto (CAP-14)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-025-resenas-calificaciones-productos-backend — reseñas y
+    calificaciones restringidas a compradores con orden `delivered`,
+    moderación básica del dueño.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: reviews
+    description: >-
+      Reseñas y calificaciones de producto (US-025). Restringido a clientes con
+      una orden `delivered` que incluya el producto — verificado SIEMPRE
+      server-side, nunca confiando en que el FE oculte el control.
+  - name: admin-reviews
+    description: >-
+      Moderación básica del dueño sobre reseñas (US-025 AC-8): ocultar/mostrar,
+      nunca editar el contenido — soft-flag transparente hacia el autor.
+security: []
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: Access token de cliente, corto y HttpOnly (US-014).
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con claim role=admin (seam ADR-0009).
+  parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: Double-submit firmado (§7.5) — el valor de la cookie `dsm_csrf`.
+      schema: { type: string }
+  responses:
+    Problem:
+      description: Error RFC 7807.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    RateLimited:
+      description: Presupuesto excedido (§7.3). Incluye Retry-After y RateLimit-*.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+    Review:
+      type: object
+      description: Reseña propia del cliente. `hidden` es real sin importar quién pregunte.
+      required: [id, rating, comment, hidden, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        hidden: { type: boolean, description: 'true si el dueño la ocultó (AC-8).' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    OwnReviewResponse:
+      type: object
+      required: [eligible, review]
+      properties:
+        eligible:
+          type: boolean
+          description: 'true si el cliente tiene una orden delivered con este producto (AC-6).'
+        review:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Review'
+    UpsertReviewRequest:
+      type: object
+      required: [rating]
+      additionalProperties: false
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5, description: 'Fuera de 1-5 → 422 (AC-9).' }
+        comment:
+          type: string
+          maxLength: 2000
+          description: Opcional — sólo calificar es válido (AC-2).
+    PublicReview:
+      type: object
+      description: Reseña en la lista pública — nunca expone `customer_id` ni `hidden_at`.
+      required: [id, customer_name, rating, comment, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        customer_name: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    PublicReviewsResponse:
+      type: object
+      required: [average, count, data, pagination]
+      properties:
+        average:
+          type: number
+          nullable: true
+          description: '`null` si no hay reseñas visibles (AC-4) — nunca `0` cuando hay al menos una.'
+        count: { type: integer, description: 'Cantidad de reseñas visibles (AC-3).' }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/PublicReview' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    ModerateReviewRequest:
+      type: object
+      required: [hidden]
+      additionalProperties: false
+      properties:
+        hidden: { type: boolean }
+paths:
+  /me/reviews/{productId}:
+    $ref: ./openapi/paths/own-review.yaml
+  /products/{slug}/reviews:
+    $ref: ./openapi/paths/public-reviews.yaml
+  /admin/reviews/{id}:
+    $ref: ./openapi/paths/moderate-review.yaml
