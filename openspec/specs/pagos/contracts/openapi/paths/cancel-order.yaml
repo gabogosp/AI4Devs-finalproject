@@ -1,0 +1,44 @@
+post:
+  operationId: cancelOrder
+  tags: [admin-payments]
+  summary: Cancelar una orden pagada no entregada, con reembolso y reintegro de stock (US-013 AC-1..AC-10)
+  description: >-
+    Transiciona new/preparing/ready -> cancelled, reintegra el stock de
+    cada línea (inverso de ADR-0008), registra el cambio en el historial
+    de estados y gestiona el reembolso del pago aprobado (real vía
+    MercadoPago, no-op para simulated_dsm/manual). Sin body: todo sale de
+    la orden y del pago encontrados server-side, y quién cancela sale del
+    JWT (sub). Idempotente (AC-8): repetir la llamada sobre una orden ya
+    cancelled responde 200 con el mismo shape, sin reintegrar stock ni
+    reintentar el reembolso una segunda vez.
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    '200':
+      description: Orden cancelada (o ya lo estaba — mismo shape, AC-8).
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/CancelOrderResponse' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: '`dsm:payments/order-not-found` — la orden no existe, o está pending_payment.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '409':
+      description: '`dsm:payments/order-cannot-be-cancelled` — la orden está delivered (estado terminal).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

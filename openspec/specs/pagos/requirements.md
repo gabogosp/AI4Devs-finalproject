@@ -96,3 +96,42 @@ literalmente el mismo código que el webhook real).
 | D-8 | Tráfico real de producción contra MercadoPago (webhook recibiendo notificaciones reales, `createPreference`) — todo lo demás (código, tests unitarios, integración con Postgres real, medio simulado end-to-end) se construyó y verificó en US-010 con mocks. | `US-009-pago-mercadopago-backend` — necesita cuenta real de MercadoPago (`MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` reales + webhook URL configurada en el dashboard de MP). |
 | D-9 | Disparo periódico real de los 3 jobs admin (reconcile/cleanup-abandoned/retry-refunds) — decisión de infraestructura (Railway Cron Job / GitHub Actions), no de código de aplicación. | Owner: `infrastructure-developer` / `deployment-planner`, próximo `/plan-deployment` de esta capacidad. |
 | D-10 | 5 preguntas abiertas de US-010 (`design.md` §Open questions — plazo de abandono, tope de reintentos de reembolso, prefijo de `simulate-payment`, ventana de tolerancia de firma, si reconciliar también pagos rechazados), ninguna bloqueó el arranque, todas con default implementado. | Owner: quien retome ajustes de estos parámetros. Revisit: si el comportamiento observado en producción difiere del supuesto. |
+
+## Desde US-013 backend — Cancelación de orden + reembolso + reintegro de stock (archivada 2026-09-06)
+
+Superficie cubierta: `POST /admin/orders/{id}/cancel`.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-18 | `POST /admin/orders/{id}/cancel` transiciona una orden `new`/`preparing`/`ready` a `cancelled` — mismo compare-and-set (`UPDATE ... WHERE status IN (...)`) que `transitionToCancelledIfPending` (US-010) y `updateStatusConditional` (US-012). | AC-1 |
+| R-19 | Reintegra el stock de cada línea de la orden (`StockRepository.incrementForOrder`, inverso simétrico de `decrementForOrder`) dentro de la MISMA transacción que la transición. | AC-2 |
+| R-20 | Para un pago `approved` con `provider='mercadopago'`: marca `refund_pending` dentro de la transacción, llama `MercadoPagoClient.refund()` FUERA de ella, y cierra `refunded` si responde bien — si falla, la fila queda `refund_pending`, elegible sin cambios por `POST /admin/payments/retry-refunds` (R-14). | AC-3 |
+| R-21 | `provider='simulated_dsm'` y `provider='manual'` marcan `refunded` directo, sin ninguna llamada externa (no-op) — mismo tratamiento para los dos, decisión de este change (D3 de `decisions.md`), no un AC literal para `manual`. | AC-5 |
+| R-22 | Dispara `NotificationPort.orderCancelledByOwner` (método nuevo del puerto, no un puerto paralelo) tras el commit, best-effort — un fallo de notificación no revierte la cancelación. Entrega real: `Deferred: US-011`. | AC-4 (seam) |
+| R-23 | `delivered` (estado terminal) responde 409 `dsm:payments/order-cannot-be-cancelled`; `pending_payment`/inexistente responde 404 `dsm:payments/order-not-found` (fuera de alcance de esta acción). | AC-7 |
+| R-24 | Registra el cambio en `order_status_history` (quién/cuándo, reusa `OrderStatusHistoryRepository` de `orders/`, ahora exportado) y el resultado del reembolso en `payments.status` — sin columnas nuevas. | AC-10 |
+| R-25 | `AdminGuard` reusado sin modificar — acceso restringido a `role=admin`. | AC-9 |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-12 | Repetir la llamada sobre una orden ya `cancelled` responde 200 con el mismo shape — no re-dispara el reintegro de stock, ni un segundo reembolso, ni una segunda notificación (idempotencia estructural, AC-8). |
+| N-13 | La llamada real a `MercadoPagoClient.refund` nunca ocurre dentro de un `$transaction` abierto — mismo criterio que el resto de `payments/` para llamadas externas. |
+| N-14 | El endpoint no acepta body — `changedBy` sale exclusivamente del JWT (`sub`), nunca de un campo que el cliente pudiera falsificar. |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-6 | Sin migración de Prisma — `orders.status`/`orders.cancelled_at`/`payments.status` ya admitían todo lo que este change escribe (verificado contra las migraciones aplicadas, no asumido). | Suite dev-owned + `data-architecture-patterns` (evaluación trivial, sin invocar `data-architect` Mode B). |
+| NFR-7 | Camino sin llamada externa (`simulated_dsm`/`manual`): p95 < 200ms. | `QA-013-PERF-1` (k6) — p95 medido 15.31ms, muy por debajo del presupuesto. |
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-11 | ¿El reembolso no-op de `provider='manual'` (R-21) es el comportamiento correcto, o el PO prefiere un estado distinto para el ledger? (OQ-BE-1 de `US-013-cancelacion-reembolso-backend/proposal.md`.) | Owner: PO. Default implementado: `refunded` automático — cambiar es una condición menos en `crearRefund`, sin impacto en el resto del diseño. |
+| D-12 | ¿`CancelOrderResponse` debería exponer `refund` directamente en `AdminOrderDetail` (capacidad `ordenes`) en vez de un schema propio de `pagos`? (OQ-BE-2.) | Owner: Arquitecto. Default implementado: self-contained, sin acoplar las dos raíces vivas por un `$ref` cruzado (D6 de `decisions.md`). |

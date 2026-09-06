@@ -54,7 +54,6 @@ Una **UI del panel** construida sobre esta superficie (US-012 frontend-web, PR #
 ## Qué NO está vivo todavía
 
 - **UI del panel** — construida y mergeada (US-012 frontend-web), pero sin archivar.
-- **Cancelación / reintegro de stock** — US-013.
 - **Métricas agregadas / gráficos del panel** — US-016.
 - **FSM de 6 estados completa** (`pending_payment`/`cancelled` incluidos) — sólo se
   gestionan acá las 4 transiciones activas de fulfillment.
@@ -83,6 +82,11 @@ de ruta) pertenece a `US-023-pago-manual-offline-backend`, capacidad `pagos` —
 en este directorio. La colisión de rutas entre los dos módulos se resolvió restringiendo
 `:id` a forma UUID en el path de Nest (`decisions.md`), independiente del orden de merge
 entre ambos changes.
+
+**Mismo patrón para `POST /v1/admin/orders/{id}/cancel`** (US-013): vive en `payments/`,
+capacidad `pagos` — evita el ciclo de módulos `orders → payments → orders` que se abriría
+si esta capacidad tuviera que importar `PaymentsRepository`/`MercadoPagoClient`. Ver
+`openspec/specs/pagos/README.md` y `requirements.md` D-2 arriba.
 
 ## Changes que formaron esta capacidad
 

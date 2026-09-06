@@ -89,6 +89,27 @@ Dos módulos nuevos en `apps/api/src/` — `stock/` (único escritor de
 Detalle completo (decisiones D10-D16, threat model STRIDE, requisitos R-7 a R-17) en
 [`requirements.md`](requirements.md) y [`decisions.md`](decisions.md).
 
+## Qué se sumó con US-013 (cancelación de orden + reembolso + reintegro de stock)
+
+- **`POST /admin/orders/{id}/cancel`** (`CancelOrderService`/`OrderCancellationController`,
+  en `payments/`, no en `ordenes/` — evita el ciclo de módulos, mismo criterio
+  que `confirm-payment`): transiciona `new`/`preparing`/`ready` → `cancelled`,
+  reintegra el stock de cada línea (inverso de `decrementForOrder`), y
+  gestiona el reembolso reusando literal el patrón `refund_pending`/
+  `POST /admin/payments/retry-refunds` de US-010 — sin ningún mecanismo de
+  reembolso nuevo.
+- **Cero migración de Prisma**: `orders.status`/`orders.cancelled_at`/
+  `payments.status` ya admitían todo lo que este endpoint escribe (verificado
+  contra las migraciones aplicadas).
+- **Idempotencia estructural** (mismo patrón que `transitionToCancelledIfPending`/
+  `updateStatusConditional`): repetir la llamada sobre una orden ya `cancelled`
+  responde 200 idéntico, sin reintegrar stock ni reembolsar dos veces.
+- **Trazabilidad sin columnas nuevas**: `order_status_history` (quién/cuándo)
+  + `payments.status` (resultado del reembolso).
+- **Aviso al comprador (seam)**: `NotificationPort.orderCancelledByOwner`
+  (método nuevo, mismo puerto de US-010/US-012) — entrega real
+  `Deferred: US-011`.
+
 ## Qué NO está vivo todavía
 
 - **`createPreference`** del `PaymentConfirmationPort`/`MercadoPagoClient` (crear la
@@ -138,7 +159,7 @@ simulado + jobs admin):
 ## Contratos
 
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml)
-+ un archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/). Siete
++ un archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/). Ocho
 endpoints vivos:
 
 | Endpoint | Métodos | AC | Auth |
@@ -150,6 +171,7 @@ endpoints vivos:
 | `/admin/payments/reconcile` | POST | AC-10 | JWT admin |
 | `/admin/orders/cleanup-abandoned` | POST | AC-11 | JWT admin |
 | `/admin/payments/retry-refunds` | POST | AC-4 (durabilidad) | JWT admin |
+| `/admin/orders/{id}/cancel` | POST | US-013 AC-1..AC-10 | JWT admin |
 
 **Colisión de rutas con `ordenes` (US-012), resuelta del lado de US-012**:
 ambos controllers comparten el prefijo `/admin/orders`. `OrdersController`
@@ -166,12 +188,18 @@ quien toque cualquiera de los dos controllers.
 | [`US-023-pago-manual-offline-backend`](../../changes/archive/US-023-pago-manual-offline-backend/) | BE | `payments` (tabla nueva) + `stock/` (escritor único) + `PaymentConfirmationPort`/`ConfirmOrderService`, transacción cruzando 3 repositorios, 2 endpoints admin |
 | [`US-010-orden-webhook-stock-backend`](../../changes/archive/US-010-orden-webhook-stock-backend/) | BE | Webhook de MercadoPago, medio simulado «DSM», `MercadoPagoClient`, 3 jobs admin (reconciliación/limpieza/reintento de reembolsos), `confirmed_at`/`cancelled_at`/`refund_pending` |
 | [`US-010-orden-webhook-stock-qa`](../../changes/archive/US-010-orden-webhook-stock-qa/) | QA | Suite L1/L3: 15 aceptación BDD, 13 contract, 1 k6, 2 E2E de navegador, 3 charters. Continúa el contrato de comportamiento que US-023 QA (embebida en su propio backend) construyó para el camino manual |
+| [`US-013-cancelacion-reembolso-backend`](../../changes/archive/US-013-cancelacion-reembolso-backend/) | BE | `POST /admin/orders/{id}/cancel` — cero migración, reusa `refund_pending`/`retry-refunds` de US-010 tal cual |
 
 Con esto, `disciplines: [BE, QA]` de US-010 queda completo — ambas disciplinas
 archivadas. Sin disciplina FE propia — la UI de confirmación manual (si existe)
 vive dentro de `US-012-panel-ordenes-dueno-frontend-web`
 (`PendingPaymentsPanel.tsx`, componente separado del listado de
 fulfillment), no como un change propio de esta capacidad.
+
+FE/QA de US-013 (acción de cancelar en el panel + suite cross-stack) se
+archivan en PRs separados inmediatamente después de este — ver el índice
+(`docs/_index/openspec-changes.yaml`) para su estado más reciente si esta
+tabla no se actualizó todavía.
 
 ## Estado de la provisión
 

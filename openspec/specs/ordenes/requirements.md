@@ -43,7 +43,7 @@ Superficie cubierta: `GET /v1/admin/orders`, `GET /v1/admin/orders/{id}`,
 | # | Requisito | Dueño / disparador |
 |---|---|---|
 | D-1 | Entrega real del aviso "lista para retirar" (el seam ya dispara; el adaptador es un log local). | US-011. |
-| D-2 | Cancelación / reintegro de stock. | US-013. |
+| D-2 | ~~Cancelación / reintegro de stock.~~ | **Resuelto por la capacidad hermana `pagos`** (archivada 2026-09-06): `US-013-cancelacion-reembolso-backend` construyó `POST /admin/orders/{id}/cancel` del lado de `pagos` (`payments/`), no de `ordenes` — mismo patrón que `GET /admin/orders/pending-payment` (capacidad hermana, no anidada). Ver `openspec/specs/pagos/requirements.md` sección "Desde US-013 backend". |
 | D-3 | Métricas agregadas / gráficos del panel. | US-016. |
 | D-4 | ~~Reconciliación con `US-010-orden-webhook-stock-backend`~~ | **Resuelta** (archivada 2026-09-05): US-010 vivió del lado de la capacidad hermana `pagos`, sin tocar `OrdersModule`/FSM de fulfillment de esta capacidad. |
 | D-5 | `PendingPaymentsPanel` (confirmar pagos manuales desde el panel) — endpoints propios de `pagos` (US-023), consumidos por el FE de esta US. | `US-012-panel-ordenes-dueno-frontend-web` (PR #31). |
