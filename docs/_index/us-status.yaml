@@ -634,14 +634,15 @@
   #
   # NOTA (2026-09-06, gate 2 del cierre de dev): el dueño proveyó razón social ("DSM
   # Refrigeración y Ferretería"), CUIT (20-95964796-9) y condición frente al IVA
-  # (Monotributo) — 2 de los 3 marcadores `[PENDIENTE: …]` de `content.ts` quedan
-  # resueltos (rama `chore/US-017-legal-content-datos-reales`, sin change propio por
-  # tratarse de un dato/copy, no de un item de tasks.md). El 3° marcador (plazo de
-  # retención de datos) SIGUE ABIERTO: el dueño dio "30 días", pero el sistema real
-  # (US-021, `ORDER_RETENTION_MONTHS`) anonimiza a los 12 MESES por defecto — no
-  # coincide, no se escribió ninguno de los dos números a ciegas. Escalado de vuelta al
-  # dueño (¿corregir el sistema a 30 días, o el texto a 12 meses?). US sigue `In
-  # Progress` hasta que ese último marcador se resuelva y el dueño firme el DoD.
+  # (Monotributo). El 3° dato (plazo de retención) generó un mismatch real: el dueño
+  # dio "30 días" pero el sistema (US-021, `ORDER_RETENTION_MONTHS`) anonimiza a los
+  # 12 MESES por defecto — escalado de vuelta, el dueño confirmó que **12 meses es lo
+  # correcto**. Los 3 marcadores `[PENDIENTE: …]` de `content.ts` quedan RESUELTOS
+  # (rama `chore/US-017-legal-content-datos-reales`, PR #108 — sin change propio por
+  # tratarse de un dato/copy, no de un item de tasks.md). Texto legal completo, sin
+  # placeholders. `status` se queda en `In Progress` hasta la firma explícita del PO
+  # sobre el DoD ("PO firma acceptance" es un checkbox propio, distinto de "texto
+  # legal provisto" — DoD §Definition of Done de la US).
 - id: US-018
   slug: contacto-whatsapp
   status: Done
