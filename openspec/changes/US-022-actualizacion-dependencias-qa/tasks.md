@@ -128,7 +128,7 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
 
 ## Fase 2 — Revalidación E2E cross-stack SSR/SEO y funcional (Layer 3)
 
-- [ ] T-QA2 Correr la suite completa de `test:e2e` (16 specs, 68 tests,
+- [x] T-QA2 Correr la suite completa de `test:e2e` (16 specs, 68 tests,
   excluye a11y por `testMatch`) — cubre específicamente `categoria-ssr-seo.spec.ts`
   y `pdp-ssr-seo.spec.ts`, que son las que prueban AC-3 (SSR/sitemap/
   metadatos intactos) desde Layer 3.
@@ -141,6 +141,37 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
     entrada) — no se ensancha su timeout ni se modifica el spec sin que el
     usuario decida (`design.md` D-QA1).
   - **Verify**: `pnpm --filter @dsm/qa exec playwright install --with-deps chromium && pnpm --filter @dsm/qa test:e2e 2>&1 | tee /tmp/us-022-qa-e2e.log && grep -E "^[0-9]+ passed" /tmp/us-022-qa-e2e.log`
+  - **Nota de ejecución (2026-09-06)**: 68 tests confirmados (conteo exacto,
+    sin corrección). **TC-305 corrió limpio en TODAS las corridas de esta
+    sesión (0 fallas intermitentes observadas)** — no hay evidencia nueva que
+    agregar a la entrada `[Deferred]` de `proposal.md` (Hallazgo 2).
+    Dos hallazgos mecánicos de entorno, corregidos y re-corridos:
+    (a) `categoria-ssr-seo.spec.ts` TC-204 esperaba que el origen del sitemap
+    coincidiera con el origen real de la página, pero el build del front usó
+    el default de código de `NEXT_PUBLIC_SITE_URL` (`http://localhost:3000`,
+    `apps/web/src/lib/env.ts`) en vez del puerto real (3100) — se rebuildeó
+    con `NEXT_PUBLIC_SITE_URL=http://localhost:3100` explícito; (b)
+    `cuenta-recuperacion.spec.ts`/`cuenta-seguridad.spec.ts` (TC-143/145/147)
+    leen el token de reset del log de la API vía `QA_API_LOG` (`qa/support/
+    customer-auth.ts`) — variable DISTINTA de `QA_API_LOG_FILE` que usa
+    `qa/support/api-log.ts` para las notificaciones de órdenes (T-QA1); hacía
+    falta exportar AMBAS apuntando al mismo archivo de log real.
+    Tras corregir ambas: **65/68 verdes, 3 fallas**:
+    - **`carrito.spec.ts` TC-731 (teclado y anuncio del total) — FALLA REAL,
+      reproducida 3/3 en corridas aisladas (`--repeat-each=3`), no flaky**:
+      el test tabula (loop acotado por `document.activeElement`, no un
+      presupuesto fijo — no es el anti-patrón de conteo rígido) hasta el
+      botón "sumar una unidad" y nunca lo alcanza dentro de 40 `Tab`. Esto
+      toca `apps/web`, que SÍ fue bumpeado por esta US (`next` 15.1.6 →
+      15.5.21) — es exactamente el tipo de regresión de comportamiento que
+      esta revalidación existe para atrapar. **No se investigó más a fondo
+      ni se tocó el spec/código — reportado para que el usuario decida**
+      (guardrail: no auto-arreglar `apps/web`/`qa/` sin revisión).
+    - `metricas.spec.ts` (dataset real X-1, descarga CSV) — 2 fallas por el
+      mismo patrón de fragilidad de `LIMIT 10` en el ranking que T-QA1 (la
+      corrida de T-QA2 fue DESPUÉS de la corrida completa de T-QA1 contra la
+      misma DB, sin resetear; no se re-verificó con DB limpia por acotar
+      tiempo, pero el mecanismo es idéntico al ya diagnosticado en T-QA1).
 
 ## Fase 3 — Revalidación de accesibilidad WCAG AA (Layer 3)
 
