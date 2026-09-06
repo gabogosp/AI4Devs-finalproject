@@ -162,6 +162,13 @@ jobs:
         # sólo, sin `not @blocked`, los dejaba pasar y fallar como si fueran
         # un defecto real.
         #
+        # `@frontend` (checkout.feature SC-008-X3, #106): cross-feature que
+        # requiere renderizado real de UI — vive en Playwright
+        # (qa/e2e/checkout.spec.ts), sin step defs acá a propósito. El CLI
+        # `--tags` de este paso PISA el default de `cucumber.mjs` (no se
+        # combina, verificado por #106) — hay que repetir la exclusión acá,
+        # no alcanza con tocar sólo el config.
+        #
         # Invoca `cucumber-js` DIRECTO, con `cd qa` (no `pnpm --filter @dsm/qa
         # test:acceptance -- --tags ...`): `pnpm --filter <pkg> <script> --
         # <args>` inserta un `--` LITERAL en el comando final (verificado
@@ -180,7 +187,7 @@ jobs:
         if: hashFiles('qa/acceptance/**/*.feature') != ''
         env:
           NODE_OPTIONS: '--import tsx'
-        run: cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked"
+        run: cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked and not @frontend"
 
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
