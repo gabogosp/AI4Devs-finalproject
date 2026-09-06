@@ -149,10 +149,29 @@ export const reports_read = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * Medio simulado "DSM" de US-010 (QA-010-PERF-1/PERF-2, `design.md` de backend
+ * §D12). Presupuesto **propio** (no heredado de `cart_write`/`confirm_payment`):
+ * §D12 propone explícitamente `p95 < 200ms` para este endpoint por no tener
+ * ninguna llamada externa dentro de la transacción (a diferencia del webhook
+ * real, que sí llamaría a MercadoPago) — se hereda ESE número, no se inventa
+ * uno nuevo ni se reusa el de escritura genérico de 500ms.
+ *
+ * Sin `rate_limited`: `PAYMENTS_SIMULATE_RATE_LIMIT_MAX` se eleva a propósito
+ * en el entorno de QA (`qa/scripts/api-up.sh`) — mismo criterio que
+ * `confirm_payment` (sin throttler dedicado a nivel de negocio, superficie
+ * medida sin la guarda de rate-limit de producción).
+ */
+export const simulate_payment = {
+  'http_req_duration{endpoint:simulate_payment}': ['p(95)<200'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
 // (`auth_login`), US-023 (`confirm_payment`), US-012 (`list_orders`/
-// `order_transition`) y US-016 (`reports_read`): las suites QA extienden el
-// mismo archivo compartido.
+// `order_transition`), US-010 (`simulate_payment`) y US-016 (`reports_read`):
+// las suites QA extienden el mismo archivo compartido.
 export default {
   list_products,
   storefront_product,
@@ -162,6 +181,7 @@ export default {
   confirm_payment,
   list_orders,
   order_transition,
+  simulate_payment,
   reports_read,
   MIN_SKUS,
 };
