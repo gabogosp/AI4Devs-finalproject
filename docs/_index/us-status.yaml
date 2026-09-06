@@ -420,6 +420,8 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-09-06   # primera planificación (/plan-backend-ticket)
+  in-review-at: 2026-09-06     # backend PR #70 abierto (/commit) — FE/QA todavía no
+                                # arrancaron, el status de la US se queda en In Progress
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas

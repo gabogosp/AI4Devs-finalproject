@@ -2079,8 +2079,9 @@
   us-id: US-015
   discipline: backend
   variant: null
-  status: in progress   # /develop-backend US-015 — 26/26 tasks cerradas, suite completa
-  # + e2e verdes (1894 + 529 tests), lint/typecheck limpios. PR aún no abierto.
+  status: in review   # /commit 2026-09-06 — 26/26 tasks cerradas, suite completa + e2e
+  # verdes (235 suites/1927 tests tras merge de main), lint/typecheck limpios, cero
+  # regresión en los 12 archivos de US-008. PR #70 abierto.
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
@@ -2139,9 +2140,10 @@
   # `historial-compras` (CAP-8, PRD §2.1 cap. 8 — us-status.yaml ya asigna
   # prd-capacity: 8 a US-015).
   estimate-hours: 6.3
-  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía (modo sólo-planificación)
+  assignee: claude-code
   branch: feat/US-015-historial-compras-backend
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/70
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
   archived-at: null
