@@ -78,6 +78,15 @@ tags:
       responde: en ese caso la respuesta sigue siendo 200 con `degraded: true`, no
       un error. Presupuesto propio de 20 req/min por IP, más estricto que el del
       storefront porque cada consulta puede costar una llamada paga a un tercero.
+  - name: admin-reports
+    description: >-
+      Panel de métricas del dueño (US-016): evolución de ventas, productos más
+      pedidos y resumen del período, agregados sobre `orders`/`order_items`
+      (sin persistencia nueva). Sólo cuentan como "venta" las órdenes
+      new/preparing/ready/delivered (AC-8, misma allowlist que admin-orders) —
+      pending_payment y cancelled nunca entran. Un rango sin datos responde
+      200 con ceros/arrays vacíos (AC-5); un `created_at_from` anterior al
+      piso de retención vigente se acota silenciosamente (AC-9), nunca 422.
   - name: health
     description: Liveness / readiness
 security:
@@ -1148,6 +1157,173 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+  /admin/reports/sales:
+    get:
+      operationId: getAdminReportsSales
+      tags: [admin-reports]
+      summary: Evolución de ventas en el tiempo (US-016 AC-1, AC-4, AC-5, AC-9)
+      description: >-
+        Agrupa por día/semana/mes. Sólo cuentan las 4 órdenes activas (AC-8).
+        Sin `created_at_from`/`created_at_to`, default a los últimos 30 días.
+        Un `created_at_from` anterior al piso de retención vigente
+        (ORDER_RETENTION_MONTHS, default 12) se acota silenciosamente al piso
+        (AC-9) — la respuesta lleva el rango EFECTIVO en `range`. Un rango sin
+        órdenes responde 200 con `data: []` (AC-5), nunca error.
+      parameters:
+        - name: created_at_from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: created_at_to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: granularity
+          in: query
+          schema: { type: string, enum: [day, week, month], default: day }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminReportsSales' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: 'dsm:reports/invalid-range — created_at_from posterior a created_at_to.'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  /admin/reports/sales/export:
+    get:
+      operationId: exportAdminReportsSales
+      tags: [admin-reports]
+      summary: CSV de la evolución de ventas (US-016 AC-6)
+      description: >-
+        Mismos query params y misma agregación que GET /admin/reports/sales —
+        no hay una segunda fuente de verdad para los números exportados.
+        Celdas neutralizadas contra inyección de fórmulas (RFC 4180 + prefijo
+        de comilla, `security-standards.md §6.3`).
+      parameters:
+        - name: created_at_from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: created_at_to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: granularity
+          in: query
+          schema: { type: string, enum: [day, week, month], default: day }
+      responses:
+        '200':
+          description: 'CSV: period_date,orders_count,total_ars_cents'
+          headers:
+            Content-Disposition: { schema: { type: string }, description: 'attachment; filename="reports-sales-{from}-{to}.csv"' }
+          content: { text/csv: { schema: { type: string } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: 'dsm:reports/invalid-range.'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  /admin/reports/top-products:
+    get:
+      operationId: getAdminReportsTopProducts
+      tags: [admin-reports]
+      summary: Productos más pedidos por cantidad vendida (US-016 AC-2, AC-4, AC-5, AC-9)
+      description: >-
+        Agrupa por el snapshot de order_items (product_name/product_sku al
+        momento de la venta), sin JOIN a products — un producto renombrado a
+        mitad de período puede aparecer como dos filas (trade-off aceptado,
+        sin AC que pida consolidarlo). Sólo cuentan las 4 órdenes activas (AC-8).
+      parameters:
+        - name: created_at_from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: created_at_to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminReportsTopProducts' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: 'dsm:reports/invalid-range.'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  /admin/reports/top-products/export:
+    get:
+      operationId: exportAdminReportsTopProducts
+      tags: [admin-reports]
+      summary: CSV del ranking de productos más pedidos (US-016 AC-6)
+      description: >-
+        Mismos query params y misma agregación que GET /admin/reports/top-products.
+        product_name/product_sku neutralizados contra inyección de fórmulas
+        (texto libre cargado por el dueño vía catálogo/import masivo).
+      parameters:
+        - name: created_at_from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: created_at_to
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        '200':
+          description: 'CSV: product_id,product_name,product_sku,quantity_sold,revenue_ars_cents'
+          headers:
+            Content-Disposition: { schema: { type: string }, description: 'attachment; filename="reports-top-products-{from}-{to}.csv"' }
+          content: { text/csv: { schema: { type: string } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: 'dsm:reports/invalid-range.'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  /admin/reports/summary:
+    get:
+      operationId: getAdminReportsSummary
+      tags: [admin-reports]
+      summary: Resumen del período — órdenes, monto, desglose por estado (US-016 AC-3, AC-5, AC-9)
+      description: >-
+        Sólo cuentan las 4 órdenes activas (AC-8). breakdown_by_status SIEMPRE
+        trae las 4 claves (new/preparing/ready/delivered), zero-fill incluido
+        — un período sin datos responde 200 con todo en cero (AC-5), nunca error
+        ni un objeto incompleto.
+      parameters:
+        - name: created_at_from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: created_at_to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AdminReportsSummary' } } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: 'dsm:reports/invalid-range.'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  /admin/reports/summary/export:
+    get:
+      operationId: exportAdminReportsSummary
+      tags: [admin-reports]
+      summary: CSV del resumen del período (US-016 AC-6)
+      description: >-
+        Mismos query params y misma agregación que GET /admin/reports/summary:
+        una fila por estado activo (con zero-fill) + una fila `total`.
+      parameters:
+        - name: created_at_from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: created_at_to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: 'CSV: status,count,total_ars_cents (+ fila total)'
+          headers:
+            Content-Disposition: { schema: { type: string }, description: 'attachment; filename="reports-summary-{from}-{to}.csv"' }
+          content: { text/csv: { schema: { type: string } } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: 'dsm:reports/invalid-range.'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
 
 components:
   securitySchemes:
@@ -2189,3 +2365,61 @@ components:
             una celda vacía significa "no cambiar ese campo").
           example: 'invalid_price'
         error_message: { type: string }
+    AdminReportsRange:
+      type: object
+      required: [from, to]
+      description: 'Rango EFECTIVO aplicado (post-acotado a retención, AC-9) — no necesariamente el pedido.'
+      properties:
+        from: { type: string, format: date-time }
+        to: { type: string, format: date-time }
+    AdminReportsSalesRow:
+      type: object
+      required: [period_date, orders_count, total_ars_cents]
+      properties:
+        period_date: { type: string, format: date }
+        orders_count: { type: integer }
+        total_ars_cents: { type: integer }
+    AdminReportsSales:
+      type: object
+      required: [range, granularity, data]
+      properties:
+        range: { $ref: '#/components/schemas/AdminReportsRange' }
+        granularity: { type: string, enum: [day, week, month] }
+        data: { type: array, items: { $ref: '#/components/schemas/AdminReportsSalesRow' } }
+    AdminReportsTopProductsRow:
+      type: object
+      required: [product_id, product_name, product_sku, quantity_sold, revenue_ars_cents]
+      properties:
+        product_id: { type: string, format: uuid }
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity_sold: { type: integer }
+        revenue_ars_cents: { type: integer }
+    AdminReportsTopProducts:
+      type: object
+      required: [range, data]
+      properties:
+        range: { $ref: '#/components/schemas/AdminReportsRange' }
+        data: { type: array, items: { $ref: '#/components/schemas/AdminReportsTopProductsRow' } }
+    AdminReportsStatusBreakdownEntry:
+      type: object
+      required: [count, total_ars_cents]
+      properties:
+        count: { type: integer }
+        total_ars_cents: { type: integer }
+    AdminReportsSummary:
+      type: object
+      required: [range, orders_count, total_ars_cents, breakdown_by_status]
+      properties:
+        range: { $ref: '#/components/schemas/AdminReportsRange' }
+        orders_count: { type: integer }
+        total_ars_cents: { type: integer }
+        breakdown_by_status:
+          type: object
+          description: 'SIEMPRE las 4 claves activas, zero-fill incluido (AC-5).'
+          required: [new, preparing, ready, delivered]
+          properties:
+            new: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+            preparing: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+            ready: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }
+            delivered: { $ref: '#/components/schemas/AdminReportsStatusBreakdownEntry' }

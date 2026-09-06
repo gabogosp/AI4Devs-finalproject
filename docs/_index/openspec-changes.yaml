@@ -1922,6 +1922,67 @@
   archived-at: 2026-09-05
   archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-backend/
 
+- name: US-016-panel-metricas-backend
+  us-id: US-016
+  discipline: backend
+  variant: null
+  status: in review   # /commit 2026-09-05 — 23/23 tasks + 9/9 verificación suite-level, PR #55 abierto
+  parent-us: docs/user-stories/US-016-panel-metricas.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # ~8,0 h AI-asistido / ~15,2 h tradicional (23 tasks, 9 fases). US §7 presupuesta
+  # BE-US-016 en 6-10 h: excede el techo ~5 h por trabajo que la US no desglosa al
+  # describirla como "endpoints de agregación" — los 3 endpoints de export CSV
+  # completos (no una nota al pie de los 3 de lectura), el servicio de eventos
+  # dedicado (US §9 exige registrar uso del panel) y el refactor de extracción de
+  # `csvCell` a un utilitario compartido (design.md §D3) son trabajo real que la US
+  # no menciona. La agregación en sí —3 queries $queryRaw + su orquestación— son
+  # ~4 h de las ~15,2 h.
+  #
+  # DEPENDENCIA DECLARADA YA RESUELTA: US-016 figura `blocked_by: [US-010]` en
+  # docs/_index/us-status.yaml. US-010-orden-webhook-stock-backend archivó el
+  # 2026-09-05 — el campo queda desactualizado (no se toca acá, propiedad de otro
+  # agente per index-conventions.md), pero este plan NO depende de código de US-010:
+  # sólo lee `orders`/`order_items`, ya migradas desde US-008.
+  #
+  # ALCANCE: módulo nuevo `apps/api/src/reports/` (sin extender `checkout/`,
+  # `orders/` ni `observability/`), CERO migración — 3 datasets de sólo lectura
+  # ($queryRaw parametrizado: evolución de ventas, top productos, resumen por
+  # estado) + 3 endpoints /export CSV hermanos, los 6 detrás de AdminGuard.
+  #
+  # DECISIÓN DE NAMING (no es pregunta abierta): la clase se llama `Reports*`
+  # (`ReportsModule`/`ReportsController`/`ReportsService`/`ReportsRepository`),
+  # NO `Metrics*` como nombra el componente el E2E §6.1 — `MetricsModule`/
+  # `MetricsService`/`MetricsController` YA EXISTEN en `observability/` (scrape
+  # Prometheus, `GET /v1/admin/metrics`, AUDIT-dsm-api-006). Montado en
+  # `v1/admin/reports`, sin colisión de clase ni de URL. Documentado en
+  # design.md §D1.
+  #
+  # DECISIÓN DE NEGOCIO (AC-8, no es pregunta abierta): "venta" = órdenes en
+  # `new/preparing/ready/delivered` — la misma allowlist que ya usa el panel de
+  # fulfillment (CAP-5, US-012). `cancelled` queda afuera: es dinero reembolsado
+  # (US-010/pagos R-10), no una venta real. Reversible con un cambio de constante
+  # si el PO prefiere lo contrario (OQ-BE-1 de design.md).
+  #
+  # data-architecture-patterns: evaluación trivial, NO se invoca data-architect
+  # Mode B — cero tabla/columna nueva, sólo agregación de lectura sobre índices
+  # ya existentes (`orders(status, created_at)`, `order_items(order_id)`, ambos
+  # de US-008).
+  #
+  # DEPLOYMENT: no amerita /plan-deployment propio — cero migración, cero secreto
+  # nuevo, cero feature flag, cero dependencia externa nueva (design.md
+  # §Deployment considerations).
+  estimate-hours: 8.0
+  assignee: claude-code
+  branch: feat/US-016-panel-metricas-dueno-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/55
+  pr-opened-at: 2026-09-05
+  created: 2026-09-05
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 - name: US-021-retencion-datos-ordenes-frontend-web
   us-id: US-021
   discipline: frontend-web

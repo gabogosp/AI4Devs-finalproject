@@ -5,6 +5,7 @@ import { CategoriesModule } from '../categories/categories.module';
 import { MetricsModule } from '../observability/metrics.module';
 import { ProductsModule } from '../products/products.module';
 import { OrdersModule } from '../orders/orders.module';
+import { ReportsModule } from '../reports/reports.module';
 
 type Method = 'get' | 'post' | 'patch';
 
@@ -16,7 +17,13 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await bootTestApp([CategoriesModule, MetricsModule, ProductsModule, OrdersModule]);
+    app = await bootTestApp([
+      CategoriesModule,
+      MetricsModule,
+      ProductsModule,
+      OrdersModule,
+      ReportsModule,
+    ]);
   });
   afterAll(async () => {
     await app?.close();
@@ -41,6 +48,13 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
     ['get', '/v1/admin/orders'],
     ['get', `/v1/admin/orders/${uuid}`],
     ['patch', `/v1/admin/orders/${uuid}`],
+    // US-016 — panel de métricas del dueño (AC-7).
+    ['get', '/v1/admin/reports/sales'],
+    ['get', '/v1/admin/reports/sales/export'],
+    ['get', '/v1/admin/reports/top-products'],
+    ['get', '/v1/admin/reports/top-products/export'],
+    ['get', '/v1/admin/reports/summary'],
+    ['get', '/v1/admin/reports/summary/export'],
   ];
 
   function call(method: Method, path: string): request.Test {
