@@ -196,7 +196,7 @@ language: es
 
 ## Fase 3: Servicio de orquestación — 2,0 h
 
-- [ ] T3.1 `AccountDeletionService.deleteAccount` (transacción completa)
+- [x] T3.1 `AccountDeletionService.deleteAccount` (transacción completa)
   - **Pattern**: ver `design.md` §Approach ("AccountDeletionService") — un
     único `prisma.$transaction`, 6 pasos en el orden documentado. Guardado de
     bloqueo (AC-4/AC-9) como PRIMERA operación dentro de la transacción, nunca
