@@ -67,6 +67,24 @@
 #   ORDER_ANONYMIZE_RATE_LIMIT_MAX  Mismo motivo, para `POST :id/anonymize` (30/min default —
 #                          más holgado, pero varios escenarios llaman este endpoint dos y tres
 #                          veces por idempotencia, y se acumula entre corridas de la suite).
+#   ENRICHMENT_ENABLED     US-005 (QA-005-F1, hallazgo de higiene de entorno): `ai.providers.ts`
+#                          sólo mira si `GEMINI_API_KEY` está *presente*, no si es *válida* —
+#                          con el placeholder de `.env` ("replace-me"), la instancia arranca
+#                          igual con `GeminiHttpClient` real. Como el enriquecimiento se
+#                          dispara solo tras cada import (`EnrichmentQueue.enqueue` →
+#                          `setImmediate`, US-006), CUALQUIER sesión que corra
+#                          `importar.feature`/`seed-import.ts` contra esta instancia
+#                          compartida dispara, sin que nadie lo pida, llamadas HTTP reales a
+#                          Google con una clave inválida — quemando `enrichment_attempts`/
+#                          `enrichment_error_code` sobre productos reales de OTRAS sesiones.
+#                          Se fija en `false` acá: la instancia larga y compartida NUNCA llama
+#                          a Gemini. Los escenarios que sí necesitan el proveedor "encendido"
+#                          (`SC-005-C1/C2/C4/N4/N5`) levantan su propia instancia temporal vía
+#                          `qa/support/spawn-api.ts` (`design.md` §D-QA4), nunca esta.
+#   ENRICHMENT_RATE_LIMIT_MAX  Mismo criterio que el resto de los `*_RATE_LIMIT_MAX` de este
+#                          archivo: se eleva por consistencia, aunque con `ENRICHMENT_ENABLED=
+#                          false` casi ningún escenario de esta instancia compartida llama
+#                          `POST /runs` (y `GET /status` no consume este presupuesto).
 #
 # Uso:
 #   pnpm --filter @dsm/qa api:up                    # puerto 3009
@@ -105,4 +123,6 @@ exec env \
   PAYMENTS_SIMULATE_RATE_LIMIT_MAX=100000 \
   ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX=100000 \
   ORDER_ANONYMIZE_RATE_LIMIT_MAX=100000 \
+  ENRICHMENT_ENABLED=false \
+  ENRICHMENT_RATE_LIMIT_MAX=100000 \
   node "$MAIN"
