@@ -1,7 +1,7 @@
 # Capacidad: Panel de métricas del dueño (CAP-9)
 
-**Estado**: backend entregado. Sin panel de lectura todavía (frontend-web y
-QA de US-016 están construidos en `main` pero no archivados — ver "Changes
+**Estado**: backend + frontend-web entregados. QA de US-016 está construido
+en `main` pero todavía no archivado al momento de este archive (ver "Changes
 que formaron esta capacidad").
 
 Estado declarado del sistema para la capacidad CAP-9 del PRD §2.1. Este
@@ -50,17 +50,45 @@ deliberadamente distinto del nombre `MetricsModule` del E2E — ver
 - **Sin persistencia nueva**: agregaciones (`$queryRaw` parametrizado) sobre
   `orders`/`order_items`, ya migradas desde US-008.
 
+Además, el panel del dueño consume el contrato desde
+`apps/web/src/features/metrics/` (feature `metrics`, asimétrica del nombre
+backend `reports`/`Reports*` por diseño — ver `decisions.md` D7), montado en
+la ruta nueva `/admin/metricas` (route group `(admin)`, hereda `AdminGuard`):
+
+- **`SalesChart`** (AC-1): `ComposedChart` de Recharts (barras + línea) con
+  tabla accesible equivalente, selector de granularidad de aplicación
+  inmediata.
+- **`TopProductsTable`** (AC-2): TanStack Table, ordenable por cantidad.
+- **`SummaryCards`** (AC-3): tarjetas KPI — órdenes, monto, desglose por
+  estado.
+- **`RangeFilterForm`** (AC-4): aplicación explícita del rango vía botón
+  "Aplicar" — evita 3 fetches por cada estado intermedio inválido de un
+  `<input type="date">`.
+- **Aislamiento de fallas por widget** (D9): `AsyncState<T>` independiente
+  por widget (frontend-standards §11.9) — un fallo en uno no rompe los
+  otros dos.
+- **Transparencia del rango acotado** (AC-9): `rangeClampNote.ts`, helper
+  puro compartido, calculado por widget con el `{requested, effective}` que
+  ESE widget recibió.
+- **3 exports CSV** (AC-6), uno por widget, vía Blob — reusa los helpers
+  `downloadCsv`/`contentDisposition` extraídos de `imports/` (refactor
+  behavior-preserving, sin cambiar el comportamiento de import).
+- **Sin filtro propio de "venta"** (AC-8): el FE muestra tal cual lo que el
+  backend ya filtró — la autoridad real es 100% backend (`SALE_STATUSES`,
+  D2 arriba).
+- **Sin nav/sidebar nuevo** (D9 del design.md FE): `/admin/metricas` es
+  alcanzable por URL directa, igual que sus hermanas del panel admin.
+
 ## Qué NO está vivo todavía
 
-- **Dashboard/gráficos en el panel del dueño** — construido en
-  `apps/web/src/features/metrics/` (PR #59, mergeado a `main`) pero el
-  change `US-016-panel-metricas-frontend-web` todavía no está archivado al
-  momento de escribir esto (arquitectura de archive incremental, una
-  disciplina a la vez).
 - **Analítica de tráfico/sesiones/conversión web** (Google Analytics o
   similar) — fuera de v1 (US §4).
 - **Pronósticos/forecasting** sobre los datasets — fuera de v1 (US §4).
 - **Exportación contable/AFIP** — roadmap (PRD §2.2).
+- **Rango de fechas persistido en la URL** (deep-linking) — decisión
+  consciente, no una omisión (`decisions.md`, requirements.md D-6).
+- **Nav/sidebar compartido** entre las 5 pantallas del panel admin —
+  cambio transversal fuera de alcance de esta US (requirements.md D-7).
 
 ## Contratos
 
@@ -84,12 +112,13 @@ diferencia de `retencion-datos-personales`, ver su `decisions.md`).
 | Change | Disciplina | Aporte |
 |---|---|---|
 | [`US-016-panel-metricas-backend`](../../changes/archive/US-016-panel-metricas-backend/) | BE | Módulo `reports/` completo, 6 endpoints, sin migraciones, `ReportsEventsService` |
+| [`US-016-panel-metricas-frontend-web`](../../changes/archive/US-016-panel-metricas-frontend-web/) | FE | Feature `metrics/` (3 widgets independientes), ruta `/admin/metricas`, Recharts `^3.9.0`, refactor compartido de descarga CSV con `imports/` |
 
-Sin disciplinas FE/QA propias archivadas todavía en este directorio.
-`US-016-panel-metricas-frontend-web` (PR #59) y `US-016-panel-metricas-qa`
-(PR #60) ya mergearon a `main` y se archivan a continuación en la misma
-tanda — ver el índice (`docs/_index/openspec-changes.yaml`) para su estado
-más reciente si este README no se actualizó todavía.
+Sin disciplina QA propia archivada todavía en este directorio.
+`US-016-panel-metricas-qa` (PR #60) ya mergeó a `main` y se archiva a
+continuación en la misma tanda — ver el índice
+(`docs/_index/openspec-changes.yaml`) para su estado más reciente si este
+README no se actualizó todavía.
 
 ## Estado de la provisión
 

@@ -48,3 +48,42 @@ Superficie cubierta: `GET /admin/reports/{sales,top-products,summary}` + sus
 | D-3 | Exportación contable/AFIP. | Owner: PO — roadmap (PRD §2.2). |
 | D-4 | Índice nuevo sobre `orders`/`order_items` para las queries de agregación. | Owner: quien detecte degradación — sin medición real que lo justifique hoy (YAGNI, `design.md` §D8); primera palanca a tirar si el volumen crece un orden de magnitud. |
 | D-5 | Alertas u observabilidad ampliada (dashboards nuevos, SLOs propios) sobre el uso del panel. | Owner: operaciones — superficie backoffice de bajo tráfico, mismo criterio que el resto del panel admin (catálogo/órdenes/imports): sin gate de CI ni alerta dedicada. |
+
+## Desde US-016 frontend-web — Panel de métricas del dueño (archivada 2026-09-06)
+
+Consume el contrato de arriba desde `apps/web/src/features/metrics/` (feature
+llamada `metrics`, asimétrica respecto al backend que usa `reports`/`Reports*`
+— ver `decisions.md` D7). Ruta nueva `/admin/metricas`, dentro del route
+group `(admin)` ya existente (hereda `AdminGuard`). Sin superficie HTTP
+propia — este bloque documenta el comportamiento de UI que gobierna cómo se
+consume el contrato, no un requisito de API nuevo.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-10 | `SalesChart` (`ComposedChart` de Recharts, barras + línea, con tabla accesible equivalente) visualiza AC-1. | AC-1 |
+| R-11 | `TopProductsTable` (TanStack Table, ordenable por cantidad) visualiza AC-2. | AC-2 |
+| R-12 | `SummaryCards` (tarjetas KPI: órdenes, monto, desglose por estado) visualiza AC-3. | AC-3 |
+| R-13 | `RangeFilterForm` con aplicación explícita del rango (botón "Aplicar") + selector de granularidad con aplicación inmediata en `SalesChart`. | AC-4 |
+| R-14 | Tres widgets independientes, cada uno con su propio `AsyncState<T>` (frontend-standards §11.9) — el fallo de un dataset no rompe los otros dos; cada widget tiene su propio "Reintentar". | Aislamiento de fallas (design.md Decisión 8) |
+| R-15 | Un período sin datos se representa como estado `success` vacío explícito por widget, nunca como `error`. | AC-5 |
+| R-16 | Tres botones de export CSV (uno por widget) vía Blob — mismo patrón que `imports`, reusando los helpers extraídos `downloadCsv`/`contentDisposition` (`src/lib/http/`). | AC-6 |
+| R-17 | Cuando el backend recorta el `from` pedido (AC-9), cada widget muestra una nota de "rango acotado" transparente, calculada por un helper puro compartido (`rangeClampNote.ts`) con el `{requested, effective}` que ESE widget recibió. | AC-9 |
+| R-18 | El rango de fechas vive en estado de cliente (`useState`, no `searchParams`) — mismo precedente que el filtro de `status` de `OrdersList` (CAP-5). | design.md Decisión 3 |
+| R-19 | Gráficos vía Recharts `^3.9.0`, cargados client-only (`next/dynamic(ssr:false)`) — primera versión con soporte nativo a React 19 sin overrides de `react-is`. | design-system §9 (pre-aprobado), design.md Decisión 7 |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-5 | El FE no re-filtra ni re-interpreta qué cuenta como "venta" (AC-8) — muestra tal cual lo que el backend ya filtró; sólo agrega un caption informativo. La autoridad real del filtro es 100% backend. |
+| N-6 | Ningún widget dispara un fetch por cada `onChange` intermedio de los inputs de fecha del rango — sólo al confirmar "Aplicar" (evita ruido de 3 fetches por estado intermedio inválido de un `<input type="date">`). |
+| N-7 | El panel no agrega un nav/sidebar nuevo entre las pantallas admin — `/admin/metricas` es alcanzable por URL directa, igual que sus hermanas (`admin/ordenes`, `admin/importar`, `admin/productos`), ninguna de las cuales se enlaza entre sí hoy. |
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-6 | Rango de fechas persistido en la URL (deep-linking a un período específico, no se puede compartir un link con un rango ya aplicado). | Owner: PO — no pedido por ningún AC de US-016; mismo criterio que `OrdersList`, que tampoco lo persiste. Reversible: cambio acotado a `MetricsDashboard` sin tocar los 3 widgets (design.md Decisión 3). |
+| D-7 | Nav/sidebar compartido entre las 5 pantallas del panel admin. | Owner: PO — cambio transversal al panel completo, no específico de esta US; fuera de alcance sin pedido explícito. |

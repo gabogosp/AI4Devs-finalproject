@@ -429,6 +429,12 @@
   # todavía sin archivar al momento de este archive (se archivan a continuación,
   # una disciplina a la vez, mismo change-set) — `status` de la US se queda en
   # `In Progress` hasta que las 3 disciplinas queden `archived`.
+  #
+  # NOTA (2026-09-06, /archive-change US-016-panel-metricas-frontend-web): PR
+  # #59 mergeado a main (ad21184). Archivado a openspec/changes/archive/.
+  # Extiende openspec/specs/metricas/ con la feature `metrics/` (asimetría de
+  # nombre vs `reports`/`Reports*` del backend, documentada en decisions.md D7).
+  # Sólo falta QA (#60, ya mergeada a main) para que la US pase a `Done`.
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento
