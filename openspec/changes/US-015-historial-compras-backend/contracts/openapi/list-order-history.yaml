@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  title: "list-order-history — listado del historial de compras del cliente"
+  version: "v1"
+  description: |
+    Lista las órdenes propias del cliente autenticado (US-015 AC-1), ordenadas
+    de la más reciente a la más antigua, dentro de la ventana de retención
+    vigente (AC-7, 12 meses PRD §6). Excluye `pending_payment` (checkout
+    iniciado y nunca pagado no es una "compra"). Requiere sesión de cliente
+    válida (AC-5); sin ella, 401 sin exponer ninguna fila (AC-4).
+servers:
+  - url: https://api.example.com
+    description: PROD
+  - url: https://api.uat.example.com
+    description: UAT
+
+paths:
+  /v1/me/orders:
+    get:
+      operationId: listOrderHistory
+      tags: [orders, customer]
+      summary: Listar mis órdenes
+      security:
+        - customerCookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: traceparent
+          in: header
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado paginado, posiblemente vacío (AC-3, sin caso especial)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderHistoryListResponse'
+              examples:
+                con_ordenes:
+                  value:
+                    data:
+                      - order_number: 1042
+                        status: delivered
+                        total_ars_cents: 350000
+                        created_at: "2026-08-01T14:30:00.000Z"
+                    pagination: { limit: 20, offset: 0, total: 1 }
+                vacio:
+                  value:
+                    data: []
+                    pagination: { limit: 20, offset: 0, total: 0 }
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  securitySchemes:
+    customerCookieAuth:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: Access JWT de cliente, `httpOnly` — verificado por `CustomerGuard` (fail-closed).
+  schemas:
+    OrderHistorySummary:
+      type: object
+      description: Nunca incluye el UUID interno de la orden ni datos de contacto del comprador.
+      properties:
+        order_number:
+          type: integer
+          description: Identificador público y legible ("Pedido #1042").
+        status:
+          type: string
+          enum: [new, preparing, ready, delivered, cancelled]
+        total_ars_cents:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    OrderHistoryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderHistorySummary'
+        pagination:
+          type: object
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+  responses:
+    Unauthenticated:
+      description: Sin sesión de cliente válida (cookie ausente, vencida o inválida)
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string, default: "dsm:auth/unauthenticated" }
+              title: { type: string }
+              status: { type: integer, default: 401 }
+              detail: { type: string }
+    RateLimited:
+      description: Presupuesto `orders_history` agotado (`ORDERS_HISTORY_RATE_LIMIT_MAX`)
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              status: { type: integer, default: 429 }

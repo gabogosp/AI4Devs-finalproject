@@ -1959,3 +1959,76 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+# Planificado 2026-09-06 (/plan-backend-ticket US-015). Linear MCP no conectado —
+# creación de task/comentario en el tracker omitida, sin simular.
+- name: US-015-historial-compras-backend
+  us-id: US-015
+  discipline: backend
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-015-historial-compras.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # ALCANCE AMPLIADO (decisión del PO, 2026-09-06): la US original (§7) presupuestaba
+  # BE-US-015 en 3-5 h tradicional para SÓLO LECTURA (listar/detallar). Al planificar se
+  # verificó código real: `apps/api/src/checkout/` es 100% guest (0 referencias a
+  # customer/customerId, `grep -rn "customer" apps/api/src/checkout/*.ts` sin resultados
+  # no-spec) y el propio comentario del modelo `Order` en
+  # `packages/db/prisma/schema.prisma` dice que `customer_id` "queda SIN ESCRITOR en esta
+  # US (fusión invitado↔cuenta diferida a US-015)". Sin escritor, AC-1 sería
+  # estructuralmente inverificable (el historial listaría siempre cero órdenes). El PO
+  # amplió el alcance para construir también ese escritor: el checkout resuelve la
+  # sesión de cliente SI EXISTE (mismo mecanismo de `US-014-registro-login-backend`) y,
+  # si hay sesión válida, setea `orders.customer_id` al crear la orden — aditivo puro,
+  # cero cambio de comportamiento observable para el invitado (AC-6 lo exige; probado
+  # sin modificar una sola aserción de la suite de US-008, tasks.md Fase 5/T5.5).
+  #
+  # DISEÑO: `resolveCustomerSession()` nuevo (extraído de `CustomerGuard` por Extract
+  # Method, behavior-preserving) alimenta DOS guards: `CustomerGuard` (fail-closed, sin
+  # cambios de comportamiento) y `OptionalCustomerGuard` (nuevo, nunca bloquea) — cero
+  # duplicación de la verificación JWT/cookie. Lado lectura: `GET /v1/me/orders` +
+  # `GET /v1/me/orders/{order_number}` en `orders/` (no en `checkout/`, ver design.md
+  # §Trade-offs), autorización estructural en el WHERE (customer_id + corte de
+  # retención en la misma query, nunca un chequeo posterior — IDOR-proof por diseño,
+  # threat-modeling-lite superficie 4). `computeRetentionCutoff()` extraído de
+  # `OrdersRetentionService` (US-021) a un helper compartido, un solo cálculo para
+  # ambos consumidores. Índice compuesto `orders(customer_id, created_at)` (migración
+  # aditiva, reemplaza el de una sola columna — mismo patrón que `PasswordResetToken`
+  # ya usa en el schema).
+  #
+  # 6,3 h AI-asistido / ~14 h tradicional (26 tasks, 7 fases). El exceso sobre el
+  # presupuesto original de 3-5 h se explica enteramente por el escritor del checkout
+  # que la US no presupuestaba porque no sabía que faltaba (helper de sesión compartido
+  # + guard opcional + prueba explícita de cero-regresión en US-008 + throttler nombrado
+  # nuevo). El trabajo de sólo lectura entra cómodo en el rango original.
+  #
+  # Sin ADR nuevo: no hay cambio de motor, ni de topología de sesión (ADR-0011/ADR-0013
+  # siguen gobernando), ni de namespace (ADR-0010 es de rutas de frontend, no aplica a
+  # este change de backend).
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment — migración de esquema (índice compuesto
+  # sobre `orders`, tabla ya en producción potencial), modifica el camino crítico del
+  # checkout (tier-1, revenue, aunque de forma aditiva y con regresión probada), 2 env
+  # vars nuevas (ORDERS_HISTORY_RATE_LIMIT_MAX/_TTL_MS) y superficie pública nueva que
+  # expone datos de `orders`/`order_items` a un cliente autenticado (primera vez fuera
+  # del panel admin).
+  #
+  # Open questions (ninguna bloquea el arranque): (1) ¿excluir del historial las
+  # órdenes anonimizadas a pedido (US-021) que sigan dentro de los 12 meses? — default
+  # actual: se muestran (ítems/importes intactos, sin contacto real); (2) namespace de
+  # rutas del frontend — decisión de US-015-historial-compras-frontend-web, no de este
+  # change.
+  #
+  # Capability nueva esperada en openspec/specs/ tras el primer /archive-change:
+  # `historial-compras` (CAP-8, PRD §2.1 cap. 8 — us-status.yaml ya asigna
+  # prd-capacity: 8 a US-015).
+  estimate-hours: 6.3
+  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía (modo sólo-planificación)
+  branch: feat/US-015-historial-compras-backend
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null

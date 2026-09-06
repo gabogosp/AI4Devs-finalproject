@@ -350,7 +350,10 @@
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras
-  status: Ready
+  status: In Progress   # primera planificación 2026-09-06 (/plan-backend-ticket, disciplina BE).
+  # Alcance ampliado por decisión del PO: BE construye también el escritor de
+  # `orders.customer_id` que US-008 dejó diferido a esta US (ver
+  # openspec/changes/US-015-historial-compras-backend/proposal.md §Why).
   priority: Medium
   prd-capacity: 8
   disciplines: [BE, FE, QA]
@@ -358,6 +361,7 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
+  in-progress-at: 2026-09-06   # primera planificación (/plan-backend-ticket)
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas
