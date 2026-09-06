@@ -618,12 +618,12 @@ describe('Notificaciones de órdenes (US-011) — defaults y fail-fast', () => {
   });
 
   it('en producción, faltar ORDER_NOTIFICATIONS_FROM hace FALLAR el arranque', () => {
-    const { ORDER_NOTIFICATIONS_FROM, ...sinRemitente } = prodValida;
+    const sinRemitente = { ...prodValida, ORDER_NOTIFICATIONS_FROM: undefined };
     expect(() => validateEnv(sinRemitente)).toThrow(/ORDER_NOTIFICATIONS_FROM/);
   });
 
   it('en producción, faltar OWNER_NOTIFICATION_EMAIL hace FALLAR el arranque', () => {
-    const { OWNER_NOTIFICATION_EMAIL, ...sinDueno } = prodValida;
+    const sinDueno = { ...prodValida, OWNER_NOTIFICATION_EMAIL: undefined };
     expect(() => validateEnv(sinDueno)).toThrow(/OWNER_NOTIFICATION_EMAIL/);
   });
 

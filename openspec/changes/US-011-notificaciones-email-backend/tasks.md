@@ -258,13 +258,13 @@
 
 ## Verification (suite-level)
 
-- [ ] Todos los unit tests nuevos + existentes pasan:
+- [x] Todos los unit tests nuevos + existentes pasan:
       `pnpm --filter api exec jest --ci`
-- [ ] Typecheck limpio: `pnpm --filter api exec tsc --noEmit -p tsconfig.json`
-- [ ] Lint limpio: `pnpm --filter api exec eslint src --max-warnings 0`
-- [ ] Sin endpoint nuevo — no aplica contract test / OpenAPI lint para este
+- [x] Typecheck limpio: `pnpm --filter api exec tsc --noEmit -p tsconfig.json`
+- [x] Lint limpio: `pnpm --filter api exec eslint src --max-warnings 0`
+- [x] Sin endpoint nuevo — no aplica contract test / OpenAPI lint para este
       change (confirmado en `proposal.md` "Out of scope").
-- [ ] `git grep -n "Deferred: US-011"` sobre
+- [x] `git grep -n "Deferred: US-011"` sobre
       `openspec/specs/ordenes/requirements.md` y
       `openspec/specs/pagos/requirements.md` sigue devolviendo las 2 líneas
       hasta el archive (el delta de `design.md` "Spec delta" las quita
