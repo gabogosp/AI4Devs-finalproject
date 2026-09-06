@@ -42,8 +42,8 @@ documentado.
 | SC-005-C3 | T1.8 | AC-6 | 1 | **bloqueado** |
 | SC-005-N2 | T1.8 | AC-7 (completa) | 1 | **bloqueado** |
 | SC-005-N3 | T1.8 | AC-8 | 1 | **bloqueado** |
-| QA-005-CT-1 | T2.1 | (contrato de los 2 endpoints) | 1 | pendiente |
-| QA-005-CT-2 | T2.2 | (corrección de contrato, QA-005-F2) | 1 | pendiente |
+| QA-005-CT-1 | T2.1 | (contrato de los 2 endpoints) | 1 | hecho |
+| QA-005-CT-2 | T2.2 | (corrección de contrato, QA-005-F2) | 1 | hecho |
 | QA-005-PERF-1 | T3.1 | NFR-3 (E2E §17) | 1 | pendiente |
 | QA-005-EXP-1 | T4.1 | (exploratorio) | — | pendiente (charter escrito, ejecución humana pendiente) |
 
@@ -221,7 +221,7 @@ documentado.
 
 ## Fase 2: Contract testing
 
-- [ ] T2.1 `qa/contract/enrichment.contract.ts` — QA-005-CT-1.
+- [x] T2.1 `qa/contract/enrichment.contract.ts` — QA-005-CT-1.
   - **Pattern**: script `tsx` standalone con `fetch`, mismo estilo que
     `search.contract.ts`/`pago-webhook.contract.ts` (sin jest, sin `supertest`). Registrar
     `test:contract:enrichment` en `qa/package.json`, sin tocar los scripts `test:contract*`
@@ -231,7 +231,7 @@ documentado.
     `qa-plan.md` §6 para el detalle completo de casos.
   - **Verify**: `QA_API_BASE_URL=http://localhost:3009 ADMIN_BOOTSTRAP_TOKEN=<mismo valor de la API> pnpm --filter @dsm/qa test:contract:enrichment`
 
-- [ ] T2.2 Corrección de contrato incompleto (QA-005-F2, mitad segura) — QA-005-CT-2.
+- [x] T2.2 Corrección de contrato incompleto (QA-005-F2, mitad segura) — QA-005-CT-2.
   - **Pattern**: edición documental de `openspec/specs/catalogo/contracts/openapi.yaml`,
     schema `UpdateProduct` — agregar la propiedad, no tocar `Product` (lectura).
   - **Exit criterion**: `UpdateProduct` declara
