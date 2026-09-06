@@ -5,6 +5,10 @@ parent-us: US-020
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 0eea71bfb4d21586c9620136b99af027fbeafaf2
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/93
 ---
 
 # US-020 Backend — Borrado de cuenta y datos personales (Ley 25.326)

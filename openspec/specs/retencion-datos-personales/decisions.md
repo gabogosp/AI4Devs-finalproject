@@ -50,6 +50,17 @@ proyectarlas al DTO) y se documentaron en el schema `AdminOrderDetail` de
 `apps/api/docs/api/openapi.yaml` (spec publicado). Ver la desviación de abajo
 para el segundo fix (publicar los 2 endpoints).
 
+## Decisiones de US-020 (borrado de cuenta)
+
+| Decisión | Motivo |
+|---|---|
+| Anonimizar la fila de `customers` (soft-delete), no borrado físico. | Mismo idioma que esta capacidad ya aplicaba a `orders` — conserva el vínculo orden↔cliente que sostiene los agregados de `metricas` (CAP US-016), sin romper integridad referencial (que de todos modos no se habría roto: las 4 relaciones de `customers` ya declaran `onDelete` propio). |
+| Tercer valor de `anonymization_reason` (`account_deletion`) en vez de reusar `'requested'`. | Disparadores estructuralmente distintos: `'requested'` es una acción del DUEÑO sobre una orden puntual a pedido del comprador invitado; `'account_deletion'` es el efecto en cascada de que el TITULAR borró su cuenta entera, todas sus órdenes de una vez, disparado por el propio cliente. |
+| `AccountModule` nuevo, fuera de `AuthModule`, importando `AuthModule`+`CheckoutModule`+`CartModule` de forma acíclica. | `CheckoutModule` ya importa `AuthModule` — `AuthModule` no puede importar de vuelta sin ciclo. Misma forma que `OrdersModule` (capacidad `historial-compras`) ya probó para `auth`+`checkout`. |
+| `sessionCookie` en vez de `adminBearer` para este único endpoint de la capacidad. | Es la primera y única superficie de esta capacidad donde el AUTOSERVICIO del cliente (no una acción del dueño) dispara la anonimización — coherente con que US-020 es autoservicio por decisión de producto explícita (US §10, decisión 4). |
+| Placeholder de email único por fila (`cuenta-borrada+{customerId}@...`), no fijo como el de `orders.buyer_email`. | `customers.email` tiene `UNIQUE` (a diferencia de `orders.buyer_email`) — un valor fijo colisionaría en el segundo borrado, y la decisión de producto 2 exige que el email real quede libre para re-registro sin bloquear el próximo borrado. |
+| Sin `Idempotency-Key` — mismo argumento que ya declaró esta capacidad para sus 2 endpoints originales. | El `WHERE deleted_at IS NULL` de `CustomersRepository.anonymize` ya resuelve estructuralmente el doble efecto de un doble clic/retry. |
+
 ## Desviaciones conscientes registradas
 
 - **RESUELTO (2026-09-05, fix/US-021-publish-order-anonymization-contract)**:

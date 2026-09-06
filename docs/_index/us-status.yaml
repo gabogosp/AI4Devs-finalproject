@@ -689,9 +689,12 @@
   # anonimización que esta US reusa en vez de duplicar).
   blocked_by: [US-014, US-015, US-021]
   in-progress-at: 2026-09-06   # /develop-backend US-020 — 27/27 tasks cerradas
-  in-review-at: 2026-09-06     # BE PR #93 abierto (/commit) — primera disciplina en review;
-  # FE y QA de esta US todavía no planificadas (status de la US se queda en In Progress
-  # hasta que las 3 disciplinas declaradas [BE, FE, QA] tengan su PR abierto).
+  in-review-at: 2026-09-06     # BE PR #93 abierto (/commit) — primera disciplina en review
+  # /archive-change US-020-borrado-cuenta-datos-personales-backend (2026-09-06, PR #93
+  # mergeado 0eea71b): BE archivado, extiende openspec/specs/retencion-datos-personales/
+  # (CAP-13) con DELETE /me + delta cruzado sobre openspec/specs/ordenes/ (enum de
+  # anonymization_reason). La US se queda en In Progress — FE y QA (también declaradas
+  # en disciplines) todavía no se planificaron, así que no hay 3/3 disciplinas resueltas.
 - id: US-021
   slug: retencion-datos-ordenes
   status: Done   # /archive-change US-021-retencion-datos-ordenes-frontend-web 2026-09-06 —

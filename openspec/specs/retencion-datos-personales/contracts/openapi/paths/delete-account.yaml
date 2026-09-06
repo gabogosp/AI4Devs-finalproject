@@ -1,0 +1,48 @@
+delete:
+  operationId: deleteAccount
+  tags: [account]
+  summary: Borrar la cuenta y los datos personales del cliente autenticado (US-020 AC-1, AC-2, AC-3)
+  description: |
+    Autoservicio, inmediato e irreversible: sin ventana de gracia. Anonimiza
+    `customers` (name/email/phone sobrescritos, `deleted_at` sellado, email
+    liberado para re-registro), revoca todas las sesiones y enlaces de
+    recuperación pendientes, desvincula los carritos y anonimiza las órdenes
+    históricas no anonimizadas (`anonymization_reason=account_deletion`,
+    mismo mecanismo que el resto de esta capacidad). Bloquea con 409 si el
+    titular tiene órdenes sin pagar o pagadas y sin entregar. Idempotente:
+    una segunda confirmación sobre una cuenta ya borrada responde 204 sin
+    error ni segundo efecto (AC-15).
+  security:
+    - sessionCookie: []
+  parameters:
+    - name: x-csrf-token
+      in: header
+      required: true
+      description: Double-submit CSRF (security-standards.md §7.5) — HMAC del `jti` del access token.
+      schema: { type: string }
+  responses:
+    '204':
+      description: |
+        Borrado aplicado (o ya lo estaba — misma respuesta, AC-15: idempotente,
+        sin error ni segundo efecto). Las cookies de sesión del dispositivo que
+        llamó se limpian en la respuesta.
+    '401':
+      description: Sin sesión de cliente válida (`dsm:auth/unauthenticated`).
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: CSRF ausente o inválido (`dsm:auth/csrf`).
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '409':
+      description: |
+        El titular tiene al menos una orden sin pagar (`pending_payment`) o
+        pagada y sin entregar (`new`/`preparing`/`ready`) — AC-4, AC-9. No se
+        modifica ningún dato.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/AccountHasActiveOrdersProblem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

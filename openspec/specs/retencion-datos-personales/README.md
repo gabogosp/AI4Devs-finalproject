@@ -1,9 +1,12 @@
 # Capacidad: Retención y anonimización de datos personales (CAP-13)
 
-**Estado**: entregada parcialmente — sólo el backend. Sin panel de lectura
-(el DTO admin de órdenes de `US-012-panel-ordenes-dueno` debe exponer
-`anonymized_at`/`anonymization_reason` para que esto sea visible; ver Open
-question) y sin disparador externo real (cron) provisionado.
+**Estado**: entregada parcialmente — sólo backend (2 endpoints admin de
+US-021 + `DELETE /me` de autoservicio del cliente de US-020). Sin panel de
+lectura para el flujo admin y sin disparador externo real (cron)
+provisionado; el panel de lectura de `anonymized_at`/`anonymization_reason`
+en el DTO admin de órdenes **ya está resuelto** (2026-09-05, ver
+`decisions.md` — corrección de una nota de esta misma sección que había
+quedado desactualizada).
 
 Estado declarado del sistema para la capacidad CAP-13 del PRD §2.1 (partida
 de CAP-10 el 2026-08-23: la protección de datos personales es su propia
@@ -59,11 +62,30 @@ sigue sin backend al momento de este change):
   `anonymized_count`) y `orders_retention.anonymized_on_request` (uno por
   acción) — la firma nunca acepta más que `orderId | null`.
 
+## Qué agregó US-020 (borrado de cuenta, autoservicio)
+
+- **`DELETE /me`** (AC-1, AC-2, AC-3): a diferencia de las dos rutas
+  anteriores (acción del dueño sobre un comprador invitado), esta la
+  dispara el propio CLIENTE sobre su propia cuenta, con su propia sesión
+  (`sessionCookie`, no `adminBearer`). Anonimiza `customers` (name/email/
+  phone sobrescritos, `deleted_at` sellado, email liberado para
+  re-registro), revoca sesiones y resets pendientes, desvincula carritos, y
+  anonimiza las órdenes históricas del titular reusando el mecanismo de
+  arriba con un tercer valor de `reason`: `account_deletion`.
+- **Bloqueo por órdenes en curso** (AC-4, AC-9): si el titular tiene una
+  orden sin pagar o pagada y sin entregar, el borrado se rechaza (409) con
+  el detalle — verificado al ejecutar, dentro de la misma transacción.
+- **Idempotente** (AC-15): mismo idioma `WHERE ... IS NULL`, ahora también
+  sobre `customers.deleted_at`.
+- Detalle completo:
+  [`US-020-borrado-cuenta-datos-personales-backend`](../../changes/archive/US-020-borrado-cuenta-datos-personales-backend/).
+
 ## Qué NO está vivo todavía
 
-- **Panel de lectura** que muestre `anonymized_at`/`anonymization_reason` —
-  depende de `US-012-panel-ordenes-dueno-backend`, que debe exponerlos en su
-  DTO de orden (ver Open question abajo).
+- **Panel de lectura** para el flujo ADMIN (mostrar "datos anonimizados" en
+  vez del nombre/email/teléfono real de un comprador invitado) — el DTO ya
+  expone los campos (ver arriba, resuelto 2026-09-05); falta el componente
+  de FE que los consuma en el panel del dueño.
 - **Disparador externo real** (cron de Railway u operación manual
   documentada en el runbook) para la cadencia mensual de AC-1 — el barrido
   al arrancar cubre sólo el caso de redeploy, no reemplaza un disparador
@@ -78,40 +100,34 @@ sigue sin backend al momento de este change):
 
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml)
 + un archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/).
-Dos endpoints vivos:
+Tres endpoints vivos:
 
-| Endpoint | Métodos | AC |
-|---|---|---|
-| `/admin/orders/{id}/anonymize` | POST | AC-3, AC-4, AC-8, AC-9 |
-| `/admin/orders/retention-sweep` | POST | AC-1, AC-4, AC-8 |
+| Endpoint | Métodos | Seguridad | AC |
+|---|---|---|---|
+| `/admin/orders/{id}/anonymize` | POST | `adminBearer` | AC-3, AC-4, AC-8, AC-9 (US-021) |
+| `/admin/orders/retention-sweep` | POST | `adminBearer` | AC-1, AC-4, AC-8 (US-021) |
+| `/me` | DELETE | `sessionCookie` | AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-9, AC-10, AC-12, AC-13, AC-14, AC-15 (US-020) |
 
 Seeded desde los contratos draft del propio change (`contracts/openapi/anonymize-order.yaml`
 + `retention-sweep.yaml`) — el spec publicado de `apps/api/docs/api/openapi.yaml`
-**no** llegó a incluirlos (el `tasks.md` de este change no tuvo una task
-equivalente a "mergear al spec publicado" que sí tuvieron otros changes
-archivados; queda como brecha conocida, no de esta capacidad).
+**no** llegó a incluir esos 2 endpoints (el `tasks.md` de US-021 no tuvo una
+task equivalente a "mergear al spec publicado"; queda como brecha conocida
+de esos 2, no de la capacidad entera). `DELETE /me` (US-020) es distinto:
+**sí** se publicó en `apps/api/docs/api/openapi.yaml` en el mismo change
+(su propia Fase 6 sí tuvo esa task) — no hereda la misma brecha.
 
 ## Changes que formaron esta capacidad
 
 | Change | Disciplina | Aporte |
 |---|---|---|
 | [`US-021-retencion-datos-ordenes-backend`](../../changes/archive/US-021-retencion-datos-ordenes-backend/) | BE | Migración aditiva (`anonymized_at`/`anonymization_reason` + 2 `CHECK`), `OrdersRetentionService`/`Controller`/`Runner`, 2 endpoints admin, idempotencia estructural |
+| [`US-020-borrado-cuenta-datos-personales-backend`](../../changes/archive/US-020-borrado-cuenta-datos-personales-backend/) | BE | `DELETE /me` (autoservicio del cliente), `AccountModule`/`AccountDeletionService`, tercer valor de `anonymization_reason` (`account_deletion`), reuso íntegro del mecanismo de anonimización de órdenes de US-021 |
 
-Sin disciplinas FE/QA propias todavía. `US-021-retencion-datos-ordenes-qa`
-está en desarrollo (otra sesión); `US-021-retencion-datos-ordenes-frontend-web`
-no existe como change — la acción "anonimizar" en el panel del dueño
-depende de que `US-012-panel-ordenes-dueno-frontend-web` (ya construido)
-exponga el estado de anonimización, lo que a su vez depende de que el
-backend de US-012 exponga esos campos (ver Open question).
-
-## Open question heredada (para quien planifique US-012 backend/frontend)
-
-El futuro DTO de lectura de una orden **debe** exponer `anonymized_at` y
-`anonymization_reason` — es lo que el AC-5 de esta US necesita para que el
-panel muestre la indicación de "datos anonimizados" en vez del
-nombre/email/teléfono. `US-012-panel-ordenes-dueno-backend` ya está
-archivado (ver `openspec/specs/ordenes/`) — su `AdminOrderDetail` **no**
-declara estos campos todavía; quien lo extienda debe leer esto primero.
+Sin disciplinas FE/QA propias todavía para ninguno de los 2 changes.
+`US-021-retencion-datos-ordenes-qa` está en desarrollo (otra sesión);
+`US-020-borrado-cuenta-datos-personales-frontend-web`/`-qa` tampoco existen
+como change todavía (la US-020 declara `[BE, FE, QA]` — el backend es la
+primera disciplina en cerrar).
 
 ## Estado de la provisión
 

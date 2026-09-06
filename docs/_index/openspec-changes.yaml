@@ -2643,7 +2643,9 @@
   us-id: US-020
   discipline: backend
   variant: null
-  status: in review   # /develop-backend US-020 (2026-09-06) — 27/27 tasks cerradas, PR #93 abierto
+  status: archived   # /archive-change 2026-09-06 — PR #93 mergeado (0eea71b). Extiende
+  # openspec/specs/retencion-datos-personales/ (CAP-13) con DELETE /me + delta cruzado
+  # sobre openspec/specs/ordenes/ (enum de anonymization_reason).
   parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
   audit-baseline: null
@@ -2723,6 +2725,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/93
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T15:28:11Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-backend
