@@ -846,10 +846,10 @@ export const ListOrderHistoryQueryParams = zod.object({
 export const ListOrderHistoryResponse = zod.object({
   "data": zod.array(zod.object({
   "order_number": zod.number().int().describe('Identificador público y legible (\"Pedido'),
-  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']),
+  "status": zod.enum(['pending_payment', 'new', 'preparing', 'ready', 'delivered', 'cancelled']),
   "total_ars_cents": zod.number().int(),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño.')),
+}).describe('Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño. Reusado tal cual por `AccountHasActiveOrdersProblem.blocking_orders` (US-020, `OrderHistorySummaryDto.from` — mismo DTO, sin duplicar la forma): `GET \/me\/orders` nunca devuelve `pending_payment` (lo excluye por query, ver su propia descripción), pero el 409 de `DELETE \/me` sí puede — por eso el enum incluye los 6 valores que el campo `status!: string` del DTO puede tomar en cualquiera de sus dos usos, no sólo el subconjunto de uno de ellos.')),
   "pagination": zod.object({
   "limit": zod.number().int(),
   "offset": zod.number().int(),
@@ -872,10 +872,10 @@ export const GetOrderHistoryDetailParams = zod.object({
 
 export const GetOrderHistoryDetailResponse = zod.object({
   "order_number": zod.number().int().describe('Identificador público y legible (\"Pedido'),
-  "status": zod.enum(['new', 'preparing', 'ready', 'delivered', 'cancelled']),
+  "status": zod.enum(['pending_payment', 'new', 'preparing', 'ready', 'delivered', 'cancelled']),
   "total_ars_cents": zod.number().int(),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño.').and(zod.object({
+}).describe('Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño. Reusado tal cual por `AccountHasActiveOrdersProblem.blocking_orders` (US-020, `OrderHistorySummaryDto.from` — mismo DTO, sin duplicar la forma): `GET \/me\/orders` nunca devuelve `pending_payment` (lo excluye por query, ver su propia descripción), pero el 409 de `DELETE \/me` sí puede — por eso el enum incluye los 6 valores que el campo `status!: string` del DTO puede tomar en cualquiera de sus dos usos, no sólo el subconjunto de uno de ellos.').and(zod.object({
   "fulfillment": zod.string().describe('Modalidad de retiro\/entrega (hoy sólo \"pickup\" en sucursal).'),
   "items": zod.array(zod.object({
   "product_name": zod.string(),

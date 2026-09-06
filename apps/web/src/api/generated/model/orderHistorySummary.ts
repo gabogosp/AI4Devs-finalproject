@@ -8,7 +8,7 @@
 import type { OrderHistorySummaryStatus } from './orderHistorySummaryStatus';
 
 /**
- * Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño.
+ * Nunca incluye el UUID interno de la orden ni datos de contacto del comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los incluye para el panel del dueño. Reusado tal cual por `AccountHasActiveOrdersProblem.blocking_orders` (US-020, `OrderHistorySummaryDto.from` — mismo DTO, sin duplicar la forma): `GET /me/orders` nunca devuelve `pending_payment` (lo excluye por query, ver su propia descripción), pero el 409 de `DELETE /me` sí puede — por eso el enum incluye los 6 valores que el campo `status!: string` del DTO puede tomar en cualquiera de sus dos usos, no sólo el subconjunto de uno de ellos.
  */
 export interface OrderHistorySummary {
   /** Identificador público y legible ("Pedido */

@@ -2205,7 +2205,14 @@ components:
       description: >-
         Nunca incluye el UUID interno de la orden ni datos de contacto del
         comprador (US-015) — a diferencia de `AdminOrderSummary`, que sí los
-        incluye para el panel del dueño.
+        incluye para el panel del dueño. Reusado tal cual por
+        `AccountHasActiveOrdersProblem.blocking_orders` (US-020,
+        `OrderHistorySummaryDto.from` — mismo DTO, sin duplicar la forma):
+        `GET /me/orders` nunca devuelve `pending_payment` (lo excluye por
+        query, ver su propia descripción), pero el 409 de `DELETE /me` sí
+        puede — por eso el enum incluye los 6 valores que el campo
+        `status!: string` del DTO puede tomar en cualquiera de sus dos usos,
+        no sólo el subconjunto de uno de ellos.
       required: [order_number, status, total_ars_cents, created_at]
       additionalProperties: false
       properties:
@@ -2214,7 +2221,7 @@ components:
           description: Identificador público y legible ("Pedido #1042").
         status:
           type: string
-          enum: [new, preparing, ready, delivered, cancelled]
+          enum: [pending_payment, new, preparing, ready, delivered, cancelled]
         total_ars_cents: { type: integer }
         created_at: { type: string, format: date-time }
     AccountHasActiveOrdersProblem:
