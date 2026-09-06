@@ -247,7 +247,7 @@ language: es
     (falla de una línea deja cero filas, invariante ya probado por
     `checkout.service.spec.ts` existente, sin modificar esa aserción).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders\\.repository\\.spec`
-- [ ] T5.4 Helper de test: `customerAccessCookie()` en `test/e2e-app.ts`
+- [x] T5.4 Helper de test: `customerAccessCookie()` en `test/e2e-app.ts`
   - **Pattern**: firma un JWT con `role: 'customer', typ: 'access', jti:
     randomUUID(), sub: customerId` (a diferencia de `customerToken()`
     existente, que omite `typ`/`jti` a propósito porque se usa para probar
