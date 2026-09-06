@@ -150,6 +150,17 @@
   # está archivado. `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca
   # se planificó (no existe openspec/changes/US-008-*-qa/ en ningún estado). Se queda en
   # `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
+  #
+  # NOTA (2026-09-05, /develop-qa US-008): la nota de arriba estaba desactualizada — el
+  # `qa-plan.md` sí existía (Mode A, inline en `US-008-checkout-guest-backend/`, escrito
+  # 2026-08-23, regenerado 2026-08-30), sólo nunca se había ejecutado. Ejecutado ahora
+  # contra el backend+frontend-web ya mergeados: 14/14 escenarios de aceptación, 5/5 casos
+  # de contract testing, k6 p95 ≈4ms (vs. umbral 500ms), 2/2 casos del E2E Playwright
+  # cross-stack (incluida SC-008-X3, enlaces de consentimiento reales) — todo verde, sin
+  # defectos en la implementación. Con esto BE + FE + QA de US-008 están completos (QA no
+  # requiere archive-change separado, Mode A ya vive en el directorio archivado). `status`
+  # queda en `In Progress` — la transición a `Done` la aplica quien mergee este PR.
+  # `blocked_by` sin tocar (propiedad de otro agente).
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
