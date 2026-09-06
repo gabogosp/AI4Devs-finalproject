@@ -60,7 +60,7 @@
     `contentDisposition.ts` tiene su propio test unitario (header presente,
     header ausente → fallback, header con comillas y sin comillas).
   - **Verify**: `pnpm --filter @dsm/web exec vitest run src/features/imports/importsService.test.ts src/lib/http/contentDisposition.test.ts`.
-- [ ] T2.2 Extraer la descarga vía Blob a `downloadCsv(csv: string, filename:
+- [x] T2.2 Extraer la descarga vía Blob a `downloadCsv(csv: string, filename:
       string): void` en `src/lib/http/downloadCsv.ts`;
       `imports/reportDownload.ts` pasa a llamarlo.
   - **Pattern**: Extract Method — mismo invariante (comportamiento observable
