@@ -75,7 +75,7 @@
 
 ## Fase 3 — Listado (`PurchaseHistoryList` + estado vacío)
 
-- [ ] T3.1 `PurchaseHistoryList` — composición de estados (idle/loading/success/error)
+- [x] T3.1 `PurchaseHistoryList` — composición de estados (idle/loading/success/error)
   - **Depends on**: T2.1.
   - **Pattern**: `per frontend-standards.md §11.4/§11.9 — AsyncState + composición explícita de
     estados`, mismo esqueleto que `OrdersList`/`OrderDetail` (`apps/web/src/features/orders/`)
@@ -89,7 +89,7 @@
   - **Verify**: nuevo `apps/web/src/features/order-history/PurchaseHistoryList.test.tsx` con
     MSW — casos: loading, success con 2+ órdenes (verifica orden de renderizado == orden de la
     respuesta mockeada, sin reordenar), error con reintento — `vitest run` verde.
-- [ ] T3.2 "Cargar más" — paginación incremental
+- [x] T3.2 "Cargar más" — paginación incremental
   - **Depends on**: T3.1.
   - **Pattern**: `design.md` §Approach — acumula `items` en vez de reemplazar; el botón sólo se
     muestra si `items.length < total`.
@@ -101,7 +101,7 @@
     primera página (`limit: 20`) y una segunda página con los 5 restantes al click en "Cargar
     más"; se verifica que las 20 filas originales siguen presentes tras el click (no hay un
     segundo `render`, es el mismo árbol) — `vitest run` verde.
-- [ ] T3.3 `PurchaseHistoryEmptyState` (AC-3)
+- [x] T3.3 `PurchaseHistoryEmptyState` (AC-3)
   - **Depends on**: T3.1.
   - **Pattern**: `per design-system.md §10.1/§10.2` + mismo patrón estructural que
     `apps/web/src/features/cart/CartEmptyState.tsx` (copy propio del dominio —
