@@ -20,6 +20,7 @@ const customer = {
   email: 'ana@example.com',
   name: 'Ana Gómez',
   phone: null,
+  avatar_url: null,
   created_at: '2026-08-22T12:00:00Z',
 };
 

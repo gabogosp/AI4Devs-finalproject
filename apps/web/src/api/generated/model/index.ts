@@ -135,3 +135,4 @@ export * from './updateAdminOrderStatusStatus';
 export * from './updateCategory';
 export * from './updateProduct';
 export * from './updateProductStatus';
+export * from './updateProfileRequest';

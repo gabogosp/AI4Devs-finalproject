@@ -30,8 +30,9 @@ export const RegisterCustomerResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 })
 
 
@@ -50,8 +51,9 @@ export const LoginCustomerResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 })
 
 
@@ -69,8 +71,9 @@ export const RefreshSessionResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 })
 
 
@@ -94,8 +97,9 @@ export const GetCurrentCustomerResponse = zod.object({
   "email": zod.string().email(),
   "name": zod.string(),
   "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
   "created_at": zod.string().datetime({"offset":true})
-}).describe('Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 
 
 /**
@@ -897,6 +901,35 @@ export const DeleteAccountHeader = zod.object({
 })
 
 export const DeleteAccountResponse = zod.void()
+
+
+/**
+ * Ambos campos van SIEMPRE presentes (formulario completo, no un patch parcial): `name` no vacío/no sólo-espacios (AC-4) y `avatar_url` es `null` para quitar el avatar (AC-3) o una URL http/https válida para setearlo (AC-2) — cualquier otro valor no-null se rechaza (AC-5). El email NO es parte del body: enviarlo es 422 por `additionalProperties: false` (AC-6). La identidad sale exclusivamente de la sesión, nunca de un parámetro del request (AC-7).
+ * @summary Editar nombre y avatar del cliente autenticado (US-024 AC-1, AC-2, AC-3)
+ */
+export const UpdateProfileHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige además de un Origin de la allowlist; la ausencia de Origin se rechaza.')
+})
+
+export const updateProfileBodyNameMax = 120;
+
+export const updateProfileBodyAvatarUrlMax = 2048;
+
+
+
+export const UpdateProfileBody = zod.object({
+  "name": zod.string().min(1).max(updateProfileBodyNameMax).describe('No vacío ni sólo-espacios (AC-4, se recorta antes de validar).'),
+  "avatar_url": zod.string().url().max(updateProfileBodyAvatarUrlMax).nullable().describe('`null` quita el avatar (AC-3). Si no es `null`, debe ser una URL http\/https válida (AC-5) — mismo criterio que `avatar_url` de `Customer`.')
+}).describe('Entrada de PATCH \/me (US-024). Formulario completo, no un patch parcial.')
+
+export const UpdateProfileResponse = zod.object({
+  "id": zod.string().uuid(),
+  "email": zod.string().email(),
+  "name": zod.string(),
+  "phone": zod.string().nullable(),
+  "avatar_url": zod.string().url().nullable().describe('URL pegada por el cliente (US-024), nunca un archivo subido. `null` = sin avatar, el FE muestra un placeholder de iniciales.'),
+  "created_at": zod.string().datetime({"offset":true})
+}).describe('Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca password_hash, role, failed_login_attempts, lockout_count, locked_until ni deleted_at.')
 
 
 /**

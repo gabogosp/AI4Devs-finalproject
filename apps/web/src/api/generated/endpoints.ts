@@ -69,7 +69,8 @@ import type {
   StorefrontProductPage,
   UpdateAdminOrderStatus,
   UpdateCategory,
-  UpdateProduct
+  UpdateProduct,
+  UpdateProfileRequest
 } from './model';
 
 import {
@@ -1972,6 +1973,65 @@ export const deleteAccount = async ( options?: Parameters<typeof customFetch>[1]
 
 
 
+export type updateProfileResponse200 = {
+  data: Customer
+  status: 200
+}
+
+export type updateProfileResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type updateProfileResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type updateProfileResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type updateProfileResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type updateProfileResponseSuccess = (updateProfileResponse200) & {
+  headers: Headers;
+};
+export type updateProfileResponseError = (updateProfileResponse401 | updateProfileResponse403 | updateProfileResponse422 | updateProfileResponse429) & {
+  headers: Headers;
+};
+
+export type updateProfileResponse = (updateProfileResponseSuccess | updateProfileResponseError)
+
+export const getUpdateProfileUrl = () => {
+
+
+
+
+  return `/v1/me`
+}
+
+/**
+ * Ambos campos van SIEMPRE presentes (formulario completo, no un patch parcial): `name` no vacío/no sólo-espacios (AC-4) y `avatar_url` es `null` para quitar el avatar (AC-3) o una URL http/https válida para setearlo (AC-2) — cualquier otro valor no-null se rechaza (AC-5). El email NO es parte del body: enviarlo es 422 por `additionalProperties: false` (AC-6). La identidad sale exclusivamente de la sesión, nunca de un parámetro del request (AC-7).
+ * @summary Editar nombre y avatar del cliente autenticado (US-024 AC-1, AC-2, AC-3)
+ */
+export const updateProfile = async (updateProfileRequest: UpdateProfileRequest, options?: Parameters<typeof customFetch>[1]): Promise<updateProfileResponse> => {
+
+  return customFetch<updateProfileResponse>(getUpdateProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateProfileRequest)
+  }
+);}
+
+
+
 export type createImportResponse200 = {
   data: ImportCreated
   status: 200
@@ -2724,13 +2784,13 @@ export const exportAdminReportsSummary = async (params?: ExportAdminReportsSumma
 );}
 
 
-export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+export const getRegisterCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
-export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+export const getLoginCustomerResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
-export const getRefreshSessionResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
+export const getRefreshSessionResponseMock = (overrideResponse: Partial<Extract<CustomerEnvelope, object>> = {}): CustomerEnvelope => ({customer: {id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}, ...overrideResponse})
 
-export const getGetCurrentCustomerResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
+export const getGetCurrentCustomerResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getAdminLoginResponseMock = (overrideResponse: Partial<Extract<AdminLoginResponse, object>> = {}): AdminLoginResponse => ({token: faker.string.alpha({length: {min: 10, max: 20}}), ...overrideResponse})
 
@@ -2783,6 +2843,8 @@ export const getRunOrderRetentionSweepResponseMock = (overrideResponse: Partial<
 export const getListOrderHistoryResponseMock = (overrideResponse: Partial<Extract<OrderHistoryListResponse, object>> = {}): OrderHistoryListResponse => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({order_number: faker.number.int(), status: faker.helpers.arrayElement(['pending_payment','new','preparing','ready','delivered','cancelled'] as const), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
 export const getGetOrderHistoryDetailResponseMock = (): OrderHistoryDetail => ({...{order_number: faker.number.int(), status: faker.helpers.arrayElement(['pending_payment','new','preparing','ready','delivered','cancelled'] as const), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{fulfillment: faker.string.alpha({length: {min: 10, max: 20}}), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()}))},})
+
+export const getUpdateProfileResponseMock = (overrideResponse: Partial<Extract<Customer, object>> = {}): Customer => ({id: faker.string.uuid(), email: faker.internet.email(), name: faker.string.alpha({length: {min: 10, max: 20}}), phone: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), avatar_url: faker.helpers.arrayElement([faker.internet.url(), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', ...overrideResponse})
 
 export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
 
@@ -3209,6 +3271,18 @@ export const getDeleteAccountMockHandler = (overrideResponse?: void | ((info: Pa
   }, options)
 }
 
+export const getUpdateProfileMockHandler = (overrideResponse?: Customer | ((info: Parameters<Parameters<typeof http.patch>[1]>[0]) => Promise<Customer> | Customer), options?: RequestHandlerOptions) => {
+  return http.patch('*/me', async (info: Parameters<Parameters<typeof http.patch>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getUpdateProfileResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
   return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -3391,6 +3465,7 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getListOrderHistoryMockHandler(),
   getGetOrderHistoryDetailMockHandler(),
   getDeleteAccountMockHandler(),
+  getUpdateProfileMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),

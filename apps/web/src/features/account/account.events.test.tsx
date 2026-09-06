@@ -22,6 +22,7 @@ const customer = {
   email: EMAIL_RECONOCIBLE,
   name: NOMBRE_RECONOCIBLE,
   phone: null,
+  avatar_url: null,
   created_at: '2026-08-22T12:00:00Z',
 };
 
