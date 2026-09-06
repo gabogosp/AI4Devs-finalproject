@@ -44,7 +44,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 - [x] T2.2 Revalidar SSR/middleware/topología tras el bump de `next` — es el paso que prueba AC-2 y AC-3, no basta con que compile.
   - **Exit criterion**: la suite E2E de topología y SSR sigue verde con el mismo comportamiento observable (mismos guards, mismo rewrite de `/v1/auth/*`, mismo `noindex` en `/admin/*`).
   - **Verify**: `pnpm --filter @dsm/web test:e2e -- auth-topology cart-topology checkout-topology admin-noindex cart-noindex category-ssr pdp-ssr`
-- [ ] T2.3 Agregar `sharp` como dependencia explícita de producción en `apps/web/package.json`.
+- [x] T2.3 Agregar `sharp` como dependencia explícita de producción en `apps/web/package.json`.
   - **Pattern**: `"sharp": "^0.35.0"` en `dependencies` (NO en `pnpm.overrides` — es una dependencia directa nueva, no un override de transitiva) — `per design.md D2`.
   - **Exit criterion**: `apps/web/package.json` declara `sharp` en `dependencies`; `pnpm-lock.yaml` resuelve `sharp@0.35.0` (o superior dentro del rango) como dependencia directa de `apps/web`, no como `optionalDependencies` implícito de `next`.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web ls sharp`
