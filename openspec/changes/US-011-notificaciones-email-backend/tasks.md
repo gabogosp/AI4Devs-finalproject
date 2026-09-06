@@ -149,7 +149,7 @@
 
 ## Phase 5: Observabilidad
 
-- [ ] T5.1 Crear `apps/api/src/observability/notification-events.service.ts`
+- [x] T5.1 Crear `apps/api/src/observability/notification-events.service.ts`
       — `NotificationEventsService` con
       `emitSent(type: NotificationType, orderId: string, attempts: number): void`
       y `emitFailed(type: NotificationType, orderId: string, attempts: number): void`,
