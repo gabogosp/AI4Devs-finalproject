@@ -48,6 +48,14 @@ jobs:
       # US-010/ADR-0006: sin esto, POST /v1/checkout/simulate-payment no existe
       # y `pago-webhook.feature` falla con 404 en vez de confirmar el pago.
       PAYMENTS_SIMULATED_ENABLED: 'true'
+      # `qa/support/customer-auth.ts` (tokenDeResetDesde, usado por
+      # borrado-cuenta.feature AC-10) lee el stdout de la API desde
+      # `QA_API_LOG` — variable DISTINTA de la que ya usa `qa/support/api-log.ts`
+      # (`QA_API_LOG_FILE`, para los avisos de NotificationPort). Dos
+      # convenciones de nombre para el mismo archivo en este harness; en vez
+      # de redirigir el stdout a dos rutas, se apunta esta al mismo archivo
+      # que "Build + arranque de la API" ya escribe.
+      QA_API_LOG: /tmp/dsm-qa-api-us010.log
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -139,6 +147,12 @@ jobs:
           # Server-only (sin `NEXT_PUBLIC_`) a propósito: gobierna los rewrites
           # de `/v1/auth/*` y `/v1/cart/*`, que el navegador nunca llama directo.
           API_INTERNAL_ORIGIN: http://localhost:3000
+          # `apps/web/src/lib/env.ts` le da su PROPIO default a esta var
+          # (`http://localhost:3000`, el puerto de la API, no el del sitio) —
+          # sin ella acá, el sitemap y los canonicals se generan con el origen
+          # equivocado (TC-204, `categoria-ssr-seo.spec.ts`: esperaba `:3100`,
+          # recibía `:3000`). Se inlinea en build, como `NEXT_PUBLIC_API_BASE_URL`.
+          NEXT_PUBLIC_SITE_URL: http://localhost:3100
           # `next start` toma el puerto de PORT. Se evita `-- -p 3100`: pnpm
           # reenvía el `--` literal y el flag no llega (mismo tropiezo que T1.1).
           PORT: '3100'
@@ -188,6 +202,24 @@ jobs:
         env:
           NODE_OPTIONS: '--import tsx'
         run: cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked and not @frontend"
+
+      # La suite de aceptación deja órdenes/carritos/clientes reales (siembra
+      # vía API, nunca INSERT directo) — `metricas.spec.ts` corre a
+      # continuación y cuenta "exactamente 4 órdenes activas" (AC-8): sin
+      # este reset, hereda las órdenes que dejó Cucumber y cuenta de más
+      # (visto real: 6 en vez de 4). Mismo patrón que ya resolvió #106 para
+      # SC-021-H1 (contaminación entre features), acá entre CAPAS. Trunca
+      # sólo datos transaccionales — products/categories/product_embeddings
+      # (catálogo, caro de regenerar y compartido por ambas capas) quedan
+      # intactos. La autenticación admin es bootstrap-token/JWT minteado, sin
+      # fila en `customers` (`qa/support/admin-auth.ts`), así que truncar esa
+      # tabla no rompe el login de los specs de admin que siguen.
+      - name: Reset de datos transaccionales entre capas (Cucumber → Playwright)
+        if: hashFiles('qa/acceptance/**/*.feature') != '' && hashFiles('qa/e2e/playwright.config.ts') != ''
+        run: |
+          PGPASSWORD=dsm psql -h localhost -U dsm -d dsm -v ON_ERROR_STOP=1 -c "
+            TRUNCATE TABLE orders, carts, customers, import_jobs RESTART IDENTITY CASCADE;
+          "
 
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
