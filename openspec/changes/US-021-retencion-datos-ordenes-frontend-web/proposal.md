@@ -12,7 +12,9 @@ language: es
 > **Ticket**: US-021 — Retención y anonimización de los datos personales de las órdenes
 > **Author**: frontend-web-developer agent (asistido por @Gabriel Suarez)
 > **Date**: 2026-09-05
-> **Status**: Proposed — **BLOQUEADO** en la pieza descrita en "Gap de contrato" (ver abajo)
+> **Status**: Implemented (2026-09-05) — el gap de contrato descrito abajo se resolvió
+> (PR #52) antes de ejecutar `/develop-frontend-web`; las 17 tasks de `tasks.md` están
+> cerradas. Pendiente: PR de este change y merge (`/commit`).
 > **Affected layers**: components, repository (HTTP client generado), state
 > **Affected platform**: web (Next.js App Router, `apps/web`)
 
@@ -170,12 +172,12 @@ tanto" es exactamente el anti-patrón que la propia skill `openapi-client-codege
 
 ## Acceptance criteria (mapeadas al scope FE)
 
-- [ ] AC-3: el dueño puede ejecutar "anonimizar" desde `OrderDetail`, con confirmación de
+- [x] AC-3: el dueño puede ejecutar "anonimizar" desde `OrderDetail`, con confirmación de
       dos pasos (`ConfirmDialog`, no cierra por click-outside, palabra de confirmación).
-- [ ] AC-4: la orden anonimizada muestra cuándo se anonimizó y si fue por plazo o a pedido.
-- [ ] AC-5: la orden anonimizada sigue mostrando productos/cantidades/importes/estado/fechas;
+- [x] AC-4: la orden anonimizada muestra cuándo se anonimizó y si fue por plazo o a pedido.
+- [x] AC-5: la orden anonimizada sigue mostrando productos/cantidades/importes/estado/fechas;
       en lugar de nombre/email/teléfono se ve una indicación de anonimización.
-- [ ] AC-9 (FE): la acción sólo es alcanzable dentro de `(admin)`, gateado por `AdminGuard`
+- [x] AC-9 (FE): la acción sólo es alcanzable dentro de `(admin)`, gateado por `AdminGuard`
       — sin cambios nuevos, se verifica que sigue así.
 - (AC-1, AC-2, AC-6, AC-7, AC-8 son responsabilidad de backend/QA; el FE no los reimplementa,
   pero AC-8 sí condiciona la UI: la acción no debe ofrecerse dos veces con apariencia de que
