@@ -44,7 +44,7 @@ documentado.
 | SC-005-N3 | T1.8 | AC-8 | 1 | **bloqueado** |
 | QA-005-CT-1 | T2.1 | (contrato de los 2 endpoints) | 1 | hecho |
 | QA-005-CT-2 | T2.2 | (corrección de contrato, QA-005-F2) | 1 | hecho |
-| QA-005-PERF-1 | T3.1 | NFR-3 (E2E §17) | 1 | pendiente |
+| QA-005-PERF-1 | T3.1 | NFR-3 (E2E §17) | 1 | hecho |
 | QA-005-EXP-1 | T4.1 | (exploratorio) | — | pendiente (charter escrito, ejecución humana pendiente) |
 
 ---
@@ -249,7 +249,7 @@ print('ok')"`
 
 ## Fase 3: Performance (k6)
 
-- [ ] T3.1 `qa/performance/storefront-under-enrichment.js` — QA-005-PERF-1.
+- [x] T3.1 `qa/performance/storefront-under-enrichment.js` — QA-005-PERF-1.
   - **Pattern**: `setup()` levanta admin token + siembra ~150 productos frescos
     (`sembrarLotePendiente`, adaptado para volumen — o llamado 3× con lotes de 50) contra una
     instancia de perfil B ya arriba (documentar en el script que requiere
@@ -265,6 +265,20 @@ print('ok')"`
     /admin/enrichment/status` de control durante la ventana y **falla** si
     `runner_state !== "running"` en esa lectura (la corrida terminó antes de medir nada).
   - **Verify**: `QA_API_BASE_URL=http://localhost:3925 k6 run qa/performance/storefront-under-enrichment.js --summary-trend-stats="p(95)"`
+  - **Implementación concreta del "falla si terminó antes"**: un `Counter` k6
+    (`runner_confirmed_running`) que se incrementa cada vez que un `GET /status` de
+    control observa `runner_state === "running"`, con `threshold: ['count>=1']` — si la
+    barrida terminó antes de que el poll lo capturara, el contador queda en 0 y el
+    threshold hace fallar la corrida completa (exit != 0), no sólo un `check()` aislado
+    que se diluye en el agregado de `checks: rate>0.99` (`k6-load-scaffolding` — checks
+    diagnostican, thresholds gatean). Corrida real (150 productos frescos, perfil con
+    `ENRICHMENT_ENABLED=true`, 30s/5 VUs): `list_products` p(95)=10.6ms,
+    `storefront_product` p(95)=1.6ms, `http_req_failed`=0%,
+    `runner_confirmed_running`=3514 — los 3 thresholds reusados y el nuevo, verdes.
+  - **Nota**: `QA-004-PERF-3` (búsqueda bajo enriquecimiento) sigue `[ ]` sin implementar en
+    `US-004-busqueda-semantica-backend/qa-plan.md` (bloqueado por falta de
+    `GEMINI_API_KEY` real, per su propia nota) — no es responsabilidad de este change, pero
+    se deja registrado acá porque `qa-plan.md` de este change asumía que ya estaba cubierto.
 
 ---
 
