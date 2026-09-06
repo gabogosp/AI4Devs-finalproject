@@ -132,10 +132,11 @@ como precedente— sino su aplicación al segundo puerto de email del proyecto.
   `notificarConfirmacion` de `Order` a `OrderWithItems` (ya es el tipo en
   runtime). Los tests existentes (`confirm-order.service.provider.spec.ts`)
   usan `expect.objectContaining(...)` — no se rompen con campos nuevos.
-- **OQ-3** `[Deferred: fuera de esta US]` — Cuenta de Resend con dominio
-  verificado + `RESEND_API_KEY`/`ORDER_NOTIFICATIONS_FROM`/
-  `OWNER_NOTIFICATION_EMAIL` reales de producción. Es un secret/DNS a
-  provisionar, no código; se recomienda `/plan-deployment` (ver reporte).
+- **OQ-3** `[Deferred: fuera de esta US — owner: PO/Cliente, revisit:
+  /plan-deployment US-011]` — Cuenta de Resend con dominio verificado +
+  `RESEND_API_KEY`/`ORDER_NOTIFICATIONS_FROM`/`OWNER_NOTIFICATION_EMAIL`
+  reales de producción. Es un secret/DNS a provisionar, no código; se
+  recomienda `/plan-deployment` (ver reporte).
 - **OQ-4** `[Resolved: sin nueva capability spec]` — no se crea
   `openspec/specs/notificaciones/`; el delta de esta US actualiza
   `ordenes/requirements.md` (R-4) y `pagos/requirements.md` (R-17), que ya
