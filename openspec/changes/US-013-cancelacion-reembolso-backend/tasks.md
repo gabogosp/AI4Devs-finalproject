@@ -331,7 +331,7 @@ language: es
 
 ## Fase 9 — Contratos
 
-- [ ] **T9.1 — Draft `contracts/openapi/cancel-order.yaml` (staging del change)**
+- [x] **T9.1 — Draft `contracts/openapi/cancel-order.yaml` (staging del change)**
   - **Pattern**: `per api-contract-completeness` — 1 archivo por endpoint,
     plantilla canónica (paths + components.schemas + components.responses),
     calcado al estilo de `pagos/contracts/openapi/paths/confirm-payment.yaml`.

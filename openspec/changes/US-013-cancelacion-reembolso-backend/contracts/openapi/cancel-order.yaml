@@ -1,0 +1,53 @@
+post:
+  operationId: cancelOrder
+  tags: [admin-payments]
+  security:
+    - adminBearer: []
+  summary: Cancelar una orden pagada no entregada, con reembolso y reintegro de stock (US-013 AC-1..AC-10)
+  description: |
+    Transiciona `new`/`preparing`/`ready` -> `cancelled`, reintegra el stock
+    de cada línea (inverso de ADR-0008), registra el cambio en el historial
+    de estados y gestiona el reembolso del pago aprobado (real vía
+    MercadoPago, no-op para `simulated_dsm`/`manual`) — todo en una sola
+    transacción salvo la llamada externa a MercadoPago, que corre después.
+    Sin body: todo sale de la orden y del pago encontrados server-side, y
+    quién cancela sale del JWT (`sub`), nunca de un campo que el cliente
+    pudiera falsificar. Idempotente (AC-8): repetir la llamada sobre una
+    orden ya `cancelled` responde 200 con el mismo shape, sin reintegrar
+    stock ni reintentar el reembolso una segunda vez.
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+      description: UUID interno de la orden.
+  responses:
+    '200':
+      description: |
+        Orden cancelada (o ya lo estaba — mismo shape, AC-8). Incluye el
+        detalle de la orden (mismo shape que `AdminOrderDetail` de
+        `ordenes`, self-contained acá — ver `design.md` §D6) más el estado
+        del reembolso.
+      content:
+        application/json:
+          schema: { $ref: '../../../../specs/pagos/contracts/openapi.yaml#/components/schemas/CancelOrderResponse' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../../../specs/pagos/contracts/openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../../../specs/pagos/contracts/openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: '`dsm:payments/order-not-found` — la orden no existe, o está `pending_payment` (fuera de alcance de esta acción).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../../../specs/pagos/contracts/openapi.yaml#/components/schemas/Problem' }
+    '409':
+      description: '`dsm:payments/order-cannot-be-cancelled` — la orden está `delivered` (estado terminal).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../../../specs/pagos/contracts/openapi.yaml#/components/schemas/Problem' }
