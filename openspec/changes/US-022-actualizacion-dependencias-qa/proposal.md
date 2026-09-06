@@ -198,7 +198,27 @@ independiente de "no hay regresión" que el proyecto tiene — quien lo retome
 puede decidir si corregir `qa.yml` es un follow-up de US-019 o un fix
 aislado. Ver `design.md` §D-QA3.]**
 
-Sin más preguntas abiertas fuera de estas tres.
+**[Deferred — owner: usuario, motivo: `qa/e2e/carrito.spec.ts` TC-731 (navegación
+por teclado + anuncio del total en región viva) **falla de forma real y
+reproducible** al ejecutar T-QA2 — 3/3 corridas aisladas (`--repeat-each=3`), no
+flaky: el test tabula hasta el botón "sumar una unidad" con un loop acotado por
+`document.activeElement` (no un presupuesto de `Tab` fijo — no es el
+anti-patrón de conteo rígido) y nunca lo alcanza dentro de 40 `Tab`. A
+diferencia de los otros hallazgos de esta revalidación (preexistentes, ajenos
+al bump), **este SÍ toca `apps/web`**, que el change de FE bumpeó (`next`
+15.1.6 → 15.5.21) — es exactamente el tipo de regresión de comportamiento que
+esta US existe para atrapar (AC-3: "el sitio sigue funcionando igual"). No se
+investigó la causa raíz ni se tocó el spec/componente — per guardrail de este
+plan ("no auto-arreglar `apps/web`/`qa/` sin revisión del usuario"), queda
+reportado tal cual se encontró. Posibles causas a investigar: el orden de
+foco del DOM cambió con el bump de `next` (hidratación/orden de renderizado
+distinto), o el propio `next` 15.5.21 introduce algún elemento intermedio
+enfocable (nuevo default de accesibilidad/`Link` prefetch) que el loop del
+test no contempla. Reproducir: `pnpm --filter @dsm/qa exec playwright test
+carrito.spec.ts -g "TC-731" --repeat-each=3` contra el stack ya bumpeado. Ver
+`tasks.md` T-QA2.]**
+
+Sin más preguntas abiertas fuera de estas cuatro.
 
 ## Referencias
 

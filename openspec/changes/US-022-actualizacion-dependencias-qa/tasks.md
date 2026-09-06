@@ -16,6 +16,7 @@
 | — | Hallazgo: bump de `@playwright/test` propio de `qa/` (consistencia con `apps/web`) | T-QA5 | deferred → `proposal.md` §Preguntas abiertas, primera entrada |
 | — | Hallazgo: carrera preexistente en TC-305 (mismo mecanismo que `pdp-invalidation.spec.ts`) | T-QA6 | deferred → `proposal.md` §Preguntas abiertas, segunda entrada |
 | — | Hallazgo: gate `qa.yml` roto desde antes de esta US (CORS ausente) | T-QA7 | deferred → `proposal.md` §Preguntas abiertas, tercera entrada |
+| — | **Hallazgo: `carrito.spec.ts` TC-731 falla real 3/3, toca `apps/web` bumpeado** | T-QA2 | deferred → `proposal.md` §Preguntas abiertas, cuarta entrada (agregada tras la ejecución) |
 
 Ningún AC de US-022 asignado a QA (§7: "revalidar las suites propias... y
 confirmar que la cobertura no bajó") queda sin task. Los 3 hallazgos quedan
@@ -281,6 +282,8 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
 - [x] Accesibilidad WCAG AA verde, 38/38 tests: `pnpm --filter @dsm/qa test:a11y`
 - [x] Cobertura total 278 (172+68+38) ≥ 242 (T-QA4) — sin regresión respecto
   al conteo vigente corregido en `qa-plan.md` §1
-- [x] Los 3 hallazgos (`@playwright/test` de `qa/`, carrera de TC-305, gate
-  roto de `qa.yml`) quedan documentados como `[Deferred — owner: usuario,
-  ...]` en `proposal.md`, ninguno aplicado ni silenciado
+- [x] Los 4 hallazgos (`@playwright/test` de `qa/`, carrera de TC-305, gate
+  roto de `qa.yml`, **y `carrito.spec.ts` TC-731 — falla real que sí toca
+  `apps/web` bumpeado, encontrada al ejecutar T-QA2**) quedan documentados
+  como `[Deferred — owner: usuario, ...]` en `proposal.md`, ninguno aplicado
+  ni silenciado
