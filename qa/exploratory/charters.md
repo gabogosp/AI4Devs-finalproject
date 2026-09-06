@@ -549,3 +549,65 @@
 - **Salida esperada**: confirmación de que el resumen no cambia tras
   anonimizar, o un hallazgo puntual + candidato a AC nuevo en `US-016`/`US-021`
   si el PO quiere esa garantía automatizada (ver qa-plan.md OQ-QA-016-2).
+
+# US-013 — Cancelación de orden + reembolso + reintegro de stock
+
+## TC-013-E1 — Cancelar una orden con dos pestañas abiertas y conectividad intermitente
+
+- **Misión**: sondear la acción de cancelar tal como la va a usar el dueño en
+  el local: dos pestañas del mismo panel abiertas (una mirando el detalle,
+  otra el listado), conectividad intermitente durante la confirmación, y qué
+  pasa si el dueño abre el diálogo, lo deja a medio escribir, y vuelve 10
+  minutos después.
+- **Áreas**: la segunda pestaña después de que la otra ya canceló (¿el 409
+  real se ve claro, o el dueño piensa que algo se rompió?); reintentar tras
+  un error de red genuino (cortar la conexión a mitad de la mutación); el
+  copy del diálogo ("Esta acción no se puede deshacer") ¿es suficientemente
+  disuasivo sin ser alarmante?
+- **Riesgos**: un dueño que cancela por error una orden que en realidad
+  quería sólo marcar como "lista" (los dos botones conviven en la misma
+  pantalla, `OrderStatusActions` + `OrderCancelAction`) — el criterio de
+  "suficientemente distinguible visualmente" es de juicio, no un assert
+  determinista. **Nota (QA-013-E2E-3, automatizado)**: ya se confirmó un
+  defecto real — el mensaje de resultado de la cancelación (reembolsado /
+  pendiente / no aplica) nunca se ve en pantalla, así que el dueño no tiene
+  ninguna confirmación textual de qué pasó con el pago tras cancelar; sondear
+  acá si el cambio de badge a "Cancelada" alcanza como confirmación percibida
+  o si la ausencia del mensaje genera dudas reales en el uso.
+- **Heurísticas**: "uso real con distracciones" (pestañas múltiples,
+  conectividad intermitente); "¿el usuario entiende lo que pasó?" (mismo
+  criterio que `TC-1250` de US-012).
+- **Justificación manual**: mismo criterio que `TC-1250` (US-012) y
+  `TC-016-E1` (US-016) para charters de "uso real" de un panel admin con
+  interacción humana y timing no determinista.
+- **Salida esperada**: veredicto de claridad percibida del flujo (con el
+  defecto de QA-013-E2E-3 todavía sin corregir al momento de escribir esto),
+  o un hallazgo puntual adicional para priorizar junto al ya encontrado.
+
+## TC-013-E2 — Recuperación real de un reembolso MercadoPago el día que haya cuenta sandbox
+
+- **Misión**: el día que exista una cuenta sandbox de MercadoPago (mismo
+  bloqueo documentado por `QA-010-F1`/`QA-013-F1`), verificar el ciclo
+  completo: cancelar una orden con un pago `mercadopago` real aprobado,
+  confirmar que el reembolso real se dispara y el pago queda `refunded`; si
+  la llamada fallara a propósito (sandbox simulando un error), confirmar que
+  `POST /admin/payments/retry-refunds` (job ya existente, sin cambios) lo
+  recupera en una corrida posterior.
+- **Áreas**: el mensaje de UI para `refund_pending` ("el sistema lo reintenta
+  automáticamente", D4 del frontend) ¿sigue siendo preciso contra un
+  reembolso real que sí se recupera? — aunque esto queda condicionado a que
+  primero se corrija el defecto de QA-013-E2E-3 (el mensaje hoy no se ve
+  nunca, sea cual sea `refund.status`); el tiempo real que tarda MercadoPago
+  en confirmar un reembolso (no instantáneo en producción, a diferencia de
+  cualquier simulación).
+- **Riesgos**: sin este charter, el ÚNICO momento en que alguien verá el
+  reembolso real funcionar de punta a punta sería el primer reembolso real en
+  producción — sin ensayo previo.
+- **Heurísticas**: "el día 1 de producción no es el momento de descubrir
+  esto" (mismo criterio que `TC-021-E4`).
+- **Justificación manual**: depende de una cuenta sandbox que no existe hoy
+  (QA-013-F1); no es automatizable hasta que ese bloqueo se resuelva, y aun
+  resuelto, el timing real de MercadoPago no es determinista.
+- **Salida esperada**: confirmación de punta a punta del reembolso real
+  (o de su recuperación vía `retry-refunds`), condicionado a la provisión de
+  la cuenta sandbox (`OQ-QA-013-1`).

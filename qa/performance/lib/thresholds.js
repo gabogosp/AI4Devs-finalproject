@@ -187,10 +187,23 @@ export const simulate_payment = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * `POST /admin/orders/{id}/cancel` de US-013 (QA-013-PERF-1, `design.md` de
+ * backend §D8). Mismo criterio que `simulate_payment`: presupuesto **propio**
+ * de `p95 < 200ms` sólo para el camino sin llamada externa (confirmación
+ * manual/simulada) — el camino `mercadopago` queda deliberadamente SIN
+ * threshold acá (no alcanzable por API real en este entorno, QA-013-F1).
+ */
+export const cancel_order = {
+  'http_req_duration{endpoint:cancel_order}': ['p(95)<200'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
 // (`auth_login`), US-023 (`confirm_payment`), US-012 (`list_orders`/
-// `order_transition`), US-010 (`simulate_payment`) y US-016 (`reports_read`):
-// las suites QA extienden el mismo archivo compartido.
+// `order_transition`), US-010 (`simulate_payment`), US-016 (`reports_read`) y
+// US-013 (`cancel_order`): las suites QA extienden el mismo archivo compartido.
 export default {
   list_products,
   storefront_product,
@@ -203,5 +216,6 @@ export default {
   order_transition,
   simulate_payment,
   reports_read,
+  cancel_order,
   MIN_SKUS,
 };

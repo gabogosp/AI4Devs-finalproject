@@ -23,6 +23,7 @@
     "test:contract:retencion-ordenes": "tsx contract/retencion-ordenes.contract.ts",
     "test:contract:reports": "tsx contract/reports.contract.ts",
     "test:contract:enrichment": "tsx contract/enrichment.contract.ts",
+    "test:contract:cancel-order": "tsx contract/cancel-order.contract.ts",
     "test:load": "k6 run performance/baseline.js",
     "test:load:cart": "k6 run --vus 2 --duration 20s performance/cart-write.js",
     "test:load:checkout": "k6 run --vus 3 --duration 15s performance/checkout.js",
@@ -30,6 +31,7 @@
     "test:load:confirm-payment": "k6 run performance/confirm-payment.js",
     "test:load:reports": "k6 run performance/reports-read.js",
     "test:load:simulate-payment": "k6 run performance/simulate-payment.js",
+    "test:load:cancel-order": "k6 run performance/cancel-order-write.js",
     "seed:load": "tsx performance/seed-load-data.ts",
     "api:up": "bash scripts/api-up.sh"
   },
