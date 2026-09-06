@@ -37,8 +37,19 @@ export function OrderCancelAction({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // AC-7 (UI): entregada o cancelada — la acción no se ofrece (estados terminales).
-  if (order.status === 'delivered' || order.status === 'cancelled') return null;
+  // AC-7 (UI): entregada o cancelada — NO se vuelve a OFRECER la acción
+  // (estado terminal). A diferencia de un `return null` incondicional
+  // (bug encontrado por QA-013-E2E-3): cancelar deja la orden en
+  // `cancelled` — el propio resultado exitoso volvería terminal este gate
+  // en el mismo render que muestra el mensaje, y un `return null` temprano
+  // desmontaría el `<div>` del mensaje antes de pintarlo. El gate sólo
+  // oculta el botón/diálogo de una NUEVA cancelación; el banner de
+  // resultado de la última acción, si lo hay, se sigue renderizando.
+  const puedeOfrecerse = order.status !== 'delivered' && order.status !== 'cancelled';
+  // Sin nada que ofrecer NI nada que reportar (p.ej. se navegó directo al
+  // detalle de una orden ya terminal, sin haberla cancelado desde acá):
+  // no renderiza nada, mismo comportamiento externo que antes del fix.
+  if (!puedeOfrecerse && !message && !error) return null;
 
   async function confirm(): Promise<void> {
     setBusy(true);
@@ -68,19 +79,23 @@ export function OrderCancelAction({
     <div className="flex flex-col gap-2">
       {error && <div role="alert">{error}</div>}
       {message && <div role="status">{message}</div>}
-      <Button variant="destructive" onClick={() => setConfirmOpen(true)} loading={busy}>
-        Cancelar orden
-      </Button>
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Cancelar orden"
-        description="Se reintegra el stock de cada ítem, se gestiona el reembolso del pago y el comprador recibe un aviso por email. Esta acción no se puede deshacer."
-        confirmWord="CANCELAR"
-        confirmLabel="Cancelar orden"
-        onConfirm={() => void confirm()}
-        onCancel={() => setConfirmOpen(false)}
-        busy={busy}
-      />
+      {puedeOfrecerse && (
+        <>
+          <Button variant="destructive" onClick={() => setConfirmOpen(true)} loading={busy}>
+            Cancelar orden
+          </Button>
+          <ConfirmDialog
+            open={confirmOpen}
+            title="Cancelar orden"
+            description="Se reintegra el stock de cada ítem, se gestiona el reembolso del pago y el comprador recibe un aviso por email. Esta acción no se puede deshacer."
+            confirmWord="CANCELAR"
+            confirmLabel="Cancelar orden"
+            onConfirm={() => void confirm()}
+            onCancel={() => setConfirmOpen(false)}
+            busy={busy}
+          />
+        </>
+      )}
     </div>
   );
 }

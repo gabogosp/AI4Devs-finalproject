@@ -107,7 +107,16 @@ export type BusinessEvent =
   // (`observability-patterns` skill §3.3).
   | 'metrics_shown'
   | 'metrics_range_changed'
-  | 'metrics_export_downloaded';
+  | 'metrics_export_downloaded'
+  // Historial de compras del cliente (US-015). Superficie de cliente, no de
+  // operador — van en `PUBLIC_EVENTS`, mismo criterio que `cart_viewed`.
+  // Ninguno lleva PII: `OrderHistorySummary`/`OrderHistoryDetail` no tienen
+  // `buyer_name`/`buyer_email`/`buyer_phone` en su shape (a diferencia de
+  // `AdminOrderSummary`), así que no hay nada que filtrar por accidente.
+  | 'order_history_shown'
+  | 'order_history_load_more_clicked'
+  | 'order_detail_shown'
+  | 'order_detail_not_found';
 
 export interface EventProps {
   operator_id?: string;
@@ -155,6 +164,12 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'checkout_submitted',
   'checkout_succeeded',
   'checkout_failed',
+  // Los emite el cliente autenticado leyendo su propio historial — no el
+  // dueño. Mismo criterio que los de auth/checkout.
+  'order_history_shown',
+  'order_history_load_more_clicked',
+  'order_detail_shown',
+  'order_detail_not_found',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

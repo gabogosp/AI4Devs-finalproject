@@ -4,9 +4,16 @@ import { STATUS_LABEL } from './orderStatus';
 import type { FulfillmentStatus } from './ordersService';
 
 /** Traduce a label en español; si el valor no está en el mapa (caso raro,
- * fila mezclada de otro módulo), muestra el valor crudo antes que romper. */
+ * fila mezclada de otro módulo), muestra el valor crudo antes que romper.
+ *
+ * `cancelled` no vive en `STATUS_LABEL` (deliberado, `orderStatus.ts` — ese
+ * mapa es sólo de transiciones de fulfillment) pero SÍ es un `to_status` real
+ * y frecuente acá desde US-013 (cada cancelación agrega una fila con
+ * `to_status: 'cancelled'`) — traducido acá, en el único lugar de este
+ * componente que necesita el quinto valor de `OrderStatus`. */
 function label(status: string | null): string {
   if (status === null) return '—';
+  if (status === 'cancelled') return 'Cancelada';
   return STATUS_LABEL[status as FulfillmentStatus] ?? status;
 }
 

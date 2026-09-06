@@ -350,7 +350,7 @@
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
-  status: In Progress
+  status: Done
   priority: Medium
   prd-capacity: 11
   disciplines: [BE, FE, QA]
@@ -378,6 +378,36 @@
   # suite completa apps/web 153/153 archivos/968/968 tests, lint+typecheck limpios,
   # codegen fresco, PR #67 abierto. `status` de la US se queda en `In Progress` (QA
   # todavía sin planificar).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-qa): BE (#66) y FE (#67)
+  # ya mergeados a main. QA (última disciplina) llega a in-review — 13/13 test cases
+  # automatizados verdes + 2 charters documentados, PR #73 abierto. QA-013-E2E-3
+  # encontró un defecto real en apps/web (mensaje de resultado de cancelar nunca se
+  # veía), resuelto por separado en PR #72 (ya mergeado) y re-verificado. Las 3
+  # disciplinas tienen PR — `status` de la US se queda en `In Progress` (sin
+  # precedente de `In Review` a nivel US en este índice); avanza a `Done` recién
+  # cuando las 3 disciplinas queden archivadas (`/archive-change`).
+  #
+  # NOTA (2026-09-06, /archive-change US-013-cancelacion-reembolso-backend): PR #66
+  # mergeado a main (e296d3f). Archivado a openspec/changes/archive/. Extiende
+  # openspec/specs/pagos/ (CAP-4) con POST /admin/orders/{id}/cancel. FE (#67) y QA
+  # (#73) ya mergeadas a main pero todavía sin archivar al momento de este archive
+  # (se archivan a continuación, una disciplina a la vez) — `status` de la US se
+  # queda en `In Progress`.
+  #
+  # NOTA (2026-09-06, /archive-change US-013-cancelacion-reembolso-frontend-web): PR
+  # #67 mergeado a main (62437f7). Archivado a openspec/changes/archive/. Extiende
+  # openspec/specs/pagos/ con la acción "Cancelar orden" (OrderCancelAction.tsx).
+  # Documenta el defecto real que encontró QA-013-E2E-3 (mensaje de éxito nunca se
+  # veía) y su resolución vía PR #72 (ya mergeado, previo a este archive). Sólo falta
+  # QA (#73, ya mergeada a main) para que la US pase a `Done`.
+  #
+  # NOTA (2026-09-06, /archive-change US-013-cancelacion-reembolso-qa): PR #73
+  # mergeado a main. Archivado a openspec/changes/archive/. Última disciplina de las
+  # 3 (BE #66/FE #67/QA #73, todas `archived`) — US pasa a `Done`. QA encontró y
+  # verificó el fix de un defecto real (mensaje de éxito de cancelar nunca se veía,
+  # PR #72) antes de este cierre.
+  done-at: 2026-09-06
 - id: US-014
   slug: registro-login
   status: In Progress
@@ -424,8 +454,9 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-09-06   # primera planificación (/plan-backend-ticket)
-  in-review-at: 2026-09-06     # backend PR #70 abierto (/commit) — FE/QA todavía no
-                                # arrancaron, el status de la US se queda en In Progress
+  in-review-at: 2026-09-06     # backend PR #70 (mergeado) + FE PR #74 abierto (/commit) —
+                                # QA todavía no arrancó, el status de la US se queda en
+                                # In Progress
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas
@@ -537,6 +568,23 @@
   #   2. El texto legal es PROVISIONAL con marcadores `[PENDIENTE: …]` visibles en la página.
   #      Publicar así es incumplimiento con apariencia de cumplimiento. El gate es humano
   #      (dueño + asesoría legal) porque el PO descartó el automático (OQ-FE-17 (a)).
+  #
+  # NOTA (2026-09-06, /archive-change US-017-paginas-legales-consentimiento-frontend-web):
+  # el change de FE (24/24 tasks en su tasks.md actual) estaba mergeado a main desde
+  # 2026-08-29 (bundle "Entrega 2", PR #3) pero openspec-changes.yaml nunca se había
+  # actualizado tras ese merge — drift de índice puro, corregido ahora (status → archived).
+  # Re-verificado el estado de los dos motivos que dejó abierto la nota de 2026-08-23:
+  #   1. RESUELTO — `ConsentCheckbox.tsx` (US-008 FE, PR #23, mergeado) SÍ consume
+  #      `CONSENT_COPY`/`LEGAL_ROUTES` de `features/legal/routes.ts` (verificado leyendo
+  #      el componente real, no asumido).
+  #   2. SIGUE ABIERTO — `apps/web/src/features/legal/content.ts` todavía tiene los 3
+  #      marcadores `[PENDIENTE: …]` (razón social/CUIT/domicilio, plazo de retención,
+  #      condición IVA) verificados en el código actual, sin cambios desde el diseño
+  #      original. Gate humano (dueño + asesoría legal), no técnico — ninguna sesión de
+  #      Claude puede cerrarlo.
+  # `status` de la US se queda en `In Progress` por el motivo 2, ya con FE archivado —
+  # única disciplina con change (QA vive dentro del código de FE, sin change propio, per
+  # la norma del repo documentada arriba).
 - id: US-018
   slug: contacto-whatsapp
   status: Done

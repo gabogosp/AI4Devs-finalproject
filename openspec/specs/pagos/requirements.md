@@ -96,3 +96,73 @@ literalmente el mismo código que el webhook real).
 | D-8 | Tráfico real de producción contra MercadoPago (webhook recibiendo notificaciones reales, `createPreference`) — todo lo demás (código, tests unitarios, integración con Postgres real, medio simulado end-to-end) se construyó y verificó en US-010 con mocks. | `US-009-pago-mercadopago-backend` — necesita cuenta real de MercadoPago (`MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` reales + webhook URL configurada en el dashboard de MP). |
 | D-9 | Disparo periódico real de los 3 jobs admin (reconcile/cleanup-abandoned/retry-refunds) — decisión de infraestructura (Railway Cron Job / GitHub Actions), no de código de aplicación. | Owner: `infrastructure-developer` / `deployment-planner`, próximo `/plan-deployment` de esta capacidad. |
 | D-10 | 5 preguntas abiertas de US-010 (`design.md` §Open questions — plazo de abandono, tope de reintentos de reembolso, prefijo de `simulate-payment`, ventana de tolerancia de firma, si reconciliar también pagos rechazados), ninguna bloqueó el arranque, todas con default implementado. | Owner: quien retome ajustes de estos parámetros. Revisit: si el comportamiento observado en producción difiere del supuesto. |
+
+## Desde US-013 backend — Cancelación de orden + reembolso + reintegro de stock (archivada 2026-09-06)
+
+Superficie cubierta: `POST /admin/orders/{id}/cancel`.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-18 | `POST /admin/orders/{id}/cancel` transiciona una orden `new`/`preparing`/`ready` a `cancelled` — mismo compare-and-set (`UPDATE ... WHERE status IN (...)`) que `transitionToCancelledIfPending` (US-010) y `updateStatusConditional` (US-012). | AC-1 |
+| R-19 | Reintegra el stock de cada línea de la orden (`StockRepository.incrementForOrder`, inverso simétrico de `decrementForOrder`) dentro de la MISMA transacción que la transición. | AC-2 |
+| R-20 | Para un pago `approved` con `provider='mercadopago'`: marca `refund_pending` dentro de la transacción, llama `MercadoPagoClient.refund()` FUERA de ella, y cierra `refunded` si responde bien — si falla, la fila queda `refund_pending`, elegible sin cambios por `POST /admin/payments/retry-refunds` (R-14). | AC-3 |
+| R-21 | `provider='simulated_dsm'` y `provider='manual'` marcan `refunded` directo, sin ninguna llamada externa (no-op) — mismo tratamiento para los dos, decisión de este change (D3 de `decisions.md`), no un AC literal para `manual`. | AC-5 |
+| R-22 | Dispara `NotificationPort.orderCancelledByOwner` (método nuevo del puerto, no un puerto paralelo) tras el commit, best-effort — un fallo de notificación no revierte la cancelación. Entrega real: `Deferred: US-011`. | AC-4 (seam) |
+| R-23 | `delivered` (estado terminal) responde 409 `dsm:payments/order-cannot-be-cancelled`; `pending_payment`/inexistente responde 404 `dsm:payments/order-not-found` (fuera de alcance de esta acción). | AC-7 |
+| R-24 | Registra el cambio en `order_status_history` (quién/cuándo, reusa `OrderStatusHistoryRepository` de `orders/`, ahora exportado) y el resultado del reembolso en `payments.status` — sin columnas nuevas. | AC-10 |
+| R-25 | `AdminGuard` reusado sin modificar — acceso restringido a `role=admin`. | AC-9 |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-12 | Repetir la llamada sobre una orden ya `cancelled` responde 200 con el mismo shape — no re-dispara el reintegro de stock, ni un segundo reembolso, ni una segunda notificación (idempotencia estructural, AC-8). |
+| N-13 | La llamada real a `MercadoPagoClient.refund` nunca ocurre dentro de un `$transaction` abierto — mismo criterio que el resto de `payments/` para llamadas externas. |
+| N-14 | El endpoint no acepta body — `changedBy` sale exclusivamente del JWT (`sub`), nunca de un campo que el cliente pudiera falsificar. |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-6 | Sin migración de Prisma — `orders.status`/`orders.cancelled_at`/`payments.status` ya admitían todo lo que este change escribe (verificado contra las migraciones aplicadas, no asumido). | Suite dev-owned + `data-architecture-patterns` (evaluación trivial, sin invocar `data-architect` Mode B). |
+| NFR-7 | Camino sin llamada externa (`simulated_dsm`/`manual`): p95 < 200ms. | `QA-013-PERF-1` (k6) — p95 medido 15.31ms, muy por debajo del presupuesto. |
+
+### Diferidos con dueño
+
+| # | Requisito | Dueño / disparador |
+|---|---|---|
+| D-11 | ¿El reembolso no-op de `provider='manual'` (R-21) es el comportamiento correcto, o el PO prefiere un estado distinto para el ledger? (OQ-BE-1 de `US-013-cancelacion-reembolso-backend/proposal.md`.) | Owner: PO. Default implementado: `refunded` automático — cambiar es una condición menos en `crearRefund`, sin impacto en el resto del diseño. |
+| D-12 | ¿`CancelOrderResponse` debería exponer `refund` directamente en `AdminOrderDetail` (capacidad `ordenes`) en vez de un schema propio de `pagos`? (OQ-BE-2.) | Owner: Arquitecto. Default implementado: self-contained, sin acoplar las dos raíces vivas por un `$ref` cruzado (D6 de `decisions.md`). |
+
+## Desde US-013 frontend-web — Cancelación de orden + reembolso + reintegro de stock (archivada 2026-09-06)
+
+Consume el contrato de arriba desde `apps/web/src/features/orders/OrderCancelAction.tsx`
+(componente nuevo, montado junto a `OrderStatusActions` en `OrderDetail.tsx`).
+Sin superficie HTTP propia — este bloque documenta el comportamiento de UI
+que gobierna cómo se consume el contrato, no un requisito de API nuevo.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-26 | El botón "Cancelar orden" reusa `ConfirmDialog` (confirmación de dos pasos, tipear "CANCELAR") sin modificarlo — mismo componente que `ProductActions.archive`/`OrderAnonymizeAction`. | AC-6 |
+| R-27 | El botón no se renderiza cuando la orden está `delivered`/`cancelled` (gating de visibilidad, no de autoridad — el backend re-verifica vía 409/404). | AC-1, AC-7 (superficie) |
+| R-28 | Reconciliación DIRECTA desde `CancelOrderResponse` (self-contained) — sin segundo `GET`, mismo patrón que `OrderStatusActions.onConfirmed` (a diferencia de `OrderAnonymizeAction`, cuyo endpoint devuelve un shape parcial y sí refetchea). | AC-3, AC-5 (superficie) |
+| R-29 | Mensaje de resultado distingue los 3 valores de `refund.status` (`refunded`/`refund_pending`/`not_applicable`) — **el banner de resultado se renderiza siempre que haya mensaje, independiente del gate de visibilidad de R-27** (ver fix de regresión abajo). | AC-3, AC-5 |
+| R-30 | Un 409 del backend (orden ya cancelada por otra pestaña, o entregada) muestra un mensaje específico; el diálogo permanece abierto. | AC-7 (negative space) |
+| R-31 | Tras cancelar con éxito, `OrderStatusHistory` (componente ya existente) muestra la fila nueva sin recargar la página. | AC-10 (superficie) |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-15 | El FE no re-filtra ni re-interpreta qué órdenes son cancelables — la autoridad real es 100% backend (409/404). |
+| N-16 | Un doble-click sobre "Cancelar orden" (dentro del diálogo) no dispara un segundo `POST` — el botón de confirmar queda deshabilitado mientras la mutación está en curso. |
+
+### Defecto real encontrado por QA y resuelto (no una omisión del plan original)
+
+| # | Qué pasó | Resuelto por |
+|---|---|---|
+| N-17 | La primera versión de `OrderCancelAction` hacía `return null` incondicional cuando `order.status` era `delivered`/`cancelled` — como cancelar deja la orden en `cancelled`, el propio resultado exitoso volvía terminal ese gate en el MISMO render que debía mostrar el mensaje de R-29, y el early-return desmontaba el componente antes de pintarlo. El mensaje de éxito **nunca se veía**. Encontrado por `QA-013-E2E-3` (cross-stack, el único layer que simula el re-render real del padre con el `order.status` actualizado — invisible para los tests de componente aislado). | `fix/US-013-cancel-result-message-not-shown` (PR #72, mergeado 2026-09-06) — separa "ofrecer una nueva cancelación" (R-27) de "mostrar el resultado de la última acción" (R-29, siempre se renderiza si hay mensaje). Con test de regresión que reproduce el re-render real del padre. |

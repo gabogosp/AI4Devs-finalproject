@@ -18,6 +18,13 @@ info:
     (reconciliación, limpieza de abandonadas, reintento de reembolsos). `ConfirmOrderService`
     (US-023) se amplía con una unión discriminada de `provider` — la rama `manual` no cambia
     una línea.
+
+    **Extendido por US-013-cancelacion-reembolso-backend** (archivada 2026-09-06):
+    `POST /admin/orders/{id}/cancel` — cancela una orden pagada no entregada,
+    reintegra el stock, gestiona el reembolso (reusa `refund_pending`/
+    `retry-refunds` de US-010 tal cual) y traza el resultado. Vive en `pagos`
+    y no en `ordenes` para preservar la dirección acíclica `payments → orders`
+    ya establecida por US-010 (D15) — mismo criterio que `confirm-payment`.
   contact:
     name: DSM
     url: https://example.com
@@ -84,6 +91,67 @@ components:
         buyer_name: { type: string, example: Juana Pérez }
         total_ars_cents: { type: integer, example: 4560000 }
         created_at: { type: string, format: date-time }
+    AdminOrderItem:
+      type: object
+      description: >-
+        Duplicado deliberado del schema homónimo de `ordenes` (US-013
+        design.md §D6 — mismo criterio que `CancelOrderResponse` no
+        reusando `AdminOrderDetail` vía `$ref` cruzado entre dos raíces
+        vivas).
+      required: [product_name, product_sku, quantity, unit_price_ars_cents, subtotal_ars_cents]
+      properties:
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        subtotal_ars_cents: { type: integer }
+    AdminOrderStatusChange:
+      type: object
+      description: >-
+        Duplicado deliberado del schema homónimo de `ordenes` (mismo
+        criterio que `AdminOrderItem` arriba).
+      required: [from_status, to_status, changed_by, changed_at]
+      properties:
+        from_status: { type: string, nullable: true }
+        to_status: { type: string }
+        changed_by:
+          type: string
+          nullable: true
+          description: '`sub` del JWT admin (uuid) o el literal `admin` (bootstrap token).'
+        changed_at: { type: string, format: date-time }
+    CancelOrderResponse:
+      type: object
+      description: >-
+        Self-contained (US-013 design.md §D6) — no reusa AdminOrderDetail vía
+        $ref: duplicación deliberada, mismo criterio que D13 de
+        pagos/decisions.md (backoff.ts duplicado en vez de importado).
+      required:
+        [id, order_number, buyer_name, total_ars_cents, status, created_at,
+         buyer_email, buyer_phone, fulfillment, items, status_history,
+         anonymized_at, anonymization_reason, refund]
+      properties:
+        id: { type: string, format: uuid }
+        order_number: { type: integer }
+        buyer_name: { type: string }
+        total_ars_cents: { type: integer }
+        status: { type: string, enum: [cancelled] }
+        created_at: { type: string, format: date-time }
+        buyer_email: { type: string }
+        buyer_phone: { type: string }
+        fulfillment: { type: string, enum: [pickup] }
+        items: { type: array, items: { $ref: '#/components/schemas/AdminOrderItem' } }
+        status_history: { type: array, items: { $ref: '#/components/schemas/AdminOrderStatusChange' } }
+        anonymized_at: { type: string, format: date-time, nullable: true }
+        anonymization_reason:
+          type: string
+          nullable: true
+          enum: [retention_policy, requested]
+        refund:
+          type: object
+          required: [status, provider]
+          properties:
+            status: { type: string, enum: [refunded, refund_pending, not_applicable] }
+            provider: { type: string, enum: [mercadopago, simulated_dsm, manual], nullable: true }
     Problem:
       type: object
       description: |
@@ -91,7 +159,9 @@ components:
         `dsm:payments/order-not-pending-payment` (409),
         `dsm:payments/insufficient-stock` (409),
         `dsm:payments/webhook-unverified` (401, US-010),
-        `dsm:payments/auto-cancelled-insufficient-stock` (409, US-010).
+        `dsm:payments/auto-cancelled-insufficient-stock` (409, US-010),
+        `dsm:payments/order-not-found` (404, US-013),
+        `dsm:payments/order-cannot-be-cancelled` (409, US-013).
       required: [type, title, status]
       properties:
         type: { type: string }
@@ -129,6 +199,8 @@ components:
             status: 409
             detail: Uno o más productos se quedaron sin stock; la orden fue cancelada.
 paths:
+  /admin/orders/{id}/cancel:
+    $ref: ./openapi/paths/cancel-order.yaml
   /admin/orders/{orderId}/confirm-payment:
     $ref: ./openapi/paths/confirm-payment.yaml
   /admin/orders/pending-payment:

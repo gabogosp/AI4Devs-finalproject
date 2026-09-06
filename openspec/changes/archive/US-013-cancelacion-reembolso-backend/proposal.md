@@ -6,6 +6,10 @@ discipline: backend
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-06
+merged_commit: e296d3f1f5d768466f2d699a4479d81917db7a53
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/66
 ---
 
 # Proposal — Cancelación de orden + reembolso + reintegro de stock (backend)
