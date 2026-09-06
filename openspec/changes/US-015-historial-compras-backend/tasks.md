@@ -184,7 +184,7 @@ language: es
 
 ## Fase 4: Controller, throttler, wiring — 0,8 h
 
-- [ ] T4.1 `OrdersHistoryThrottlerGuard` + throttler nombrado `orders_history`
+- [x] T4.1 `OrdersHistoryThrottlerGuard` + throttler nombrado `orders_history`
   - **Pattern**: guard espejo de `checkout-throttler.guard.ts` (cabeceras
     `RateLimit-*`/`Retry-After`); nueva entrada en el array de
     `ThrottlerModule.forRootAsync` de `auth.module.ts` con
@@ -196,7 +196,7 @@ language: es
     checkout, storefront, auth, search, enrichment, imports, payments) —
     probado por la suite completa de esos controllers sin modificar.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern="throttler|ratelimit"`
-- [ ] T4.2 Env vars `ORDERS_HISTORY_RATE_LIMIT_MAX` / `_TTL_MS`
+- [x] T4.2 Env vars `ORDERS_HISTORY_RATE_LIMIT_MAX` / `_TTL_MS`
   - **Pattern**: `z.coerce.number().int().positive().default(60)` /
     `.default(60_000)` en `config/env.validation.ts`, mismo bloque de
     comentario que `CHECKOUT_RATE_LIMIT_*` — `per backend-node-standards.md
@@ -204,7 +204,7 @@ language: es
   - **Exit criterion**: un valor no numérico para cualquiera de las dos hace
     fallar el arranque (test explícito), no cae al default en silencio.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=env\\.validation\\.spec`
-- [ ] T4.3 `OrdersHistoryController` (`orders/orders-history.controller.ts`)
+- [x] T4.3 `OrdersHistoryController` (`orders/orders-history.controller.ts`)
   - **Pattern**: ver clase completa en `design.md` §D5 —
     `@Controller('v1/me/orders')`, `@UseGuards(OrdersHistoryThrottlerGuard,
     CustomerGuard)`, `@SkipThrottle` de los 7 buckets existentes, ruta de
@@ -214,7 +214,7 @@ language: es
     ejecutar el handler (el guard corta); con cookie válida, 200 con el shape
     de `OrderHistoryListResponse`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders-history\\.controller\\.spec`
-- [ ] T4.4 Registrar en `orders.module.ts`
+- [x] T4.4 Registrar en `orders.module.ts`
   - **Pattern**: sumar `OrdersHistoryController` a `controllers`,
     `OrdersHistoryService`/`OrdersHistoryEventsService`/
     `OrdersHistoryThrottlerGuard` a `providers` — cero imports nuevos (ya

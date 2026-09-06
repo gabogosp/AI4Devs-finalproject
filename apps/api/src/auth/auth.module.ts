@@ -109,6 +109,16 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS', 600_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — octavo throttler nombrado: el historial de compras del cliente
+        // (US-015). Mismo criterio que `checkout`/`payments_simulate`: techo
+        // inalcanzable acá, presupuesto real (`ORDERS_HISTORY_RATE_LIMIT_MAX`,
+        // 60/min) en el `@Throttle` del handler — así ningún controller
+        // existente necesita un `@SkipThrottle({ orders_history: true })`.
+        {
+          name: 'orders_history',
+          ttl: config.get<number>('ORDERS_HISTORY_RATE_LIMIT_TTL_MS', 60_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],

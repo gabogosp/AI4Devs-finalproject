@@ -616,3 +616,40 @@ describe('Retención y anonimización de órdenes (US-021 T0.2) — defaults y f
     ).toThrow(/fail-fast/);
   });
 });
+
+describe('Historial de compras del cliente (US-015 T4.2) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin las variables, aplica los 2 defaults seguros literales', () => {
+    const env = validateEnv({ ...base });
+    expect(env.ORDERS_HISTORY_RATE_LIMIT_MAX).toBe(60);
+    expect(env.ORDERS_HISTORY_RATE_LIMIT_TTL_MS).toBe(60_000);
+  });
+
+  it('ORDERS_HISTORY_RATE_LIMIT_MAX=abc hace fallar el arranque, no cae al default', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDERS_HISTORY_RATE_LIMIT_MAX: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ORDERS_HISTORY_RATE_LIMIT_MAX=-1 hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDERS_HISTORY_RATE_LIMIT_MAX: '-1' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ORDERS_HISTORY_RATE_LIMIT_TTL_MS=abc hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDERS_HISTORY_RATE_LIMIT_TTL_MS: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+
+  it('ORDERS_HISTORY_RATE_LIMIT_TTL_MS=-1 hace fallar el arranque', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDERS_HISTORY_RATE_LIMIT_TTL_MS: '-1' }),
+    ).toThrow(/fail-fast/);
+  });
+});
