@@ -460,7 +460,7 @@ language: es
   - **Verify**: `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
     **y** `grep -cE "^  /admin/reports" apps/api/docs/api/openapi.yaml` → `6`
 
-- [ ] T8.2 README de `src/reports/`
+- [x] T8.2 README de `src/reports/`
   - **Exit criterion**: `apps/api/src/reports/README.md` explica por qué la
     clase se llama `Reports*` y no `Metrics*` (colisión con
     `observability/MetricsModule`, D1), qué allowlist de estados cuenta como
