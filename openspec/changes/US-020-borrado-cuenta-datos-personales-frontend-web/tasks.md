@@ -152,7 +152,7 @@ language: es
 
 ## Fase 4 — Flujo de éxito: `MiCuentaScreen` + `AccountDeletedNotice`
 
-- [ ] **T4.1 — Wiring de la mutación exitosa en `DeleteAccountSection`**
+- [x] **T4.1 — Wiring de la mutación exitosa en `DeleteAccountSection`**
   - **Pattern**: `per design.md §D5` — orden exacto: `track('account_delete_attempted')`
     → `accountService.deleteAccount()` → `track('account_delete_succeeded')`
     → `session.accountDeleted()` → `props.onDeleted()` (en ese orden — D3
