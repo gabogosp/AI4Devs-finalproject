@@ -152,12 +152,12 @@ Then axe no encuentra violaciones WCAG 2.1 AA
 And el mensaje de resultado se anuncia en una región viva
 ```
 
-### TC-160 — Login bajo carga (PRD §4) · performance
+### TC-160 — Login bajo carga (presupuesto propio, ratificado por el PO 2026-09-06) · performance
 
 ```gherkin
 Given la API con el rate-limit elevado para medir latencia y no el límite
 When 10 usuarios virtuales inician sesión durante 30 segundos
-Then el p95 de la operación se mantiene por debajo de 500 ms
+Then el p95 de la operación se mantiene por debajo de 800 ms
 And ninguna respuesta es 5xx
 ```
 
