@@ -245,7 +245,7 @@ Ninguna AC queda diferida.
 
 ## Fase 4 — E2E (app construida)
 
-- [ ] T4.1 Crear `apps/web/e2e/profile-edit-topology.spec.ts` — mismo
+- [x] T4.1 Crear `apps/web/e2e/profile-edit-topology.spec.ts` — mismo
   esqueleto que `account-deletion-topology.spec.ts` (login real por
   `fetch` + lectura de la cookie `dsm_csrf` + assert sobre
   `response.status()`, nunca DOM, F59).
@@ -259,7 +259,7 @@ Ninguna AC queda diferida.
 
 ## Fase 5 — Documentación
 
-- [ ] T5.1 Ninguna actualización de `README.md` — sin nuevas env vars ni
+- [x] T5.1 Ninguna actualización de `README.md` — sin nuevas env vars ni
   dependencias (US §8 exige explícitamente "sin librería nueva").
   - **Exit criterion**: `package.json` de `apps/web` sin diff de
     dependencias tras este change.
