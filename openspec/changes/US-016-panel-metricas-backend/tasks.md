@@ -436,7 +436,7 @@ language: es
     se rechazó).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac9-retention-clamp`
 
-- [ ] T7.5 AC-6 — CSV neutralizado contra inyección de fórmulas
+- [x] T7.5 AC-6 — CSV neutralizado contra inyección de fórmulas
   - **Pattern**: `per design.md §D3/§D9` — un `product_name` sembrado con
     `=cmd|'/c calc'!A1` (mismo vector que `security-standards.md §6.3`)
     nunca llega crudo a la celda del CSV exportado.
