@@ -59,6 +59,7 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
 
         <ProductPurchase
           inStock={product.in_stock}
+          lowStock={product.low_stock}
           productName={product.name}
           productSlug={product.slug}
         />

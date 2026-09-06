@@ -12,6 +12,14 @@ const OUT_OF_STOCK_COPY =
   'Sin stock por ahora. Escribinos por WhatsApp y te avisamos cuando vuelva.';
 
 /**
+ * C2b (decisión del PO, 2026-09-06): urgencia SIN número. `product.low_stock`
+ * ya es booleano en el backend (`StorefrontProductDto`, OQ-BE-3 sigue
+ * cubierto — el storefront público nunca ve cuántas unidades quedan), así que
+ * acá sólo hay una elección de copy, nunca una cuenta.
+ */
+const LOW_STOCK_COPY = 'Quedan pocas unidades';
+
+/**
  * Techo de UI del stepper de la ficha (C2a, decisión del PO 2026-09-06 —
  * revierte OQ-FE-2 de US-002). NO es el stock real: el storefront público lo
  * mantiene oculto a propósito (C2b, mismo trade-off de US-002). Mismo valor
@@ -35,13 +43,20 @@ const CANTIDAD_MAX_UI = 99;
  * — no queda un disabled mudo (design-system §7.3). El badge lleva **texto**,
  * no sólo color, porque el color nunca puede ser el único portador de
  * significado (§7.7, WCAG 2.1 AA).
+ *
+ * **Pocas unidades** (C2b): el badge de "En stock" se reemplaza por uno de
+ * urgencia — no se muestran los dos a la vez, sería redundante. Nunca un
+ * número: `lowStock` es booleano de punta a punta (mismo trade-off que
+ * `in_stock`, OQ-BE-3).
  */
 export function ProductPurchase({
   inStock,
+  lowStock,
   productName,
   productSlug,
 }: {
   inStock: boolean;
+  lowStock: boolean;
   productName: string;
   productSlug: string;
 }) {
@@ -78,9 +93,15 @@ export function ProductPurchase({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className="inline-flex w-fit items-center rounded-full bg-success-subtle px-3 py-1 text-sm font-medium text-foreground">
-        En stock
-      </span>
+      {lowStock ? (
+        <span className="inline-flex w-fit items-center rounded-full bg-warning-subtle px-3 py-1 text-sm font-medium text-warning">
+          {LOW_STOCK_COPY}
+        </span>
+      ) : (
+        <span className="inline-flex w-fit items-center rounded-full bg-success-subtle px-3 py-1 text-sm font-medium text-foreground">
+          En stock
+        </span>
+      )}
       <QuantityStepper
         productName={productName}
         quantity={cantidad}

@@ -95,4 +95,10 @@ describe('ProductDetail', () => {
     expect(follows(name, price)).toBe(true);
     expect(follows(price, description)).toBe(true);
   });
+
+  it('el low_stock del producto llega al badge de urgencia de la compra (C2b)', () => {
+    render(<ProductDetail product={storefrontProduct({ low_stock: true })} />);
+
+    expect(screen.getByText('Quedan pocas unidades')).toBeInTheDocument();
+  });
 });
