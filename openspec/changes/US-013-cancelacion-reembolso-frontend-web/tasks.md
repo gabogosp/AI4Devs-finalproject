@@ -183,7 +183,7 @@ language: es
     botón de confirmar no dispara una segunda llamada HTTP.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/OrderCancelAction.test.tsx -t "T4.2"`
 
-- [ ] **T4.3 — `Escape` cancela sin llamar al servicio; foco entra al input al abrir**
+- [x] **T4.3 — `Escape` cancela sin llamar al servicio; foco entra al input al abrir**
   - **Pattern**: calcado a los dos tests equivalentes de
     `OrderAnonymizeAction.test.tsx` ("foco y Escape del ConfirmDialog
     reusado") — comportamiento 100% heredado de `ConfirmDialog`, este test
