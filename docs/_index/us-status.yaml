@@ -328,6 +328,7 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-09-06        # first plan invocation (backend-node-developer)
+  in-review-at: 2026-09-06          # backend (primera disciplina) — PR #66 abierto, 20/20 tasks + suite completa 225/225 verde
   blocked_by: []
   # US-010 y US-012 (bloqueantes declaradas) ya están archivadas — MercadoPagoClient.refund,
   # refund_pending/retry-refunds, NotificationPort, order_status_history y el CHECK de 6
@@ -335,6 +336,11 @@
   # openspec/changes/US-013-cancelacion-reembolso-backend/ — sin migración de Prisma
   # (design.md §D2), vive en apps/api/src/payments/ (no en orders/) para preservar la
   # dirección acíclica payments → orders ya establecida (design.md §D1).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-backend): backend llega a
+  # in-review — 20/20 tasks (12 fases), suite completa apps/api 225/225 suites/1877/1877
+  # tests, lint+typecheck+spectral limpios, PR #66 abierto. `status` de la US se queda en
+  # `In Progress` (FE/QA todavía sin planificar).
 - id: US-014
   slug: registro-login
   status: In Progress

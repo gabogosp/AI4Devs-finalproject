@@ -2158,7 +2158,7 @@
   us-id: US-013
   discipline: backend
   variant: null
-  status: Draft
+  status: in review   # /commit 2026-09-06 — 20/20 tasks + suite completa 225/225 verde, PR #66 abierto
   parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
   linear-task-id: null
   audit-baseline: null
@@ -2191,9 +2191,14 @@
   # provider='manual', decisión sin AC literal — D3 de proposal.md) y OQ-BE-2 (schema
   # de respuesta self-contained, sin $ref cruzado a la capacidad ordenes — D6 de
   # design.md).
-  estimate-hours: 8.0   # AI-asistido, 19 tasks / 12 fases (proposal.md; excede
-  # moderadamente el rango 8-12h tradicional de US §7 — flageado, no oculto).
-  assignee: sin-asignar
-  branch: null
-  pr-url: null
+  estimate-hours: 8.0   # AI-asistido, 20 tasks reales / 12 fases (proposal.md
+  # estimó 19; el count final subió a 20 al ejecutar — excede moderadamente el
+  # rango 8-12h tradicional de US §7 — flageado, no oculto).
+  assignee: claude-code
+  branch: feat/US-013-cancelacion-reembolso-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/66
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
