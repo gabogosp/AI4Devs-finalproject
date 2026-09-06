@@ -688,6 +688,9 @@
   # órdenes de este cliente" no es un conjunto computable; US-021 aporta el mecanismo de
   # anonimización que esta US reusa en vez de duplicar).
   blocked_by: [US-014, US-015, US-021]
+  in-progress-at: 2026-09-06   # /plan-backend-ticket US-020 — proposal/design/tasks.md
+  # escritos en openspec/changes/US-020-borrado-cuenta-datos-personales-backend/. Sin
+  # desarrollar todavía (status de la US sigue Ready hasta que /develop-backend arranque).
 - id: US-021
   slug: retencion-datos-ordenes
   status: Done   # /archive-change US-021-retencion-datos-ordenes-frontend-web 2026-09-06 —

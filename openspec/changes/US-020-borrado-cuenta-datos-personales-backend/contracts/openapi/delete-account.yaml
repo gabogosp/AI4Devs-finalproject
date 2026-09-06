@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: "delete-account — borrado de cuenta y datos personales del cliente (US-020)"
+  version: "v1"
+  description: |
+    Autoservicio: el cliente borra su propia cuenta desde su propia sesión.
+    Anonimiza `customers` (name/email/phone sobrescritos, `deleted_at` sellado,
+    email liberado para re-registro), revoca todas sus sesiones y enlaces de
+    recuperación pendientes, desvincula sus carritos y anonimiza sus órdenes
+    históricas no anonimizadas (reusa el mecanismo de US-021,
+    `reason='account_deletion'`). Inmediato, síncrono, irreversible — sin
+    ventana de gracia ni estado "borrado pendiente". Bloquea si el titular
+    tiene órdenes sin pagar o pagadas y sin entregar. Idempotente: una segunda
+    confirmación sobre una cuenta ya borrada responde 204 sin error ni segundo
+    efecto.
+servers:
+  - url: https://api.example.com
+    description: PROD (single-region per aws-lightsail-baseline)
+  - url: https://api.uat.example.com
+    description: UAT
+
+paths:
+  /v1/me:
+    delete:
+      operationId: deleteAccount
+      tags: [account]
+      summary: Borrar la cuenta y los datos personales del cliente autenticado (AC-1, AC-2, AC-3)
+      security:
+        - customerCookieAuth: []
+      parameters:
+        - name: x-csrf-token
+          in: header
+          required: true
+          description: Double-submit CSRF (security-standards.md §7.5) — HMAC del `jti` del access token.
+          schema: { type: string }
+      responses:
+        '204':
+          description: |
+            Borrado aplicado (o ya lo estaba — misma respuesta, AC-15: idempotente,
+            sin error ni segundo efecto). Las cookies de sesión del dispositivo que
+            llamó se limpian en la respuesta.
+        '401':
+          description: Sin sesión de cliente válida (`dsm:auth/unauthenticated`).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '403':
+          description: CSRF ausente o inválido (`dsm:auth/csrf`).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '409':
+          description: |
+            El titular tiene al menos una orden sin pagar (`pending_payment`) o
+            pagada y sin entregar (`new`/`preparing`/`ready`) — AC-4, AC-9. No se
+            modifica ningún dato.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/AccountHasActiveOrdersProblem' }
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  securitySchemes:
+    customerCookieAuth:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: JWT de sesión de cliente, `httpOnly` — emitido por `POST /v1/auth/login`.
+  schemas:
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+    OrderHistorySummary:
+      description: Mismo shape que `GET /v1/me/orders` (US-015) — sin PII adicional, sólo lo que el titular ya ve en su historial.
+      type: object
+      properties:
+        order_number: { type: integer }
+        status: { type: string, enum: [pending_payment, new, preparing, ready] }
+        total_ars_cents: { type: integer }
+        created_at: { type: string, format: date-time }
+    AccountHasActiveOrdersProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            blocking_orders:
+              type: array
+              items: { $ref: '#/components/schemas/OrderHistorySummary' }
+  responses:
+    RateLimited:
+      description: Presupuesto `account_deletion` agotado.
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
