@@ -2695,7 +2695,13 @@
   us-id: US-022
   discipline: qa
   variant: null
-  status: draft
+  status: in-progress   # /develop-qa 2026-09-06: 14/14 tasks + verification suite-level
+  # cerradas. 278 tests/escenarios revalidados (172 BDD + 68 E2E + 38 a11y), cobertura
+  # sin regresión (≥242 documentado). 4 hallazgos [Deferred — owner: usuario] en
+  # proposal.md — el más importante, TC-731 (`carrito.spec.ts`), es una falla REAL y
+  # reproducible que sí toca `apps/web` bumpeado (no aplicado ni investigado a fondo,
+  # per guardrail de no auto-arreglar sin revisión). Pendiente confirmar con el usuario
+  # antes de /commit.
   # MODO A, VARIANTE SIBLING: el FE (PR #95, 24/24 tasks) ya está mergeado a
   # main; este change hermano cubre lo QA-owned que la US pide en su §7:
   # "revalidar las suites propias —E2E de SSR/SEO, a11y, aceptación— contra
