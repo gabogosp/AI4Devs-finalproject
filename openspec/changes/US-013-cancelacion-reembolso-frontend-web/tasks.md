@@ -144,7 +144,7 @@ language: es
     `role="status"` distingue los 3 valores de `refund.status`.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/OrderCancelAction.test.tsx -t "T3.2"`
 
-- [ ] **T3.3 — El botón de confirmar queda deshabilitado hasta tipear "CANCELAR"**
+- [x] **T3.3 — El botón de confirmar queda deshabilitado hasta tipear "CANCELAR"**
   - **Exit criterion**: con el diálogo abierto y el campo vacío, el botón
     "Cancelar orden" del diálogo está deshabilitado; al tipear el texto
     exacto "CANCELAR" (mayúsculas), se habilita — comportamiento heredado de
