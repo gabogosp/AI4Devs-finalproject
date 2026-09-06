@@ -149,7 +149,7 @@ language: es
     'loading'`, el botón de envío tiene `aria-busy="true"` y está deshabilitado.
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewForm`
 
-- [ ] **T-A8 — `ReviewListItem.tsx` + `ReviewsList.tsx` + `.test.tsx` (AC-8, superficie del autor)**
+- [x] **T-A8 — `ReviewListItem.tsx` + `ReviewsList.tsx` + `.test.tsx` (AC-8, superficie del autor)**
   - **Exit criterion**: cada ítem muestra `StarRatingDisplay` modo `'item'`, el nombre del autor,
     el comentario **como texto plano** (nunca `dangerouslySetInnerHTML` — probado pasando un
     comentario con `<script>alert(1)</script>` y verificando que se renderiza literal, mismo
