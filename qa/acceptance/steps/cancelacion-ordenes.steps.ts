@@ -321,32 +321,44 @@ Then(
 
 // ─── N-1 ────────────────────────────────────────────────────────────────────
 
-Given('{string}', PASO, async function (this: CatalogWorld, condicion: string) {
-  const e = est(this);
-  const token = this.token || (await adminAuth());
-  if (condicion === 'una orden real ya entregada') {
-    const { orden, producto } = await ordenConItem(this, 'delivered', 1);
-    e.orden = orden;
-    e.producto = producto;
-    e.targetId = orden.id;
-  } else if (condicion === 'una orden real todavía sin confirmar el pago') {
-    const catalogo = await catalogoParaMetricas(1, { token });
-    const producto = catalogo.productos[0]!;
-    const orden = await crearOrdenPendiente({ adminToken: token, catalogo });
-    e.orden = orden;
-    e.producto = producto;
-    e.targetId = orden.id;
-  } else if (condicion === 'un id que no corresponde a ninguna orden real') {
-    const { orden, producto } = await ordenConItem(this, 'new', 1);
-    e.orden = orden;
-    e.producto = producto;
-    e.targetId = '00000000-0000-4000-8000-000000000000';
-  } else {
-    throw new Error(`condición N-1 no reconocida: "${condicion}"`);
-  }
-  e.stockAntes = await stockDe(this, e.producto!.id);
-  e.historyCountAntes = await historyCount(this, e.orden!.id);
-});
+// Regex explícito en vez de la expresión `{string}` (matchea CUALQUIER texto
+// entre comillas): con `{string}` este step colisionaba con el de SC-010-N5
+// (`pago-webhook.steps.ts`) — Cucumber no distingue Given/When/Then al
+// matchear, sólo el texto, así que dos `"..."` con contenido distinto pero
+// AMBOS declarados como `{string}`/regex-amplio producen "Multiple step
+// definitions match" en cualquier texto que ambos acepten. Acotar este a los
+// 3 literales que realmente maneja (los mismos 3 `Ejemplos` de N-1) resuelve
+// la ambigüedad sin tocar el step de SC-010-N5, que ya era preciso.
+Given(
+  /^"(una orden real ya entregada|una orden real todavía sin confirmar el pago|un id que no corresponde a ninguna orden real)"$/,
+  PASO,
+  async function (this: CatalogWorld, condicion: string) {
+    const e = est(this);
+    const token = this.token || (await adminAuth());
+    if (condicion === 'una orden real ya entregada') {
+      const { orden, producto } = await ordenConItem(this, 'delivered', 1);
+      e.orden = orden;
+      e.producto = producto;
+      e.targetId = orden.id;
+    } else if (condicion === 'una orden real todavía sin confirmar el pago') {
+      const catalogo = await catalogoParaMetricas(1, { token });
+      const producto = catalogo.productos[0]!;
+      const orden = await crearOrdenPendiente({ adminToken: token, catalogo });
+      e.orden = orden;
+      e.producto = producto;
+      e.targetId = orden.id;
+    } else if (condicion === 'un id que no corresponde a ninguna orden real') {
+      const { orden, producto } = await ordenConItem(this, 'new', 1);
+      e.orden = orden;
+      e.producto = producto;
+      e.targetId = '00000000-0000-4000-8000-000000000000';
+    } else {
+      throw new Error(`condición N-1 no reconocida: "${condicion}"`);
+    }
+    e.stockAntes = await stockDe(this, e.producto!.id);
+    e.historyCountAntes = await historyCount(this, e.orden!.id);
+  },
+);
 
 When('el dueño intenta cancelarla', PASO, async function (this: CatalogWorld) {
   const e = est(this);
