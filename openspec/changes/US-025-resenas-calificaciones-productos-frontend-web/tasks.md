@@ -136,7 +136,7 @@ language: es
     codificado (mismo patrón que `CustomerGuard.tsx`).
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewGuestPrompt`
 
-- [ ] **T-A7 — `ReviewForm.tsx` + `.test.tsx` (AC-2/AC-5/AC-9)**
+- [x] **T-A7 — `ReviewForm.tsx` + `.test.tsx` (AC-2/AC-5/AC-9)**
   - **Pattern**: `per design.md §D4` — `onSubmit: (input: ReviewFormInput) => Promise<void>`
     inyectado por el padre; estado de envío como `AsyncState<void>` local
     (`@/lib/async` — `frontend-standards.md` §9.3); slot `fieldError?: ReviewFormFieldError`
