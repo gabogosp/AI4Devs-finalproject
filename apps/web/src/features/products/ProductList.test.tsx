@@ -65,4 +65,19 @@ describe('ProductList (TanStack Table, paginación server-side)', () => {
     expect(await screen.findByText('Producto 2')).toBeInTheDocument();
     expect(offsets).toContain('20');
   });
+
+  it('el nombre de cada fila linkea a su pantalla de edición — sin esto, sólo se llega tipeando el UUID a mano', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/products`, () =>
+        HttpResponse.json({
+          data: [product(1)],
+          pagination: { limit: 20, offset: 0, total: 1 },
+        }),
+      ),
+    );
+    render(<ProductList />);
+
+    const link = await screen.findByRole('link', { name: 'Producto 1' });
+    expect(link).toHaveAttribute('href', `/admin/productos/${product(1).id}`);
+  });
 });
