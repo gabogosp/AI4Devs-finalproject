@@ -120,6 +120,33 @@ Una **UI de cliente** sobre esta superficie (US-014 frontend-web, rutas
 - **`@axe-core/playwright`** — `Deferred:` si QA lo pide (hoy `jest-axe`
   cubre `frontend-standards §19.2`).
 
+## Qué verificó QA
+
+Suite QA-owned (`US-014-registro-login-qa`), Modo A sibling — la capa nueva se define
+por correr contra la **API real** (no `api-stub.mjs`, donde `bcrypt` es una comparación
+de strings, el rate-limit se dispara con un header y la rotación vive en un `Map`):
+
+- **E2E de navegador** (Playwright, `qa/e2e/`): 13/13 escenarios verdes — registro con
+  sesión inmediata, login, logout que invalida de verdad, recuperación de punta a punta.
+- **Seguridad observable** (Playwright, API context): anti-enumeración medida sobre
+  **status + cuerpo + latencia** entre caso existente e inexistente (banda amplia, no un
+  umbral fino — sería flaky); rotación y reuso del refresh; contraseña nunca expuesta,
+  verificado también sobre el stdout del proceso.
+- **Accesibilidad**: 9/9 — los cuatro formularios (registro, login, recuperación,
+  confirmación) en WCAG 2.1 AA + recorrido por teclado.
+- **Carga (k6)**: `POST /v1/auth/login` — presupuesto **propio** de login (no el de
+  "escritura carrito/orden < 500ms" del PRD §4, que no cubre esta ruta): **p95 ≤ 800ms**,
+  ratificado por el PO 2026-09-06 aceptando expresamente el costo de `bcrypt` cost 12
+  (~250ms por diseño, mitigación de fuerza bruta) como parte del presupuesto. Medido:
+  **p95 = 654,41ms**, 200/200 checks, dentro del presupuesto.
+
+**Deuda conocida, no bloquea este archive** (documentada, no oculta):
+
+| Ítem | Estado | Asignado a |
+|---|---|---|
+| Regresión sobre las suites QA ya existentes (`TC-2xx`/`TC-3xx`/`TC-7xx`) | No re-corrida en esta sesión de archive | El código de US-014 (BE/FE) está en `main` hace días; cada PR posterior corrió su propia suite completa en verde (CI continua) — no-regresión verificada de facto, sin una corrida dedicada explícita |
+| Charters exploratorios `TC-170` (fuerza bruta/lockout) y `TC-171` (correo de recuperación como canal) | Escritos, `execution_mode: manual`, **pendientes de ejecución** (`qa/exploratory/us-014-cuentas.md` lo dice literalmente) | Fase de prueba local/visual del usuario — no bloquea `Done`, es trabajo exploratorio humano por diseño |
+
 ## Contratos
 
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml)
@@ -148,9 +175,10 @@ apunta acá; no se declara en las dos (dos copias driftean).
 |---|---|---|
 | [`US-014-registro-login-backend`](../../changes/archive/US-014-registro-login-backend/) | BE | Módulo de auth de cliente completo: registro/login/logout/refresh/me/reset, sesión por cookie + refresh rotado, CSRF double-submit, lockout, endurecimiento del seam admin |
 | [`US-014-registro-login-frontend-web`](../../changes/archive/US-014-registro-login-frontend-web/) | FE | Rewrite same-origin (ADR-0013), refresh single-flight cross-tab, `SessionProvider`/`CustomerGuard`, AC-5 protegido en el cliente, 5 rutas públicas sin SSR de contenido personalizado |
+| [`US-014-registro-login-qa`](../../changes/archive/US-014-registro-login-qa/) | QA | 13 E2E de navegador + 9 a11y + 1 k6 (login, p95 ≤ 800ms ratificado por el PO) verdes. 2 charters manuales pendientes de ejecución humana, documentados como deuda conocida arriba |
 
-`US-014-registro-login-qa` tiene un `[Open]` real (NFR de latencia de login
-sin ratificar) y no puede cerrarse hasta esa decisión del PO/Arquitecto.
+Con esto, `disciplines: [BE, FE, QA]` de US-014 queda completo — las 3 disciplinas
+archivadas.
 
 ## Estado de la provisión
 

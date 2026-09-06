@@ -5,6 +5,13 @@ parent-us: US-014
 discipline: qa
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 8fb8e421dd9940bd5d47fe071c3a538df0e1068d
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/9
+# PR #9 (2026-08-29, checkpoint con T4.1/OQ-QA-5 abierto) + PR #86 (2026-09-06,
+# cierra OQ-QA-5 — ratificación del NFR de login por el PO) — dos PRs para esta
+# disciplina, ambos mergeados.
 ---
 
 # US-014 QA — Cuentas de cliente: lo que sólo se ve cruzando las tres capas
