@@ -35,12 +35,29 @@ import { SearchBar } from '@/features/search/SearchBar';
  * ⚠ Sin `loading.tsx` en ningún nivel de `(storefront)`: la boundary de Suspense
  * transmite el shell con el status 200 ya comprometido y vuelve imposible un 404
  * real (US-003 `design.md` D1.bis; gap F59).
+ *
+ * "Saltar al contenido" (WCAG 2.4.1 Bypass Blocks): sin esto, una persona que
+ * navega con teclado repite el mismo bloque (logo, WhatsApp, carrito, cuenta,
+ * buscador, `CategoryNav`) en CADA página pública antes de llegar al
+ * contenido — encontrado real corrigiendo TC-731 (`carrito.spec.ts`): con el
+ * catálogo grande, `CategoryNav` (sin tope — ver su propio comentario) por sí
+ * sola agota cualquier presupuesto razonable de `Tab`. El link es el primer
+ * nodo del árbol y sólo se ve al enfocarlo (`focus:not-sr-only`); apunta a
+ * `#contenido-principal`, que es el `id` + `tabIndex={-1}` del propio `<main>`
+ * (`<main>` no es focuseable nativo — sin el `tabIndex` el salto movería el
+ * scroll pero no el foco, y el siguiente `Tab` volvería a empezar del header).
  */
 export default function StorefrontLayout({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
       <CartProvider>
       <div className="flex min-h-screen flex-col">
+      <a
+        href="#contenido-principal"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-focus"
+      >
+        Saltar al contenido
+      </a>
       <header className="sticky top-0 z-20 border-b border-border bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
           <Link
@@ -76,7 +93,9 @@ export default function StorefrontLayout({ children }: { children: ReactNode }) 
         </div>
         <CategoryNav />
       </header>
-        <main className="flex-1">{children}</main>
+        <main id="contenido-principal" tabIndex={-1} className="flex-1 focus:outline-none">
+          {children}
+        </main>
         <SiteFooter />
       </div>
       </CartProvider>
