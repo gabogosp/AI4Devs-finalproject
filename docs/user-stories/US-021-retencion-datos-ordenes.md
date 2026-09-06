@@ -5,7 +5,7 @@ slug: retencion-datos-ordenes
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
 prd-capacity: 13   # CAP-13 «Cumplimiento de datos personales», partida de CAP-10 el 2026-08-23
-status: Ready
+status: In Progress   # sincronizado con docs/_index/us-status.yaml (in-progress-at: 2026-08-30) — venía desalineado, sólo BE/QA lo habían avanzado; FE lo confirma acá
 priority: High
 estimate-tshirt: S
 story_points_traditional: 5
@@ -13,7 +13,7 @@ story_points_ai_assisted: 2
 estimation_basis: "BE anonimización por lote + acción a pedido + auditoría, sobre un esquema que ya existe (Cohn 2005 §8, 5) + FE acción en el panel de órdenes (Cohn 2005 §8, 2), tomado el dominante × 0.45 (Peng 2023)"
 language: es
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-09-05
 ready-at: 2026-08-22
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]

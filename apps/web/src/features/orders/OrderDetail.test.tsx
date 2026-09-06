@@ -87,6 +87,78 @@ describe('OrderDetail (T5.1, AC-2)', () => {
   });
 });
 
+describe('OrderDetail — T4.1 (sección de contacto condicional, AC-4/AC-5)', () => {
+  it('orden NO anonimizada: sigue mostrando buyer_email (sin regresión)', async () => {
+    server.use(http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(orden())));
+
+    render(<OrderDetail id={ID} />);
+
+    expect(await screen.findByText('comprador@test.local')).toBeInTheDocument();
+    expect(screen.getByText('+54 351 555 0000')).toBeInTheDocument();
+    expect(screen.getByText('Comprador de Prueba')).toBeInTheDocument();
+  });
+
+  it('orden anonimizada: muestra cuándo/por qué y NO muestra buyer_email/buyer_phone/buyer_name reales', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/orders/${ID}`, () =>
+        HttpResponse.json(
+          orden({ anonymized_at: '2026-09-05T12:00:00.000Z', anonymization_reason: 'retention_policy' }),
+        ),
+      ),
+    );
+
+    render(<OrderDetail id={ID} />);
+
+    expect(await screen.findByText(/anonimizados/i)).toBeInTheDocument();
+    expect(screen.getByText(/por plazo de retención cumplido/i)).toBeInTheDocument();
+    expect(screen.queryByText('comprador@test.local')).not.toBeInTheDocument();
+    expect(screen.queryByText('+54 351 555 0000')).not.toBeInTheDocument();
+    expect(screen.queryByText('Comprador de Prueba')).not.toBeInTheDocument();
+  });
+});
+
+describe('OrderDetail — T4.2 (OrderAnonymizeAction montado, actualiza sin recargar)', () => {
+  it('tras confirmar la anonimización, la sección de contacto se actualiza sin un segundo render de OrderDetail', async () => {
+    const user = userEvent.setup();
+    let getCount = 0;
+    server.use(
+      http.get(`${API}/v1/admin/orders/${ID}`, () => {
+        getCount += 1;
+        return HttpResponse.json(
+          getCount === 1
+            ? orden()
+            : orden({ anonymized_at: '2026-09-05T12:00:00.000Z', anonymization_reason: 'requested' }),
+        );
+      }),
+      http.post(`${API}/v1/admin/orders/${ID}/anonymize`, () =>
+        HttpResponse.json({
+          order_id: ID,
+          anonymized_at: '2026-09-05T12:00:00.000Z',
+          anonymization_reason: 'requested',
+        }),
+      ),
+    );
+
+    render(<OrderDetail id={ID} />);
+    // La orden trae ítems desde el primer render: si hubiera un remount total
+    // (navegación de página completa), este contenido desaparecería y volvería
+    // a aparecer tras un estado de carga — acá nunca pasa por 'Cargando orden…'
+    // una segunda vez.
+    expect(await screen.findByText('comprador@test.local')).toBeInTheDocument();
+    expect(getCount).toBe(1);
+
+    await user.click(screen.getByRole('button', { name: /anonimizar datos del comprador/i }));
+    await user.type(screen.getByLabelText(/escribí "anonimizar" para confirmar/i), 'ANONIMIZAR');
+    await user.click(screen.getByRole('button', { name: /^anonimizar$/i }));
+
+    expect(await screen.findByText(/anonimizados/i)).toBeInTheDocument();
+    expect(getCount).toBe(2); // refetch-on-success — exactamente un GET más, no un remount
+    expect(screen.queryByText('Cargando orden…')).not.toBeInTheDocument();
+    // El resto del detalle (ítems) sigue en el mismo árbol, sin recarga completa.
+    expect(screen.getByText('Compresor Embraco')).toBeInTheDocument();
+  });
+});
+
 describe('OrderDetail — T7.2 (el historial refleja el cambio sin un segundo GET)', () => {
   it('tras avanzar el estado, el historial pasa de N a N+1 SIN un segundo GET al detalle', async () => {
     const user = userEvent.setup();
