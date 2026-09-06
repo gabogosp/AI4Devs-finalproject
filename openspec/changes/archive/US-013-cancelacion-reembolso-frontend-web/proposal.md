@@ -6,6 +6,10 @@ discipline: frontend-web
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-06
+merged_commit: 62437f77675b3d0b6c0433f3d0f0860b3e28a152
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/67
 ---
 
 # Proposal — Cancelación de orden + reembolso + reintegro de stock (frontend-web)

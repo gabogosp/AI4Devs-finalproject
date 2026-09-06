@@ -2348,7 +2348,7 @@
   us-id: US-013
   discipline: frontend-web
   variant: null
-  status: in review   # /commit 2026-09-06 — 17/17 tasks + suite completa apps/web 153/153 verde, PR #67 abierto
+  status: archived   # /archive-change 2026-09-06 — extiende openspec/specs/pagos/ (CAP-4)
   parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
   linear-task-id: null
   audit-baseline: null
@@ -2391,9 +2391,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/67
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T12:01:33Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-013-cancelacion-reembolso-frontend-web
 
 - name: US-013-cancelacion-reembolso-qa
   us-id: US-013

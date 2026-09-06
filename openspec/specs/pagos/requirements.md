@@ -135,3 +135,34 @@ Superficie cubierta: `POST /admin/orders/{id}/cancel`.
 |---|---|---|
 | D-11 | ¿El reembolso no-op de `provider='manual'` (R-21) es el comportamiento correcto, o el PO prefiere un estado distinto para el ledger? (OQ-BE-1 de `US-013-cancelacion-reembolso-backend/proposal.md`.) | Owner: PO. Default implementado: `refunded` automático — cambiar es una condición menos en `crearRefund`, sin impacto en el resto del diseño. |
 | D-12 | ¿`CancelOrderResponse` debería exponer `refund` directamente en `AdminOrderDetail` (capacidad `ordenes`) en vez de un schema propio de `pagos`? (OQ-BE-2.) | Owner: Arquitecto. Default implementado: self-contained, sin acoplar las dos raíces vivas por un `$ref` cruzado (D6 de `decisions.md`). |
+
+## Desde US-013 frontend-web — Cancelación de orden + reembolso + reintegro de stock (archivada 2026-09-06)
+
+Consume el contrato de arriba desde `apps/web/src/features/orders/OrderCancelAction.tsx`
+(componente nuevo, montado junto a `OrderStatusActions` en `OrderDetail.tsx`).
+Sin superficie HTTP propia — este bloque documenta el comportamiento de UI
+que gobierna cómo se consume el contrato, no un requisito de API nuevo.
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-26 | El botón "Cancelar orden" reusa `ConfirmDialog` (confirmación de dos pasos, tipear "CANCELAR") sin modificarlo — mismo componente que `ProductActions.archive`/`OrderAnonymizeAction`. | AC-6 |
+| R-27 | El botón no se renderiza cuando la orden está `delivered`/`cancelled` (gating de visibilidad, no de autoridad — el backend re-verifica vía 409/404). | AC-1, AC-7 (superficie) |
+| R-28 | Reconciliación DIRECTA desde `CancelOrderResponse` (self-contained) — sin segundo `GET`, mismo patrón que `OrderStatusActions.onConfirmed` (a diferencia de `OrderAnonymizeAction`, cuyo endpoint devuelve un shape parcial y sí refetchea). | AC-3, AC-5 (superficie) |
+| R-29 | Mensaje de resultado distingue los 3 valores de `refund.status` (`refunded`/`refund_pending`/`not_applicable`) — **el banner de resultado se renderiza siempre que haya mensaje, independiente del gate de visibilidad de R-27** (ver fix de regresión abajo). | AC-3, AC-5 |
+| R-30 | Un 409 del backend (orden ya cancelada por otra pestaña, o entregada) muestra un mensaje específico; el diálogo permanece abierto. | AC-7 (negative space) |
+| R-31 | Tras cancelar con éxito, `OrderStatusHistory` (componente ya existente) muestra la fila nueva sin recargar la página. | AC-10 (superficie) |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-15 | El FE no re-filtra ni re-interpreta qué órdenes son cancelables — la autoridad real es 100% backend (409/404). |
+| N-16 | Un doble-click sobre "Cancelar orden" (dentro del diálogo) no dispara un segundo `POST` — el botón de confirmar queda deshabilitado mientras la mutación está en curso. |
+
+### Defecto real encontrado por QA y resuelto (no una omisión del plan original)
+
+| # | Qué pasó | Resuelto por |
+|---|---|---|
+| N-17 | La primera versión de `OrderCancelAction` hacía `return null` incondicional cuando `order.status` era `delivered`/`cancelled` — como cancelar deja la orden en `cancelled`, el propio resultado exitoso volvía terminal ese gate en el MISMO render que debía mostrar el mensaje de R-29, y el early-return desmontaba el componente antes de pintarlo. El mensaje de éxito **nunca se veía**. Encontrado por `QA-013-E2E-3` (cross-stack, el único layer que simula el re-render real del padre con el `order.status` actualizado — invisible para los tests de componente aislado). | `fix/US-013-cancel-result-message-not-shown` (PR #72, mergeado 2026-09-06) — separa "ofrecer una nueva cancelación" (R-27) de "mostrar el resultado de la última acción" (R-29, siempre se renderiza si hay mensaje). Con test de regresión que reproduce el re-render real del padre. |
