@@ -19,7 +19,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Pre-flight
 
-- [ ] T0.1 Confirmar que la rama activa es `feat/US-022-actualizacion-dependencias-frontend-web` (ya existe — este worktree fue creado desde `origin/main` actualizado).
+- [x] T0.1 Confirmar que la rama activa es `feat/US-022-actualizacion-dependencias-frontend-web` (ya existe — este worktree fue creado desde `origin/main` actualizado).
   - **Exit criterion**: `git branch --show-current` imprime `feat/US-022-actualizacion-dependencias-frontend-web`.
   - **Verify**: `git branch --show-current`
 - [ ] T0.2 Confirmar que no hay otro change en `openspec/changes/` con el mismo `us-id` en conflicto.

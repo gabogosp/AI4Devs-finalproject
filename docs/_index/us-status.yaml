@@ -702,7 +702,7 @@
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend
-  status: Ready
+  status: In Progress   # /develop-frontend-web (2026-09-06) — T0.1 cerrada, ejecución de tasks.md en curso
   priority: High
   prd-capacity: null            # no nace del PRD: hallazgo del gate de seguridad de US-006
   disciplines: [FE, QA]
