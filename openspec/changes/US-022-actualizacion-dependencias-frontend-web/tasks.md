@@ -123,7 +123,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 - [x] T8.1 `pnpm run audit:gate` en exit 0 sobre el estado final del árbol (con `vitest` deferred documentado en `.audit-exclusions.json` si esa es la decisión del usuario, o resuelto si eligió forzarlo).
   - **Exit criterion**: AC-1, AC-2, AC-5 y AC-7 cumplidas simultáneamente — cero hallazgos `high`/`critical` sin cubrir, ninguna exclusión sin los 5 campos, umbral de severidad intacto en `high`.
   - **Verify**: `pnpm run audit:gate; echo "exit=$?"` (debe imprimir `exit=0`)
-- [ ] T8.2 Suite completa del monorepo verde, lint y typecheck limpios — cierre de AC-3.
+- [x] T8.2 Suite completa del monorepo verde, lint y typecheck limpios — cierre de AC-3.
   - **Exit criterion**: `pnpm -r lint`, `pnpm -r typecheck` y `pnpm -r test` terminan en exit 0, con el mismo conteo de tests (o mayor) que el baseline de T0.3.
   - **Verify**: `pnpm -r lint && pnpm -r typecheck && pnpm -r test`
 - [ ] T8.3 Build de producción final (mismo paso que corre `ci.yml` — "Build del frontend").
