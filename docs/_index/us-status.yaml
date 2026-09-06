@@ -171,9 +171,10 @@
   blocked_by: [US-008]              # US-008 sigue sin planificar: el change de US-009 arranca con pre-requisito en rojo
 - id: US-010
   slug: orden-webhook-stock
-  status: In Review   # /commit 2026-09-05: QA (segunda y última disciplina declarada) llega
-  # a in-review, PR #57. BE ya archivado (dea4f25). Ambas disciplinas de `disciplines: [BE,
-  # QA]` tienen PR — la US avanza de In Progress a In Review.
+  status: Done   # /archive-change 2026-09-06: QA archivada (PR #57 mergeado ed9512a). Con
+  # BE ya archivado desde 2026-09-05 (dea4f25), las 2/2 disciplinas declaradas
+  # (`disciplines: [BE, QA]`) están resueltas — la US avanza a Done.
+  done-at: 2026-09-06
   priority: High
   prd-capacity: 6
   disciplines: [BE, QA]
@@ -194,6 +195,15 @@
   # `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca se planificó (no
   # existe `openspec/changes/US-010-*-qa/` en ningún estado, pese a `disciplines: [BE, QA]`).
   # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
+  #
+  # NOTA (2026-09-06, /archive-change US-010-orden-webhook-stock-qa, PR #57 mergeado
+  # ed9512a): disciplina QA archivada (openspec/changes/archive/US-010-orden-webhook-stock-qa/).
+  # Suite L1/L3 sobre la capacidad `pagos`: 15/15 BDD, 13/13 contract, k6 dentro de budget
+  # (p95 4-15ms vs 200ms), 2/2 E2E Playwright, 3 charters escritos. 2 hallazgos abiertos sin
+  # dueño bloqueante: AC-3 real bloqueado sin cuenta sandbox de MercadoPago (QA-010-F1,
+  # owner PO/Infra) y `K6_VUS` env var reservada que pisa scripts k6 en silencio (QA-010-F2,
+  # owner QA, afecta también scripts ya archivados de US-023). Con esto, 2/2 disciplinas de
+  # `disciplines: [BE, QA]` están resueltas (ambas archivadas) → `status` avanza a `Done`.
   # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate): desacoplado de US-009.
   # US-008 y payments (US-023) ya existen y son lo único que este change necesita; construye
   # su propio MercadoPagoClient de alcance mínimo (getPayment/searchByExternalReference/

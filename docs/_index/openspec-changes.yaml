@@ -1242,10 +1242,11 @@
   # design.md de backend §D12), E2E cross-stack (checkout real → medio simulado → panel
   # del dueño, reusando OrdersList de US-012 ya construido — a diferencia del bloqueo
   # que sí tuvo US-023-*-qa con PendingPaymentsPanel), 3 charters exploratorios.
-  status: in-review   # /commit 2026-09-05: PR #57. Automatizables 100% verdes (BDD 15/15,
-  # contract 13/13, k6 dentro de budget, E2E 2/2). Quedan 2 ítems manuales por diseño, no por
-  # incompletitud: QA-010-ACC-2 (SC-010-N2, AC-3) bloqueado sin cuenta sandbox de MercadoPago
-  # (hallazgo QA-010-F1); QA-010-EXP-1 charter escrito, ejecución humana pendiente.
+  status: archived   # /archive-change 2026-09-06: PR #57 mergeado (ed9512a), capacidad `pagos`
+  # extendida con "Qué verificó QA". Automatizables 100% verdes (BDD 15/15, contract 13/13,
+  # k6 dentro de budget, E2E 2/2). Quedan 2 ítems manuales por diseño, no por incompletitud:
+  # QA-010-ACC-2 (SC-010-N2, AC-3) bloqueado sin cuenta sandbox de MercadoPago (hallazgo
+  # QA-010-F1); QA-010-EXP-1 charter escrito, ejecución humana pendiente.
   parent-us: docs/user-stories/US-010-orden-webhook-stock.md
   linear-task-id: null
   audit-baseline: null
@@ -1256,8 +1257,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/57
   pr-opened-at: 2026-09-05
   created: 2026-09-05
-  completed-at: null
-  archived-at: null
+  completed-at: 2026-09-06T01:35:39Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-010-orden-webhook-stock-qa/
 
 - name: AUDIT-dsm-web-007-endurecimiento-panel-backend
   us-id: null

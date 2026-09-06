@@ -5,6 +5,10 @@ parent-us: US-010
 discipline: qa
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: ed9512a
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/57
 ---
 
 # US-010 QA — Webhook de MercadoPago, medio simulado y decremento de stock
