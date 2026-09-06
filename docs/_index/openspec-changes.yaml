@@ -2025,7 +2025,7 @@
   us-id: US-016
   discipline: frontend-web
   variant: null
-  status: draft
+  status: in review   # /commit 2026-09-05 — 25/25 tasks + 6/6 verificación suite-level (152 archivos/947 tests, typecheck+lint limpios, 2/2 E2E, imports sin regresión), PR abierto
   parent-us: docs/user-stories/US-016-panel-metricas.md
   linear-task-id: null
   audit-baseline: null
@@ -2047,7 +2047,8 @@
   # subestimación ya señalado en la entrada de backend, hasta reconciliar con
   # el conteo real de tasks al desarrollar.
   branch: feat/US-016-panel-metricas-dueno-frontend-web
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/59
+  pr-opened-at: 2026-09-05
   created: 2026-09-05
   completed-at: null
   archived-at: null
