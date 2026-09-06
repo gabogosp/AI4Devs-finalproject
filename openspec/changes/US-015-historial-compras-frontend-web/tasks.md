@@ -203,7 +203,7 @@
 
 ## Fase 8 — Documentación
 
-- [ ] T8.1 Evaluar necesidad de README de feature (esperado: no)
+- [x] T8.1 Evaluar necesidad de README de feature (esperado: no)
   - **Pattern**: mismo criterio que `US-021-retencion-datos-ordenes-frontend-web` T7.1 — sólo
     `apps/web/src/features/cart/` tiene README hoy; ni `features/orders/` ni `features/account/`
     lo tienen. Crear uno nuevo sólo para `order-history/` rompería esa convención sin motivo
@@ -216,17 +216,17 @@
 
 ## Verification (suite-level)
 
-- [ ] Unit + component completos: `pnpm --filter @dsm/web test` (forma terminante, `vitest run`
-  ya configurado en `package.json` — sin riesgo F49 de modo watch).
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`.
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`.
-- [ ] Codegen sin diff pendiente: `pnpm --filter @dsm/web codegen && git diff --exit-code apps/web/src/api/generated/`.
-- [ ] Gate de contrato consumido (F48): `bash spekode/scripts/check-consumer-contract.sh` (o el
+- [x] Unit + component completos: `pnpm --filter @dsm/web test` (forma terminante, `vitest run`
+  ya configurado en `package.json` — sin riesgo F49 de modo watch). 160 suites / 994 tests verdes.
+- [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`.
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`.
+- [x] Codegen sin diff pendiente: `pnpm --filter @dsm/web codegen && git diff --exit-code apps/web/src/api/generated/`.
+- [x] Gate de contrato consumido (F48): `bash spekode/scripts/check-consumer-contract.sh` (o el
   script equivalente que respalda `.github/workflows/consumer-contract-check.yml`) sin
-  hallazgos nuevos en `apps/web/src/features/order-history/`.
-- [ ] Build de Next sin errores de rutas: `pnpm --filter @dsm/web build`.
-- [ ] a11y: `apps/web/src/features/order-history/a11y.test.tsx` verde.
-- [ ] Ningún test de este change usa un DTO/Zod/mock hand-escrito fuera de
+  hallazgos nuevos en `apps/web/src/features/order-history/`. 143 archivos escaneados, limpio.
+- [x] Build de Next sin errores de rutas: `pnpm --filter @dsm/web build`.
+- [x] a11y: `apps/web/src/features/order-history/a11y.test.tsx` verde.
+- [x] Ningún test de este change usa un DTO/Zod/mock hand-escrito fuera de
   `apps/web/src/api/generated/` para `listOrderHistory`/`getOrderHistoryDetail` — verificación
   manual: `grep -rn "OrderHistorySummary\|OrderHistoryDetail" apps/web/src/features/order-history/*.test.ts*`
   sólo debe referenciar tipos importados desde `@/api/generated/*` o desde
@@ -234,13 +234,14 @@
 
 ## Pre-merge checklist
 
-- [ ] T0.1 confirmado verde (contrato publicado — si no lo está, este change no se mergea, sólo
+- [x] T0.1 confirmado verde (contrato publicado — si no lo está, este change no se mergea, sólo
   queda planificado).
-- [ ] Todos los tests pasan localmente (`vitest run`).
-- [ ] Linter y typecheck limpios.
+- [x] Todos los tests pasan localmente (`vitest run`).
+- [x] Linter y typecheck limpios.
 - [ ] Sin console errors/warnings nuevos en `pnpm --filter @dsm/web dev` al abrir
   `/mi-cuenta/compras` (con y sin compras) y `/mi-cuenta/compras/{orderNumber}` (válido, ajeno,
-  inexistente) — verificación manual en navegador.
+  inexistente) — verificación manual en navegador. **Pendiente**: requiere una sesión de
+  navegador interactiva que este entorno de ejecución no tiene; queda para quien abra el PR.
 - [ ] PR describe el ticket (US-015), referencia este change
   (`openspec/changes/US-015-historial-compras-frontend-web/`) y menciona que depende de PR #70 +
   PR #71 (ambos ya mergeados a `main` al momento de planificar).
