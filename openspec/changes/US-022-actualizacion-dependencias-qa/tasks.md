@@ -25,7 +25,7 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
 
 ## Pre-flight
 
-- [ ] T-QA0 Confirmar rama activa y levantar el entorno cross-stack real
+- [x] T-QA0 Confirmar rama activa y levantar el entorno cross-stack real
   (API + Postgres + front construido con las versiones ya bumpeadas).
   - **Pattern**: `qa/scripts/api-up.sh` (exporta `CORS_ALLOWED_ORIGINS`,
     `AUTH_RATE_LIMIT_MAX`, etc. — nunca arrancar la API a mano, es
@@ -38,6 +38,30 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
     `feat/US-022-actualizacion-dependencias-qa`; la API responde 200 en
     `/health`; el front responde 200 en `http://localhost:3100`.
   - **Verify**: `git branch --show-current && curl -sS -o /dev/null -w "%{http_code}" http://localhost:3000/health | grep -qx 200 && curl -sS -o /dev/null -w "%{http_code}" http://localhost:3100 | grep -qx 200`
+  - **Nota de ejecución (2026-09-06)**: puerto 3000 ocupado por la API de
+    desarrollo de OTRA sesión en esta máquina compartida (worktree
+    `demo-mvp-visual-prep`, confirmado con `lsof` antes de arrancar nada, per
+    guardrail). Se usó `QA_API_PORT=3009` (default propio de
+    `api-up.sh` — el script ya evita 3000 a propósito) y web en `3100` (libre).
+    `NEXT_PUBLIC_API_BASE_URL`/`API_INTERNAL_ORIGIN` apuntan a `3009`. Además
+    de las variables que el plan ya documentaba, hicieron falta (no
+    documentadas en este plan ni en `api-up.sh`, encontradas por los 500 que
+    tiraban las suites — ver T-QA1/T-QA2):
+    `PAYMENTS_SIMULATED_ENABLED=true` + `MP_WEBHOOK_SECRET`/`MP_ACCESS_TOKEN`
+    (sin esto, `POST /v1/checkout/simulate-payment` 404 — precondición ya
+    documentada en `US-010-orden-webhook-stock-qa`/`US-015-historial-compras-qa`
+    pero no repetida en este plan) y `NEXT_PUBLIC_SITE_URL=http://localhost:3100`
+    en el build del front (default de código `apps/web/src/lib/env.ts` es
+    `http://localhost:3000` — con el puerto real del front distinto de 3000,
+    el sitemap/canonical quedan con el origen equivocado, TC-204). También se
+    comentó `RESEND_API_KEY=replace-me` en el `.env` local de este worktree
+    (placeholder truthy que hace resolver `notification.provider.ts` al
+    adapter REAL de Resend en vez del de log — mismo tipo de hallazgo de
+    higiene de entorno que QA-005-F1 con `GEMINI_API_KEY`, pero sin el
+    guardrail de código que sí tiene `ENRICHMENT_ENABLED`; sin este cambio
+    cualquier transición de orden que dispare un aviso devuelve 500 por
+    `ORDER_NOTIFICATIONS_FROM`/`OWNER_NOTIFICATION_EMAIL` ausentes). API y
+    front confirmados 200 contra los puertos reales.
 
 ## Fase 1 — Revalidación de la suite de aceptación BDD (Layer 3)
 
