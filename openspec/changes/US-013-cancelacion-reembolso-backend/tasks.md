@@ -104,7 +104,7 @@ language: es
     un producto con stock `S` deja `stock = S + N` en Postgres real.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=stock.repository`
 
-- [ ] **T2.2 — `OrdersRepository.transitionToCancelledIfActive` (guard estructural, AC-1/AC-8)**
+- [x] **T2.2 — `OrdersRepository.transitionToCancelledIfActive` (guard estructural, AC-1/AC-8)**
   - **Pattern**: mismo compare-and-set que `transitionToCancelledIfPending`
     (US-010) y `updateStatusConditional` (US-012), guardado por los 3 estados
     activos en vez de `pending_payment` — `per design.md §D3`:
