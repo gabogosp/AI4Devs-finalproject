@@ -2167,9 +2167,11 @@
   us-id: US-015
   discipline: qa
   variant: null
-  status: in-review   # /commit 2026-09-06: PR #79. Automatizables 100% verdes (BDD 16/16,
-  # contract 9/9, k6 dentro de NFR). Único ítem manual (QA-015-EXP-1, charter) escrito,
-  # ejecución humana pendiente. Sin bloqueados (US-015 no depende de proveedor externo).
+  status: archived   # /archive-change 2026-09-06: PR #79 mergeado (c9166df). Automatizables
+  # 100% verdes (BDD 16/16, contract 9/9, k6 dentro de NFR). Único ítem manual
+  # (QA-015-EXP-1, charter) escrito, ejecución humana pendiente. Sin bloqueados. Capacidad
+  # `historial-compras` TODAVÍA NO EXISTE (BE/FE archivan después) — ver nota en
+  # design.md archivado sobre el "Qué verificó QA" pendiente de sumar cuando BE archive.
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
@@ -2181,9 +2183,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/79
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T13:30:41Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-015-historial-compras-qa/
 
 # Planificado 2026-09-06 (/plan-frontend-web-ticket US-015). Linear MCP no conectado —
 # creación de task/comentario en el tracker omitida, sin simular.
