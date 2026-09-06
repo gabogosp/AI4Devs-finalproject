@@ -5,7 +5,18 @@ parent-us: US-015
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 9d2d754fbe65efc8ab1ccf9f29ce05cad98dc47c
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/70
 ---
+
+> **Nota de archivo (2026-09-06)**: mergeado vía PR #70. El contrato publicado
+> (`apps/api/docs/api/openapi.yaml`) se completó en un follow-up dedicado,
+> PR #71 (`fix/US-015-publish-order-history-contract`) — el `tasks.md` de
+> este change (T6.1) sólo verificaba el lint de los 2 yaml draft, no su
+> merge al spec del servicio. Crea la capacidad `openspec/specs/historial-compras/`
+> (CAP-8), primera vez que se entrega.
 
 # US-015 Backend — Historial de compras del cliente registrado
 

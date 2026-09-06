@@ -5,6 +5,13 @@ parent-us: US-014
 discipline: qa
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 8fb8e421dd9940bd5d47fe071c3a538df0e1068d
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/9
+# PR #9 (2026-08-29, checkpoint con T4.1/OQ-QA-5 abierto) + PR #86 (2026-09-06,
+# cierra OQ-QA-5 — ratificación del NFR de login por el PO) — dos PRs para esta
+# disciplina, ambos mergeados.
 ---
 
 # US-014 QA — Cuentas de cliente: lo que sólo se ve cruzando las tres capas
@@ -47,7 +54,7 @@ harness cross-stack que ya existe (`qa/`), **sin tocar código de producción**:
 | E2E de navegador | Playwright (`qa/e2e/`) | recorrido de cuenta completo contra la API real: registro con sesión inmediata, login, logout, recuperación de punta a punta |
 | Seguridad observable | Playwright (API context) | anti-enumeración comparando **status + cuerpo + latencia** entre caso existente e inexistente; rotación y reuso del refresh; cookies con sus flags |
 | Accesibilidad | axe-core + Playwright | los cuatro formularios (registro, login, recuperación, confirmación) en WCAG 2.1 AA + recorrido por teclado |
-| Carga | k6 (`qa/performance/`) | login bajo concurrencia contra el presupuesto **p95 < 500 ms** del PRD §4, con el rate-limit elevado para medir latencia y no el límite |
+| Carga | k6 (`qa/performance/`) | login bajo concurrencia contra el presupuesto **p95 ≤ 800 ms** (propio de login, ratificado por el PO — no el de "escritura carrito/orden < 500 ms" del PRD §4, que no cubre esta ruta), con el rate-limit elevado para medir latencia y no el límite |
 | Exploratorio | charters (`qa/exploratory/`) | fuerza bruta, lockout y su ventana, y el correo de recuperación como canal |
 
 **Lo que este plan NO hace** (ownership matrix, `qa-frontend`/`qa-backend` §2.1): no
@@ -87,7 +94,7 @@ registran como nota de cobertura para que nadie las duplique.
 | OQ-QA-2 | ¿El umbral de carga se mide con el rate-limit real o elevado? | **Corregido (2026-08-29)**: la premisa original era falsa — `AUTH_RATE_LIMIT_MAX` no toca las rutas de `customer-auth.controller.ts`, que fijan su propio `@Throttle` por ruta (§7.3, a propósito). No hay "elevado" posible para login/registro: siempre corren al límite de producción. La solución real no es un env var sino que TC-146/TC-160 usen IPs simuladas que nunca se reusan (ver T2.4, T4.1) | `[Resolved — corregido]` |
 | OQ-QA-3 | ¿Se mide el tiempo de respuesta para afirmar anti-enumeración? | **Sí, como banda amplia** (el caso inexistente no puede ser un orden de magnitud más rápido). Un umbral fino sería flaky; sin ninguno, el criterio se afirma a medias | `[Resolved]` |
 | OQ-QA-4 | ¿La recuperación se prueba con la bandeja real? | **No**: con el token que la API expone en test. Verificar la entrega es del PO | `[Deferred — owner: PO]` |
-| OQ-QA-5 | ¿Cuál es el presupuesto de latencia p95 de login (TC-160)? | El qa-plan citó PRD §4 (500ms), pero esa fila dice literalmente *"escritura (carrito/orden)"* — no cubre login. US-014 §9 no fija ningún número para login, sólo NFRs cualitativos. Medido: p95 = 621,93ms, con `bcrypt` cost 12 costando ~250ms **por diseño** (mitigación de fuerza bruta). Sin un budget ratificado no hay umbral que afirmar sin inventarlo | `[Open — owner: PO/Arquitecto: ratificar un budget de login propio, o confirmar que hoy no existe NFR numérico para esta ruta]` |
+| OQ-QA-5 | ¿Cuál es el presupuesto de latencia p95 de login (TC-160)? | El qa-plan citó PRD §4 (500ms), pero esa fila dice literalmente *"escritura (carrito/orden)"* — no cubre login. US-014 §9 no fijaba ningún número para login, sólo NFRs cualitativos. Medido: p95 = 621,93ms, con `bcrypt` cost 12 costando ~250ms **por diseño** (mitigación de fuerza bruta). **El PO ratificó 2026-09-06 un budget propio de login: p95 ≤ 800 ms**, aceptando expresamente el costo de bcrypt como parte del presupuesto, no como algo a optimizar | `[Resolved: NFR login p95 ≤ 800ms ratificado por PO 2026-09-06]` |
 
 ## References
 

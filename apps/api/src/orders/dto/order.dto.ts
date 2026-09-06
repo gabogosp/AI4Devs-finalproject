@@ -120,8 +120,8 @@ export class AdminOrderDetailDto extends AdminOrderSummaryDto {
   status_history!: AdminOrderStatusChangeDto[];
   /** null si la orden nunca se anonimizó (US-021). */
   anonymized_at!: string | null;
-  /** null si la orden nunca se anonimizó; distingue plazo cumplido de pedido del comprador (US-021 AC-4). */
-  anonymization_reason!: 'retention_policy' | 'requested' | null;
+  /** null si la orden nunca se anonimizó; distingue plazo cumplido, pedido del comprador o baja de cuenta (US-021 AC-4, US-020). */
+  anonymization_reason!: 'retention_policy' | 'requested' | 'account_deletion' | null;
 
   static fromWithHistory(
     o: OrderWithItems,

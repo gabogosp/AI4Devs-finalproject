@@ -10,6 +10,18 @@ import type { OrderDetail, OrderStatus } from './ordersService';
 const API = 'http://localhost:3000';
 const ID = '2f1c9a4e-1111-4111-8111-111111111111';
 
+/**
+ * `screen.findBy*` resuelve apenas el DOM refleja el cambio que le importa a
+ * cada test — no garantiza que TODO el trabajo asíncrono de `advance()` (en
+ * particular el `finally { setBusy(false) }`, que corre después de
+ * `onConfirmed`/`setMessage` en la misma promesa) ya asentó, sobre todo bajo
+ * la suite completa (160 archivos) en vez de este archivo aislado. Un flush
+ * de tiempo real más generoso que el `delay()` mockeado de cada test evita
+ * que ese `setState` tardío se dispare después de que vitest ya desmontó el
+ * entorno del test (vitest 3.x lo reporta como error no manejado).
+ */
+const flush = () => new Promise((r) => setTimeout(r, 100));
+
 function orden(status: OrderStatus): OrderDetail {
   return {
     id: ID,
@@ -81,6 +93,7 @@ describe('OrderStatusActions — T6.1 (AC-3/AC-6, UI optimista + rollback)', () 
     // siga en vuelo cuando vitest ya desmontó el entorno de este test
     // (vitest 3.x reporta el `setState` tardío como error no manejado).
     await screen.findByRole('button', { name: /marcar como lista/i });
+    await flush();
   });
 
   it('con 409 (dsm:orders/invalid-transition), el estado vuelve al original + role=alert', async () => {
@@ -105,6 +118,7 @@ describe('OrderStatusActions — T6.1 (AC-3/AC-6, UI optimista + rollback)', () 
 
     await screen.findByRole('alert');
     expect(estadoActual).toBe('new'); // rollback — nunca quedó confirmado en 'preparing'
+    await flush();
   });
 });
 
@@ -119,6 +133,7 @@ describe('OrderStatusActions — T6.2 (AC-4, mensaje sólo en ready)', () => {
     await user.click(screen.getByRole('button', { name: /marcar/i }));
 
     expect(await screen.findByText(/se avisó al cliente/i)).toBeInTheDocument();
+    await flush();
   });
 
   it('new → preparing NO muestra el mensaje de aviso', async () => {
@@ -132,6 +147,7 @@ describe('OrderStatusActions — T6.2 (AC-4, mensaje sólo en ready)', () => {
 
     await screen.findByRole('button', { name: /marcar como lista/i });
     expect(screen.queryByText(/se avisó al cliente/i)).toBeNull();
+    await flush();
   });
 });
 
@@ -154,5 +170,6 @@ describe('OrderStatusActions — T6.3 (dedupe de clicks)', () => {
 
     await screen.findByRole('button', { name: /marcar como lista/i });
     expect(cuenta).toBe(1);
+    await flush();
   });
 });

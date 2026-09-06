@@ -61,7 +61,7 @@ literalmente el mismo código que el webhook real).
 | R-14 | `POST /admin/payments/retry-refunds` reintenta hasta `REFUND_RETRY_BATCH_SIZE` pagos `refund_pending` contra `MercadoPagoClient.refund`. | AC-4 (durabilidad) |
 | R-15 | Los tres endpoints admin (reconcile/cleanup-abandoned/retry-refunds) no tienen scheduler in-process — un cron externo (Railway/GitHub Actions) les pega periódicamente. Verificado con `grep`: no hay `setInterval` en `apps/api/src`. | Design D8 |
 | R-16 | `orders` gana `confirmed_at`/`cancelled_at` (timestamptz, nullable, aditivo); `payments.status` gana `refund_pending` en su `CHECK`. | Design §Persistencia |
-| R-17 | `NotificationPort` (de `orders/`, no un puerto paralelo) gana `orderConfirmed`/`ownerNewOrder`/`orderCancelledNoStock` — invocados **después** del commit, nunca dentro de la transacción; un fallo de notificación no revierte una venta ya cobrada. Adaptador de log real, sin PII (`buyerName`/`buyerEmail` nunca logueados). Entrega real: `Deferred: US-011`. | AC-2 |
+| R-17 | `NotificationPort` (de `orders/`, no un puerto paralelo) gana `orderConfirmed`/`ownerNewOrder`/`orderCancelledNoStock` — invocados **después** del commit, nunca dentro de la transacción; un fallo de notificación no revierte una venta ya cobrada. Entrega real por `ResendNotificationAdapter` (US-011, con retry/backoff in-process — sin PII: `buyerName`/`buyerEmail` nunca logueados); sin `RESEND_API_KEY` cae a `LoggingNotificationAdapter` (dev/test). | AC-2 |
 
 ### Negative-space (lo que NO debe pasar)
 

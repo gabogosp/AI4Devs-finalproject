@@ -11,6 +11,7 @@ import {
   type FulfillmentStatus,
 } from '../../support/seed-ordenes';
 import { nuevaCuenta } from '../../support/customer-auth';
+import { esperarAviso } from '../../support/api-log';
 import type { CatalogWorld } from './world';
 
 /** Los pasos tocan red (siembra + checkout + varias escrituras); 5 s del default es corto. */
@@ -284,13 +285,11 @@ Then(
   'el sistema dispara el aviso de que el pedido está listo para ese comprador',
   PASO,
   async function (this: CatalogWorld) {
-    // El puerto de notificación es un log adapter (US-011 sin proveedor real
-    // todavía) — lo observable desde acá es que la transición a "ready" haya
-    // confirmado sin error: `orders-admin.service.ts` dispara la notificación
-    // SIEMPRE que `changeStatus` transiciona a "ready" (nunca en el no-op).
-    // El "una sola vez" lo prueba C-2 comparando dos llamadas.
+    const e = est(this);
     assert.equal(est(this).respuesta!.status, 200);
     assert.equal((est(this).respuesta!.body as { status: string }).status, 'ready');
+    const veces = await esperarAviso('ready_for_pickup', e.orden!.id);
+    assert.equal(veces, 1, `se esperaba exactamente 1 aviso "order.ready_for_pickup" para ${e.orden!.id}, hubo ${veces}`);
   },
 );
 
@@ -419,6 +418,8 @@ Then('el aviso de "lista para retirar" no se dispara una segunda vez', PASO, asy
     e.antes!.applied,
     'el contador de transiciones aplicadas subió con una repetición (no-op)',
   );
+  const veces = await esperarAviso('ready_for_pickup', e.orden!.id);
+  assert.equal(veces, 1, `se esperaba que el aviso siguiera en 1 tras la repetición, hubo ${veces}`);
 });
 
 // ─── N-1 ────────────────────────────────────────────────────────────────────

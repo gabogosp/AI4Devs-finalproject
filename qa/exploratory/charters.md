@@ -611,3 +611,125 @@
 - **Salida esperada**: confirmación de punta a punta del reembolso real
   (o de su recuperación vía `retry-refunds`), condicionado a la provisión de
   la cuenta sandbox (`OQ-QA-013-1`).
+
+# US-011 — Notificaciones por email
+
+> Los 4 charters de esta sección están **gated por `proposal.md` OQ-3**
+> (cuenta Resend real con dominio verificado, provisión pendiente en todo
+> entorno actual): mientras no exista, `NOTIFICATION_PORT` sigue resolviendo
+> a `LoggingNotificationAdapter` (`qa-plan.md` §0) y ninguno de estos charters
+> tiene superficie real que sondear. Se documentan igual, para no perder de
+> vista el hueco de cobertura, y quedan listos para ejecutarse el día que la
+> cuenta exista (ver `qa-plan.md` §14 OQ-QA-011-1).
+
+## TC-011-E1 — Contenido real del email, una vez exista una cuenta Resend de prueba
+
+- **Misión**: enviar los 4 tipos de aviso (`order.confirmed`,
+  `order.owner_new_order`, `order.ready_for_pickup`,
+  `order.cancelled_no_stock`) a una casilla de prueba real y confirmar
+  visualmente lo que ningún test QA-owned de este entorno puede observar hoy
+  (`qa-plan.md` §0 — `LoggingNotificationAdapter` sólo loguea `order_id`/
+  `order_number`).
+- **Áreas**: ausencia de cualquier dato de pago en el cuerpo del email; el
+  copy coincide con `design-system.md` §10.2 donde exista copy definido; un
+  `buyerName`/`productName` con caracteres HTML especiales (`<`, `&`,
+  comillas) se ve como texto literal, no como markup roto; la dirección de
+  retiro es correcta y estática.
+- **Riesgos**: sin este charter, el contenido real del email (el detalle de
+  ítems/total que AC-1 promete, el escapado de `escapeHtml` que T4.1 prueba
+  sólo unitariamente) nunca se ve renderizado de punta a punta hasta el
+  primer envío real en producción.
+- **Heurísticas**: "el día 1 de producción no es el momento de descubrir
+  esto" (mismo criterio que `TC-021-E4`/`TC-013-E2`); "sigue el dato"
+  (comparar el HTML real contra lo que `notification-templates.ts` genera).
+- **Justificación manual**: depende de una cuenta Resend real con dominio
+  verificado que no existe hoy (`proposal.md` OQ-3); es la ÚNICA forma de
+  cerrar de verdad el hueco de contenido que `qa-plan.md` §0 documenta como
+  no observable — automatizarlo antes de tener la cuenta sería fingir
+  cobertura sobre un adapter (`ResendNotificationAdapter`) que nunca corre en
+  este entorno.
+- **Salida esperada**: veredicto visual de los 4 templates contra una casilla
+  real (sin PII de pago, copy correcto, sin markup roto, dirección estática
+  correcta), o un hallazgo puntual por template para priorizar antes de la
+  primera promoción con `RESEND_API_KEY` real.
+
+## TC-011-E2 — Latencia real del webhook bajo un fallo transitorio forzado
+
+- **Misión**: con la cuenta de prueba, forzar un 429/5xx real (o un timeout
+  de red) en `api.resend.com` y medir el tiempo de respuesta real del
+  webhook de MercadoPago con los 2 reintentos + backoff corriendo de verdad
+  (`design.md` Decisión 1).
+- **Áreas**: el tiempo total de respuesta del webhook bajo el peor caso real
+  de reintento (`≈16s` propuesto, sin baseline medido — `qa-plan.md` §7); si
+  MercadoPago tolera esa demora sin marcar la entrega del webhook como
+  fallida y reintentar el envío por su cuenta (lo que dispararía un segundo
+  procesamiento del mismo evento).
+- **Riesgos**: el sub-caso de AC-6 que queda `blocked` a nivel aceptación
+  (`TC-011-006`) — "la confirmación/stock no dependen de que la notificación
+  termine, ni bajo el peor caso de latencia real" — sólo se cierra de verdad
+  acá.
+- **Heurísticas**: "medir antes de fijar un threshold" (mismo criterio que
+  rechaza un threshold k6 sin baseline, `qa-plan.md` §7); boundary (el caso
+  de 2 reintentos agotados, no sólo el feliz).
+- **Justificación manual**: depende de la misma cuenta Resend real (`proposal.md`
+  OQ-3) y de poder forzar un fallo transitorio real, controlado, contra un
+  tercero — no es determinístico ni repetible como test automatizado
+  (`flakiness-detection` Signal 6, mismo motivo por el que `qa-plan.md` §0
+  rechaza esto en la suite automatizada).
+- **Salida esperada**: medición real del p95/p99 del webhook bajo reintento
+  real, confirmación de que MercadoPago tolera la demora, y el número real
+  que reemplaza el `≈16s` `[propuesto — confirma Ops tras medir en staging]`
+  de `design.md`.
+
+## TC-011-E3 — Volumen hacia `OWNER_NOTIFICATION_EMAIL`
+
+- **Misión**: con varias órdenes reales seguidas (usando `seed-ordenes.ts` a
+  través del checkout real, no el puente directo), confirmar que todos los
+  avisos al dueño (`order.owner_new_order`) llegan a la misma casilla sin que
+  el propio límite de envío de la cuenta Resend los descarte silenciosamente.
+- **Áreas**: comportamiento de la cuenta Resend bajo ráfaga de envíos al
+  mismo destinatario; si algún envío se descarta o se demora, si eso queda
+  visible en algún dashboard de Resend consultable por el dueño o el equipo.
+- **Riesgos**: a diferencia del comprador (un destinatario por orden), el
+  dueño es un único destinatario que acumula el 100% del tráfico de
+  `ownerNewOrder` — un pico real de ventas podría exponer un límite de envío
+  que ningún test unitario con cliente mockeado ejercita.
+- **Heurísticas**: "volumen real" (mismo criterio que `TC-016-E1`, usar el
+  flujo real de checkout, no un doble); "sigue el dato" (verificar en la
+  consola de Resend, no sólo en el log local).
+- **Justificación manual**: depende de la cuenta Resend real (`proposal.md`
+  OQ-3) y de su comportamiento real bajo carga — no hay forma de simular el
+  límite de envío real de un proveedor externo en un test determinista.
+- **Salida esperada**: confirmación de que N órdenes seguidas generan N
+  avisos reales al dueño sin pérdidas silenciosas, o un hallazgo puntual
+  (rate limit del proveedor, entrega demorada) para priorizar antes de que el
+  volumen real de producción lo exponga primero.
+
+## TC-011-E4 — PII residual en logs no anticipados
+
+- **Misión**: con centinelas (`buyerEmail` reconocible) en una orden,
+  disparar los 4 tipos de aviso y revisar rutas de logging que el test
+  dirigido (`tasks.md` T4.1) no cubre.
+- **Áreas**: logs de error 5xx de Nest por defecto ante una excepción no
+  manejada en el camino de notificación; trazas de excepción si el SDK de
+  Resend lanza en vez de devolver `{ error }` (rama `catch` del adapter,
+  `design.md` Approach) — ninguna de las dos rutas es la línea de log
+  angosta (`order.<evento> order_id=... order_number=...`) que
+  `LoggingNotificationAdapter`/`esperarAviso` sí verifican hoy.
+- **Riesgos**: un log de error genérico de Nest (stack trace, payload de la
+  excepción) podría incluir el objeto `payload` completo —con
+  `buyerEmail`/`buyerName`— si algún día una excepción no capturada lo
+  serializa por defecto, algo que ningún assert dirigido a la línea feliz
+  del adapter puede detectar.
+- **Heurísticas**: "seguir el dato hasta las rutas no felices" (errores,
+  excepciones, catch genéricos); centinela reconocible (mismo criterio que
+  `TC-016-E4`/charter #3 de `US-021-retencion-datos-ordenes-backend/qa-plan.md`,
+  adaptado acá a notificaciones en vez de retención).
+- **Justificación manual**: explorar rutas de logging no dirigidas es
+  exploratorio por naturaleza — no hay una lista cerrada de "todas las formas
+  en que Nest podría loguear una excepción" para convertir en un assert
+  determinista sin sobre-especificar el framework.
+- **Salida esperada**: confirmación de que ningún log (incluyendo rutas de
+  error no felices) expone `buyerEmail`/`buyerName`, o un hallazgo puntual
+  con la ruta exacta y el `payload` filtrado, para priorizar un fix antes de
+  la primera promoción con `RESEND_API_KEY` real.

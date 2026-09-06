@@ -229,4 +229,48 @@ describe('CustomersRepository (integration)', () => {
       expect(fresco?.failed_login_attempts).toBe(0);
     });
   });
+
+  describe('anonymize (US-020)', () => {
+    it('sobre una cuenta activa, escribe los placeholders + deleted_at, deja password_hash intacto', async () => {
+      const c = await repo.create({
+        email: 'borrar@example.com',
+        name: 'A Borrar',
+        phone: '+54 351 555 1111',
+        passwordHash: HASH,
+      });
+
+      const resultado = await repo.anonymize(c.id);
+
+      expect(resultado?.name).toBe('Cuenta eliminada');
+      expect(resultado?.phone).toBe('+00 000-0000');
+      expect(resultado?.email).toContain(c.id);
+      expect(resultado?.email).toMatch(/@anonimizado\.dsm\.invalid$/);
+
+      const releido = await prisma.customer.findUniqueOrThrow({ where: { id: c.id } });
+      expect(releido.deleted_at).not.toBeNull();
+      expect(releido.password_hash).toBe(HASH); // §Trade-offs — no forma parte de la PII de este US
+    });
+
+    it('sobre una cuenta ya borrada, devuelve null y no vuelve a escribir (AC-15)', async () => {
+      const c = await repo.create({
+        email: 'doble@example.com',
+        name: 'Doble Borrado',
+        passwordHash: HASH,
+      });
+
+      const primera = await repo.anonymize(c.id);
+      const segunda = await repo.anonymize(c.id);
+
+      expect(primera).not.toBeNull();
+      expect(segunda).toBeNull();
+
+      const releido = await prisma.customer.findUniqueOrThrow({ where: { id: c.id } });
+      expect(releido.deleted_at?.getTime()).toBe(primera?.deleted_at?.getTime());
+    });
+
+    it('sobre un id inexistente, devuelve null', async () => {
+      const inexistente = '00000000-0000-0000-0000-000000000000';
+      expect(await repo.anonymize(inexistente)).toBeNull();
+    });
+  });
 });

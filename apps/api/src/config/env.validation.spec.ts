@@ -727,3 +727,22 @@ describe('Historial de compras del cliente (US-015 T4.2) — defaults y fail-fas
     ).toThrow(/fail-fast/);
   });
 });
+
+describe('Borrado de cuenta (US-020 T0.2) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin las variables, aplica los 2 defaults seguros literales', () => {
+    const env = validateEnv({ ...base });
+    expect(env.ACCOUNT_DELETION_RATE_LIMIT_MAX).toBe(5);
+    expect(env.ACCOUNT_DELETION_RATE_LIMIT_TTL_MS).toBe(3_600_000);
+  });
+
+  it('ACCOUNT_DELETION_RATE_LIMIT_MAX=abc hace fallar el arranque, no cae al default', () => {
+    expect(() =>
+      validateEnv({ ...base, ACCOUNT_DELETION_RATE_LIMIT_MAX: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+});

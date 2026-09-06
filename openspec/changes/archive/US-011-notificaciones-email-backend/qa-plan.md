@@ -3,8 +3,15 @@
 > **Ticket**: US-011 — Notificaciones por email (Resend)
 > **Author**: qa-engineer agent (assisted by @gosp)
 > **Date**: 2026-09-06
-> **Status**: Proposed (backend `tasks.md` 0/N ejecutadas — este plan se escribe
-> antes de `/develop-backend`, no después)
+> **Status**: Executed (`/develop-qa`, 2026-09-06) — QA-011-BDD-1..4 verdes
+> (6/6 escenarios `@us-011`, 39/39 steps); regresión completa
+> `pago-webhook.feature` + `ordenes.feature` (`not @blocked`) 36/38 escenarios
+> verdes, 2 ambiguous pre-existentes en `SC-010-N5` (colisión de step con
+> `cancelacion-ordenes.steps.ts` de US-013, verificada en `HEAD` antes de este
+> change — no introducida ni tocada por este plan). Determinismo confirmado
+> con una segunda corrida idéntica de ambas suites. TC-011-004/005/006 quedan
+> `blocked` sin cambio (§4.6) — sigue sin existir cuenta Resend real
+> (`proposal.md` OQ-3).
 > **Affected platform(s)**: backend (sin superficie frontend — `disciplines:
 > [BE, QA]` en la US, sin `US-011-...-frontend-web`)
 > **Service tier(s)**: 2 (`docs/services/dsm-ecommerce/runbook.md` frontmatter
@@ -224,7 +231,9 @@ el reintento real no son observables acá).
 ### 4.2 Touch-ups a `qa/acceptance/features/pago-webhook.feature` +
 `qa/acceptance/steps/pago-webhook.steps.ts`
 
-- [ ] **QA-011-BDD-1**: `SC-010-N3` gana una línea (AC completitud, OQ-1 de
+- [x] **QA-011-BDD-1** — **Ejecutado, verde**: `esperarAviso('cancelled_no_stock', ...)`
+  confirma exactamente 1 aviso por corrida, sin flakiness en 2 corridas.
+  `SC-010-N3` gana una línea (AC completitud, OQ-1 de
   `proposal.md` — `order.cancelled_no_stock` no tenía ningún test de trigger
   hasta esta US):
   ```gherkin
@@ -256,7 +265,10 @@ el reintento real no son observables acá).
     una vez cuando `compensarSinStock` corre.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-011"` (exit 0)
 
-- [ ] **QA-011-BDD-2**: `SC-010-N4` gana dos líneas (AC-7 — el caso más
+- [x] **QA-011-BDD-2** — **Ejecutado, verde**: las dos líneas reusan steps
+  existentes (`SC-010-H2`) sin código nuevo; confirmado 1 aviso de cada tipo
+  tras la repetición, sin flakiness en 2 corridas.
+  `SC-010-N4` gana dos líneas (AC-7 — el caso más
   directo del repo: reintentar la confirmación de una orden ya confirmada es
   EXACTAMENTE el escenario de "reintento de webhook de MercadoPago" que
   `design.md` Decisión 2 usa como ejemplo):
@@ -281,7 +293,11 @@ el reintento real no son observables acá).
 ### 4.3 Touch-ups a `qa/acceptance/features/ordenes.feature` +
 `qa/acceptance/steps/ordenes.steps.ts`
 
-- [ ] **QA-011-BDD-3**: `H-4` — la implementación del step existente
+- [x] **QA-011-BDD-3** — **Ejecutado, verde**: el step reforzado (con
+  `esperarAviso('ready_for_pickup', ...)`, import agregado en
+  `ordenes.steps.ts`) confirma exactamente 1 aviso por transición a "ready",
+  sin flakiness en 2 corridas.
+  `H-4` — la implementación del step existente
   ("el sistema dispara el aviso de que el pedido está listo para ese
   comprador") se fortalece; el texto Gherkin **no cambia**, sólo gana el tag
   `@us-011` y su comentario deja de decir "US-011 sin proveedor real todavía"
@@ -305,7 +321,11 @@ el reintento real no son observables acá).
     invoca exactamente una vez cuando `changeStatus` transiciona a "ready".
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance -- --tags "@us-011"` (exit 0)
 
-- [ ] **QA-011-BDD-4**: `C-2` — el step existente ("el aviso de 'lista para
+- [x] **QA-011-BDD-4** — **Ejecutado, verde**: la aserción directa vía
+  `esperarAviso` se agregó ADEMÁS de la existente por contador de métricas;
+  confirmado que el aviso sigue en 1 tras repetir la transición, sin
+  flakiness en 2 corridas.
+  `C-2` — el step existente ("el aviso de 'lista para
   retirar' no se dispara una segunda vez") hoy compara el contador
   `dsm_orders_events_total{event="order.status_changed"}` (proxy correcto per
   `design.md` Decisión 2, pero indirecto — nunca lee el propio aviso). Se

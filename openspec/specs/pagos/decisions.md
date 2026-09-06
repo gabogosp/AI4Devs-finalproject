@@ -75,6 +75,8 @@ documentado en ambas capacidades.
 | `payments.created_at`/`updated_at` agregadas, ausentes del DER. | Convención universal del esquema (`Order`/`Product`/`Customer` ya las tienen); `US-009-pago-mercadopago-backend/design.md` §Persistencia ya las pide para su propio caso (auditar intentos `pending` sin resolver). |
 | `orders.confirmed_at`/`cancelled_at` agregadas (US-010) — el E2E §12 sólo modela `delivered_at`. | Sin ellas no hay insumo para reconstruir cuándo se confirmó una venta (`US-016`) ni para distinguir un abandono (AC-11) de un auto-cancel por falta de stock (AC-4). |
 | `payments.status` gana `refund_pending` en su `CHECK` (US-010) — hoy `pending\|approved\|rejected\|refunded`. | Hace durable el reembolso de AC-4: si la llamada a MercadoPago falla, la fila queda para reintento (`POST /admin/payments/retry-refunds`) en vez de perderse en memoria. |
+| `ResendNotificationAdapter` (US-011) reintenta con backoff **dentro** de la misma llamada síncrona del caller, sin cola/BullMQ. | Redis sigue sin aprovisionar (ADR-0004, enmendada) — un fire-and-forget perdería reintentos en un restart, violando el AC de "el fallo queda registrado". |
+| `Idempotency-Key` (SDK de Resend) como única defensa contra un email duplicado por timeout-cliente/éxito-servidor — sin tabla `sent_notifications` propia. | La duplicación real (mismo evento de negocio invocando el puerto dos veces) ya está resuelta estructuralmente por el `UPDATE ... WHERE` condicional de `ConfirmOrderService`/`OrdersAdminService`; el caso residual es raro y de bajo impacto (un email de más, no un cargo de más). |
 
 ## Threat model (STRIDE lite, desde US-010 — superficie webhook público + endpoint simulado + admin)
 

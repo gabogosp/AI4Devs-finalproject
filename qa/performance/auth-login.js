@@ -5,7 +5,9 @@ import exec from 'k6/execution';
 import { auth_login } from './lib/thresholds.js';
 
 /**
- * TC-160 — carga de `POST /v1/auth/login` (US-014 §9, PRD §4).
+ * TC-160 — carga de `POST /v1/auth/login` (US-014 §9). Presupuesto propio
+ * p95 ≤ 800 ms ratificado por el PO 2026-09-06 (OQ-QA-5 resuelto) — no el de
+ * "escritura (carrito/orden) < 500 ms" del PRD §4, que no cubre esta ruta.
  *
  * Espejo de `cart-write.js`, con una diferencia de diseño obligada por el
  * propio endpoint: **una cuenta y una IP simulada por ITERACIÓN, nunca

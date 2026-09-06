@@ -547,6 +547,16 @@ Then('el stock del producto no decrementó', PASO, async function (this: Catalog
   assert.equal(stock, bajado);
 });
 
+Then(
+  'el puerto de notificaciones recibe exactamente un aviso de cancelación por falta de stock para ese comprador',
+  PASO,
+  async function (this: CatalogWorld) {
+    const e = est(this);
+    const veces = await esperarAviso('cancelled_no_stock', e.orden!.id);
+    assert.equal(veces, 1, `se esperaba exactamente 1 aviso "order.cancelled_no_stock" para ${e.orden!.id}, hubo ${veces}`);
+  },
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SC-010-N4 — repetir la confirmación de una orden ya confirmada
 // ─────────────────────────────────────────────────────────────────────────────

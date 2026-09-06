@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Customer } from '@dsm/db';
+import { Customer, Prisma } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   isPrismaError,
@@ -7,6 +7,11 @@ import {
 } from '../common/prisma-errors';
 import { RegistrationFailedError } from '../common/errors/auth-errors';
 import { normalizeEmail } from './email/normalize-email';
+import {
+  ANONYMIZED_CUSTOMER_NAME,
+  ANONYMIZED_CUSTOMER_PHONE,
+  anonymizedCustomerEmail,
+} from './customer-anonymization';
 
 /**
  * Rol de todo cliente que se registra por la vía pública.
@@ -166,5 +171,35 @@ export class CustomersRepository {
         locked_until: null,
       },
     });
+  }
+
+  /**
+   * Borrado de cuenta (US-020): anonimiza la fila y sella `deleted_at`.
+   * `password_hash` queda intacto — no hay lectura que lo devuelva (`SafeCustomer`
+   * lo excluye del tipo) y no forma parte de la superficie de PII de este US
+   * (`design.md` §Trade-offs).
+   *
+   * Guardado por `deleted_at: null` en el WHERE, mismo idioma que
+   * `OrdersRepository.anonymize` — `count === 0` es AC-15 (idempotencia): la
+   * cuenta ya estaba borrada (o el id no existe), y el caller lo interpreta
+   * como "no hacer nada más", no como error. Acepta `tx`: siempre corre dentro
+   * de la transacción de `AccountDeletionService.deleteAccount`.
+   */
+  async anonymize(
+    id: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<SafeCustomer | null> {
+    const { count } = await tx.customer.updateMany({
+      where: { id, deleted_at: null },
+      data: {
+        name: ANONYMIZED_CUSTOMER_NAME,
+        phone: ANONYMIZED_CUSTOMER_PHONE,
+        email: anonymizedCustomerEmail(id),
+        deleted_at: new Date(),
+      },
+    });
+    if (count === 0) return null;
+    const actualizado = await tx.customer.findUniqueOrThrow({ where: { id } });
+    return stripHash(actualizado);
   }
 }

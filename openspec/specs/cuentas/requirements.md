@@ -43,7 +43,7 @@ Superficie cubierta: `POST /auth/register`, `POST /auth/login`,
 
 | # | Requisito | Verificación |
 |---|---|---|
-| NFR-1 | Latencia `POST /auth/login` p95 < 600 ms / p99 < 1 s `[propuesto — pendiente de confirmar por Arquitecto]` — desviación deliberada del presupuesto genérico de escritura (p95 < 500 ms): bcrypt cost 12 cuesta ~250-350 ms de CPU por diseño; bajarlo debilitaría el control principal. | Suite dev-owned; sin k6 propio de esta disciplina (ver US-014-qa, `[Open]` real sobre este mismo número). |
+| NFR-1 | Latencia `POST /auth/login` **p95 ≤ 800 ms, ratificado por el PO 2026-09-06** (reemplaza el `p95 < 600ms/p99<1s [propuesto]` original de esta disciplina, que nunca se verificó con k6) — desviación deliberada del presupuesto genérico de escritura (p95 < 500 ms, PRD §4, que no cubre login): bcrypt cost 12 cuesta ~250-350 ms de CPU por diseño; bajarlo debilitaría el control principal. | `US-014-registro-login-qa` (k6, `qa/performance/auth-login.js`) — medido p95 = 654,41ms, dentro del presupuesto. |
 | NFR-2 | Latencia `POST /auth/register` p95 < 700 ms `[propuesto]`. | Suite dev-owned. |
 | NFR-3 | Latencia `GET /auth/me` y `POST /auth/refresh` p95 < 150 ms (sin bcrypt). | Suite dev-owned. |
 | NFR-4 | Ventana de invalidación de sesión ≤ 15 min (TTL del access) — consecuencia declarada de un modelo sin denylist por `jti`. | Diseño, no test. |
@@ -58,7 +58,7 @@ Superficie cubierta: `POST /auth/register`, `POST /auth/login`,
 | D-4 | Historial de compras de la cuenta. | US-015. |
 | D-5 | Purga programada (job BullMQ) de tokens de refresh/reset vencidos — hoy sólo limpieza oportunista acotada por cuenta. | Owner: Arquitecto — US-011/operaciones, condicionado a que `REDIS_URL` se aprovisione (ADR-0004). |
 | D-6 | Rate-limit de borde (Cloudflare/WAF) sobre `/v1/auth/*`, defensa en profundidad adicional al throttler de aplicación. | Owner: Arquitecto — US-019 (infraestructura). |
-| D-7 | Ratificar los 3 NFR de latencia (`[propuesto]`) con datos reales de producción. | Owner: Arquitecto/PO. |
+| D-7 | ~~Ratificar los 3 NFR de latencia (`[propuesto]`) con datos reales de producción.~~ **Parcialmente resuelto** (2026-09-06): NFR-1 (login) ratificado por el PO con medición real de QA — ver arriba. NFR-2 (`register`) y NFR-3 (`me`/`refresh`) siguen `[propuesto]`, sin k6 propio. | Owner: Arquitecto/PO — NFR-2/NFR-3 pendientes. |
 | D-8 | Prefijos `__Host-`/`__Secure-` en las cookies. | Decisión de ingeniería consciente (OQ-BE-6) — no un placeholder. |
 
 ## Desde US-014 frontend-web — UI de registro, login y sesión (archivada 2026-09-05)

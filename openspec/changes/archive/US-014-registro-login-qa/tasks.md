@@ -34,7 +34,7 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 | TC-148 | T2.2 | AC-9 | seguridad | **verde** |
 | TC-150 | T3.1 | AC-1, AC-2 | a11y | **verde** |
 | TC-151 | T3.1 | AC-4 | a11y | **verde** |
-| TC-160 | T4.1 | AC-2 (PRD §4) | carga | scaffoldeado, corre, **bloqueado en OQ-QA-5** (umbral heredado no aplica a login) |
+| TC-160 | T4.1 | AC-2 (presupuesto propio de login, ratificado por el PO) | carga | **verde** (p95 = 654,41ms < 800ms) |
 | TC-170 | T5.1 | AC-10 | exploratorio | **manual**, charter escrito |
 | TC-171 | T5.1 | AC-4 | exploratorio | **manual**, charter escrito |
 
@@ -235,14 +235,15 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
 
 ## Fase 4: Carga — 0,8 h
 
-- [ ] T4.1 TC-160 — login bajo carga contra el presupuesto del PRD (§4) — ⚠ **ROJO: el NFR citado no aplica; falta ratificar el número**
+- [x] T4.1 TC-160 — login bajo carga contra el presupuesto propio de login (p95 ≤ 800ms, ratificado por el PO)
   - **Pattern**: escenario k6 en `qa/performance/auth-login.js`, espejo de
     `cart-write.js`, con `thresholds` explícitos — `per performance-standards.md §7: un
     test de carga sin umbral numérico no es un test`.
-  - **Exit criterion**: `http_req_duration{p(95)} < 500` (PRD §4, escritura) y
-    `http_req_failed < 0.01` con 10 VUs / 30 s; corre con el rate-limit **elevado** para
-    medir latencia y no el 429; el umbral está en el script y **falla la corrida** si se
-    supera (no es un dato informativo).
+  - **Exit criterion**: `http_req_duration{p(95)} < 800` (presupuesto propio de login,
+    ratificado por el PO 2026-09-06 — OQ-QA-5 resuelto) y `http_req_failed < 0.01` con
+    10 VUs / 30 s; corre con el rate-limit **elevado** para medir latencia y no el 429;
+    el umbral está en el script y **falla la corrida** si se supera (no es un dato
+    informativo).
   - **Verify**: `pnpm --filter @dsm/qa test:load:auth 2>&1 | grep -qE "✓ http_req_duration|thresholds .*passed"` (el script se agrega a `qa/package.json`)
   - **Rediseño del script (2026-08-29) — dos hallazgos del harness, no de la app**:
     (1) `/v1/auth/login` tiene su propio `@Throttle` de 10/15min por IP, fijo (mismo
@@ -253,22 +254,22 @@ Cada fila **define** su `TC-` en este documento; el escenario Gherkin completo v
     `shared-iterations` (100 total) y **una cuenta + IP por iteración, nunca reusada**
     — el mismo patrón "invitado nuevo" que ya usa `cart-write.js`, aplicado a logins.
     Con eso: 200/200 checks verdes, 0 rate-limited, 0% `http_req_failed`.
-    (2) **El propio umbral de 500ms está mal citado.** El PRD §4 dice literalmente
-    *"Latencia p95 escritura **(carrito/orden)** < 500ms"* — acotado a esos dos
-    dominios, no genérico. US-014 §9 no fija ningún número de latencia para login (sólo
-    NFRs cualitativos: hash con bcrypt, rate-limit, anti-enumeración). El qa-plan citó
-    "PRD §4" para TC-160 sin verificar el alcance. Medido contra la API real: p95 =
+    (2) **El umbral de 500ms citado originalmente estaba mal atribuido.** El PRD §4 dice
+    literalmente *"Latencia p95 escritura **(carrito/orden)** < 500ms"* — acotado a esos
+    dos dominios, no genérico. US-014 §9 no fijaba ningún número de latencia para login
+    (sólo NFRs cualitativos: hash con bcrypt, rate-limit, anti-enumeración). El qa-plan
+    citó "PRD §4" para TC-160 sin verificar el alcance. Medido contra la API real: p95 =
     **621,93ms**, con `bcrypt.hash`/`verify` de cost 12 costando **~250ms por diseño**
     (comentario propio de `password-hasher.ts` — es la mitigación de fuerza bruta, no
-    un descuido) y 10 VUs concurrentes contendiendo CPU en esta máquina. **No hay
-    defecto que corregir ni umbral que inventar**: por `docs/quality/performance-standards.md`
-    §7 y la regla de este agente de no inventar un número que el plan no estableció,
-    esto queda `[Open]` para el PO/Arquitecto — necesita: o bien un budget de login
-    propio que contemple el costo deliberado de bcrypt, o confirmar que "carrito/orden"
-    en el PRD excluye a propósito a login y que aún no hay NFR numérico para esta ruta.
-    El script queda **scaffoldeado y corriendo** (mecánicamente correcto, 0 flaky), pero
-    **no se marca la task cerrada** con un umbral heredado sin verificar — sería la
-    misma clase de falla que ya se documentó en `verifies-que-fallan-hacia-el-verde`.
+    un descuido) y 10 VUs concurrentes contendiendo CPU en esta máquina.
+  - **[Resolved: NFR login p95 ≤ 800ms ratificado por PO 2026-09-06]** — el PO fijó un
+    budget propio de login (no el de "carrito/orden" del PRD §4), aceptando expresamente
+    el costo de bcrypt como parte del presupuesto. `qa/performance/lib/thresholds.js`
+    (`auth_login`) actualizado a `p(95)<800`. Re-corrido contra la API real con el
+    umbral ya ratificado (ver Verify) — **200/200 checks, p95 = 654,41ms < 800ms,
+    thresholds passed** — recién ahí se marca la task cerrada, mismo criterio que
+    `verifies-que-fallan-hacia-el-verde` (probar el artefacto contra el umbral real,
+    no marcar verde sobre un número heredado sin correr).
 
 ---
 
@@ -303,7 +304,9 @@ sys.exit(0 if not faltan and len(tcs)>=13 else 1)"`
   — 13/13 (incluye TC-140b/142b/145b/148b), 2 corridas seguidas sin flaky (2026-08-29).
 - [x] a11y verde: `pnpm --filter @dsm/qa test:a11y -- --grep "TC-150|TC-151" --reporter=line`
   — 9/9, 2 corridas seguidas sin flaky (2026-08-29).
-- [ ] Carga dentro del presupuesto: `pnpm --filter @dsm/qa test:load:auth`
+- [x] Carga dentro del presupuesto: `pnpm --filter @dsm/qa test:load:auth`
+  — p95 = 654,41ms < 800ms, 200/200 checks, thresholds passed (re-verificado 2026-09-06
+  tras la ratificación del NFR, Postgres descartable propio).
 - [ ] **Sin regresión en las suites QA ya existentes**:
       `pnpm --filter @dsm/qa test:e2e -- --grep "TC-(2|3|7)[0-9]{2}" --reporter=line`
       *(los patrones van así y no como una sola alternancia entre comillas: el filtro de

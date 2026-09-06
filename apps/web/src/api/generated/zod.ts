@@ -408,7 +408,7 @@ export const GetAdminOrderResponse = zod.object({
   "changed_at": zod.string().datetime({"offset":true})
 }).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).')),
   "anonymized_at": zod.string().datetime({"offset":true}).nullable().describe('Momento de anonimización (US-021). null si la orden nunca se anonimizó.'),
-  "anonymization_reason": zod.enum(['retention_policy', 'requested']).nullable().describe('Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).')
+  "anonymization_reason": zod.enum(['retention_policy', 'requested', 'account_deletion']).nullable().describe('Motivo de la anonimización (US-021\/US-020) — null si nunca se anonimizó; distingue plazo cumplido, pedido del comprador, o borrado de cuenta (AC-4, AC-3 de US-020).')
 }))
 
 
@@ -449,7 +449,7 @@ export const UpdateAdminOrderStatusResponse = zod.object({
   "changed_at": zod.string().datetime({"offset":true})
 }).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).')),
   "anonymized_at": zod.string().datetime({"offset":true}).nullable().describe('Momento de anonimización (US-021). null si la orden nunca se anonimizó.'),
-  "anonymization_reason": zod.enum(['retention_policy', 'requested']).nullable().describe('Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).')
+  "anonymization_reason": zod.enum(['retention_policy', 'requested', 'account_deletion']).nullable().describe('Motivo de la anonimización (US-021\/US-020) — null si nunca se anonimizó; distingue plazo cumplido, pedido del comprador, o borrado de cuenta (AC-4, AC-3 de US-020).')
 }))
 
 
@@ -789,7 +789,7 @@ export const CancelOrderResponse = zod.object({
   "changed_at": zod.string().datetime({"offset":true})
 }).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).')),
   "anonymized_at": zod.string().datetime({"offset":true}).nullable(),
-  "anonymization_reason": zod.enum(['retention_policy', 'requested']).nullable(),
+  "anonymization_reason": zod.enum(['retention_policy', 'requested', 'account_deletion']).nullable(),
   "refund": zod.object({
   "status": zod.enum(['refunded', 'refund_pending', 'not_applicable']),
   "provider": zod.enum(['mercadopago', 'simulated_dsm', 'manual']).nullable()
@@ -808,7 +808,7 @@ export const AnonymizeOrderParams = zod.object({
 export const AnonymizeOrderResponse = zod.object({
   "order_id": zod.string().uuid(),
   "anonymized_at": zod.string().datetime({"offset":true}).describe('Momento en que se anonimizó (AC-4 — queda registrado y es auditable).'),
-  "anonymization_reason": zod.enum(['retention_policy', 'requested']).describe('Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).')
+  "anonymization_reason": zod.enum(['retention_policy', 'requested', 'account_deletion']).describe('Distingue si fue por plazo cumplido, a pedido del comprador, o por borrado de cuenta (AC-4, AC-3 de US-020).')
 })
 
 
@@ -885,6 +885,17 @@ export const GetOrderHistoryDetailResponse = zod.object({
   "subtotal_ars_cents": zod.number().int()
 }))
 }))
+
+
+/**
+ * Autoservicio, inmediato e irreversible: sin ventana de gracia. Anonimiza `customers` (name/email/phone sobrescritos, deleted_at sellado, email liberado para re-registro), revoca todas las sesiones y enlaces de recuperación pendientes, desvincula los carritos y anonimiza las órdenes históricas no anonimizadas (`anonymization_reason=account_deletion`, mismo mecanismo que US-021). Bloquea con 409 si el titular tiene órdenes sin pagar o pagadas y sin entregar. Idempotente: una segunda confirmación sobre una cuenta ya borrada responde 204 sin error ni segundo efecto (AC-15).
+ * @summary Borrar la cuenta y los datos personales del cliente autenticado (US-020 AC-1, AC-2, AC-3)
+ */
+export const DeleteAccountHeader = zod.object({
+  "X-CSRF-Token": zod.string().describe('Double-submit firmado (§7.5): el valor de la cookie dsm_csrf. Se exige además de un Origin de la allowlist; la ausencia de Origin se rechaza.')
+})
+
+export const DeleteAccountResponse = zod.void()
 
 
 /**

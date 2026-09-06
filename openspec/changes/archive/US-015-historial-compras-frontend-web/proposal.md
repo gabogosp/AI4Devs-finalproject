@@ -3,7 +3,10 @@
 > **Ticket**: US-015 — Historial de compras del cliente registrado
 > **Author**: frontend-web-developer agent (assisted by @gabogosp)
 > **Date**: 2026-09-06
-> **Status**: Proposed
+> **Status**: Archived (2026-09-06) — `archived: true`, `archived_at: 2026-09-06`,
+> `merged_commit: 65ced110c5c0609e306d1c908892defded33688f`,
+> `pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/74`. 14/14 tasks
+> cerradas.
 > **Affected layers**: components, repository (HTTP client), state, routing
 > **Affected platform**: web (`apps/web`, Next.js App Router)
 

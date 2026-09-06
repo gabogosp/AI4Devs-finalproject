@@ -175,6 +175,23 @@ describe('PasswordResetTokensRepository (integration)', () => {
       expect(await repo.findUsableByHash('a1')).toBeNull();
       expect(await repo.findUsableByHash('b1')).not.toBeNull();
     });
+
+    it('llamado con un tx en curso, un rollback posterior revierte el borrado (US-020 T1.4)', async () => {
+      await repo.issue({
+        customerId: ana,
+        tokenHash: 'a-tx-1',
+        expiresAt: enUnaHora(),
+      });
+
+      await expect(
+        prisma.$transaction(async (tx) => {
+          await repo.deleteAllForCustomer(ana, tx);
+          throw new Error('rollback deliberado');
+        }),
+      ).rejects.toThrow('rollback deliberado');
+
+      expect(await repo.findUsableByHash('a-tx-1')).not.toBeNull();
+    });
   });
 
   it('borrar el cliente se lleva sus tokens de reset (FK en cascada, T0.2)', async () => {

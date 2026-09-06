@@ -1461,7 +1461,7 @@
   # artefacto construido porque breached-passwords.txt no se copiaba a dist/ (fix e327332).
   # T1.2 en adelante BLOQUEADO por entorno: api-up.sh promete elevar AUTH_RATE_LIMIT_MAX y
   # no surte efecto, así que el registro da 429 y toda la suite empieza registrando.
-  status: in progress
+  status: archived   # /archive-change 2026-09-06 — última disciplina de US-014, US pasa a Done
   parent-us: docs/user-stories/US-014-registro-login.md
   linear-task-id: null
   audit-baseline: null
@@ -1491,15 +1491,25 @@
   # que no cubre login; no hay NFR numérico ratificado para esa ruta (OQ-QA-5, medido
   # p95=621,93ms con bcrypt cost 12 costando ~250ms por diseño). PR abierto igual, con el
   # gap documentado en el test plan — decisión del PO.
+  #
+  # 2026-09-06 (PR #86): OQ-QA-5 resuelto — el PO ratificó un presupuesto propio de login,
+  # p95 ≤ 800ms, aceptando el costo de bcrypt como parte del presupuesto. Re-corrido k6
+  # contra la API real (Postgres descartable propio): p95 = 654,41ms, 200/200 checks,
+  # thresholds passed. T4.1 cerrada. 18/20 checkboxes de tasks.md — quedan 2 sin marcar,
+  # documentados como deuda conocida (no bloqueante) en openspec/specs/cuentas/README.md:
+  # regresión de suites QA existentes (no re-corrida, cubierta de facto por CI continua en
+  # cada PR posterior) y los 2 charters manuales TC-170/TC-171 (execution_mode: manual,
+  # verificado que qa/exploratory/us-014-cuentas.md dice "pendiente de ejecución" —
+  # asignados a la fase de prueba local/visual del usuario, no bloquean Done).
   estimate-hours: 6.5
   assignee: sin-asignar
   branch: feat/US-014-registro-login-qa
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/9
   pr-opened-at: 2026-08-29
   created: 2026-08-23
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T14:12:47Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-014-registro-login-qa
 
 - name: US-012-panel-ordenes-dueno-frontend-web
   us-id: US-012
@@ -2082,9 +2092,13 @@
   us-id: US-015
   discipline: backend
   variant: null
-  status: in review   # /commit 2026-09-06 — 26/26 tasks cerradas, suite completa + e2e
-  # verdes (235 suites/1927 tests tras merge de main), lint/typecheck limpios, cero
-  # regresión en los 12 archivos de US-008. PR #70 abierto.
+  status: archived   # /archive-change 2026-09-06 — 26/26 tasks cerradas, suite completa
+  # + e2e verdes (235 suites/1927 tests), lint/typecheck limpios, cero regresión en los
+  # 12 archivos de US-008. PR #70 mergeado. Crea openspec/specs/historial-compras/
+  # (CAP-8, primera entrega) + suma una decisión a openspec/specs/checkout/decisions.md
+  # (OptionalCustomerGuard). El contrato publicado se completó en PR #71 (follow-up
+  # dedicado, T6.1 del tasks.md sólo lintiaba el draft, no lo mergeaba al spec del
+  # servicio — mismo patrón de gap ya visto en US-021, ver decisions.md de la capacidad).
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
@@ -2148,9 +2162,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/70
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T12:14:11Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-015-historial-compras-backend/
 
 # Planificado 2026-09-06 (/plan-qa US-015, modo A variante sibling). Backend
 # mergeado (PR #70+#71); frontend-web en curso en paralelo, otro worktree, sin
@@ -2193,9 +2207,10 @@
   us-id: US-015
   discipline: frontend-web
   variant: null
-  status: in review   # /commit 2026-09-06 — 14/14 tasks cerradas, 160 suites/996 tests
-  # verdes tras merge de main, typecheck/lint/build limpios, a11y sin violaciones
-  # serias/críticas. PR #74 abierto.
+  status: archived   # /archive-change 2026-09-06 — 14/14 tasks cerradas, 160 suites/996
+  # tests verdes, typecheck/lint/build limpios, a11y sin violaciones serias/críticas.
+  # PR #74 mergeado. Extiende openspec/specs/historial-compras/ (CAP-8) con la sección FE
+  # (rutas, decisiones D8-D11) — sin delta de contrato de API (consumo puro).
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
@@ -2237,9 +2252,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/74
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T12:54:40Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-015-historial-compras-frontend-web/
 
 - name: US-016-panel-metricas-frontend-web
   us-id: US-016
@@ -2567,7 +2582,13 @@
   us-id: US-011
   discipline: backend
   variant: null
-  status: In Progress   # /develop-backend US-011 (2026-09-06) — ejecución de tasks.md en curso
+  status: archived   # /archive-change 2026-09-06 — Mode A: este change embebe también la
+  # disciplina QA (qa-plan.md inline, PR #88), sin change -qa propio que archivar por
+  # separado. Con BE (#82) + QA (#88) archivados, las 2/2 disciplinas de US-011
+  # ([BE, QA], sin FE) quedan resueltas. Spec delta aplicado: ordenes/requirements.md R-4
+  # y pagos/requirements.md R-17 (quitan "Deferred: US-011" — el aviso ya se entrega por
+  # ResendNotificationAdapter) + decisiones de retry-in-process/idempotencia agregadas a
+  # pagos/decisions.md. Sin contrato OpenAPI nuevo (sin endpoints).
   parent-us: docs/user-stories/US-011-notificaciones-email.md
   linear-task-id: null
   audit-baseline: null
@@ -2607,17 +2628,16 @@
   #
   # Sin endpoints HTTP nuevos/modificados — `api-contract-completeness` no aplica, sin
   # yaml de contrato nuevo.
-  estimate-hours: null   # US §7 presupuesta BE-US-011 en 8-12h; 8 fases / 12 tasks
-  # closure-grade en tasks.md, sin ejecutar todavía — se reconcilia con el conteo real al
-  # desarrollar (mismo criterio que US-016/US-023 en este índice).
-  assignee: sin-asignar
+  estimate-hours: 6.8   # AI-asistido — 11 tasks reales (T1.1-T8.1) + cierre suite-level,
+  # dentro del rango 8-12h tradicional que US §7 presupuestaba para BE-US-011.
+  assignee: claude-code
   branch: feat/US-011-notificaciones-email-backend
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/82
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T14:35:25Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-011-notificaciones-email-backend
 
 - name: US-022-actualizacion-dependencias-frontend-web
   us-id: US-022
@@ -2670,3 +2690,93 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-020-borrado-cuenta-datos-personales-backend
+  us-id: US-020
+  discipline: backend
+  variant: null
+  status: archived   # /archive-change 2026-09-06 — PR #93 mergeado (0eea71b). Extiende
+  # openspec/specs/retencion-datos-personales/ (CAP-13) con DELETE /me + delta cruzado
+  # sobre openspec/specs/ordenes/ (enum de anonymization_reason).
+  parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
+  audit-baseline: null
+  audit-derived: false
+  # `blocked_by: [US-014, US-015, US-021]` (US §6) — las 3 tienen su backend ya en `main`
+  # (US-021 archivada/`Done`; US-014/US-015 mid-lifecycle en otras disciplinas pero su
+  # BACKEND ya mergeado), así que ninguna bloquea el arranque de esta planificación.
+  #
+  # LAS 5 DECISIONES DE PRODUCTO YA ESTÁN CERRADAS (US §10, `[Resolved]`, ninguna reabierta):
+  #   1. Anonimizar `customers` (soft-delete), no borrado físico.
+  #   2. Email LIBERADO — placeholder único por fila (a diferencia del valor FIJO de
+  #      US-021 para `orders.buyer_email`, que no tiene UNIQUE).
+  #   3. Inmediato, síncrono, irreversible — sin ventana de gracia ni job diferido.
+  #   4. Autoservicio del cliente (contrasta con US-021, acción del dueño).
+  #   5. Órdenes en curso (`pending_payment|new|preparing|ready`) bloquean; verificación
+  #      AL EJECUTAR (dentro de la misma transacción), no al mostrar la pantalla.
+  #
+  # ALCANCE: 1 sola migración (ensancha el CHECK de `orders.anonymization_reason` de
+  # US-021 con un tercer valor `account_deletion` — sin columnas nuevas, `customers.
+  # deleted_at` ya existe desde US-014). Nuevo módulo `AccountModule`
+  # (`apps/api/src/account/`) con `DELETE /v1/me` (`CustomerGuard`+`CsrfGuard`, mismo par
+  # que `logout`), orquestando en una sola transacción: anonimizar `customers`
+  # (`CustomersRepository.anonymize`, guardado por `WHERE deleted_at IS NULL`, mismo
+  # idioma de idempotencia que `OrdersRepository.anonymize` de US-021), revocar sesiones
+  # (`RefreshTokensRepository.revokeAllForCustomer`, ya existía) + tokens de reset
+  # (`PasswordResetTokensRepository.deleteAllForCustomer`, ya existía), desvincular
+  # carritos (`CartsRepository.unlinkAllForCustomer`, nuevo), anonimizar órdenes
+  # históricas reusando el mecanismo de US-021 (`OrdersRepository.
+  # anonymizeAllForCustomer`, `reason='account_deletion'`).
+  #
+  # DECISIÓN DE ARQUITECTURA (módulo nuevo, no extensión de AuthModule): AuthModule NO
+  # puede importar CheckoutModule/CartModule sin crear un ciclo (CheckoutModule YA
+  # importa AuthModule). `AccountModule` reproduce la MISMA forma acíclica que
+  # `OrdersModule` (US-012/US-015) ya probó (`auth` + `checkout`, sin ciclo), sumando
+  # `CartModule`. `AuthModule` gana exports aditivos (`CsrfGuard` + 3 repositorios que ya
+  # existían pero no estaban exportados) y un noveno throttler nombrado
+  # (`account_deletion`) en su único registro de `ThrottlerModule` — sin tocar ningún
+  # export/throttler existente.
+  #
+  # DECISIÓN DE DISEÑO EXPLÍCITA (no diferida): tercer valor de `reason`
+  # (`account_deletion`) en vez de reusar `'requested'` de US-021 — son disparadores
+  # estructuralmente distintos (acción del dueño sobre 1 orden puntual vs. efecto en
+  # cascada de que el TITULAR borró su cuenta entera, todas sus órdenes de una vez).
+  # `AdminOrderDetailDto.anonymization_reason` (orders/dto/order.dto.ts, US-012) y los 3
+  # lugares donde `apps/api/docs/api/openapi.yaml` enumera `[retention_policy,
+  # requested]` se ensanchan en el mismo change (T1.2, T6.2) — no quedan desincronizados.
+  #
+  # data-architect Mode B NO invocado: sin tabla ni columna nueva, un solo CHECK
+  # ensanchado sobre una tabla que ya migró en US-021 — trivial per
+  # `data-architecture-patterns` skill (ver design.md §Persistencia).
+  #
+  # Endpoint HTTP nuevo (`DELETE /v1/me`) — contrato draft en
+  # `contracts/openapi/delete-account.yaml` de este change per `api-contract-completeness`.
+  # Extiende la capacidad viva `retencion-datos-personales` (CAP-13, creada por US-021) +
+  # delta cruzado puntual sobre la capacidad `ordenes` (enum de `anonymization_reason`) —
+  # ambos aplicados por `/archive-change`, ver design.md §Spec delta.
+  #
+  # TRADE-OFF DOCUMENTADO (no es pregunta abierta): el access-JWT stateless todavía
+  # válido en otro dispositivo dentro de su TTL (≤15 min por defecto) no se invalida
+  # activamente — mismo límite estructural que ya tiene el cambio de contraseña
+  # (ADR-0011). AC-10 cierra igual porque cualquier endpoint con valor de negocio
+  # re-verifica `findActiveById`/`deleted_at` (precedente `GET /v1/auth/me`).
+  #
+  # DEPLOYMENT: se recomienda /plan-deployment — primera superficie de autoservicio que
+  # borra/anonimiza PII de forma irreversible disparada por el propio cliente, migración
+  # de esquema sobre `orders` (ya en producción potencial), y cierre conjunto con US-021
+  # de la capacidad 13 completa (condición del PO para publicar la política de privacidad
+  # de US-017 sin incumplimiento).
+  estimate-hours: 13.5   # 27 tasks, 7 fases (1,0+2,6+1,0+2,0+2,0+3,4+1,5h). US §7 presupuesta
+  # BE-US-020 en 12-16h tradicional: el tradicional de este plan (~27h) excede el techo
+  # ~11-15h por el mismo motivo que ya excedió US-021 — la superficie NUEVA construida
+  # desde cero (módulo + guard de throttling + 5 métodos en 4 repos de 3 módulos + 10
+  # specs de invariantes cross-AC en Fase 5) no está presupuestada por la US, que sólo
+  # ve el MECANISMO de anonimización reusado (~2h, igual que en US-021).
+  assignee: claude-code
+  branch: feat/US-020-borrado-cuenta-datos-personales-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/93
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: 2026-09-06T15:28:11Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-backend
