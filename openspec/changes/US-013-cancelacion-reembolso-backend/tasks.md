@@ -252,7 +252,7 @@ language: es
 
 ## Fase 7 — DTO + Controller + wiring del módulo
 
-- [ ] **T7.1 — `CancelOrderResponseDto`**
+- [x] **T7.1 — `CancelOrderResponseDto`**
   - **Pattern**: composición (no herencia) sobre `AdminOrderDetailDto` — `per
     design.md §D6`:
     ```ts
