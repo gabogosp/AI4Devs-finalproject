@@ -2057,3 +2057,50 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-016-panel-metricas-qa
+  us-id: US-016
+  discipline: qa
+  variant: null
+  status: in review   # /commit 2026-09-06 — 10/10 stubs automatizados + 2 charters manuales, PR abierto (stacked sobre #59)
+  parent-us: docs/user-stories/US-016-panel-metricas.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # MODO A — sibling propio (no embebido): a diferencia de US-008/US-009/US-023-qa
+  # (que embeben qa-plan.md dentro del change de backend), este vive en su propio
+  # directorio openspec/changes/US-016-panel-metricas-qa/ — check-pr-scope.sh exige
+  # que el directorio coincida con el nombre de la rama/PR, y la rama de esta
+  # disciplina es feat/US-016-panel-metricas-dueno-qa; embeberlo en
+  # US-016-panel-metricas-backend/ (donde el agente lo escribió originalmente)
+  # rompía esa verificación. Único artefacto: qa-plan.md (sin proposal/tasks/design
+  # propios, Modo A no los requiere).
+  #
+  # 0 test cases bloqueados: BE (PR #55) y FE (PR #59) ya construidos, y las 4
+  # capacidades hermanas del dataset cross-feature (checkout US-008, confirmación
+  # manual US-023, pago simulado US-010, fulfillment US-012) ya archivadas.
+  # 10 stubs automatizados cerrados: QA-016-CT-1 (contract, 21/21 casos),
+  # QA-016-ACC-1/ACC-2 (Cucumber+Playwright, 9/9 + 2/2 escenarios, 63/63 steps),
+  # QA-016-E2E-1..5 (Playwright cross-stack backend+frontend reales, 6/6),
+  # QA-016-A11Y-1 (axe-core, 0 violaciones WCAG AA), QA-016-PERF-1 (k6, p95
+  # 601/586/650µs vs presupuesto 300ms). TC-016-E1/E2 (charters manuales)
+  # agregados a qa/exploratory/charters.md. Sin defectos reales encontrados en
+  # apps/api/apps/web — la implementación coincidió con cada AC.
+  #
+  # Re-verificado de forma independiente en esta sesión (Postgres descartable
+  # propio + API+build reales levantados a mano): QA-016-CT-1 (21/21) y
+  # QA-016-ACC-1/ACC-2 (9/9 + 2/2, 63/63 steps) reproducidos exactamente contra
+  # los mismos números — dos hallazgos de ENTORNO propios durante la
+  # re-verificación (no del código bajo prueba): faltaba exportar DATABASE_URL
+  # para el proceso de la suite (el único caso documentado que toca @dsm/db
+  # directo, backdatearCreatedAt) y faltaba PAYMENTS_SIMULATED_ENABLED=true al
+  # levantar la API (ya documentado por el agente ejecutor como requisito de
+  # entorno).
+  estimate-hours: null   # sin re-estimación propia del qa-engineer en esta corrida
+  assignee: claude-code
+  branch: feat/US-016-panel-metricas-dueno-qa
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
