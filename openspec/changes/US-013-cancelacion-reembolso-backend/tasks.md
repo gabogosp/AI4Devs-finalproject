@@ -266,7 +266,7 @@ language: es
     con todos los campos de `AdminOrderDetailDto` más `refund`.
   - **Verify**: `pnpm --filter @dsm/api typecheck`
 
-- [ ] **T7.2 — `OrderCancellationController` — `POST /v1/admin/orders/{id}/cancel`**
+- [x] **T7.2 — `OrderCancellationController` — `POST /v1/admin/orders/{id}/cancel`**
   - **Pattern**: calcado a `PaymentConfirmationController` — mismo
     `@Controller('v1/admin/orders')`, `AdminGuard`, `ParseUUIDPipe` (sin regex
     de forma UUID, `design.md` §D1), `JwtService.decode` sin re-verificar
@@ -302,7 +302,7 @@ language: es
 
 ## Fase 8 — Tests HTTP-level
 
-- [ ] **T8.1 — `e2e-payments-cancel-order.spec.ts` (supertest, Postgres real, `MercadoPagoClient` mockeado)**
+- [x] **T8.1 — `e2e-payments-cancel-order.spec.ts` (supertest, Postgres real, `MercadoPagoClient` mockeado)**
   - **Pattern**: mismo armazón que `e2e-payments-mercadopago-happy.spec.ts`
     (`Test.createTestingModule` + `.overrideProvider(MercadoPagoClient)`).
     Cubre la capa HTTP que T5.2 no ejercita: status codes exactos vía
