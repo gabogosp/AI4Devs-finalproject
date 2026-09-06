@@ -94,11 +94,16 @@ jobs:
         # `node` directo no seteaba ninguna de las dos) — 5+ corridas nightly
         # fallando sin que las suites E2E/BDD/a11y llegaran a ejecutar un solo
         # escenario.
+        # `qa/support/api-log.ts` (SC-010-H2 y sus C-2/H-4 hermanas de
+        # `ordenes.feature`) lee el stdout de la API desde `QA_API_LOG_FILE`
+        # (default `/tmp/dsm-qa-api-us010.log`) para observar los avisos de
+        # `NotificationPort` — sin redirigir el stdout ahí, esos escenarios
+        # fallan con "no se pudo leer" antes de llegar a afirmar nada.
         env:
           QA_API_PORT: '3000'
         run: |
           pnpm --filter @dsm/api build
-          bash qa/scripts/api-up.sh &
+          bash qa/scripts/api-up.sh > /tmp/dsm-qa-api-us010.log 2>&1 &
           npx wait-on -t 120000 http://localhost:3000/health
 
       # El fixture de auth es la base de todas las suites: si el login real no
@@ -149,8 +154,15 @@ jobs:
         run: pnpm --filter @dsm/qa test:functional
 
       - name: Aceptación BDD (Cucumber)
+        # `@blocked` (enriquecimiento.feature SC-005-H1/H2/C3/N2/N3,
+        # pago-webhook.feature SC-010-N2): escenarios que necesitan una
+        # credencial real (Gemini/MercadoPago) que CI no tiene y nunca va a
+        # tener — están tageados así a propósito (design.md §D-QA1,
+        # proposal.md OQ-QA-005-1) para no fingir que corren. `not @deferred`
+        # sólo, sin `not @blocked`, los dejaba pasar y fallar como si fueran
+        # un defecto real.
         if: hashFiles('qa/acceptance/**/*.feature') != ''
-        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"
+        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred and not @blocked"
 
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
