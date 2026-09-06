@@ -1,0 +1,29 @@
+get:
+  operationId: exportAdminReportsSummary
+  tags: [admin-reports]
+  summary: CSV del resumen del período (US-016 AC-6)
+  description: >-
+    Mismos query params y misma agregación que GET /admin/reports/summary:
+    una fila por estado activo (con zero-fill) + una fila `total`.
+  parameters:
+    - name: created_at_from
+      in: query
+      schema: { type: string, format: date-time }
+    - name: created_at_to
+      in: query
+      schema: { type: string, format: date-time }
+  responses:
+    '200':
+      description: 'CSV: status,count,total_ars_cents (+ fila total)'
+      headers:
+        Content-Disposition: { schema: { type: string }, description: 'attachment; filename="reports-summary-{from}-{to}.csv"' }
+      content:
+        text/csv:
+          schema: { type: string }
+    '401': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '403': { $ref: '../../openapi.yaml#/components/responses/Problem' }
+    '422':
+      description: 'dsm:reports/invalid-range.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }

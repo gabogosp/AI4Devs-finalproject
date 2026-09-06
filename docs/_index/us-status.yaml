@@ -422,6 +422,13 @@
   # `prisma.order.create` directo (design.md §D2/T7.3 de ese change). `blocked_by`
   # de abajo sigue desactualizado (ver nota de arriba, 2026-09-05) — no se toca,
   # propiedad de otro agente. `status`/`in-progress-at` sin tocar.
+  #
+  # NOTA (2026-09-06, /archive-change US-016-panel-metricas-backend): PR #55
+  # mergeado a main (72afc73). Archivado a openspec/changes/archive/. Inaugura
+  # openspec/specs/metricas/ (CAP-9). FE (#59) y QA (#60) mergeadas a main pero
+  # todavía sin archivar al momento de este archive (se archivan a continuación,
+  # una disciplina a la vez, mismo change-set) — `status` de la US se queda en
+  # `In Progress` hasta que las 3 disciplinas queden `archived`.
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento
