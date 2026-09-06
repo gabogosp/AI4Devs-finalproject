@@ -118,7 +118,7 @@ language: es
     Enter/Space; no existe ningún camino de la UI para producir un valor fuera de 1-5.
   - **Verify**: `pnpm --filter @dsm/web test -- StarRatingInput`
 
-- [ ] **T-A4 — `StarRatingDisplay.tsx` + `.test.tsx`**
+- [x] **T-A4 — `StarRatingDisplay.tsx` + `.test.tsx`**
   - **Exit criterion**: modo `'average'` renderiza `aria-label="Calificación promedio: {n} de 5"`;
     modo `'item'` renderiza `aria-label="{n} de 5 estrellas"`; ningún rol interactivo (`radio`/`button`)
     en ninguno de los dos modos.
