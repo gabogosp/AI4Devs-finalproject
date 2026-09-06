@@ -30,6 +30,7 @@
     "test:load:auth": "k6 run performance/auth-login.js",
     "test:load:confirm-payment": "k6 run performance/confirm-payment.js",
     "test:load:reports": "k6 run performance/reports-read.js",
+    "test:load:orders-history": "k6 run performance/orders-history-read.js",
     "test:load:simulate-payment": "k6 run performance/simulate-payment.js",
     "seed:load": "tsx performance/seed-load-data.ts",
     "api:up": "bash scripts/api-up.sh"

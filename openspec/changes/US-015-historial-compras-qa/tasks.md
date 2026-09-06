@@ -215,7 +215,7 @@ checklist humano.
 
 ## Fase 5: Performance (k6)
 
-- [ ] T5.1 `qa/performance/seed-orders-history-load.ts` — pre-seed Node/tsx.
+- [x] T5.1 `qa/performance/seed-orders-history-load.ts` — pre-seed Node/tsx.
   - **Pattern**: mismo estilo que `seed-orders-load.ts` (US-012), pero
     produciendo cuentas de cliente reales con `compraLogueada()` (T0.1) en
     vez de órdenes admin directas — N cuentas, cada una con exactamente 1
@@ -227,7 +227,7 @@ checklist humano.
     tiene exactamente 1 orden confirmada verificable vía `GET /v1/me/orders`.
   - **Verify**: `QA_ORDERS_HISTORY_POOL_SIZE=20 pnpm --filter @dsm/qa exec tsx performance/seed-orders-history-load.ts && test -f qa/performance/data/orders-history-load-accounts.json && node -e "const a=require('./qa/performance/data/orders-history-load-accounts.json'); process.exit(a.length===20?0:1)"`
 
-- [ ] T5.2 `qa/performance/orders-history-read.js` — QA-015-PERF-1.
+- [x] T5.2 `qa/performance/orders-history-read.js` — QA-015-PERF-1.
   - **Pattern**: lee `data/orders-history-load-accounts.json` con `open()`
     (nunca descubre cuentas por la API — la base es compartida por otras
     sesiones QA en paralelo). Por iteración: `POST /v1/auth/login` (no
@@ -240,7 +240,7 @@ checklist humano.
     threshold `p(95)<300` (heredado de la US §9, no inventado).
   - **Verify**: `QA_API_BASE_URL=http://localhost:3009 k6 run qa/performance/orders-history-read.js --summary-trend-stats="p(95)"`
 
-- [ ] T5.3 `qa/performance/lib/thresholds.js` — QA-015-PERF-2.
+- [x] T5.3 `qa/performance/lib/thresholds.js` — QA-015-PERF-2.
   - **Exit criterion**: exporta `orders_history_list` con
     `'http_req_duration{endpoint:orders_history_list}': ['p(95)<300']` —
     entrada propia, no reusa `list_orders` (admin).

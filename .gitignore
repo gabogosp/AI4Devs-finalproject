@@ -61,3 +61,8 @@ playwright-report/
 # QA, TC-1241) — ids de una base local efímera, no portables entre entornos.
 qa/performance/data/orders-load-pool.json
 
+# Pool de cuentas de cliente sembrado localmente por
+# seed-orders-history-load.ts (US-015 QA, QA-015-PERF-1) — credenciales de una
+# base local efímera, no portables entre entornos.
+qa/performance/data/orders-history-load-accounts.json
+

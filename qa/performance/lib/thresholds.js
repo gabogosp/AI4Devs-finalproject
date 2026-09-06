@@ -187,10 +187,32 @@ export const simulate_payment = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * Historial de compras del cliente registrado, de US-015 (QA-015-PERF-1/2,
+ * `qa-plan.md` §7, `design.md` §D-QA7). El número sale de la US §9 ("Latencia
+ * p95 lectura < 300ms"), heredado de PRD §4 — mismo NFR que `list_orders`
+ * (admin), sin condicional. Entrada PROPIA (no reusa `list_orders`): son
+ * patrones de acceso distintos — una cuenta ve SU propio historial (1 fila
+ * por cliente en el camino normal) vs el panel admin viendo TODAS las
+ * órdenes — mismo criterio que `list_products` vs `storefront_product`.
+ *
+ * Sin `rate_limited`: la corrida real usa una API arrancada para QA
+ * (`api:up`) sin elevar `ORDERS_HISTORY_RATE_LIMIT_MAX` (default 60/min) —
+ * a diferencia de `cart_write`/`auth_login`, el volumen de VUs de esta
+ * carga (documentado en `orders-history-read.js`) se mantiene deliberadamente
+ * bajo ese presupuesto por IP simulada, así que no hace falta la guarda.
+ */
+export const orders_history_list = {
+  'http_req_duration{endpoint:orders_history_list}': ['p(95)<300'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
 // (`auth_login`), US-023 (`confirm_payment`), US-012 (`list_orders`/
-// `order_transition`), US-010 (`simulate_payment`) y US-016 (`reports_read`):
-// las suites QA extienden el mismo archivo compartido.
+// `order_transition`), US-010 (`simulate_payment`), US-016 (`reports_read`) y
+// US-015 (`orders_history_list`): las suites QA extienden el mismo archivo
+// compartido.
 export default {
   list_products,
   storefront_product,
@@ -203,5 +225,6 @@ export default {
   order_transition,
   simulate_payment,
   reports_read,
+  orders_history_list,
   MIN_SKUS,
 };
