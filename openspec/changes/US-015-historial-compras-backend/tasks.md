@@ -54,8 +54,10 @@ language: es
 - [x] **US-012 backend construido** (`orders/orders.module.ts` ya existe,
   destino de los endpoints nuevos). Archivado.
   **Verify**: `test -f apps/api/src/orders/orders.module.ts`
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
-- [ ] **Working tree limpio en `packages/db/prisma/schema.prisma`,
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`)
+  — en este worktree, Postgres aislado propio en `:55415`
+  (`us-015-historial-compras-backend-postgres-1`), no el compartido.
+- [x] **Working tree limpio en `packages/db/prisma/schema.prisma`,
   `apps/api/src/auth/`, `apps/api/src/checkout/` y `apps/api/src/orders/`** —
   este change toca las cuatro superficies; con otra tarea en vuelo ahí se pisan
   (precedente: la colisión de sesiones de US-007).
@@ -65,7 +67,7 @@ language: es
 
 ## Fase 0: Esquema — 0,8 h
 
-- [ ] T0.1 Índice compuesto `orders(customer_id, created_at)` (migración
+- [x] T0.1 Índice compuesto `orders(customer_id, created_at)` (migración
   aditiva, reemplaza el índice de una sola columna)
   - **Pattern**: cambiar `@@index([customer_id])` por
     `@@index([customer_id, created_at])` en el `model Order` de

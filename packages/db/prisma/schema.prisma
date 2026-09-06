@@ -314,7 +314,12 @@ model Order {
   payments               Payment[]
 
   @@index([status, created_at])
-  @@index([customer_id])
+  /// US-015: reemplaza el índice de una sola columna sobre `customer_id`.
+  /// Ningún método de `OrdersRepository` filtra por `customer_id` solo (se
+  /// verificó `list`/`findById`/`anonymize*`/`transitionTo*`) — el índice
+  /// compuesto cubre el mismo prefijo sin dejar consultas sin cobertura.
+  /// Mismo patrón que `PasswordResetToken.@@index([customer_id, created_at])`.
+  @@index([customer_id, created_at])
   @@map("orders")
 }
 
