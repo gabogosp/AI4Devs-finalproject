@@ -429,6 +429,15 @@ export const envSchema = z.object({
    */
   ACCOUNT_DELETION_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
   ACCOUNT_DELETION_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(3_600_000), // 1 h
+
+  /**
+   * US-024 — edición de perfil (`PATCH /v1/me`). A diferencia del borrado
+   * (irreversible, presupuesto chico), acá el presupuesto es generoso — es
+   * una acción reversible que el propio titular puede repetir sin riesgo,
+   * el throttler sólo evita abuso automatizado.
+   */
+  ACCOUNT_PROFILE_UPDATE_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+  ACCOUNT_PROFILE_UPDATE_RATE_LIMIT_TTL_MS: z.coerce.number().int().positive().default(60_000), // 1 min
 }).superRefine((env, ctx) => {
   // Las dos superficies que llaman al proveedor de IA REPARTEN una sola cuota, y esto es lo
   // que impide que alguien suba un presupuesto sin bajar el otro. Sin esta validación, la

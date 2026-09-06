@@ -86,7 +86,7 @@ export class ResetConfirmDto {
 }
 
 /**
- * Respuesta pública del cliente — **exactamente** cinco campos.
+ * Respuesta pública del cliente — **exactamente** seis campos.
  *
  * Se construye campo por campo en vez de destructurar lo que sobra. Un
  * `{ ...customer, password_hash: undefined }` deja pasar cualquier columna que
@@ -99,6 +99,8 @@ export class CustomerResponseDto {
   email!: string;
   name!: string;
   phone!: string | null;
+  /** US-024 — avatar por URL pegada; `null` = sin avatar (placeholder en el FE). */
+  avatar_url!: string | null;
   created_at!: Date;
 
   static from(customer: SafeCustomer): CustomerResponseDto {
@@ -107,6 +109,7 @@ export class CustomerResponseDto {
       email: customer.email,
       name: customer.name,
       phone: customer.phone,
+      avatar_url: customer.avatar_url,
       created_at: customer.created_at,
     };
   }

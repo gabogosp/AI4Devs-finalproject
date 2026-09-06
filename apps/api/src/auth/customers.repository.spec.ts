@@ -273,4 +273,65 @@ describe('CustomersRepository (integration)', () => {
       expect(await repo.anonymize(inexistente)).toBeNull();
     });
   });
+
+  describe('updateProfile (US-024)', () => {
+    it('sobre una cuenta activa, actualiza name y avatar_url', async () => {
+      const c = await repo.create({
+        email: 'perfil@example.com',
+        name: 'Nombre Viejo',
+        passwordHash: HASH,
+      });
+
+      const actualizado = await repo.updateProfile(c.id, {
+        name: 'Nombre Nuevo',
+        avatar_url: 'https://cdn.example.com/nueva.jpg',
+      });
+
+      expect(actualizado?.name).toBe('Nombre Nuevo');
+      expect(actualizado?.avatar_url).toBe('https://cdn.example.com/nueva.jpg');
+      expect(actualizado).not.toHaveProperty('password_hash');
+    });
+
+    it('avatar_url: null limpia un avatar existente (AC-3)', async () => {
+      const c = await repo.create({
+        email: 'limpia@example.com',
+        name: 'Con Avatar',
+        passwordHash: HASH,
+      });
+      await repo.updateProfile(c.id, {
+        name: 'Con Avatar',
+        avatar_url: 'https://cdn.example.com/actual.jpg',
+      });
+
+      const limpio = await repo.updateProfile(c.id, {
+        name: 'Con Avatar',
+        avatar_url: null,
+      });
+
+      expect(limpio?.avatar_url).toBeNull();
+    });
+
+    it('sobre una cuenta con deleted_at seteado, devuelve null y no escribe', async () => {
+      const c = await repo.create({
+        email: 'borrada@example.com',
+        name: 'Ya Borrada',
+        passwordHash: HASH,
+      });
+      await repo.anonymize(c.id);
+
+      const resultado = await repo.updateProfile(c.id, {
+        name: 'Intento Post Borrado',
+        avatar_url: null,
+      });
+
+      expect(resultado).toBeNull();
+    });
+
+    it('sobre un id inexistente, devuelve null', async () => {
+      const inexistente = '00000000-0000-0000-0000-000000000000';
+      expect(
+        await repo.updateProfile(inexistente, { name: 'X', avatar_url: null }),
+      ).toBeNull();
+    });
+  });
 });

@@ -25,6 +25,7 @@ const ESPERADO: Record<string, string[]> = {
     'password_changed_at',
     'last_login_at',
     'deleted_at',
+    'avatar_url',
     'created_at',
     'updated_at',
   ],
