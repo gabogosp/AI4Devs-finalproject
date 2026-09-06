@@ -45,6 +45,9 @@ jobs:
       # El fallback de JWT minteado está prohibido en CI: la suite debe ejercitar
       # el login real (testing-standards §14.2). Si el seam se rompe, CI falla.
       QA_AUTH_STRICT: 'true'
+      # US-010/ADR-0006: sin esto, POST /v1/checkout/simulate-payment no existe
+      # y `pago-webhook.feature` falla con 404 en vez de confirmar el pago.
+      PAYMENTS_SIMULATED_ENABLED: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -103,18 +106,14 @@ jobs:
       - name: Fixture de auth — exige login real
         run: pnpm --filter @dsm/qa exec tsx support/admin-auth.smoke.ts --require-real
 
-      # ---- Suites auto-gated: se saltean hasta que sus archivos existan ----
-
-      - name: Funcional API (Newman)
-        if: hashFiles('qa/functional/*.postman_collection.json') != ''
-        run: pnpm --filter @dsm/qa test:functional
-
-      - name: Aceptación BDD (Cucumber)
-        if: hashFiles('qa/acceptance/**/*.feature') != ''
-        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred and not @frontend"
-
-      # E2E y a11y corren en el browser contra el FE: necesitan apps/web arriba,
-      # no sólo la API (faltaba en la versión original de este workflow).
+      # La suite de aceptación (Cucumber) YA visita páginas reales del FE vía
+      # Playwright (`browse.feature`, `CatalogWorld.visitar`) — no es exclusivo
+      # de "E2E cross-stack"/"Accesibilidad" de más abajo. Este paso vivía
+      # DESPUÉS de "Aceptación BDD" en el orden original: cada escenario que
+      # visitara una página fallaba con `ERR_CONNECTION_REFUSED` (el front ni
+      # siquiera había arrancado todavía), no por CORS ni por env vars —
+      # cuarto bloqueo encontrado verificando los fixes anteriores contra el
+      # workflow real.
       - name: Build + arranque del front
         # E2E y a11y corren TAMBIÉN en PR (decisión 2026-08-18): antes sólo iban
         # en nightly, y un PR que movió el panel bajo /admin rompió la suite L3
@@ -142,6 +141,16 @@ jobs:
           pnpm --filter @dsm/web build
           (pnpm --filter @dsm/web start &)
           npx wait-on -t 120000 http://localhost:3100
+
+      # ---- Suites auto-gated: se saltean hasta que sus archivos existan ----
+
+      - name: Funcional API (Newman)
+        if: hashFiles('qa/functional/*.postman_collection.json') != ''
+        run: pnpm --filter @dsm/qa test:functional
+
+      - name: Aceptación BDD (Cucumber)
+        if: hashFiles('qa/acceptance/**/*.feature') != ''
+        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"
 
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
