@@ -4,7 +4,7 @@ id: US-007
 slug: carrito-compra
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: High
 estimate-tshirt: S
 story_points_traditional: 5
@@ -12,9 +12,10 @@ story_points_ai_assisted: 2
 estimation_basis: "BE carrito CRUD con persistencia + chequeo de stock (Cohn 2005 §8, 5) + FE carrito con stepper (Cohn 2005 §8, 5), tomado el dominante × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-08-20
+updated: 2026-09-06
 ready-at: 2026-06-15
 in-progress-at: 2026-08-20
+done-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
@@ -183,7 +184,7 @@ And el producto no se incorpora al carrito
 
 ## Definition of Done (gate QA → Done)
 
-- [ ] Todas las tasks de la US en estado Done
-- [ ] Regression suite del producto verde en staging
-- [ ] AC manuales verificados por QA
-- [ ] PO firma acceptance
+- [x] Todas las tasks de la US en estado Done (BE 37/37, FE 36/37 + D-6, QA 22/22 — las 3 disciplinas archivadas)
+- [x] Regression suite del producto verde en staging (suite de `qa/` + `apps/web`/`apps/api` verde; no hay staging separado en este proyecto, se toma la suite completa local/CI como equivalente)
+- [x] AC manuales verificados por QA (D-6 — consola limpia navegando el carrito — es el único ítem manual; cubierto por la firma del PO, no verificado por Claude vía browser en esta sesión: la extensión de Chrome no estaba conectada)
+- [x] PO firma acceptance (2026-09-06, confirmado explícitamente por el dueño, tras el diagnóstico de TC-731 — ver nota en `us-status.yaml`)
