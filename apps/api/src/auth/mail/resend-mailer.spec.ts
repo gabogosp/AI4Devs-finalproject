@@ -172,6 +172,10 @@ describe('fail-fast de producción (§7)', () => {
         // verificar firmas ni confirmar pagos reales.
         MP_ACCESS_TOKEN: 'mp_x',
         MP_WEBHOOK_SECRET: 'mp_secret_x',
+        // US-011 sumó la suya: sin remitente/destinatario de los avisos de orden,
+        // el aviso de confirmación/nueva-orden no se envía.
+        ORDER_NOTIFICATIONS_FROM: 'pedidos@dsmferreteria.com.ar',
+        OWNER_NOTIFICATION_EMAIL: 'dueno@dsmferreteria.com.ar',
       }),
     ).not.toThrow();
   });

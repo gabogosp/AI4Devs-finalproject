@@ -58,7 +58,7 @@
 
 ## Phase 2: Configuración (env fail-fast)
 
-- [ ] T2.1 Agregar a `envSchema` (`apps/api/src/config/env.validation.ts`):
+- [x] T2.1 Agregar a `envSchema` (`apps/api/src/config/env.validation.ts`):
       `ORDER_NOTIFICATIONS_FROM` (`z.string().email().optional()`),
       `OWNER_NOTIFICATION_EMAIL` (`z.string().email().optional()`),
       `NOTIFICATION_RETRY_MAX_ATTEMPTS` (`z.coerce.number().int().min(0).default(2)`),
@@ -78,7 +78,7 @@
     nunca rompen el arranque si están ausentes.
   - **Verify**: `pnpm --filter api exec jest env.validation.spec.ts --ci`
     (nuevo `describe('Notificaciones de órdenes (US-011) — defaults y fail-fast', ...)`)
-- [ ] T2.2 Actualizar el test "en producción con las tres presentes, arranca"
+- [x] T2.2 Actualizar el test "en producción con las tres presentes, arranca"
       (y su vecino "en producción también exige...") en
       `apps/api/src/auth/mail/resend-mailer.spec.ts` para incluir
       `ORDER_NOTIFICATIONS_FROM`/`OWNER_NOTIFICATION_EMAIL` en el fixture de
