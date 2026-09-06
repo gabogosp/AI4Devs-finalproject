@@ -337,7 +337,7 @@ language: es
     `limit:10`) sin error.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=reports-query.dto`
 
-- [ ] T6.2 `ReportsController` — 6 endpoints GET, gateados por `AdminGuard`
+- [x] T6.2 `ReportsController` — 6 endpoints GET, gateados por `AdminGuard`
   - **Pattern**: controller delgado, mismo estilo que `MetricsController`/
     `ProductsController` — `per backend-node-standards.md §2`. Los 3
     `/export` sirven `text/csv` con `@Res()` — `per imports.controller.ts`
