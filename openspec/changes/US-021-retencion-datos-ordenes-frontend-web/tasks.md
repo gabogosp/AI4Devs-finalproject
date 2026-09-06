@@ -52,7 +52,7 @@
 
 ## Fase 1 — Codegen (contrato → cliente)
 
-- [ ] T1.1 Regenerar el cliente, Zod y mocks del panel
+- [x] T1.1 Regenerar el cliente, Zod y mocks del panel
   - **Depends on**: T0.1.
   - **Pattern**: `pnpm --filter @dsm/web codegen` (orval, `apps/web/orval.config.ts`) — NO
     se edita nada dentro de `apps/web/src/api/generated/` a mano. `per openapi-client-codegen skill — regenerate, never hand-edit`.
@@ -62,12 +62,12 @@
     `AdminOrderDetail`. `@/api/generated/msw` (o el archivo mock generado equivalente)
     incluye un handler por defecto para `POST /admin/orders/:id/anonymize`.
   - **Verify**: `pnpm --filter @dsm/web codegen && git diff --exit-code apps/web/src/api/generated/` — el segundo comando debe fallar en la corrida INICIAL (hay diff nuevo, se commitea) y dar limpio en corridas subsiguientes sin más cambios de contrato (mismo criterio que el gate `frontend-codegen-fresh`).
-- [ ] T1.2 Confirmar que el gate `frontend-codegen-fresh` de CI corre sobre este change
+- [x] T1.2 Confirmar que el gate `frontend-codegen-fresh` de CI corre sobre este change
   - **Exit criterion**: el workflow `.github/workflows/frontend-codegen-fresh.yml` ya
     existe y corre en cada PR — no hace falta wiring nuevo, sólo confirmar cobertura.
   - **Verify**: `grep -q "apps/web" .github/workflows/frontend-codegen-fresh.yml` (o el
     path/glob equivalente que dispare el workflow sobre `apps/web`).
-- [ ] T1.3 Confirmar que AC-9 (FE) no requiere código nuevo
+- [x] T1.3 Confirmar que AC-9 (FE) no requiere código nuevo
   - **Pattern**: verificación, no implementación — `apps/web/app/(admin)/layout.tsx`
     envuelve toda la route group con `AdminGuard` (`apps/web/src/features/auth/guard.tsx`);
     `OrderDetail`/`OrderAnonymizeAction` se montan siempre dentro de esa route.
