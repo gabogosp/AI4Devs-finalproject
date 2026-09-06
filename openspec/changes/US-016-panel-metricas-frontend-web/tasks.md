@@ -74,7 +74,7 @@
 
 ## Phase 3 — Dependencia de charts
 
-- [ ] T3.1 Agregar `recharts` (`^3.9.0` — primera mayor con soporte nativo a
+- [x] T3.1 Agregar `recharts` (`^3.9.0` — primera mayor con soporte nativo a
       React 19, sin overrides de peer-deps) a `apps/web/package.json`.
   - **Exit criterion**: `pnpm install` resuelve sin warnings de peer-deps para
     `recharts`; `pnpm --filter @dsm/web typecheck` sigue limpio.
