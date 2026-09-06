@@ -2153,3 +2153,47 @@
   completed-at: 2026-09-06T03:32:29Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-016-panel-metricas-qa
+
+- name: US-013-cancelacion-reembolso-backend
+  us-id: US-013
+  discipline: backend
+  variant: null
+  status: Draft
+  parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Planificado 2026-09-06 (backend-node-developer). US-010 y US-012 (bloqueantes
+  # declaradas) ya están archivadas — MercadoPagoClient.refund, refund_pending/
+  # retry-refunds, NotificationPort, order_status_history y el CHECK de 6 estados de
+  # orders.status ya existen; sin gate en rojo, plan ejecutable hoy.
+  #
+  # ALCANCE: endpoint nuevo POST /v1/admin/orders/{id}/cancel — vive en
+  # apps/api/src/payments/ (NO en orders/) para preservar la dirección acíclica
+  # payments → orders ya establecida por US-010 (D15 de pagos/decisions.md);
+  # construirlo del lado de orders/ crearía el ciclo orders → payments → orders.
+  # Mismo precedente real que ya usa PaymentConfirmationController
+  # (confirm-payment/pending-payment, mismo prefijo de ruta). Reintegro de stock
+  # (StockRepository.incrementForOrder, nuevo) + reembolso reusando literal
+  # refund_pending/retry-refunds de US-010 (mercadopago real; simulated_dsm y manual
+  # no-op) + NotificationPort.orderCancelledByOwner (método nuevo, mismo puerto) +
+  # trazabilidad vía order_status_history + payments.status, sin columnas nuevas.
+  #
+  # SIN MIGRACIÓN DE PRISMA (design.md §D2): confirmado leyendo las migraciones ya
+  # aplicadas (orders_status_check ya con los 6 estados, payments_status_check ya con
+  # refund_pending, order_status_history.to_status sin CHECK) — cero columna/tabla
+  # nueva. No se invoca data-architect Mode B (caso trivial).
+  #
+  # AC-6 (confirmación de dos pasos) es explícitamente FE — Deferred:
+  # US-013-cancelacion-reembolso-frontend-web, change separado no creado todavía.
+  #
+  # Open questions no bloqueantes (ver proposal.md): OQ-BE-1 (reembolso no-op para
+  # provider='manual', decisión sin AC literal — D3 de proposal.md) y OQ-BE-2 (schema
+  # de respuesta self-contained, sin $ref cruzado a la capacidad ordenes — D6 de
+  # design.md).
+  estimate-hours: 8.0   # AI-asistido, 19 tasks / 12 fases (proposal.md; excede
+  # moderadamente el rango 8-12h tradicional de US §7 — flageado, no oculto).
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-09-06
