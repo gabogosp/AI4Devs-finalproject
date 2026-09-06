@@ -89,7 +89,7 @@ language: es
 
 ## Fase 1: Helper de sesión compartido + guard opcional — 1,0 h
 
-- [ ] T1.1 Extraer `resolveCustomerSession()` de `CustomerGuard` (Extract
+- [x] T1.1 Extraer `resolveCustomerSession()` de `CustomerGuard` (Extract
   Method, behavior-preserving)
   - **Pattern**: nuevo archivo `apps/api/src/auth/resolve-customer-session.ts`
     con la función pura (ver `design.md` §D1). `CustomerGuard.canActivate` pasa
@@ -100,7 +100,7 @@ language: es
     ninguna aserción**) sigue verde; el diff de `customer.guard.ts` reduce el
     archivo a orquestación (sin lógica de verificación de JWT inline).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=customer-guard\\.spec` y `git diff --stat apps/api/src/auth/customer-guard.spec.ts` vacío
-- [ ] T1.2 `OptionalCustomerGuard` — variante que nunca bloquea
+- [x] T1.2 `OptionalCustomerGuard` — variante que nunca bloquea
   - **Pattern**: nueva clase en `resolve-customer-session.ts` (o archivo
     hermano `optional-customer.guard.ts`), ver snippet completo en
     `design.md` §D1. `return true` en TODOS los caminos, incluido cuando
@@ -112,7 +112,7 @@ language: es
     `req.customerId`; con cookie de cliente válida, `true` y `req.customerId`
     seteado.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=optional-customer-guard\\.spec` (4 casos: ausente, inválida, rol equivocado, válida)
-- [ ] T1.3 Registrar `OptionalCustomerGuard` en `AuthModule`
+- [x] T1.3 Registrar `OptionalCustomerGuard` en `AuthModule`
   - **Pattern**: agregar a `providers` y `exports` de `auth.module.ts`, al
     lado de `CustomerGuard` — `per backend-node-standards.md §3 — DI vía
     constructor, sin service locator`.
