@@ -273,7 +273,7 @@ language: es
 
 ## Fase 5: Servicio de caso de uso — `ReportsService` — 1,2 h
 
-- [ ] T5.1 `getSalesTimeseries` + `getSalesTimeseriesCsv` (AC-1, AC-4, AC-5, AC-6, AC-9)
+- [x] T5.1 `getSalesTimeseries` + `getSalesTimeseriesCsv` (AC-1, AC-4, AC-5, AC-6, AC-9)
   - **Exit criterion**: `getSalesTimeseries(query)` parsea el rango (T1.3),
     delega en `ReportsRepository.salesTimeseries` (T3.1), emite
     `reports.viewed('sales')` y devuelve `{range: {from, to} ISO 8601,
@@ -286,13 +286,13 @@ language: es
     conteo de invocaciones al repositorio es exactamente 1 por llamada — no
     una query duplicada para el CSV, F50)
 
-- [ ] T5.2 `getTopProducts` + `getTopProductsCsv` (AC-2, AC-4, AC-5, AC-6, AC-9)
+- [x] T5.2 `getTopProducts` + `getTopProductsCsv` (AC-2, AC-4, AC-5, AC-6, AC-9)
   - **Exit criterion**: mismo contrato que T5.1, delegando en
     `ReportsRepository.topProducts` con el `limit` del query (default 10).
     Rango sin datos → `data: []`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=reports.service`
 
-- [ ] T5.3 `getSummary` + `getSummaryCsv` — con zero-fill de estados ausentes (AC-3, AC-5, AC-8)
+- [x] T5.3 `getSummary` + `getSummaryCsv` — con zero-fill de estados ausentes (AC-3, AC-5, AC-8)
   - **Pattern**: completa los 4 estados activos con `count:0,
     total_ars_cents:0` cuando `statusBreakdown` (T3.3) no devolvió fila para
     alguno — `per design.md §D6/§D7` (AC-5: período sin datos → ceros, nunca
