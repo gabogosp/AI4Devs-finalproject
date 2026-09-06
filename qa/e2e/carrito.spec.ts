@@ -188,9 +188,28 @@ test.describe('TC-731 — teclado y anuncio del total', () => {
     await expect(fila).toBeVisible();
 
     // Se tabula hasta el control contando los focusables que lo preceden, nunca
-    // con un presupuesto fijo de `Tab` (lección del recorrido de US-002).
-    const sumar = fila.getByRole('button', { name: /sumar una unidad/i });
+    // con un presupuesto fijo de `Tab` (lección del recorrido de US-002) — pero
+    // el presupuesto SÍ tiene que arrancar adentro de `<main>`, no desde
+    // `document.body`: el header (`CategoryNav`, US-002 AC-1) lista TODOS los
+    // rubros del catálogo sin límite, así que el número de `Tab` para
+    // atravesarlo escala con el tamaño del catálogo — algo ajeno a lo que este
+    // escenario prueba (el orden de foco DENTRO del carrito). Encontrado real
+    // (2026-09-06): con la categoría de `seedCarrito()` acumulándose sin
+    // límite entre corridas (ver `seed-carrito.ts`), el catálogo de esta DB de
+    // QA llegó a 78 rubros y agotó cualquier presupuesto fijo de `Tab` antes
+    // de llegar siquiera al carrito — no era una regresión del bump de `next`
+    // (US-022 ya lo había descartado), era este acoplamiento.
+    const main = page.getByRole('main');
     await page.keyboard.press('Tab');
+    for (
+      let guard = 0;
+      guard < 200 && !(await main.evaluate((el) => el.contains(document.activeElement)));
+      guard += 1
+    ) {
+      await page.keyboard.press('Tab');
+    }
+
+    const sumar = fila.getByRole('button', { name: /sumar una unidad/i });
     for (let i = 0; i < 40 && !(await sumar.evaluate((el) => el === document.activeElement)); i += 1) {
       await page.keyboard.press('Tab');
     }
