@@ -2960,7 +2960,10 @@
   us-id: US-024
   discipline: qa
   variant: null
-  status: draft   # /plan-qa --standalone 2026-09-06: qa-plan.md escrito ANTES de BE/FE
+  status: in-progress   # /develop-qa 2026-09-06: T-QA2 cerrada — 7/7 escenarios de
+  # aceptación BDD verdes contra BE-US-024 real (ya mergeado), 3 corridas limpias.
+  # E2E Playwright/a11y (§5) siguen Blocked-by: FE-US-024. Ver tasks.md.
+  # /plan-qa --standalone 2026-09-06: qa-plan.md escrito ANTES de BE/FE
   # (ninguno planificado todavía) — Modo B, pedido explícito de la coordinadora para
   # paralelizar trabajo que no depende del build. 7/7 AC de la US cubiertos (1
   # escenario Gherkin c/u). Todo test-case que necesita código real queda
@@ -2985,11 +2988,15 @@
   us-id: US-025
   discipline: qa
   variant: null
-  status: draft   # /plan-qa --standalone 2026-09-06: mismo criterio que
+  status: in-progress   # /develop-qa 2026-09-06: T-QA2 cerrada — 9/9 escenarios de
+  # aceptación BDD verdes contra BE-US-025 real (ya mergeado), 3 corridas limpias.
+  # AC-8 (moderación) sólo verificado a nivel API; el escenario de UI queda para
+  # cuando el FE de moderación (Fase B) aterrice. crearOrdenEnEstado original
+  # resultó ser siempre de invitado (customer_id null) — se construyó
+  # compraEntregada (seed-resenas.ts) para elegibilidad real. Ver tasks.md/design.md.
+  # /plan-qa --standalone 2026-09-06: mismo criterio que
   # US-024-edicion-perfil-cliente-qa (change hermano paralelo). 9/9 AC cubiertos.
-  # Elegibilidad (AC-1/AC-6) probada con el seed real crearOrdenEnEstado(...,
-  # 'delivered') que ya existe en qa/support/seed-ordenes.ts. Blocked-by:
-  # BE-US-025/FE-US-025 explícito en qa-plan.md §12.
+  # Blocked-by: BE-US-025/FE-US-025 explícito en qa-plan.md §12.
   parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
   linear-task-id: null
   audit-baseline: null

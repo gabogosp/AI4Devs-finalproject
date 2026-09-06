@@ -32,8 +32,23 @@ Los 7 AC de US-024 quedan cubiertos, uno a uno, en `qa-plan.md` §3.
     test-case que necesita `PATCH /v1/me` real queda `Blocked-by: BE-US-024`
     en §7, no fingido como ejecutable.
 
+## Fase 2 — Ejecutar la aceptación BDD (BE ya mergeado)
+
+- [x] T-QA2 Scaffoldear y correr `qa/acceptance/features/perfil.feature` +
+  `qa/acceptance/steps/perfil.steps.ts` + `qa/support/editar-perfil.ts`
+  contra el BE real (`PATCH /v1/me`, mergeado a main).
+  - **Exit criterion**: los 7 escenarios (SC-024-H1..H3, N1..N4) terminan en
+    verde, en Postgres/API aislados propios de esta sesión.
+  - **Verify**: `env NODE_OPTIONS="--import tsx" npx cucumber-js --config acceptance/cucumber.mjs --tags "@perfil"` (exit 0, "7 scenarios (7 passed)")
+  - **Nota de ejecución (2026-09-06)**: 7/7 verdes, 3 corridas consecutivas
+    limpias (16/16 pasos — incluye 2 escenarios que reusan una segunda
+    cuenta). Postgres/Redis/API propios (puertos 55700/56700/45509). Ajuste
+    real sobre AC-6 documentado en `qa-plan.md` §3 (`forbidNonWhitelisted`
+    rechaza la request entera, no la ignora en silencio). E2E Playwright/a11y
+    (§5 de `qa-plan.md`) siguen `Blocked-by: FE-US-024` — sin cambios, el FE
+    todavía no aterrizó.
+
 ## Próximo paso
 
-`/develop-qa US-024` — pero **bloqueado** hasta que `BE-US-024` (al menos el
-endpoint `PATCH /v1/me`) exista. Avisar a la coordinadora cuando ese change
-abra su PR.
+E2E Playwright + a11y (`qa-plan.md` §5) quedan **bloqueados** hasta que
+`FE-US-024` exista. Avisar a la coordinadora cuando ese change abra su PR.
