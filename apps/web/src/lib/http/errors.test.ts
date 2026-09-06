@@ -23,6 +23,41 @@ describe('mapProblemToAppError (RFC 7807 → AppError)', () => {
     );
   });
 
+  it('409 sin blocking_orders no agrega el campo (regresión cero sobre el 409 del carrito, US-007)', () => {
+    const e = mapProblemToAppError(409, {
+      detail: 'Sin stock disponible',
+      available_quantity: 0,
+    });
+    expect(e.kind).toBe('conflict');
+    if (e.kind === 'conflict') {
+      expect(e.availableQuantity).toBe(0);
+      expect(e.blockingOrders).toBeUndefined();
+    }
+  });
+
+  it('409 con blocking_orders (US-020 AC-4/AC-9) propaga el array tal cual, sin transformarlo', () => {
+    const blocking_orders = [
+      {
+        order_number: 1234,
+        // Drift de contrato documentado (design.md §D2): el runtime puede
+        // emitir `pending_payment`, que el enum publicado no declara — por
+        // eso `status` se tipa `string`, no el enum generado.
+        status: 'pending_payment',
+        total_ars_cents: 500000,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ];
+    const e = mapProblemToAppError(409, {
+      type: 'dsm:account/active-orders',
+      detail: 'Tenés pedidos en curso',
+      blocking_orders,
+    });
+    expect(e.kind).toBe('conflict');
+    if (e.kind === 'conflict') {
+      expect(e.blockingOrders).toEqual(blocking_orders);
+    }
+  });
+
   it('401 → unauthorized, 403 → forbidden, 404 → notFound', () => {
     expect(mapProblemToAppError(401, {}).kind).toBe('unauthorized');
     expect(mapProblemToAppError(403, {}).kind).toBe('forbidden');

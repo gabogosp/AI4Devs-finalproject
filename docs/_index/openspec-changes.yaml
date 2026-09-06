@@ -2832,3 +2832,114 @@
   completed-at: 2026-09-06T15:28:11Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-backend
+
+- name: US-020-borrado-cuenta-datos-personales-frontend-web
+  us-id: US-020
+  discipline: frontend-web
+  variant: null
+  status: archived   # /archive-change (2026-09-06) — PR #96 mergeado 7c19fe2, 27/27 tasks
+  parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión
+  audit-baseline: null
+  audit-derived: false
+  # Backend (PR #93) ya mergeado a `main`: `DELETE /v1/me`, contrato + codegen del
+  # cliente/Zod/MSW ya regenerados antes de este plan. Esta US-FE construye la UI en
+  # `/mi-cuenta`: botón destructivo + `ConfirmDialog` REUSADO (sin modificar — 2
+  # consumidores ya en producción, `OrderCancelAction`/`OrderAnonymizeAction`), copy
+  # explícito de qué se borra/qué sobrevive, manejo del 409 (`blocking_orders`).
+  #
+  # DECISIÓN DE ARQUITECTURA (no un ADR, aplicación de ADR-0013 existente): la
+  # confirmación post-borrado se levanta a un componente NUEVO (`MiCuentaScreen`) por
+  # ENCIMA de `CustomerGuard`, porque el guard oculta sus `children` en el MISMO render
+  # en el que `SessionState` pasa a `anonymous` — si el flujo de éxito viviera dentro del
+  # árbol que el guard protege, el mensaje de confirmación nunca llegaría a pintarse
+  # (design.md §D3, con el mecanismo de batching de React explicado en detalle).
+  #
+  # HALLAZGO DE DRIFT DE CONTRATO (no corregido acá, ver Open questions de proposal.md):
+  # `AccountHasActiveOrdersProblem.blocking_orders` reusa el schema `OrderHistorySummary`
+  # de US-015 (enum de `status` SIN `pending_payment`, CON `delivered`/`cancelled` que
+  # nunca aparecen en la práctica) — el backend puede emitir legítimamente un valor que
+  # el contrato publicado no declara. La FE se tipa defensiva (`status: string`, no el
+  # enum generado) y NO reusa `OrderStatusBadge` (que ni siquiera compilaría con
+  # `pending_payment`). Recomendación de follow-up de backend documentada, sin bloquear
+  # este change.
+  #
+  # HALLAZGO Y CIERRE PREVENTIVO DE UN GAP REAL: `US-015-historial-compras-frontend-web`
+  # (archivada) NO TIENE ninguna task de "E2E dev-owned de topología contra la app
+  # construida" — exactamente el hueco que dejó pasar a producción el bug real del
+  # rewrite `/v1/me/:path*` ausente, encontrado recién por QA (Layer 3, commit `6bb6517`,
+  # PR #89) en vez de por el propio change de FE. Este plan agrega esa fase explícitamente
+  # (`account-deletion-topology.spec.ts` + extensión de `api-stub.mjs`/
+  # `api-stub.selftest.mjs`) para US-020, sin diferirla a QA.
+  #
+  # Sin componente de confirmación/toast/botón nuevos (KISS/YAGNI) — reusa
+  # `ConfirmDialog`/`Button`/el patrón inline `role="alert"`/`role="status"` (no hay
+  # librería de toast en este código). Sin ADR, sin README (mismo criterio que US-013 FE).
+  estimate-hours: 6.5   # 27 tasks, 8 fases + pre-requisitos (~11h tradicional). Ver
+  # tasks.md para el desglose — más contenido que US-013 FE (~3,5/5h) por el método nuevo
+  # de SessionProvider, el drift de contrato documentado, el componente de "pantalla
+  # post-borrado" que exige levantar estado por encima del guard, y la fase completa de
+  # E2E dev-owned (stub + spec Playwright) que ninguna US-013-shaped-task presupuesta.
+  assignee: claude-code
+  branch: feat/US-020-borrado-cuenta-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/96
+  created: 2026-09-06
+  completed-at: 2026-09-06T16:30:48Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-frontend-web
+
+- name: US-020-borrado-cuenta-datos-personales-qa
+  us-id: US-020
+  discipline: qa
+  variant: null
+  status: archived
+  parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # MODO A — sibling propio (no embebido), mismo motivo documentado por
+  # US-016-panel-metricas-qa/US-013-cancelacion-reembolso-qa: check-pr-scope.sh
+  # exige que el directorio del change coincida con la rama/PR, y la rama de
+  # esta disciplina es feat/US-020-borrado-cuenta-datos-personales-qa, que no
+  # coincidiría con ningún directorio de código de esta US. Único artefacto:
+  # qa-plan.md (sin proposal/tasks/design propios, Modo A no los requiere).
+  #
+  # EXCEPCIÓN ESTRUCTURAL DECLARADA: planificado ANTES de que exista
+  # US-020-borrado-cuenta-datos-personales-backend en este worktree — ese
+  # backend se está construyendo en paralelo en otro worktree/rama, no en
+  # `main`. Este qa-plan.md se deriva directamente de los 15 AC de la US
+  # (ya Ready, sin preguntas de producto abiertas) más su §9/§10, no de un
+  # design.md de backend que todavía no existe. Los 12 test cases
+  # automatizados + 3 charters quedan `blocked_by` ese backend — ninguno
+  # corrió.
+  #
+  # RECONCILIADO 2026-09-06: 07 pusheó su rama (PR #93, sin mergear) antes de
+  # cerrar este plan — se fetcheó y se leyó design.md real sin tocar el
+  # working tree. Los 4 supuestos de §0 quedaron confirmados (endpoint real
+  # DELETE /v1/me 204, email de anonimización determinístico por customerId,
+  # enum account_deletion, revocación vía repos de US-014); las 3 open
+  # questions de §14 quedaron Resolved. Ningún AC ni Gherkin cambió — sigue
+  # blocked_by el merge de #93 para ejecutar.
+  #
+  # DECISIÓN K6: SÍ se arma la suite de carga (QA-020-PERF-1), a diferencia
+  # de precedentes recientes de este repo (US-011/US-021 declararon "no k6")
+  # — la propia US fija un NFR numérico cuantificado sin TBD (p95 < 500ms
+  # para una cuenta con hasta 50 órdenes, US §9).
+  estimate-hours: 4.0   # AI-asistido, mismo criterio que US-021 (dominante BE
+  # × 0.45, Peng 2023) — 15 AC en Gherkin (9 escenarios + 2 esquemas con
+  # ejemplos), 1 suite k6 con NFR propio, 3 charters exploratorios.
+  assignee: claude-code
+  branch: feat/US-020-borrado-cuenta-datos-personales-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/98
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: 2026-09-06T17:03:40Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-qa
+  # /archive-change 2026-09-06 (PR #98 mergeado ebfa7c0): última disciplina de US-020 —
+  # US-020 pasa a Done. Sin delta de capability propio: el enum account_deletion sobre
+  # openspec/specs/ordenes/contracts/openapi.yaml ya lo aplicó el archive del backend
+  # (PR #93). Bugs de infraestructura QA encontrados y corregidos en este PR: falta de
+  # ACCOUNT_DELETION_RATE_LIMIT_MAX en qa/scripts/api-up.sh, y mismatch de archivo de
+  # log (marcaDeLog/leerLogApi) en N-6/N-6b de borrado-cuenta.steps.ts. 26/26 escenarios
+  # verdes en 4 corridas + k6 p95≈15.4ms vs umbral 500ms.

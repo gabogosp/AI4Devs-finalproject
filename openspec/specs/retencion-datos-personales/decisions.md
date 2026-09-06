@@ -61,6 +61,17 @@ para el segundo fix (publicar los 2 endpoints).
 | Placeholder de email único por fila (`cuenta-borrada+{customerId}@...`), no fijo como el de `orders.buyer_email`. | `customers.email` tiene `UNIQUE` (a diferencia de `orders.buyer_email`) — un valor fijo colisionaría en el segundo borrado, y la decisión de producto 2 exige que el email real quede libre para re-registro sin bloquear el próximo borrado. |
 | Sin `Idempotency-Key` — mismo argumento que ya declaró esta capacidad para sus 2 endpoints originales. | El `WHERE deleted_at IS NULL` de `CustomersRepository.anonymize` ya resuelve estructuralmente el doble efecto de un doble clic/retry. |
 
+## Decisiones de US-020 frontend-web (archivada 2026-09-06)
+
+| Decisión | Motivo |
+|---|---|
+| `blockingOrders` en `AppError.conflict` se tipa `status: string`, no el enum generado (`OrderHistorySummaryStatus`). | **Drift de contrato encontrado al planificar**: `AccountHasActiveOrdersProblem.blocking_orders` reusa el schema `OrderHistorySummary` de US-015, cuyo enum (`new\|preparing\|ready\|delivered\|cancelled`) no declara `pending_payment` — uno de los 4 valores que `BLOCKING_ORDER_STATUSES` del backend puede legítimamente devolver, y el más probable en la práctica. Tipar `string` evita que la UI reviente o descarte el dato ante un valor real que el contrato publicado no admite. No corregido en este change (requiere tocar `apps/api/docs/api/openapi.yaml`, fuera de alcance FE-only) — recomendado como follow-up de backend. |
+| Lookup de etiquetas de estado LOCAL a la feature (`BLOCKING_STATUS_LABEL`), no reuso de `OrderStatusBadge`. | `OrderStatusBadge.status` está tipado al enum ADMIN de 5 valores (sin `pending_payment`) — pasarle el valor real ni siquiera compilaría. |
+| La confirmación post-borrado se levanta a un componente nuevo (`MiCuentaScreen`), hermano de `CustomerGuard`, no hijo de `AccountPanel`. | `CustomerGuard` oculta sus `children` en el MISMO render en el que la sesión pasa a `anonymous` — un mensaje de éxito que viviera dentro del árbol que el guard protege nunca llegaría a pintarse. Ver `design.md` §D3 del change para el mecanismo completo (batching de React). |
+| `SessionProvider` gana `accountDeleted()` en vez de reusar `logout()`. | `logout()` hace un `POST` al backend antes de limpiar el estado local; el `DELETE /v1/me` ya cerró la sesión del lado del servidor en la misma respuesta (`204`) — un segundo `POST` de logout sería una escritura redundante contra una sesión que ya no existe. |
+| E2E dev-owned de topología (`account-deletion-topology.spec.ts`) agregado explícitamente en este change, no diferido a QA. | Auditando el precedente se encontró que `US-015-historial-compras-frontend-web` (archivada) no tenía ninguna task de esta familia — exactamente el hueco que dejó pasar a producción el bug real del rewrite `/v1/me/:path*` ausente (PR #89), encontrado recién por el E2E cross-stack de QA en vez de por el propio change de FE. Este change cierra esa clase de gap para sí mismo en vez de repetirla. |
+| Manejo de error del diálogo destructivo se aparta del precedente (`OrderCancelAction`/`OrderAnonymizeAction`, que dejan el diálogo abierto tras un error): acá SIEMPRE se cierra. | El 409 de esta US puede traer una LISTA de varios pedidos bloqueantes — atenuarla detrás del overlay semitransparente del diálogo es una degradación real de legibilidad que el caso de una sola línea (el precedente) no tenía. |
+
 ## Desviaciones conscientes registradas
 
 - **RESUELTO (2026-09-05, fix/US-021-publish-order-anonymization-contract)**:

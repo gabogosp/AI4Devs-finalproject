@@ -19,6 +19,12 @@ interface SessionContextValue {
   /** La llama el formulario de login/registro tras un alta exitosa. */
   onAuthenticated: (customer: Customer) => void;
   logout: () => Promise<void>;
+  /**
+   * US-020: refleja localmente que la cuenta se borró. NO llama al backend —
+   * a diferencia de `logout()` — porque `DELETE /v1/me` ya cerró la sesión
+   * del lado del servidor en la misma respuesta (design.md §D4).
+   */
+  accountDeleted: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -59,6 +65,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setSessionHint(false);
       setState({ kind: 'anonymous' });
     }
+  }, []);
+
+  const accountDeleted = useCallback(() => {
+    setSessionHint(false);
+    setState({ kind: 'anonymous' });
   }, []);
 
   useEffect(() => {
@@ -108,8 +119,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ state, onAuthenticated, logout }),
-    [state, onAuthenticated, logout],
+    () => ({ state, onAuthenticated, logout, accountDeleted }),
+    [state, onAuthenticated, logout, accountDeleted],
   );
 
   return (

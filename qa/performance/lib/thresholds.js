@@ -222,11 +222,30 @@ export const cancel_order = {
   checks: ['rate>0.99'],
 };
 
+/**
+ * `DELETE /v1/me` de US-020 (QA-020-PERF-1, `qa-plan.md` §8). El único NFR
+ * numérico y cuantificado de toda la US: "p95 < 500 ms para una cuenta con
+ * hasta 50 órdenes" (`design.md` §9, `[propuesto — confirma Arquitecto]`) —
+ * no es un número inventado por QA, es el que la propia US propone.
+ *
+ * Sin `rate_limited`: `ACCOUNT_DELETION_RATE_LIMIT_MAX` no tiene guarda de
+ * honestidad dedicada acá porque cada iteración usa una cuenta (y por lo
+ * tanto una identidad de sesión) distinta — el throttler de este endpoint no
+ * tiene una dimensión de "por IP" que un k6 de pocas VUs comparta en la forma
+ * en que sí lo hacen `cart_write`/`auth_login` (mismo criterio que
+ * `cancel_order`, que tampoco lo declara).
+ */
+export const delete_account = {
+  'http_req_duration{endpoint:delete_account}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+};
+
 // Unión de los thresholds de US-004 (`search`, llegó por main), US-014
 // (`auth_login`), US-023 (`confirm_payment`), US-012 (`list_orders`/
 // `order_transition`), US-010 (`simulate_payment`), US-016 (`reports_read`),
-// US-015 (`orders_history_list`) y US-013 (`cancel_order`): las suites QA
-// extienden el mismo archivo compartido.
+// US-015 (`orders_history_list`), US-013 (`cancel_order`) y US-020
+// (`delete_account`): las suites QA extienden el mismo archivo compartido.
 export default {
   list_products,
   storefront_product,
@@ -241,5 +260,6 @@ export default {
   reports_read,
   orders_history_list,
   cancel_order,
+  delete_account,
   MIN_SKUS,
 };

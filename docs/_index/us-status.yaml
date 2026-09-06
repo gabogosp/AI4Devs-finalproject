@@ -657,7 +657,17 @@
   blocked_by: []          # gated en dependencias externas (cuentas/billing), no en otra US
 - id: US-020
   slug: borrado-cuenta-datos-personales
-  status: In Progress
+  # /archive-change US-020-borrado-cuenta-datos-personales-frontend-web (2026-09-06, PR #96
+  # mergeado 7c19fe2): FE archivada, extiende openspec/specs/retencion-datos-personales/
+  # con la UI de /mi-cuenta. BE (PR #93) y FE (PR #96) ya archivadas — sólo QA (declarada
+  # en disciplines) sigue activa, en desarrollo. status: QA per el criterio del skill
+  # archive-change (disciplina QA pendiente → QA, no Done).
+  # /archive-change US-020-borrado-cuenta-datos-personales-qa (2026-09-06, PR #98
+  # mergeado ebfa7c0): QA archivada — última disciplina de la US. 26/26 escenarios de
+  # aceptación + k6 (p95≈15.4ms vs 500ms) verdes. Sin delta de capability propio (el
+  # enum account_deletion sobre ordenes/ ya lo aplicó el archive del backend). BE, FE y
+  # QA resueltas → Done.
+  status: Done
   priority: Medium
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
@@ -690,6 +700,7 @@
   blocked_by: [US-014, US-015, US-021]
   in-progress-at: 2026-09-06   # /develop-backend US-020 — 27/27 tasks cerradas
   in-review-at: 2026-09-06     # BE PR #93 abierto (/commit) — primera disciplina en review
+  done-at: 2026-09-06          # 3/3 disciplinas archivadas (/archive-change QA, PR #98)
   # /archive-change US-020-borrado-cuenta-datos-personales-backend (2026-09-06, PR #93
   # mergeado 0eea71b): BE archivado, extiende openspec/specs/retencion-datos-personales/
   # (CAP-13) con DELETE /me + delta cruzado sobre openspec/specs/ordenes/ (enum de
