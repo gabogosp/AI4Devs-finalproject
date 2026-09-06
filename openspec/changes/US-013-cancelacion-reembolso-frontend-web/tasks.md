@@ -117,7 +117,7 @@ language: es
     diálogo con el copy exacto de arriba.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/OrderCancelAction.test.tsx -t "T3.1"`
 
-- [ ] **T3.2 — Wiring de la mutación: éxito con mensaje según `refund.status`**
+- [x] **T3.2 — Wiring de la mutación: éxito con mensaje según `refund.status`**
   - **Pattern**: `per design.md §D2, §D4` — reconciliación directa (sin
     segundo `GET`, a diferencia de `OrderAnonymizeAction`) porque
     `CancelOrderResponse` ya es self-contained:
