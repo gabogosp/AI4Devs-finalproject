@@ -129,7 +129,10 @@
   blocked_by: [US-003]
 - id: US-008
   slug: checkout-guest
-  status: In Progress
+  status: Done   # /develop-qa US-008 (PR #64, mergeado 2026-09-06) — 3/3 disciplinas
+                 # resueltas: BE (#11, archivado), FE (#23, archivado), QA (#64, Mode A
+                 # inline en el backend ya archivado, sin change `-qa` propio que archivar).
+                 # done-at abajo.
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]
@@ -161,6 +164,11 @@
   # requiere archive-change separado, Mode A ya vive en el directorio archivado). `status`
   # queda en `In Progress` — la transición a `Done` la aplica quien mergee este PR.
   # `blocked_by` sin tocar (propiedad de otro agente).
+  #
+  # NOTA (2026-09-06, PR #64 mergeado): las 3 disciplinas están resueltas — BE y FE
+  # archivados, QA ejecutada y verde (Mode A, sin change `-qa` propio que archivar, mismo
+  # caso que US-021 QA). `status` avanza a `Done`. `blocked_by` sin tocar.
+  done-at: 2026-09-06
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
