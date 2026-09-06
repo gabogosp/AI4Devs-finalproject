@@ -316,6 +316,13 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   API real + Postgres real, seedeando por API (`seed-metricas.ts`, checkout real +
   confirmación real + PATCH real), nunca por `prisma.order.create` directo.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@metricas and not @cross-feature"` (exit 0)
+- **Estado**: verde — 9 escenarios/50 steps en 0. Nota de entorno: en este sandbox,
+  `pnpm --filter @dsm/qa <script> -- --flag valor` reenvía el `--` literal al proceso
+  hijo (cucumber-js/Playwright lo interpretan como fin-de-opciones y tratan lo que
+  sigue como paths, no como flags) — se verificó sin el `--` redundante
+  (`pnpm --filter @dsm/qa test:acceptance --tags "@metricas and not @cross-feature"`),
+  semánticamente idéntico. `qa/acceptance/features/metricas.feature` +
+  `qa/acceptance/steps/metricas.steps.ts`.
 
 ```yaml
 - id: QA-016-ACC-2
@@ -333,6 +340,8 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
   `PATCH /admin/orders/{id}`) — cero `INSERT`/`UPDATE` directo vía `@dsm/db`. Las tres
   respuestas de `reports/*` reflejan exactamente `orders_count=4`.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@cross-feature and @metricas"` (exit 0)
+- **Estado**: verde — 2 escenarios (X-1, X-2)/13 steps en 0. Mismo hallazgo de entorno
+  que QA-016-ACC-1 sobre el `--` de `pnpm --filter`.
 
 ### 5.2 Contract testing
 

@@ -20,11 +20,18 @@ import { QA_API_BASE_URL } from './qa-env';
  * estructural con `seed-ordenes.ts`, y es lo que permite que este archivo no
  * tenga ninguna excepción de siembra salvo la documentada del clamp (abajo).
  *
- * **Única excepción documentada** (qa-plan.md §6, AC-9/C-2/QA-016-E2E-5):
- * backdatear `created_at` de una orden YA confirmada 100% por API real. No
- * existe ningún endpoint que fije esa fecha — el `UPDATE` de una sola
- * columna vía `@dsm/db` en `backdatearCreatedAt` es el ÚNICO acceso al ORM
- * de todo este archivo. `seed-metricas.smoke.ts` lo verifica.
+ * **Única excepción documentada** (qa-plan.md §6/§7): backdatear `created_at`
+ * de una orden YA confirmada 100% por API real. No existe ningún endpoint
+ * que fije esa fecha — el `UPDATE` de una sola columna vía `@dsm/db` en
+ * `backdatearCreatedAt` es el ÚNICO acceso al ORM de todo este archivo.
+ * `seed-metricas.smoke.ts` lo verifica. Usada donde el propio Gherkin exige
+ * una fecha real que ningún endpoint puede producir — H-2 (AC-4: una orden
+ * "real, hace 40 días", para probar el filtro de rango) y QA-016-E2E-5
+ * (AC-9: una orden "real, hace 13 meses", para que la nota de acotado del
+ * FE tenga algo real que señalar). La propia C-2 de aceptación (AC-9,
+ * `range.from` acotado al piso) NO la necesita: alcanza con una orden
+ * reciente dentro de la ventana — lo que prueba el clamp es el rango
+ * PEDIDO (24 meses atrás), no la antigüedad de la orden.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const prisma = new ((await import('@dsm/db') as any).PrismaClient)();
