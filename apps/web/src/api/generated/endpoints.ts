@@ -32,6 +32,7 @@ import type {
   ListAdminOrdersParams,
   ListProductsParams,
   LoginRequest,
+  OrderAnonymizationResult,
   PaymentConfirmed,
   PendingPaymentOrder,
   Problem,
@@ -42,6 +43,7 @@ import type {
   RegisterRequest,
   ResetConfirm,
   ResetRequest,
+  RetentionSweepResult,
   SearchProductsParams,
   SearchRateLimitedResponse,
   SearchResponse,
@@ -1610,6 +1612,124 @@ export const listPendingPaymentOrders = async ( options?: Parameters<typeof cust
 
 
 
+export type anonymizeOrderResponse200 = {
+  data: OrderAnonymizationResult
+  status: 200
+}
+
+export type anonymizeOrderResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type anonymizeOrderResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type anonymizeOrderResponse404 = {
+  data: ProblemResponse
+  status: 404
+}
+
+export type anonymizeOrderResponse422 = {
+  data: ProblemResponse
+  status: 422
+}
+
+export type anonymizeOrderResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type anonymizeOrderResponseSuccess = (anonymizeOrderResponse200) & {
+  headers: Headers;
+};
+export type anonymizeOrderResponseError = (anonymizeOrderResponse401 | anonymizeOrderResponse403 | anonymizeOrderResponse404 | anonymizeOrderResponse422 | anonymizeOrderResponse429) & {
+  headers: Headers;
+};
+
+export type anonymizeOrderResponse = (anonymizeOrderResponseSuccess | anonymizeOrderResponseError)
+
+export const getAnonymizeOrderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/admin/orders/${id}/anonymize`
+}
+
+/**
+ * El comprador invitado no tiene cuenta ni autoservicio: su pedido de supresión llega por email o WhatsApp y lo ejecuta el dueño desde el panel. reason queda fijo en requested — nunca viene del body. 200 idéntico si la orden ya estaba anonimizada (AC-8, nunca error).
+ * @summary Anonimizar los datos personales de una orden a pedido del comprador (US-021 AC-3, AC-9)
+ */
+export const anonymizeOrder = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<anonymizeOrderResponse> => {
+
+  return customFetch<anonymizeOrderResponse>(getAnonymizeOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+export type runOrderRetentionSweepResponse200 = {
+  data: RetentionSweepResult
+  status: 200
+}
+
+export type runOrderRetentionSweepResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type runOrderRetentionSweepResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type runOrderRetentionSweepResponse429 = {
+  data: RateLimitedResponse
+  status: 429
+}
+
+export type runOrderRetentionSweepResponseSuccess = (runOrderRetentionSweepResponse200) & {
+  headers: Headers;
+};
+export type runOrderRetentionSweepResponseError = (runOrderRetentionSweepResponse401 | runOrderRetentionSweepResponse403 | runOrderRetentionSweepResponse429) & {
+  headers: Headers;
+};
+
+export type runOrderRetentionSweepResponse = (runOrderRetentionSweepResponseSuccess | runOrderRetentionSweepResponseError)
+
+export const getRunOrderRetentionSweepUrl = () => {
+
+
+
+
+  return `/v1/admin/orders/retention-sweep`
+}
+
+/**
+ * Barrido manual por plazo cumplido — mismo barrido que corre oportunistamente al arrancar la API (ADR-0012). Síncrono: un único UPDATE de conjunto sobre un índice de rango. reason queda fijo en retention_policy. Siempre 200, incluso anonymized_count: 0.
+ * @summary Anonimizar todas las órdenes con el plazo de retención cumplido (US-021 AC-1)
+ */
+export const runOrderRetentionSweep = async ( options?: Parameters<typeof customFetch>[1]): Promise<runOrderRetentionSweepResponse> => {
+
+  return customFetch<runOrderRetentionSweepResponse>(getRunOrderRetentionSweepUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export type createImportResponse200 = {
   data: ImportCreated
   status: 200
@@ -2022,9 +2142,9 @@ export const getUpdateProductResponseMock = (overrideResponse: Partial<Extract<P
 
 export const getListAdminOrdersResponseMock = (overrideResponse: Partial<Extract<AdminOrderList, object>> = {}): AdminOrderList => ({data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
 
-export const getGetAdminOrderResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}))},})
+export const getGetAdminOrderResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), anonymized_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), anonymization_reason: faker.helpers.arrayElement([faker.helpers.arrayElement(['retention_policy','requested'] as const), null])},})
 
-export const getUpdateAdminOrderStatusResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'}))},})
+export const getUpdateAdminOrderStatusResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), anonymized_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), anonymization_reason: faker.helpers.arrayElement([faker.helpers.arrayElement(['retention_policy','requested'] as const), null])},})
 
 export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
 
@@ -2045,6 +2165,10 @@ export const getCreateGuestCheckoutResponseMock = (overrideResponse: Partial<Ext
 export const getConfirmManualPaymentResponseMock = (overrideResponse: Partial<Extract<PaymentConfirmed, object>> = {}): PaymentConfirmed => ({order_number: faker.number.int(), status: faker.helpers.arrayElement(['new'] as const), ...overrideResponse})
 
 export const getListPendingPaymentOrdersResponseMock = (): PendingPaymentOrder[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
+
+export const getAnonymizeOrderResponseMock = (overrideResponse: Partial<Extract<OrderAnonymizationResult, object>> = {}): OrderAnonymizationResult => ({order_id: faker.string.uuid(), anonymized_at: faker.date.past().toISOString().slice(0, 19) + 'Z', anonymization_reason: faker.helpers.arrayElement(['retention_policy','requested'] as const), ...overrideResponse})
+
+export const getRunOrderRetentionSweepResponseMock = (overrideResponse: Partial<Extract<RetentionSweepResult, object>> = {}): RetentionSweepResult => ({anonymized_count: faker.number.int({min: 0}), reason: faker.helpers.arrayElement(['retention_policy'] as const), ...overrideResponse})
 
 export const getCreateImportResponseMock = (overrideResponse: Partial<Extract<ImportCreated, object>> = {}): ImportCreated => (faker.helpers.arrayElement([{id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}, {id: faker.string.uuid(), status: faker.helpers.arrayElement(['pending','running','completed','failed'] as const), ...overrideResponse}]))
 
@@ -2389,6 +2513,30 @@ export const getListPendingPaymentOrdersMockHandler = (overrideResponse?: Pendin
   }, options)
 }
 
+export const getAnonymizeOrderMockHandler = (overrideResponse?: OrderAnonymizationResult | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderAnonymizationResult> | OrderAnonymizationResult), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/orders/:id/anonymize', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getAnonymizeOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getRunOrderRetentionSweepMockHandler = (overrideResponse?: RetentionSweepResult | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<RetentionSweepResult> | RetentionSweepResult), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/orders/retention-sweep', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getRunOrderRetentionSweepResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getCreateImportMockHandler = (overrideResponse?: ImportCreated | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<ImportCreated> | ImportCreated), options?: RequestHandlerOptions) => {
   return http.post('*/admin/imports', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -2490,6 +2638,8 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getCreateGuestCheckoutMockHandler(),
   getConfirmManualPaymentMockHandler(),
   getListPendingPaymentOrdersMockHandler(),
+  getAnonymizeOrderMockHandler(),
+  getRunOrderRetentionSweepMockHandler(),
   getCreateImportMockHandler(),
   getGetImportMockHandler(),
   getGetImportReportMockHandler(),

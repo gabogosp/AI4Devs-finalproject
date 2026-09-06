@@ -46,6 +46,8 @@ function detalle(): Order {
     buyer_email: 'comprador@test.local',
     buyer_phone: '+54 351 555 0000',
     fulfillment: 'pickup',
+    anonymized_at: null,
+    anonymization_reason: null,
     items: [
       {
         product_name: 'Compresor Embraco',
