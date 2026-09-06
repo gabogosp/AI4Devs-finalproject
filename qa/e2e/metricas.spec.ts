@@ -85,8 +85,21 @@ test('metricas dataset real — el dashboard cuenta sólo las 4 órdenes activas
   const topProducts = page.getByTestId('top-products-table');
 
   // AC-8: orders_count=4 (no 6) y el monto es exactamente B+C+D+E.
-  await expect(summary.getByText('4', { exact: true })).toBeVisible();
-  await expect(summary.getByText(new RegExp(arsDigits(totalEsperado)))).toBeVisible();
+  //
+  // Locator por texto plano dentro de `summary-cards` — bug real de test
+  // encontrado en CI (no un flake): SummaryCards muestra 6 números (el total
+  // de órdenes + 4 desgloses por estado + el monto), y cuando el desglose de
+  // algún estado individual también da "4" (coincidencia de datos, no del
+  // código), `getByText('4', { exact: true })` matchea 2 elementos y viola
+  // el modo estricto de Playwright. Se acota a la tarjeta "Órdenes"
+  // específica vía el mismo idioma xpath ya usado más abajo en este archivo
+  // (T5.3 CSV) — el `<p>` con el valor es el hermano inmediato del `<p>` con
+  // la etiqueta, y "Órdenes"/"Monto facturado" son etiquetas únicas en todo
+  // el widget (a diferencia de un dígito, que puede repetirse por azar).
+  const valorTarjeta = (etiqueta: string) =>
+    summary.getByText(etiqueta, { exact: true }).locator('xpath=following-sibling::p[1]');
+  await expect(valorTarjeta('Órdenes')).toHaveText('4');
+  await expect(valorTarjeta('Monto facturado')).toHaveText(new RegExp(arsDigits(totalEsperado)));
 
   // El ranking sólo cuenta B/C/D/E: p0=2 (B+D), p1=3 (C+E), p2 (sólo F) ausente.
   await expect(topProducts.getByText(p2.name)).toHaveCount(0);
