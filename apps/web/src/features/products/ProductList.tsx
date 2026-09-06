@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   createColumnHelper,
   flexRender,
@@ -55,7 +56,20 @@ export function ProductList() {
 
   const columns = useMemo(
     () => [
-      column.accessor('name', { header: 'Nombre' }),
+      column.accessor('name', {
+        header: 'Nombre',
+        // Único punto de entrada a la pantalla de edición desde el listado —
+        // sin esto, la única forma de editar un producto es tipear su UUID
+        // a mano en la URL.
+        cell: (info) => (
+          <Link
+            href={`/admin/productos/${info.row.original.id}`}
+            className="text-accent-strong underline-offset-2 hover:underline focus:outline-none focus-visible:shadow-focus"
+          >
+            {info.getValue()}
+          </Link>
+        ),
+      }),
       column.accessor('sku', { header: 'SKU' }),
       column.accessor('price_ars_cents', {
         header: 'Precio',

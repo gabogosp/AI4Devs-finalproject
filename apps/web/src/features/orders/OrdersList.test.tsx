@@ -171,4 +171,19 @@ describe('OrdersList — estados (T4.2)', () => {
       screen.getByRole('button', { name: /volver a todas/i }),
     ).toBeInTheDocument();
   });
+
+  it('el número de orden de cada fila linkea a su detalle — sin esto, sólo se llega tipeando el UUID a mano', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/orders`, () =>
+        HttpResponse.json({
+          data: [orden(1)],
+          pagination: { limit: 20, offset: 0, total: 1 },
+        }),
+      ),
+    );
+    render(<OrdersList />);
+
+    const link = await screen.findByRole('link', { name: String(orden(1).order_number) });
+    expect(link).toHaveAttribute('href', `/admin/ordenes/${orden(1).id}`);
+  });
 });
