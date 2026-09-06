@@ -59,7 +59,7 @@ checklist humano.
 
 ## Fase 0: Soporte del harness — cliente con sesión que compra y confirma
 
-- [ ] T0.1 `qa/support/seed-order-history.ts` +
+- [x] T0.1 `qa/support/seed-order-history.ts` +
   `qa/support/seed-order-history.smoke.ts` — `compraLogueada()` /
   `compraLogueadaPendiente()`.
   - **Pattern**: `nuevaCuenta()` (`customer-auth.ts`, US-014) → envolver el
