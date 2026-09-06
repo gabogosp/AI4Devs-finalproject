@@ -452,7 +452,7 @@ language: es
     lint genuinamente limpio, el comando tal cual escrito en el `Verify:`
     quedó roto por deriva de versión del tooling, no por este contenido.
 
-- [ ] T6.3 Notas en README de los módulos tocados
+- [x] T6.3 Notas en README de los módulos tocados
   - **Pattern**: `apps/api/src/account/README.md` nuevo (mismo estilo que
     `checkout/README.md`) documentando el módulo, por qué es nuevo (ciclo
     `auth`↔`checkout`, ver `design.md` §Context) y qué reusa de US-021; nota
@@ -462,6 +462,13 @@ language: es
     la lista de las 4 relaciones que maneja explícitamente (tabla de US §10) y
     el reuso del mecanismo de US-021; `checkout/README.md` menciona US-020.
   - **Verify**: `grep -c "US-020" apps/api/src/account/README.md apps/api/src/checkout/README.md` ≥ 2 (al menos 1 mención en cada archivo)
+  - Resultado real: 1 mención en cada archivo (total 2, ≥2 ok). `account/README.md`
+    nuevo cubre el ciclo de módulos, la tabla de las 4 relaciones (US §10), el
+    reuso del mecanismo de US-021 (con la diferencia del placeholder único vs
+    fijo), el orden de los 6 pasos de la transacción, autorización sin
+    parámetro de identidad y observabilidad sin PII. `checkout/README.md`
+    gana una sección nueva sobre los 2 métodos de `OrdersRepository`
+    consumidos desde `account/` y la dirección del import (nunca al revés).
 
 ---
 
