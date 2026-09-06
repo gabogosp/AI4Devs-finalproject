@@ -2,6 +2,8 @@ import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import type { Resend } from 'resend';
 import { ResendNotificationAdapter } from './resend-notification.adapter';
+import { LoggingNotificationAdapter } from './logging-notification.adapter';
+import { notificationPortProvider } from './notification.provider';
 import { NotificationEventsService } from '../../observability/notification-events.service';
 import { OrderConfirmedPayload } from './notification.port';
 
@@ -147,5 +149,36 @@ describe('ResendNotificationAdapter (US-011 T6.1)', () => {
 
     expect(enviados[0].to).toBe('dueno@dsmferreteria.com.ar');
     expect(enviados[0].from).toBe('pedidos@dsmferreteria.com.ar');
+  });
+});
+
+describe('selección del adapter por entorno (US-011 T7.1)', () => {
+  const factory = notificationPortProvider as {
+    useFactory: (config: ConfigService, events: NotificationEventsService) => unknown;
+  };
+  afterEach(() => jest.restoreAllMocks());
+
+  it('con RESEND_API_KEY resuelve al adapter de Resend', () => {
+    const adapter = factory.useFactory(
+      new ConfigService({
+        RESEND_API_KEY: 're_test_key',
+        ORDER_NOTIFICATIONS_FROM: 'pedidos@dsmferreteria.com.ar',
+        OWNER_NOTIFICATION_EMAIL: 'dueno@dsmferreteria.com.ar',
+      }) as ConfigService,
+      new NotificationEventsService(),
+    );
+    expect(adapter).toBeInstanceOf(ResendNotificationAdapter);
+  });
+
+  it('sin la key resuelve al de log, y AVISA que no se envían los avisos', () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+
+    const adapter = factory.useFactory(
+      new ConfigService({ RESEND_API_KEY: undefined }) as ConfigService,
+      new NotificationEventsService(),
+    );
+
+    expect(adapter).toBeInstanceOf(LoggingNotificationAdapter);
+    expect(warn.mock.calls.flat().join(' ')).toMatch(/NO se envían/i);
   });
 });

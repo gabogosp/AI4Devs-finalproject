@@ -211,7 +211,7 @@
 
 ## Phase 7: Selección por entorno + wiring
 
-- [ ] T7.1 Crear `apps/api/src/orders/ports/notification.provider.ts` —
+- [x] T7.1 Crear `apps/api/src/orders/ports/notification.provider.ts` —
       `notificationPortProvider: Provider` con
       `provide: NOTIFICATION_PORT`, `inject: [ConfigService, NotificationEventsService]`,
       `useFactory`: con `RESEND_API_KEY` presente devuelve
