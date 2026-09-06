@@ -257,7 +257,7 @@ language: es
   - **Exit criterion**: una request e2e con esta cookie pasa `CustomerGuard`
     en `GET /v1/auth/me` (endpoint ya existente, gateado por el mismo guard).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-app` (smoke del helper contra un endpoint ya `CustomerGuard`-protegido)
-- [ ] T5.5 Regresión completa del checkout guest (AC-6, prueba de "cero
+- [x] T5.5 Regresión completa del checkout guest (AC-6, prueba de "cero
   cambio observable")
   - **Pattern**: correr, **sin modificar una sola aserción**, toda la suite
     existente de US-008: `checkout.service.spec.ts`,
