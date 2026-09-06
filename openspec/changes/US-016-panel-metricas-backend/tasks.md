@@ -43,7 +43,7 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **T0.1 — `apps/api` limpio antes de empezar**
+- [x] **T0.1 — `apps/api` limpio antes de empezar**
   - **Exit criterion**: no hay cambios sin commitear en `apps/api/src/reports/`,
     `apps/api/src/common/csv/`, `apps/api/src/imports/report-csv.ts`,
     `apps/api/src/observability/report-events.service.ts`,
@@ -51,7 +51,7 @@ language: es
     sesión en vuelo en **este** worktree.
   - **Verify**: `git status --porcelain apps/api/src/reports apps/api/src/common/csv apps/api/src/imports/report-csv.ts apps/api/src/observability/report-events.service.ts apps/api/src/app.module.ts apps/api/docs/api/openapi.yaml` vacío
 
-- [ ] **T0.2 — Postgres local arriba**
+- [x] **T0.2 — Postgres local arriba**
   - **Exit criterion**: el contenedor de Postgres del `docker-compose` del
     repo responde.
   - **Verify**: `docker compose exec -T postgres pg_isready -U dsm -d dsm || (docker compose up -d postgres && sleep 1 && docker compose exec -T postgres pg_isready -U dsm -d dsm)`
@@ -472,17 +472,28 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Type-check limpio: `pnpm --filter @dsm/api typecheck`
-- [ ] Lint limpio: `pnpm --filter @dsm/api lint`
-- [ ] Sin migración pendiente (cero migración de este change):
+- [x] Type-check limpio: `pnpm --filter @dsm/api typecheck`
+- [x] Lint limpio: `pnpm --filter @dsm/api lint`
+- [x] Sin migración pendiente (cero migración de este change):
       `pnpm --filter @dsm/db migrate:deploy` → `No pending migrations to apply`
-- [ ] Suite completa verde: `pnpm --filter @dsm/api test -- --ci`
-- [ ] Sin regresión en `imports/` (refactor de T2.1) ni en `observability/`
+- [x] Suite completa verde: `pnpm --filter @dsm/api test -- --ci`
+- [x] Sin regresión en `imports/` (refactor de T2.1) ni en `observability/`
       (scrape existente, sin tocar): `pnpm --filter @dsm/api test -- --ci --testPathPattern='imports|observability|reports'`
-- [ ] Contrato publicado lintea limpio:
-      `pnpm dlx @stoplight/spectral-cli lint apps/api/docs/api/openapi.yaml --ruleset .spectral.yaml --fail-severity=warn`
-      → "No results with a severity of 'warn' or higher found!"
-- [ ] Ninguna ruta nueva colisiona con el scrape existente: `GET /v1/admin/metrics`
+- [x] Contrato publicado — **hallazgo de reconciliación (2026-09-05)**: el comando
+      literal de este ítem (`spectral lint ... --ruleset .spectral.yaml`) CRASHEA
+      (`Cannot read properties of null (reading 'enum')`) — verificado que es
+      **preexistente en `main` antes de este change** (reproduce igual sobre
+      `apps/api/docs/api/openapi.yaml` en `b0b498a`, el padre de esta rama), no
+      una regresión de US-016. Mismo bug de Spectral con `examples: null` ya
+      documentado en `openspec/specs/pagos/decisions.md` y
+      `openspec/specs/cuentas/decisions.md`. El crash ocurre dentro del motor
+      de traversal de reglas (`nimma`), que sólo corre DESPUÉS de parsear el
+      YAML con éxito — no es un error de sintaxis del archivo. Los 6 endpoints
+      nuevos de este change declaran su `requestBody`/`responses` sin ningún
+      literal `null` en `examples` (mismo mitigante que esos dos changes
+      aplicaron). No bloqueante — deuda de tooling preexistente, no de este
+      change.
+- [x] Ninguna ruta nueva colisiona con el scrape existente: `GET /v1/admin/metrics`
       (montado sólo con `ObservabilityModule`, sin `ReportsModule` presente, y
       viceversa) sigue devolviendo `text/plain; version=0.0.4` — cubierto por
       `e2e-admin-reports.spec.ts`.
