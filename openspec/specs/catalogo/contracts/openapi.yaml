@@ -277,6 +277,16 @@ components:
         description_raw:
           type: string
           nullable: true
+        description_enriched:
+          type: string
+          nullable: true
+          description: |
+            Texto curado por el dueño (US-005 AC-7, QA-005-F2). Enviarlo marca el producto
+            como curado (`description_curated = true`) — desde ahí el enriquecimiento por IA
+            no vuelve a pisarlo. No hay endpoint nuevo: reusa este mismo PATCH. `Product`
+            (lectura) todavía NO devuelve este campo ni `description_curated`/
+            `enrichment_done` — hallazgo documentado, `openspec/changes/archive/
+            US-005-enriquecimiento-ia-embeddings-qa/proposal.md` OQ-QA-005-2.
         price_ars_cents:
           type: integer
           minimum: 1
