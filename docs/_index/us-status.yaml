@@ -245,7 +245,11 @@
   blocked_by: []
 - id: US-011
   slug: notificaciones-email
-  status: In Progress
+  status: Done   # /archive-change US-011-notificaciones-email-backend 2026-09-06 — Mode A:
+  # BE (PR #82) + QA (PR #88, inline, sin change -qa propio) ambos archivados en el mismo
+  # change. 2/2 disciplinas declaradas ([BE, QA], sin FE) resueltas → Done. AC-4/AC-5
+  # quedan `blocked` a nivel aceptación por falta de cuenta Resend real — deuda de fase de
+  # producción (secret/DNS a provisionar), no bloquea el cierre de la US.
   priority: High
   prd-capacity: 6
   disciplines: [BE, QA]
@@ -254,9 +258,10 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-09-06        # primera planificación (/plan-backend-ticket, backend-node-developer)
-  blocked_by: [US-010, US-012]      # desactualizado — ambas ARCHIVADAS (US-010 2026-09-05, US-012
-  # 2026-09-05); no se toca acá, propiedad de otro agente per index-conventions.md (mismo
-  # criterio que la nota de US-016 en este archivo).
+  done-at: 2026-09-06
+  blocked_by: [US-010, US-012]      # ambas ARCHIVADAS (US-010 2026-09-05, US-012 2026-09-05)
+  # — ya no bloquean, sin tocar el campo per index-conventions.md (mismo criterio que la
+  # nota previa de este archivo).
 - id: US-012
   slug: panel-ordenes-dueno
   status: Done   # 3/3 disciplinas archivadas (BE PR #35, FE PR #32, QA PR #33). Cerrada por el coordinador tras el archive sweep 2026-09-05.

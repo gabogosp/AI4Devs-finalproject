@@ -2582,7 +2582,13 @@
   us-id: US-011
   discipline: backend
   variant: null
-  status: In Progress   # /develop-backend US-011 (2026-09-06) — ejecución de tasks.md en curso
+  status: archived   # /archive-change 2026-09-06 — Mode A: este change embebe también la
+  # disciplina QA (qa-plan.md inline, PR #88), sin change -qa propio que archivar por
+  # separado. Con BE (#82) + QA (#88) archivados, las 2/2 disciplinas de US-011
+  # ([BE, QA], sin FE) quedan resueltas. Spec delta aplicado: ordenes/requirements.md R-4
+  # y pagos/requirements.md R-17 (quitan "Deferred: US-011" — el aviso ya se entrega por
+  # ResendNotificationAdapter) + decisiones de retry-in-process/idempotencia agregadas a
+  # pagos/decisions.md. Sin contrato OpenAPI nuevo (sin endpoints).
   parent-us: docs/user-stories/US-011-notificaciones-email.md
   linear-task-id: null
   audit-baseline: null
@@ -2622,11 +2628,13 @@
   #
   # Sin endpoints HTTP nuevos/modificados — `api-contract-completeness` no aplica, sin
   # yaml de contrato nuevo.
-  estimate-hours: null   # US §7 presupuesta BE-US-011 en 8-12h; 8 fases / 12 tasks
-  # closure-grade en tasks.md, sin ejecutar todavía — se reconcilia con el conteo real al
-  # desarrollar (mismo criterio que US-016/US-023 en este índice).
-  assignee: sin-asignar
+  estimate-hours: 6.8   # AI-asistido — 11 tasks reales (T1.1-T8.1) + cierre suite-level,
+  # dentro del rango 8-12h tradicional que US §7 presupuestaba para BE-US-011.
+  assignee: claude-code
   branch: feat/US-011-notificaciones-email-backend
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/82
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
+  completed-at: 2026-09-06T14:35:25Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-011-notificaciones-email-backend
