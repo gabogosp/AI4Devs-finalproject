@@ -130,7 +130,7 @@ language: es
 
 ## Fase 2: CSV compartido — extraer `csvCell` (refactor behavior-preserving) — 0,5 h
 
-- [ ] T2.1 `common/csv/csv-cell.ts` — extracción literal de `imports/report-csv.ts`
+- [x] T2.1 `common/csv/csv-cell.ts` — extracción literal de `imports/report-csv.ts`
   - **Pattern**: Fowler Extract Function — `per refactoring-discipline`
     (`design.md §D3`). El comportamiento no cambia: `imports/report-csv.ts`
     reexporta `csvCell` bajo su nombre original (`celdaCsv`), cero cambio de

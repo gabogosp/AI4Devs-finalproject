@@ -1,4 +1,5 @@
 import { ImportJob, ImportJobRow } from '@dsm/db';
+import { csvCell } from '../common/csv/csv-cell';
 
 /**
  * T5.4 — armado del CSV del reporte de filas rechazadas.
@@ -15,26 +16,13 @@ import { ImportJob, ImportJobRow } from '@dsm/db';
 /** Encabezado en el idioma del dueño: el reporte lo abre él, no un sistema. */
 export const REPORT_HEADER = 'fila,sku,campo,codigo,motivo';
 
-const ARRANQUES_PELIGROSOS = ['=', '+', '-', '@', '\t', '\r'];
-
 /**
- * Neutraliza la celda para que la planilla la trate como texto, y la encomilla
- * según RFC 4180 si hace falta.
+ * La neutralización de celdas se extrajo a `common/csv/csv-cell.ts` (Fowler
+ * Extract Function, `design.md §D3` de US-016) — reusada ahora también por
+ * los 3 exports de `reports/`. Reexportada bajo su nombre original: cero
+ * cambio de comportamiento, cero cambio de firma pública.
  */
-export function celdaCsv(valor: string | null | undefined): string {
-  const texto = valor ?? '';
-  const neutralizado =
-    texto.length > 0 && ARRANQUES_PELIGROSOS.includes(texto[0])
-      ? `'${texto}`
-      : texto;
-
-  // RFC 4180: se encomilla si hay coma, comilla, salto de línea o CR, y la
-  // comilla interna se duplica.
-  if (/[",\n\r]/.test(neutralizado)) {
-    return `"${neutralizado.replace(/"/g, '""')}"`;
-  }
-  return neutralizado;
-}
+export const celdaCsv = csvCell;
 
 /** Nombre del archivo descargable. Server-generated: nunca el del cliente (§6.4). */
 export function reportFilename(jobId: string): string {
