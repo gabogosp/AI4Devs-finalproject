@@ -161,8 +161,20 @@ jobs:
         # proposal.md OQ-QA-005-1) para no fingir que corren. `not @deferred`
         # sólo, sin `not @blocked`, los dejaba pasar y fallar como si fueran
         # un defecto real.
+        #
+        # Invoca `cucumber-js` DIRECTO (no `pnpm --filter @dsm/qa
+        # test:acceptance -- --tags ...`): `pnpm --filter <pkg> <script> --
+        # <args>` inserta un `--` LITERAL en el comando final (verificado
+        # contra el log real de este mismo workflow), y `cucumber-js` (yargs)
+        # trata ese `--` como "fin de opciones" — todo lo que sigue,
+        # `--tags` incluido, se descarta en silencio. Confirmado en local:
+        # 178 escenarios (el filtro nunca aplicó) vía `pnpm --filter`, 172
+        # (178 − 6 `@blocked`, el número correcto) invocando `cucumber-js`
+        # directo con el mismo `--tags`.
         if: hashFiles('qa/acceptance/**/*.feature') != ''
-        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred and not @blocked"
+        env:
+          NODE_OPTIONS: '--import tsx'
+        run: pnpm --filter @dsm/qa exec cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked"
 
       - name: E2E cross-stack (Playwright)
         # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
