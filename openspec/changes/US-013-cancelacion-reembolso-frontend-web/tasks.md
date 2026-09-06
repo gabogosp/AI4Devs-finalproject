@@ -255,7 +255,7 @@ language: es
 
 ## Fase 7 — Pre-merge
 
-- [ ] **T7.1 — Suite completa de `apps/web` verde + lint + typecheck**
+- [x] **T7.1 — Suite completa de `apps/web` verde + lint + typecheck**
   - **Exit criterion**: lint, typecheck y la suite completa de `apps/web`
     pasan sin fallos ni skips inesperados.
   - **Verify**: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web exec tsc --noEmit && pnpm --filter @dsm/web vitest run`
