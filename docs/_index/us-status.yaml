@@ -397,7 +397,7 @@
   # la US se queda en `In Progress` (QA todavía sin planificar).
   #
   # NOTA (2026-09-05, /plan-qa US-016): qa-plan.md agregado Modo A embebido en
-  # `US-016-panel-metricas-backend/qa-plan.md` (BE y FE ya construidos, PR #55/#59
+  # `US-016-panel-metricas-qa/qa-plan.md` (BE y FE ya construidos, PR #55/#59
   # in review) — 12 test cases owned-by-QA (2 aceptación BDD, 1 contract, 5 E2E de
   # navegador cross-stack, 1 a11y L3, 1 k6, 2 charters), 0 bloqueados: a diferencia
   # de US-008/US-009/US-023 (otros Modo A de este repo), las cuatro capacidades de

@@ -12,9 +12,11 @@
 > ninguno de los dos es de alto volumen, pero los dos protegen la integridad de una
 > decisión de negocio (a quién se le muestra el panel, y qué cuenta como venta) — mismo
 > patrón que `US-006-import-masivo-inventario-qa` aplicó a AC-8/AC-11 de esa US.
-> **Companion files**: `proposal.md`/`tasks.md`/`design.md` de este change (backend) +
+> **Companion files**: este `qa-plan.md` vive en su propio change sibling
+> (`openspec/changes/US-016-panel-metricas-qa/`, sin `proposal.md`/`tasks.md`/`design.md`
+> propios — Modo A no los requiere). Consume como contexto, sin re-planificarlos:
+> `openspec/changes/US-016-panel-metricas-backend/{proposal,tasks,design}.md` y
 > `openspec/changes/US-016-panel-metricas-frontend-web/{proposal,tasks,design}.md`
-> (sibling, consumido como contexto — no se re-planifica acá)
 
 > **Alcance**: capas **owned-by-QA** (Layer 3 cross-stack, aceptación BDD, E2E de
 > navegador, contract testing, accesibilidad, carga, exploratorio). Las dev-owned
