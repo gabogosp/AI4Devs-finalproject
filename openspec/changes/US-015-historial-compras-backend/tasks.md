@@ -226,20 +226,20 @@ language: es
 
 ## Fase 5: Escritor del checkout + tests cross-cutting — 1,6 h
 
-- [ ] T5.1 `CheckoutController.create` gana `OptionalCustomerGuard`
+- [x] T5.1 `CheckoutController.create` gana `OptionalCustomerGuard`
   - **Pattern**: `@UseGuards(CartCsrfGuard, OptionalCustomerGuard)` en el
     único handler — `per design.md §D2`.
   - **Exit criterion**: el diff de `checkout.controller.ts` es de una línea
     (el decorador); ningún otro comportamiento del controller cambia.
   - **Verify**: `test "$(git diff --numstat -- apps/api/src/checkout/checkout.controller.ts | awk '{print $1+$2}')" -le 5`
-- [ ] T5.2 `CheckoutService.createOrder` lee y propaga `customerId`
+- [x] T5.2 `CheckoutService.createOrder` lee y propaga `customerId`
   - **Pattern**: `CheckoutService.customerIdDe(req)` (espejo de `traceDe`) +
     `CreatePendingOrderData.customerId?: string` — ver `design.md` §D2.
   - **Exit criterion**: con `req.customerId` seteado, la orden creada tiene
     ese `customer_id`; sin él, `customer_id` es `null` — **exactamente el
     comportamiento actual** para el segundo caso.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=checkout\\.service\\.spec`
-- [ ] T5.3 `OrdersRepository.createPendingOrder` escribe `customer_id`
+- [x] T5.3 `OrdersRepository.createPendingOrder` escribe `customer_id`
   - **Pattern**: `customer_id: data.customerId ?? null` dentro del mismo
     `tx.order.create` existente — sin transacción nueva, sin migración de
     escritura (la columna/FK/índice ya existen).

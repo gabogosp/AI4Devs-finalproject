@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { normalizeEmail } from '../auth/email/normalize-email';
+import { RequestConCliente } from '../auth/customer.guard';
 import { CartTokenService } from '../cart/cart-token.service';
 import { buildCartView } from '../cart/cart-view';
 import { CartProduct, ProductsRepository } from '../products/products.repository';
@@ -72,8 +73,20 @@ export class CheckoutService {
     return typeof traceparent === 'string' ? traceparent : undefined;
   }
 
+  /**
+   * `req.customerId` (US-015, design.md §D2) — mismo patrón que `traceDe`:
+   * el service lee `req` crudo, ya lo hacía. `OptionalCustomerGuard` es la
+   * única autoridad que decide si un JWT de cliente es válido; acá sólo se
+   * lee lo que el guard ya dejó. `undefined` cuando no hay sesión — el
+   * checkout sigue siendo guest-first, exactamente el comportamiento actual.
+   */
+  private static customerIdDe(req: Request): string | undefined {
+    return (req as RequestConCliente).customerId;
+  }
+
   async createOrder(req: Request, input: CreateOrderInput): Promise<CreatedOrder> {
     const trace = CheckoutService.traceDe(req);
+    const customerId = CheckoutService.customerIdDe(req);
     const session = await this.cartToken.resolve(req);
     if (!session || session.cart.items.length === 0) {
       this.events.emit('checkout.rejected_empty_cart', null, trace);
@@ -112,6 +125,7 @@ export class CheckoutService {
 
     const orden = await this.orders.createPendingOrder({
       accessTokenHash: tokenHash,
+      customerId,
       buyerName: input.buyerName,
       buyerEmail: normalizeEmail(input.buyerEmail),
       buyerPhone: input.buyerPhone,

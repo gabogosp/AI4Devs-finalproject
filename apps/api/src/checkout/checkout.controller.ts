@@ -2,6 +2,7 @@ import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { CartCsrfGuard } from '../cart/cart-csrf.guard';
+import { OptionalCustomerGuard } from '../auth/resolve-customer-session';
 import { CheckoutThrottlerGuard } from './checkout-throttler.guard';
 import { CheckoutResponseDto } from './dto/checkout-response.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
@@ -40,7 +41,7 @@ export class CheckoutController {
   constructor(private readonly checkout: CheckoutService) {}
 
   @Post()
-  @UseGuards(CartCsrfGuard)
+  @UseGuards(CartCsrfGuard, OptionalCustomerGuard)
   @Throttle({ checkout: { limit: CHECKOUT_RATE_LIMIT_MAX } })
   async create(
     @Body() body: CreateCheckoutDto,

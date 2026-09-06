@@ -35,6 +35,8 @@ export interface CreatePendingOrderLine {
 
 export interface CreatePendingOrderData {
   accessTokenHash: string;
+  /** US-015 — sesión de cliente resuelta por `OptionalCustomerGuard`, si existe. */
+  customerId?: string;
   buyerName: string;
   buyerEmail: string;
   buyerPhone: string;
@@ -66,6 +68,10 @@ export class OrdersRepository {
         return tx.order.create({
           data: {
             access_token_hash: data.accessTokenHash,
+            // US-015 — mismo INSERT que ya existía, sin transacción nueva: la
+            // columna/FK/índice ya están en el schema. `?? null` preserva el
+            // comportamiento actual sin sesión (guest, exactamente como hoy).
+            customer_id: data.customerId ?? null,
             buyer_name: data.buyerName,
             buyer_email: data.buyerEmail,
             buyer_phone: data.buyerPhone,
