@@ -37,4 +37,21 @@ describe('OrderStatusHistory (T7.1, AC-9)', () => {
     render(<OrderStatusHistory entries={[ENTRIES[0]]} />);
     expect(screen.getByRole('listitem')).not.toHaveTextContent('cambiado por');
   });
+
+  it('traduce to_status="cancelled" a "Cancelada" (US-013, regresión QA-013-E2E-3 — antes mostraba el valor crudo)', () => {
+    render(
+      <OrderStatusHistory
+        entries={[
+          {
+            from_status: 'preparing',
+            to_status: 'cancelled',
+            changed_by: 'admin',
+            changed_at: '2026-09-06T10:00:00.000Z',
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('listitem')).toHaveTextContent('Preparando → Cancelada');
+    expect(screen.getByRole('listitem')).not.toHaveTextContent('cancelled');
+  });
 });
