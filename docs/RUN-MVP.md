@@ -159,7 +159,8 @@ navegador lo rechaza y el import es **inalcanzable desde cualquier browser real*
 3. **Ficha con stock** → `/productos/compresor-1-4-hp` → nombre, precio ARS, categoría, descripción
    (enriquecida por IA si hubo enrichment), **agregar al carrito** + **WhatsApp**. "Ver código
    fuente" → metadatos + JSON-LD `schema.org/Product`.
-4. **Registro / login** → `/crear-cuenta` o `/ingresar` (sesión con cookie HttpOnly).
+4. **Registro / login** → `/crear-cuenta` o `/ingresar` (sesión con cookie HttpOnly). Cuenta de
+   prueba ya creada: ver [Cuenta de cliente de prueba](#cuenta-de-cliente-de-prueba-sesión-logueada) abajo.
 5. **Carrito** → agregar varios → badge en el top-nav → `/carrito` → editar cantidades → **"Ir al
    pago"**.
 6. **Checkout** → `/checkout` → datos del comprador + consentimiento → confirma el pedido (queda
@@ -173,12 +174,37 @@ navegador lo rechaza y el import es **inalcanzable desde cualquier browser real*
 
 ## Datos sembrados
 
+Seed canónico (`pnpm --filter @dsm/db seed`) — el mínimo que las suites y los smoke tests asumen presente:
+
 | SKU | Slug | Estado | Stock |
 |---|---|---|---|
 | REF-001 | compresor-1-4-hp | published | 12 |
 | REF-002 | gas-refrigerante-r134a-1kg | published | 30 |
 | FER-001 | taladro-percutor-650w | published | **0** (sin stock) |
 | ELE-001 | cable-unipolar-2-5mm-x100m | **draft** (→ 404) | 20 |
+
+**Catálogo "rico" para la prueba visual** (`pnpm --filter @dsm/db seed:demo-rich`, opcional,
+idempotente) — suma 100 productos más en 8 categorías (refrigeración/ferretería/electricidad/
+plomería/herramientas/pinturas/jardín/seguridad), con variedad real de precio ($450–$210.000),
+stock (0/bajo/medio/alto — 17 productos sin stock) y estado (88 published / 12 draft). Pensado
+para ejercitar búsqueda, filtro por categoría y paginación con más volumen que los 4 de arriba.
+Detalle completo en [`packages/db/README.md`](../packages/db/README.md#seeds).
+
+### Cuenta de cliente de prueba (sesión logueada)
+
+Para probar historial de compras (`/mi-cuenta/compras`) o borrado de cuenta (US-020) sin pasar por
+el registro real (que en el demo corre con el rate-limit de producción, 10/15min):
+
+| Email | Contraseña |
+|---|---|
+| `demo@dsm.local` | `DemoDSM2026!` |
+
+Entrar en `http://localhost:3200/ingresar`. Creada por inserción directa vía Prisma con
+`bcrypt.hash(password, 12)` — mismo mecanismo que `seedAdmin()` de `seed.ts` — porque
+`POST /v1/auth/register` estaba rate-limiteado al momento de crearla (2026-09-06). No es parte
+de ningún script de seed todavía; si hace falta recrearla contra otra base, es un `customer.upsert`
+por email con el hash calculado a mano (ver `packages/db/prisma/seed.ts` función `seedAdmin` como
+plantilla, cambiando `role: "admin"` por `role: "customer"`).
 
 ## Estado de calidad
 
