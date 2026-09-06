@@ -169,7 +169,7 @@
 
 ## Phase 6: Adapter real de Resend
 
-- [ ] T6.1 Crear `apps/api/src/orders/ports/resend-notification.adapter.ts`
+- [x] T6.1 Crear `apps/api/src/orders/ports/resend-notification.adapter.ts`
       — `ResendNotificationAdapter implements NotificationPort`, constructor
       `(resend: Resend, config: ConfigService, events: NotificationEventsService)`.
       Cada uno de los 4 métodos: construye texto/HTML (T4.1), intenta enviar
