@@ -56,7 +56,7 @@
 
 ## Fase 2 — Servicio (repository pattern)
 
-- [ ] T2.1 `orderHistoryService.ts` — `list()` y `get()`
+- [x] T2.1 `orderHistoryService.ts` — `list()` y `get()`
   - **Depends on**: T1.1.
   - **Pattern**: `per frontend-standards.md §11.5 — repository pattern` + `§3.3 — service layer
     hand-written, contract mirrors generated`. Mismo criterio que `accountService.ts`: marca
