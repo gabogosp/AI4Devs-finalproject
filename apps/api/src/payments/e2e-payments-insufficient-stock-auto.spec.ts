@@ -37,6 +37,7 @@ describe('e2e-payments-insufficient-stock-auto', () => {
       orderConfirmed: jest.fn().mockResolvedValue(undefined),
       ownerNewOrder: jest.fn().mockResolvedValue(undefined),
       orderCancelledNoStock: jest.fn().mockResolvedValue(undefined),
+      orderCancelledByOwner: jest.fn().mockResolvedValue(undefined),
     };
 
     const moduleRef = await Test.createTestingModule({

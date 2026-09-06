@@ -194,7 +194,7 @@ language: es
 
 ## Fase 5 — `CancelOrderService`
 
-- [ ] **T5.1 — Implementación del servicio**
+- [x] **T5.1 — Implementación del servicio**
   - **Pattern**: algoritmo completo en `design.md` §D3 (guard de estado →
     transacción con reintegro+historial+marca de reembolso → llamada externa
     FUERA de la tx → notificación best-effort → reporte final re-consultado)
