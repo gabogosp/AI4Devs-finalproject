@@ -45,6 +45,9 @@ jobs:
       # El fallback de JWT minteado está prohibido en CI: la suite debe ejercitar
       # el login real (testing-standards §14.2). Si el seam se rompe, CI falla.
       QA_AUTH_STRICT: 'true'
+      # US-010/ADR-0006: sin esto, POST /v1/checkout/simulate-payment no existe
+      # y `pago-webhook.feature` falla con 404 en vez de confirmar el pago.
+      PAYMENTS_SIMULATED_ENABLED: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -53,6 +56,28 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
 
+      # La suite de aceptación (Cucumber) visita páginas con Playwright
+      # (`CatalogWorld.visitar`, `acceptance/steps/world.ts`) — no sólo los
+      # steps de E2E/a11y de más abajo. Sin este install, TODO escenario que
+      # visite una página falla con "Executable doesn't exist" apenas arranca
+      # el browser, antes de que ninguna aserción de negocio corra. Movido acá
+      # (antes vivía sólo condicionado a `qa/e2e/*.config.ts`, demasiado tarde
+      # para la suite de aceptación) — instalar una vez cubre ambos consumidores.
+      - name: Playwright browsers
+        run: pnpm --filter @dsm/qa exec playwright install --with-deps chromium
+
+      # `qa/acceptance/steps/enriquecimiento.steps.ts` lee `GEMINI_API_KEY` de
+      # un `.env` en la raíz a nivel de MÓDULO (corre al importar el step,
+      # antes de que cualquier escenario arranque) — sin este archivo, cucumber
+      # revienta con ENOENT al cargar el support code y NINGÚN escenario llega
+      # a ejecutar, ni siquiera los que no tocan enriquecimiento. El valor no
+      # necesita ser una key real: el step sólo la usa como placeholder
+      # "inválido conocido" para afirmar que nunca aparece en una respuesta
+      # (SC-005-N4) — mismo criterio que el `.env` que RUN-MVP.md hace crear a
+      # mano en local.
+      - name: .env para el support code de QA (GEMINI_API_KEY placeholder)
+        run: echo "GEMINI_API_KEY=ci-fake-gemini-key-invalid" > .env
+
       - name: Generate Prisma client
         run: pnpm --filter @dsm/db exec prisma generate
 
@@ -60,11 +85,25 @@ jobs:
         run: pnpm --filter @dsm/db migrate:deploy
 
       - name: Build + arranque de la API
+        # `qa/scripts/api-up.sh` (no un `node dist/main.js` crudo) — arranca la
+        # API con los mismos valores que corrige RUN-MVP.md §"Correr la suite
+        # de QA": sin `CORS_ALLOWED_ORIGINS` la PRIMERA escritura del carrito
+        # pasa y la SEGUNDA muere en 403 (falla como si el producto estuviera
+        # roto, no como un problema de entorno); sin `AUTH_COOKIE_SECURE=false`
+        # una cookie `Secure` no vuelve por http. Roto desde 2026-09-02 (el
+        # `node` directo no seteaba ninguna de las dos) — 5+ corridas nightly
+        # fallando sin que las suites E2E/BDD/a11y llegaran a ejecutar un solo
+        # escenario.
+        # `qa/support/api-log.ts` (SC-010-H2 y sus C-2/H-4 hermanas de
+        # `ordenes.feature`) lee el stdout de la API desde `QA_API_LOG_FILE`
+        # (default `/tmp/dsm-qa-api-us010.log`) para observar los avisos de
+        # `NotificationPort` — sin redirigir el stdout ahí, esos escenarios
+        # fallan con "no se pudo leer" antes de llegar a afirmar nada.
+        env:
+          QA_API_PORT: '3000'
         run: |
           pnpm --filter @dsm/api build
-          # `nest start` busca dist/main; el build de nest queda anidado en
-          # dist/apps/api/src/main.js → se arranca el entry real directamente.
-          (node apps/api/dist/apps/api/src/main.js &)
+          bash qa/scripts/api-up.sh > /tmp/dsm-qa-api-us010.log 2>&1 &
           npx wait-on -t 120000 http://localhost:3000/health
 
       # El fixture de auth es la base de todas las suites: si el login real no
@@ -72,18 +111,14 @@ jobs:
       - name: Fixture de auth — exige login real
         run: pnpm --filter @dsm/qa exec tsx support/admin-auth.smoke.ts --require-real
 
-      # ---- Suites auto-gated: se saltean hasta que sus archivos existan ----
-
-      - name: Funcional API (Newman)
-        if: hashFiles('qa/functional/*.postman_collection.json') != ''
-        run: pnpm --filter @dsm/qa test:functional
-
-      - name: Aceptación BDD (Cucumber)
-        if: hashFiles('qa/acceptance/**/*.feature') != ''
-        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred and not @frontend"
-
-      # E2E y a11y corren en el browser contra el FE: necesitan apps/web arriba,
-      # no sólo la API (faltaba en la versión original de este workflow).
+      # La suite de aceptación (Cucumber) YA visita páginas reales del FE vía
+      # Playwright (`browse.feature`, `CatalogWorld.visitar`) — no es exclusivo
+      # de "E2E cross-stack"/"Accesibilidad" de más abajo. Este paso vivía
+      # DESPUÉS de "Aceptación BDD" en el orden original: cada escenario que
+      # visitara una página fallaba con `ERR_CONNECTION_REFUSED` (el front ni
+      # siquiera había arrancado todavía), no por CORS ni por env vars —
+      # cuarto bloqueo encontrado verificando los fixes anteriores contra el
+      # workflow real.
       - name: Build + arranque del front
         # E2E y a11y corren TAMBIÉN en PR (decisión 2026-08-18): antes sólo iban
         # en nightly, y un PR que movió el panel bajo /admin rompió la suite L3
@@ -112,9 +147,53 @@ jobs:
           (pnpm --filter @dsm/web start &)
           npx wait-on -t 120000 http://localhost:3100
 
+      # ---- Suites auto-gated: se saltean hasta que sus archivos existan ----
+
+      - name: Funcional API (Newman)
+        if: hashFiles('qa/functional/*.postman_collection.json') != ''
+        run: pnpm --filter @dsm/qa test:functional
+
+      - name: Aceptación BDD (Cucumber)
+        # `@blocked` (enriquecimiento.feature SC-005-H1/H2/C3/N2/N3,
+        # pago-webhook.feature SC-010-N2): escenarios que necesitan una
+        # credencial real (Gemini/MercadoPago) que CI no tiene y nunca va a
+        # tener — están tageados así a propósito (design.md §D-QA1,
+        # proposal.md OQ-QA-005-1) para no fingir que corren. `not @deferred`
+        # sólo, sin `not @blocked`, los dejaba pasar y fallar como si fueran
+        # un defecto real.
+        #
+        # `@frontend` (checkout.feature SC-008-X3, #106): cross-feature que
+        # requiere renderizado real de UI — vive en Playwright
+        # (qa/e2e/checkout.spec.ts), sin step defs acá a propósito. El CLI
+        # `--tags` de este paso PISA el default de `cucumber.mjs` (no se
+        # combina, verificado por #106) — hay que repetir la exclusión acá,
+        # no alcanza con tocar sólo el config.
+        #
+        # Invoca `cucumber-js` DIRECTO, con `cd qa` (no `pnpm --filter @dsm/qa
+        # test:acceptance -- --tags ...`): `pnpm --filter <pkg> <script> --
+        # <args>` inserta un `--` LITERAL en el comando final (verificado
+        # contra el log real de este mismo workflow), y `cucumber-js` (yargs)
+        # trata ese `--` como "fin de opciones" — todo lo que sigue,
+        # `--tags` incluido, se descarta en silencio. Confirmado en local:
+        # 178 escenarios (el filtro nunca aplicó) vía `pnpm --filter`, 172
+        # (178 − 6 `@blocked`, el número correcto) invocando `cucumber-js`
+        # directo con el mismo `--tags`.
+        #
+        # `pnpm --filter @dsm/qa exec` (sin `run`) NO cambia el cwd al
+        # paquete filtrado — el proceso queda en la raíz del repo, y
+        # `NODE_OPTIONS=--import tsx` no resuelve `tsx` desde ahí
+        # (`ERR_MODULE_NOT_FOUND`, visto en el run real). `cd qa` explícito
+        # es el mismo cwd que ya usaba el script npm original.
+        if: hashFiles('qa/acceptance/**/*.feature') != ''
+        env:
+          NODE_OPTIONS: '--import tsx'
+        run: cd qa && npx cucumber-js --config acceptance/cucumber.mjs --tags "not @deferred and not @blocked and not @frontend"
+
       - name: E2E cross-stack (Playwright)
+        # Browsers ya instalados arriba (paso "Playwright browsers") — instalar
+        # de nuevo acá sería un no-op lento, no una corrección.
         if: hashFiles('qa/e2e/playwright.config.ts') != ''
-        run: pnpm --filter @dsm/qa exec playwright install --with-deps chromium && pnpm --filter @dsm/qa test:e2e
+        run: pnpm --filter @dsm/qa test:e2e
 
       - name: Accesibilidad (axe-core)
         if: hashFiles('qa/e2e/playwright.a11y.config.ts') != ''
