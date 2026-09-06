@@ -158,7 +158,7 @@ language: es
 
 ## Fase 3: Repositorio — `ReportsRepository` (3 queries `$queryRaw`) — 1,3 h
 
-- [ ] T3.1 `salesTimeseries` (AC-1, AC-8)
+- [x] T3.1 `salesTimeseries` (AC-1, AC-8)
   - **Pattern**: `$queryRaw` con template tag parametrizado — `per
     search/search.repository.ts` (único precedente del repo) y `per
     design.md §D6`. `granularity` elige entre 3 literales SQL fijos
@@ -190,7 +190,7 @@ language: es
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=reports.repository`
     (integration contra Postgres real)
 
-- [ ] T3.2 `topProducts` (AC-2, AC-8)
+- [x] T3.2 `topProducts` (AC-2, AC-8)
   - **Pattern**: agrupa por el snapshot de `order_items`
     (`product_name`/`product_sku`), sin `JOIN` a `products` — `per
     design.md §D6` (trade-off documentado: un producto renombrado a mitad de
@@ -219,7 +219,7 @@ language: es
     sólo `[A]`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=reports.repository`
 
-- [ ] T3.3 `statusBreakdown` (AC-3, AC-8)
+- [x] T3.3 `statusBreakdown` (AC-3, AC-8)
   - **Pattern**: `GROUP BY o.status` — sólo emite filas para estados con al
     menos una orden en el rango (el zero-fill de estados ausentes es
     responsabilidad del service, T5.3 — capas, `backend-node-standards.md §2`).
