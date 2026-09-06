@@ -5,7 +5,7 @@ slug: actualizacion-dependencias-frontend
 parent-prd: docs/product/prd.md
 prd-capacity: null
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: High
 estimate-tshirt: S
 story_points_traditional: 5
@@ -16,6 +16,7 @@ created: 2026-08-23
 updated: 2026-09-06
 ready-at: 2026-09-06
 in-progress-at: 2026-09-06
+done-at: 2026-09-06
 authored-by: Gabriel Suarez
 disciplines: [FE, QA]
 linear-issue-id: null

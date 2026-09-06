@@ -2643,12 +2643,13 @@
   us-id: US-022
   discipline: frontend-web
   variant: null
-  status: merged   # PR #95 mergeado 2026-09-06T16:21:42Z (verificado gh pr view --json
-  # mergedAt). 24/24 tasks + verification suite-level cerradas. T4.1/T4.2 (ver nota
-  # más abajo) resueltas con investigación completa (bisect + spike + 4 fixes de
-  # test-hygiene) — ninguna quedó bloqueada al final. Suite 996/996 (12 corridas
-  # limpias), typecheck/lint limpios, audit:gate exit 0 (2 hallazgos con exclusión
-  # nominal, ambos dev/QA-only). Pendiente su propio /archive-change.
+  status: archived   # /archive-change 2026-09-06: PR #95 mergeado 2026-09-06T16:21:42Z.
+  # 24/24 tasks + verification suite-level cerradas. T4.1/T4.2 (ver nota más abajo)
+  # resueltas con investigación completa (bisect + spike + 4 fixes de test-hygiene) —
+  # ninguna quedó bloqueada al final. Suite 996/996 (12 corridas limpias), typecheck/
+  # lint limpios, audit:gate exit 0 (2 hallazgos con exclusión nominal, ambos
+  # dev/QA-only). Sin capacidades/contratos nuevos que sincronizar a openspec/specs/
+  # (bump de dependencias puro, sin superficie visible).
   parent-us: docs/user-stories/US-022-actualizacion-dependencias-frontend.md
   linear-task-id: null
   audit-baseline: null
@@ -2689,16 +2690,18 @@
   pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: 2026-09-06T16:21:42Z
-  archived-at: null
-  archive-path: null
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-022-actualizacion-dependencias-frontend-web
 
 - name: US-022-actualizacion-dependencias-qa
   us-id: US-022
   discipline: qa
   variant: null
-  status: in-review   # /commit 2026-09-06: PR #102 abierto contra main. 14/14 tasks +
-  # verification suite-level cerradas. 278 tests/escenarios revalidados (172 BDD + 68
-  # E2E + 38 a11y), cobertura sin regresión (≥242 documentado). 4 hallazgos [Deferred —
+  status: archived   # /archive-change 2026-09-06: PR #102 mergeado 2026-09-06T18:53:37Z
+  # (auto-merge). 14/14 tasks + verification suite-level cerradas. 278 tests/escenarios
+  # revalidados (172 BDD + 68 E2E + 38 a11y), cobertura sin regresión (≥242 documentado).
+  # Sin capacidades/contratos nuevos que sincronizar (revalidación pura, sin specs ni
+  # componentes tocados). 4 hallazgos [Deferred —
   # owner: usuario] en proposal.md — TC-731 (`carrito.spec.ts`) inicialmente sospechoso
   # de regresión del bump de next, DESCARTADO vía bisect quirúrgico (falla idéntica 3/3
   # en next 15.1.6 y 15.5.21): bug de foco/a11y preexistente en el carrito, ajeno a
@@ -2740,9 +2743,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/102
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T18:53:37Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-022-actualizacion-dependencias-qa
 
 - name: US-020-borrado-cuenta-datos-personales-backend
   us-id: US-020
