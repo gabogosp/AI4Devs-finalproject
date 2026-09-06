@@ -48,7 +48,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
   - **Pattern**: `"sharp": "^0.35.0"` en `dependencies` (NO en `pnpm.overrides` — es una dependencia directa nueva, no un override de transitiva) — `per design.md D2`.
   - **Exit criterion**: `apps/web/package.json` declara `sharp` en `dependencies`; `pnpm-lock.yaml` resuelve `sharp@0.35.0` (o superior dentro del rango) como dependencia directa de `apps/web`, no como `optionalDependencies` implícito de `next`.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web ls sharp`
-- [ ] T2.4 Bump `postcss` (devDependency directa de `apps/web`) a `8.5.18`.
+- [x] T2.4 Bump `postcss` (devDependency directa de `apps/web`) a `8.5.18`.
   - **Exit criterion**: `apps/web/package.json` declara `"postcss": "8.5.18"` en `devDependencies`.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web ls postcss`
 - [ ] T2.5 Agregar `postcss: "8.5.18"` a `pnpm.overrides` en el `package.json` raíz, para forzar también la copia interna que `next` fija (hoy `8.4.31`).
