@@ -93,7 +93,8 @@ test.describe('TC-150: accesibilidad de registro y login', () => {
     await page.keyboard.type(cuenta.password);
     await page.keyboard.press('Enter');
 
-    await expect(page).toHaveURL(/\/mi-cuenta$/);
+    // Post-login → home (decisión del PO, 2026-09-06).
+    await expect(page).toHaveURL('/');
   });
 
   test('TC-150e: el error de validación queda asociado a su campo por nombre accesible', async ({

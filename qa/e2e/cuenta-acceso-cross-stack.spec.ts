@@ -107,7 +107,8 @@ test.describe('SC-014-X1 — acceso de cuenta cross-stack (navegador real + API 
         page.getByRole('button', { name: /^ingresar$/i }).click(),
       ]);
       expect(loginRes.status(), `vuelta ${vuelta}`).toBe(200);
-      await expect(page, `vuelta ${vuelta}`).toHaveURL(/\/mi-cuenta$/);
+      // Post-login → home (decisión del PO, 2026-09-06).
+      await expect(page, `vuelta ${vuelta}`).toHaveURL('/');
 
       await page.getByRole('button', { name: /cerrar sesión/i }).first().click();
       await expect(page.getByRole('link', { name: /ingresar/i }).first()).toBeVisible();

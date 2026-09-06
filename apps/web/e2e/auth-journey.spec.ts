@@ -55,7 +55,10 @@ test.describe('Journey de cuenta (T4.1)', () => {
     await page.getByLabel(/email/i).fill('ana@example.com');
     await page.getByLabel(/contraseña/i).fill('Contrasena-Valida-1');
     await page.getByRole('button', { name: /^ingresar$/i }).click();
-    await expect(page).toHaveURL(/\/mi-cuenta$/);
+    // Post-login → home (decisión del PO, 2026-09-06 — ver
+    // openspec/specs/cuentas/decisions.md). El botón "cerrar sesión" está en
+    // el header de toda página pública, así que sigue alcanzable acá igual.
+    await expect(page).toHaveURL('/');
 
     const [res] = await Promise.all([
       page.waitForResponse('**/v1/auth/logout'),
@@ -76,7 +79,7 @@ test.describe('Journey de cuenta (T4.1)', () => {
       await page.getByLabel(/email/i).fill('ana@example.com');
       await page.getByLabel(/contraseña/i).fill('Contrasena-Valida-1');
       await page.getByRole('button', { name: /^ingresar$/i }).click();
-      await expect(page, `vuelta ${vuelta}`).toHaveURL(/\/mi-cuenta$/);
+      await expect(page, `vuelta ${vuelta}`).toHaveURL('/');
 
       await page.getByRole('button', { name: /cerrar sesión/i }).first().click();
       await expect(page.getByRole('link', { name: /ingresar/i }).first()).toBeVisible();
