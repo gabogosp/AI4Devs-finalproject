@@ -360,6 +360,12 @@
   # in-review — 20/20 tasks (12 fases), suite completa apps/api 225/225 suites/1877/1877
   # tests, lint+typecheck+spectral limpios, PR #66 abierto. `status` de la US se queda en
   # `In Progress` (FE/QA todavía sin planificar).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-frontend-web): backend (#66)
+  # mergeado a main; FE (segunda disciplina) llega a in-review — 17/17 tasks (7 fases),
+  # suite completa apps/web 153/153 archivos/968/968 tests, lint+typecheck limpios,
+  # codegen fresco, PR #67 abierto. `status` de la US se queda en `In Progress` (QA
+  # todavía sin planificar).
 - id: US-014
   slug: registro-login
   status: In Progress
