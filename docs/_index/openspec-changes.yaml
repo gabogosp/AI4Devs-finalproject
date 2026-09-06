@@ -2167,16 +2167,19 @@
   us-id: US-015
   discipline: qa
   variant: null
-  status: draft
+  status: in-review   # /commit 2026-09-06: PR #79. Automatizables 100% verdes (BDD 16/16,
+  # contract 9/9, k6 dentro de NFR). Único ítem manual (QA-015-EXP-1, charter) escrito,
+  # ejecución humana pendiente. Sin bloqueados (US-015 no depende de proveedor externo).
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 4   # US §7 presupuesta QA-US-015 en 3-4h; este plan (14 tasks,
   # 7 fases + pre-requisitos) entra en el techo del rango.
-  assignee: sin-asignar  # planificado; 0 tasks cerradas todavía
+  assignee: claude-code
   branch: feat/US-015-historial-compras-qa
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/79
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
   archived-at: null
