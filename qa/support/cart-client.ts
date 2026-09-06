@@ -131,11 +131,23 @@ export class Invitado {
    * `POST /v1/checkout` (US-008) — convierte el carrito del invitado en una
    * orden real `pending_payment`. Reusa el mismo `CartCsrfGuard` que las
    * escrituras del carrito (US-023 §8): mismo double-submit, mismo `Origin`.
+   *
+   * `conCsrf: false` (US-008 SC-008-X2) omite el header a propósito, igual que
+   * `fijar()`, para probar que el guard rechaza. `extra` (US-008 SC-008-N2)
+   * mezcla propiedades adicionales en el cuerpo — nunca tipadas en
+   * `CheckoutBody` a propósito, porque son las que el `ValidationPipe`
+   * (`forbidNonWhitelisted`) debe rechazar.
    */
-  async checkout(body: CheckoutBody): Promise<Respuesta<CheckoutCreated>> {
-    const token = await this.csrf();
+  async checkout(
+    body: CheckoutBody,
+    {
+      conCsrf = true,
+      extra,
+    }: { conCsrf?: boolean; extra?: Record<string, unknown> } = {},
+  ): Promise<Respuesta<CheckoutCreated>> {
+    const token = conCsrf ? await this.csrf() : undefined;
     const res = await this.ctx.post('/v1/checkout', {
-      data: body,
+      data: extra ? { ...body, ...extra } : body,
       headers: token ? { 'x-csrf-token': token } : {},
     });
     return {

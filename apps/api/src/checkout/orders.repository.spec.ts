@@ -582,4 +582,35 @@ describe('OrdersRepository (integration)', () => {
     expect(nuevaEnBase.status).toBe('pending_payment');
     expect(nuevaEnBase.cancelled_at).toBeNull();
   });
+
+  it.each(['new', 'preparing', 'ready'])(
+    'transitionToCancelledIfActive: sobre %s, cancela, setea cancelled_at e incluye items (US-013 T2.2)',
+    async (status) => {
+      const creada = await crearOrdenConEstado(`cancel-active-${status}`, status);
+
+      const resultado = await prisma.$transaction((tx) =>
+        repo.transitionToCancelledIfActive(creada.id, tx),
+      );
+
+      expect(resultado?.status).toBe('cancelled');
+      expect(resultado?.cancelled_at).not.toBeNull();
+      expect(resultado?.items.length).toBeGreaterThan(0);
+    },
+  );
+
+  it.each(['delivered', 'cancelled', 'pending_payment'])(
+    'transitionToCancelledIfActive: sobre %s, devuelve null y no escribe nada (US-013 AC-7/AC-8, T2.2)',
+    async (status) => {
+      const creada = await crearOrdenConEstado(`cancel-active-noop-${status}`, status);
+
+      const resultado = await prisma.$transaction((tx) =>
+        repo.transitionToCancelledIfActive(creada.id, tx),
+      );
+
+      expect(resultado).toBeNull();
+      const enBase = await prisma.order.findUniqueOrThrow({ where: { id: creada.id } });
+      expect(enBase.status).toBe(status);
+      expect(enBase.cancelled_at).toBeNull();
+    },
+  );
 });

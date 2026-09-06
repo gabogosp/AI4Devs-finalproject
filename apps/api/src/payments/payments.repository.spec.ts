@@ -223,4 +223,128 @@ describe('PaymentsRepository.createManualPayment', () => {
       expect(lista).toHaveLength(2);
     });
   });
+
+  describe('findApprovedByOrderId (US-013 T2.3)', () => {
+    it('encuentra el pago approved de la orden', async () => {
+      const pago = await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-approved-1',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.findApprovedByOrderId(ordenId);
+
+      expect(resultado?.id).toBe(pago.id);
+    });
+
+    it('sin pago approved, devuelve null', async () => {
+      await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-not-approved',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.findApprovedByOrderId(ordenId);
+
+      expect(resultado).toBeNull();
+    });
+  });
+
+  describe('findLatestByOrderId (US-013 T2.3)', () => {
+    it('devuelve el pago más reciente de la orden, cualquier estado', async () => {
+      const viejo = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-latest-old',
+        amountArsCents: 100_000,
+      });
+      // `created_at` explícito: dos creates consecutivos en el mismo test pueden
+      // caer en el mismo milisegundo, y el orden por timestamp dejaría de ser
+      // determinístico (mismo criterio que `cancelAbandonedPending` en
+      // orders.repository.spec.ts).
+      await prisma.payment.update({
+        where: { id: viejo.id },
+        data: { created_at: new Date(Date.now() - 1000 * 60) },
+      });
+      const masReciente = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-latest-new',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.findLatestByOrderId(ordenId);
+
+      expect(resultado?.id).toBe(masReciente.id);
+    });
+
+    it('sin ningún pago, devuelve null', async () => {
+      const resultado = await payments.findLatestByOrderId(ordenId);
+      expect(resultado).toBeNull();
+    });
+  });
+
+  describe('markApprovedAsRefundPending (US-013 T2.3)', () => {
+    it('sobre una fila approved, la marca refund_pending', async () => {
+      const pago = await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-mark-pending',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.markApprovedAsRefundPending(pago.id);
+
+      expect(resultado?.status).toBe('refund_pending');
+    });
+
+    it('sobre una fila ya refunded, devuelve null y no la toca (guardado)', async () => {
+      const pago = await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-already-refunded',
+        amountArsCents: 100_000,
+      });
+      await payments.markApprovedAsRefundPending(pago.id);
+      // ahora está refund_pending, no approved.
+
+      const resultado = await payments.markApprovedAsRefundPending(pago.id);
+
+      expect(resultado).toBeNull();
+      const enBase = await prisma.payment.findUniqueOrThrow({ where: { id: pago.id } });
+      expect(enBase.status).toBe('refund_pending');
+    });
+  });
+
+  describe('markApprovedAsRefunded (US-013 T2.3)', () => {
+    it('sobre una fila approved, la marca refunded directo (US-013 AC-5)', async () => {
+      const pago = await payments.createApprovedPayment({
+        orderId: ordenId,
+        provider: 'simulated_dsm',
+        externalId: 'sim-mark-refunded',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.markApprovedAsRefunded(pago.id);
+
+      expect(resultado?.status).toBe('refunded');
+    });
+
+    it('sobre una fila que NO está approved, devuelve null y no la toca (guardado)', async () => {
+      const pago = await payments.createRefundPendingPayment({
+        orderId: ordenId,
+        provider: 'mercadopago',
+        externalId: 'mp-not-approved-2',
+        amountArsCents: 100_000,
+      });
+
+      const resultado = await payments.markApprovedAsRefunded(pago.id);
+
+      expect(resultado).toBeNull();
+      const enBase = await prisma.payment.findUniqueOrThrow({ where: { id: pago.id } });
+      expect(enBase.status).toBe('refund_pending');
+    });
+  });
 });

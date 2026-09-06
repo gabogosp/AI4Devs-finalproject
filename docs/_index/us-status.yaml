@@ -137,7 +137,10 @@
   blocked_by: [US-003]
 - id: US-008
   slug: checkout-guest
-  status: In Progress
+  status: Done   # /develop-qa US-008 (PR #64, mergeado 2026-09-06) — 3/3 disciplinas
+                 # resueltas: BE (#11, archivado), FE (#23, archivado), QA (#64, Mode A
+                 # inline en el backend ya archivado, sin change `-qa` propio que archivar).
+                 # done-at abajo.
   priority: High
   prd-capacity: 4
   disciplines: [BE, FE, QA]
@@ -158,6 +161,22 @@
   # está archivado. `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca
   # se planificó (no existe openspec/changes/US-008-*-qa/ en ningún estado). Se queda en
   # `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
+  #
+  # NOTA (2026-09-05, /develop-qa US-008): la nota de arriba estaba desactualizada — el
+  # `qa-plan.md` sí existía (Mode A, inline en `US-008-checkout-guest-backend/`, escrito
+  # 2026-08-23, regenerado 2026-08-30), sólo nunca se había ejecutado. Ejecutado ahora
+  # contra el backend+frontend-web ya mergeados: 14/14 escenarios de aceptación, 5/5 casos
+  # de contract testing, k6 p95 ≈4ms (vs. umbral 500ms), 2/2 casos del E2E Playwright
+  # cross-stack (incluida SC-008-X3, enlaces de consentimiento reales) — todo verde, sin
+  # defectos en la implementación. Con esto BE + FE + QA de US-008 están completos (QA no
+  # requiere archive-change separado, Mode A ya vive en el directorio archivado). `status`
+  # queda en `In Progress` — la transición a `Done` la aplica quien mergee este PR.
+  # `blocked_by` sin tocar (propiedad de otro agente).
+  #
+  # NOTA (2026-09-06, PR #64 mergeado): las 3 disciplinas están resueltas — BE y FE
+  # archivados, QA ejecutada y verde (Mode A, sin change `-qa` propio que archivar, mismo
+  # caso que US-021 QA). `status` avanza a `Done`. `blocked_by` sin tocar.
+  done-at: 2026-09-06
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
@@ -327,7 +346,7 @@
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
-  status: Ready
+  status: In Progress
   priority: Medium
   prd-capacity: 11
   disciplines: [BE, FE, QA]
@@ -335,7 +354,20 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
-  blocked_by: [US-010, US-012]
+  in-progress-at: 2026-09-06        # first plan invocation (backend-node-developer)
+  in-review-at: 2026-09-06          # backend (primera disciplina) — PR #66 abierto, 20/20 tasks + suite completa 225/225 verde
+  blocked_by: []
+  # US-010 y US-012 (bloqueantes declaradas) ya están archivadas — MercadoPagoClient.refund,
+  # refund_pending/retry-refunds, NotificationPort, order_status_history y el CHECK de 6
+  # estados de orders.status ya existen. Plan de backend en
+  # openspec/changes/US-013-cancelacion-reembolso-backend/ — sin migración de Prisma
+  # (design.md §D2), vive en apps/api/src/payments/ (no en orders/) para preservar la
+  # dirección acíclica payments → orders ya establecida (design.md §D1).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-backend): backend llega a
+  # in-review — 20/20 tasks (12 fases), suite completa apps/api 225/225 suites/1877/1877
+  # tests, lint+typecheck+spectral limpios, PR #66 abierto. `status` de la US se queda en
+  # `In Progress` (FE/QA todavía sin planificar).
 - id: US-014
   slug: registro-login
   status: In Progress

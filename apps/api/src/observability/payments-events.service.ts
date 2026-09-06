@@ -1,7 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 
-export type PaymentsRejectedReason = 'not-pending-payment' | 'insufficient-stock';
+export type PaymentsRejectedReason =
+  | 'not-pending-payment'
+  | 'insufficient-stock'
+  | 'already-delivered';
 
 export type PaymentsProvider = 'mercadopago' | 'simulated_dsm';
 
@@ -14,7 +17,8 @@ export type PaymentsEventName =
   | 'payments.webhook_received'
   | 'payments.webhook_signature_rejected'
   | 'payments.reconcile_recovered'
-  | 'payments.cleanup_cancelled';
+  | 'payments.cleanup_cancelled'
+  | 'payments.owner_cancelled';
 
 /**
  * Eventos de negocio de la confirmación de pago manual (US-023, `design.md`
@@ -72,6 +76,12 @@ export class PaymentsEventsService {
   emitRefundFailed(orderId: string, paymentId: string): void {
     this.metrics?.increment('payments', 'payments.refund_failed');
     this.logger.log({ event: 'payments.refund_failed', entity_id: orderId, payment_id: paymentId });
+  }
+
+  /** El dueño canceló manualmente una orden pagada no entregada (US-013 AC-1/AC-10). */
+  emitOwnerCancelled(orderId: string): void {
+    this.metrics?.increment('payments', 'payments.owner_cancelled');
+    this.logger.log({ event: 'payments.owner_cancelled', entity_id: orderId });
   }
 
   /** Webhook recibido, ANTES de verificar la firma (US-010 D11). */

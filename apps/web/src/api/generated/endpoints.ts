@@ -13,6 +13,7 @@ import type {
   AdminReportsSales,
   AdminReportsSummary,
   AdminReportsTopProducts,
+  CancelOrderResponse,
   CartEnvelope,
   CartRateLimitedResponse,
   Category,
@@ -1621,6 +1622,65 @@ export const listPendingPaymentOrders = async ( options?: Parameters<typeof cust
 
 
 
+export type cancelOrderResponse200 = {
+  data: CancelOrderResponse
+  status: 200
+}
+
+export type cancelOrderResponse401 = {
+  data: ProblemResponse
+  status: 401
+}
+
+export type cancelOrderResponse403 = {
+  data: ProblemResponse
+  status: 403
+}
+
+export type cancelOrderResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type cancelOrderResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type cancelOrderResponseSuccess = (cancelOrderResponse200) & {
+  headers: Headers;
+};
+export type cancelOrderResponseError = (cancelOrderResponse401 | cancelOrderResponse403 | cancelOrderResponse404 | cancelOrderResponse409) & {
+  headers: Headers;
+};
+
+export type cancelOrderResponse = (cancelOrderResponseSuccess | cancelOrderResponseError)
+
+export const getCancelOrderUrl = (id: string,) => {
+
+
+
+
+  return `/v1/admin/orders/${id}/cancel`
+}
+
+/**
+ * Transiciona new/preparing/ready -> cancelled, reintegra el stock de cada línea (inverso de ADR-0008), registra el cambio en el historial de estados y gestiona el reembolso del pago aprobado (real vía MercadoPago, no-op para simulated_dsm/manual). Sin body: todo sale de la orden y del pago encontrados server-side, y quién cancela sale del JWT (sub). Idempotente (AC-8): repetir la llamada sobre una orden ya cancelled responde 200 con el mismo shape, sin reintegrar stock ni reintentar el reembolso una segunda vez.
+ * @summary Cancelar una orden pagada no entregada, con reembolso y reintegro de stock (US-013 AC-1..AC-10)
+ */
+export const cancelOrder = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<cancelOrderResponse> => {
+
+  return customFetch<cancelOrderResponse>(getCancelOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export type anonymizeOrderResponse200 = {
   data: OrderAnonymizationResult
   status: 200
@@ -2541,6 +2601,8 @@ export const getConfirmManualPaymentResponseMock = (overrideResponse: Partial<Ex
 
 export const getListPendingPaymentOrdersResponseMock = (): PendingPaymentOrder[] => (Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})))
 
+export const getCancelOrderResponseMock = (overrideResponse: Partial<Extract<CancelOrderResponse, object>> = {}): CancelOrderResponse => ({id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z', buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), anonymized_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), anonymization_reason: faker.helpers.arrayElement([faker.helpers.arrayElement(['retention_policy','requested'] as const), null]), refund: {status: faker.helpers.arrayElement(['refunded','refund_pending','not_applicable'] as const), provider: faker.helpers.arrayElement([faker.helpers.arrayElement(['mercadopago','simulated_dsm','manual'] as const), null])}, ...overrideResponse})
+
 export const getAnonymizeOrderResponseMock = (overrideResponse: Partial<Extract<OrderAnonymizationResult, object>> = {}): OrderAnonymizationResult => ({order_id: faker.string.uuid(), anonymized_at: faker.date.past().toISOString().slice(0, 19) + 'Z', anonymization_reason: faker.helpers.arrayElement(['retention_policy','requested'] as const), ...overrideResponse})
 
 export const getRunOrderRetentionSweepResponseMock = (overrideResponse: Partial<Extract<RetentionSweepResult, object>> = {}): RetentionSweepResult => ({anonymized_count: faker.number.int({min: 0}), reason: faker.helpers.arrayElement(['retention_policy'] as const), ...overrideResponse})
@@ -2900,6 +2962,18 @@ export const getListPendingPaymentOrdersMockHandler = (overrideResponse?: Pendin
   }, options)
 }
 
+export const getCancelOrderMockHandler = (overrideResponse?: CancelOrderResponse | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<CancelOrderResponse> | CancelOrderResponse), options?: RequestHandlerOptions) => {
+  return http.post('*/admin/orders/:id/cancel', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getCancelOrderResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
 export const getAnonymizeOrderMockHandler = (overrideResponse?: OrderAnonymizationResult | ((info: Parameters<Parameters<typeof http.post>[1]>[0]) => Promise<OrderAnonymizationResult> | OrderAnonymizationResult), options?: RequestHandlerOptions) => {
   return http.post('*/admin/orders/:id/anonymize', async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
 
@@ -3100,6 +3174,7 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getCreateGuestCheckoutMockHandler(),
   getConfirmManualPaymentMockHandler(),
   getListPendingPaymentOrdersMockHandler(),
+  getCancelOrderMockHandler(),
   getAnonymizeOrderMockHandler(),
   getRunOrderRetentionSweepMockHandler(),
   getCreateImportMockHandler(),

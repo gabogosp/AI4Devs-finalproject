@@ -790,6 +790,40 @@ paths:
                 items: { $ref: '#/components/schemas/PendingPaymentOrder' }
         '401': { $ref: '#/components/responses/Problem' }
         '403': { $ref: '#/components/responses/Problem' }
+  /admin/orders/{id}/cancel:
+    post:
+      operationId: cancelOrder
+      tags: [admin-payments]
+      summary: Cancelar una orden pagada no entregada, con reembolso y reintegro de stock (US-013 AC-1..AC-10)
+      description: >-
+        Transiciona new/preparing/ready -> cancelled, reintegra el stock de
+        cada línea (inverso de ADR-0008), registra el cambio en el historial
+        de estados y gestiona el reembolso del pago aprobado (real vía
+        MercadoPago, no-op para simulated_dsm/manual). Sin body: todo sale de
+        la orden y del pago encontrados server-side, y quién cancela sale del
+        JWT (sub). Idempotente (AC-8): repetir la llamada sobre una orden ya
+        cancelled responde 200 con el mismo shape, sin reintegrar stock ni
+        reintentar el reembolso una segunda vez.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Orden cancelada (o ya lo estaba — mismo shape, AC-8).
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/CancelOrderResponse' } }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404':
+          description: '`dsm:payments/order-not-found` — la orden no existe, o está pending_payment.'
+          content:
+            application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+        '409':
+          description: '`dsm:payments/order-cannot-be-cancelled` — la orden está delivered (estado terminal).'
+          content:
+            application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
   /admin/orders/{id}/anonymize:
     post:
       operationId: anonymizeOrder
@@ -2128,6 +2162,39 @@ components:
       properties:
         order_number: { type: integer, example: 1042 }
         status: { type: string, enum: [new] }
+    CancelOrderResponse:
+      type: object
+      description: >-
+        Self-contained (US-013 design.md §D6) — no reusa AdminOrderDetail vía
+        $ref: duplicación deliberada, mismo criterio que D13 de
+        pagos/decisions.md (backoff.ts duplicado en vez de importado).
+      required:
+        [id, order_number, buyer_name, total_ars_cents, status, created_at,
+         buyer_email, buyer_phone, fulfillment, items, status_history,
+         anonymized_at, anonymization_reason, refund]
+      properties:
+        id: { type: string, format: uuid }
+        order_number: { type: integer }
+        buyer_name: { type: string }
+        total_ars_cents: { type: integer }
+        status: { type: string, enum: [cancelled] }
+        created_at: { type: string, format: date-time }
+        buyer_email: { type: string }
+        buyer_phone: { type: string }
+        fulfillment: { type: string, enum: [pickup] }
+        items: { type: array, items: { $ref: '#/components/schemas/AdminOrderItem' } }
+        status_history: { type: array, items: { $ref: '#/components/schemas/AdminOrderStatusChange' } }
+        anonymized_at: { type: string, format: date-time, nullable: true }
+        anonymization_reason:
+          type: string
+          nullable: true
+          enum: [retention_policy, requested]
+        refund:
+          type: object
+          required: [status, provider]
+          properties:
+            status: { type: string, enum: [refunded, refund_pending, not_applicable] }
+            provider: { type: string, enum: [mercadopago, simulated_dsm, manual], nullable: true }
     PendingPaymentOrder:
       type: object
       required: [id, order_number, buyer_name, total_ars_cents, created_at]
