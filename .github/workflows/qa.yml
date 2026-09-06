@@ -53,6 +53,18 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
 
+      # `qa/acceptance/steps/enriquecimiento.steps.ts` lee `GEMINI_API_KEY` de
+      # un `.env` en la raíz a nivel de MÓDULO (corre al importar el step,
+      # antes de que cualquier escenario arranque) — sin este archivo, cucumber
+      # revienta con ENOENT al cargar el support code y NINGÚN escenario llega
+      # a ejecutar, ni siquiera los que no tocan enriquecimiento. El valor no
+      # necesita ser una key real: el step sólo la usa como placeholder
+      # "inválido conocido" para afirmar que nunca aparece en una respuesta
+      # (SC-005-N4) — mismo criterio que el `.env` que RUN-MVP.md hace crear a
+      # mano en local.
+      - name: .env para el support code de QA (GEMINI_API_KEY placeholder)
+        run: echo "GEMINI_API_KEY=ci-fake-gemini-key-invalid" > .env
+
       - name: Generate Prisma client
         run: pnpm --filter @dsm/db exec prisma generate
 
