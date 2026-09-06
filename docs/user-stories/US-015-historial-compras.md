@@ -4,7 +4,7 @@ id: US-015
 slug: historial-compras
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: Ready
+status: In Progress
 priority: Medium
 estimate-tshirt: S
 story_points_traditional: 5
@@ -12,7 +12,7 @@ story_points_ai_assisted: 2
 estimation_basis: "BE endpoint listar/detallar órdenes del usuario autenticado (Cohn 2005 §8, 3) + FE página de historial + detalle (Cohn 2005 §8, 5), tomado el dominante × 0.45 (Peng 2023)"
 language: es
 created: 2026-06-15
-updated: 2026-06-15
+updated: 2026-09-06
 ready-at: 2026-06-15
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]

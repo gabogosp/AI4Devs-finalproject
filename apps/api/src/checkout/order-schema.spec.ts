@@ -60,7 +60,12 @@ const INDICES_ESPERADOS: Record<string, string[]> = {
     'orders_access_token_hash_key',
     'orders_order_number_key',
     'orders_status_created_at_idx',
-    'orders_customer_id_idx',
+    // US-015 T0.1: reemplaza `orders_customer_id_idx` (una sola columna) por
+    // el compuesto — mismo patrón que `password_reset_tokens_customer_id_created_at_idx`.
+    // Ningún método de `OrdersRepository` filtraba por `customer_id` solo
+    // (design.md §Trade-offs de US-015), así que el reemplazo no quita
+    // capacidad de consulta a nadie.
+    'orders_customer_id_created_at_idx',
   ],
   order_items: ['order_items_order_id_idx', 'order_items_order_id_product_id_key'],
 };

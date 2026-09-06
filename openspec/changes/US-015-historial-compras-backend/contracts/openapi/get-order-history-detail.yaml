@@ -1,0 +1,120 @@
+openapi: 3.0.3
+info:
+  title: "get-order-history-detail — detalle de una compra propia"
+  version: "v1"
+  description: |
+    Detalle de una orden propia del cliente autenticado (US-015 AC-2): ítems
+    con cantidades y precios, estado actual y retiro en sucursal. La
+    propiedad (`customer_id`) y la ventana de retención (AC-7) se verifican en
+    la misma consulta que resuelve la orden — un `order_number` ajeno o fuera
+    de retención responde 404, indistinguible de "no existe" (IDOR,
+    `threat-modeling-lite`).
+servers:
+  - url: https://api.example.com
+    description: PROD
+  - url: https://api.uat.example.com
+    description: UAT
+
+paths:
+  /v1/me/orders/{order_number}:
+    get:
+      operationId: getOrderHistoryDetail
+      tags: [orders, customer]
+      summary: Detalle de una compra propia
+      security:
+        - customerCookieAuth: []
+      parameters:
+        - name: order_number
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1000 }
+          description: Identificador público legible de la orden ("Pedido #1042").
+        - name: traceparent
+          in: header
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalle de la orden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderHistoryDetail'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/OrderNotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+components:
+  securitySchemes:
+    customerCookieAuth:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: Access JWT de cliente, `httpOnly` — verificado por `CustomerGuard` (fail-closed).
+  schemas:
+    OrderHistoryItem:
+      type: object
+      properties:
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        subtotal_ars_cents: { type: integer }
+    OrderHistoryDetail:
+      type: object
+      properties:
+        order_number: { type: integer }
+        status:
+          type: string
+          enum: [new, preparing, ready, delivered, cancelled]
+        total_ars_cents: { type: integer }
+        created_at: { type: string, format: date-time }
+        fulfillment:
+          type: string
+          description: Modalidad de retiro/entrega (hoy sólo "pickup" en sucursal).
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderHistoryItem'
+  responses:
+    Unauthenticated:
+      description: Sin sesión de cliente válida
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string, default: "dsm:auth/unauthenticated" }
+              title: { type: string }
+              status: { type: integer, default: 401 }
+              detail: { type: string }
+    OrderNotFound:
+      description: >-
+        La orden no existe, no pertenece al cliente autenticado, o quedó fuera
+        de la ventana de retención vigente — las tres causas responden igual.
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string, default: "dsm:checkout/order-not-found" }
+              title: { type: string }
+              status: { type: integer, default: 404 }
+              detail: { type: string }
+    RateLimited:
+      description: Presupuesto `orders_history` agotado
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            properties:
+              type: { type: string }
+              title: { type: string }
+              status: { type: integer, default: 429 }

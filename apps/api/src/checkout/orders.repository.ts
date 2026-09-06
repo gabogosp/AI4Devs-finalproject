@@ -10,6 +10,13 @@ import {
   AnonymizationReason,
 } from './order-anonymization';
 
+/** US-015 — filtro de `listByCustomer`: ventana de retención + paginación. */
+export interface ListOrdersByCustomerFilter {
+  cutoff: Date;
+  limit: number;
+  offset: number;
+}
+
 export interface ListOrdersFilter {
   statusIn: string[];
   sortField: 'order_number' | 'created_at' | 'total_ars_cents';
@@ -28,6 +35,8 @@ export interface CreatePendingOrderLine {
 
 export interface CreatePendingOrderData {
   accessTokenHash: string;
+  /** US-015 — sesión de cliente resuelta por `OptionalCustomerGuard`, si existe. */
+  customerId?: string;
   buyerName: string;
   buyerEmail: string;
   buyerPhone: string;
@@ -59,6 +68,10 @@ export class OrdersRepository {
         return tx.order.create({
           data: {
             access_token_hash: data.accessTokenHash,
+            // US-015 — mismo INSERT que ya existía, sin transacción nueva: la
+            // columna/FK/índice ya están en el schema. `?? null` preserva el
+            // comportamiento actual sin sesión (guest, exactamente como hoy).
+            customer_id: data.customerId ?? null,
             buyer_name: data.buyerName,
             buyer_email: data.buyerEmail,
             buyer_phone: data.buyerPhone,
@@ -92,6 +105,58 @@ export class OrdersRepository {
   findByTokenHash(tokenHash: string): Promise<OrderWithItems | null> {
     return this.prisma.order.findUnique({
       where: { access_token_hash: tokenHash },
+      include: { items: true },
+    });
+  }
+
+  /**
+   * Listado del historial de compras del cliente autenticado (US-015 AC-1,
+   * AC-4, AC-7, design.md §D3). Autorización estructural: `customer_id` y el
+   * corte de retención viajan en el mismo `WHERE` que arma la query — no hay
+   * ruta donde una orden ajena o fuera de ventana llegue a construirse antes
+   * del chequeo (`threat-modeling-lite`, superficie 4). Excluye
+   * `pending_payment`: un checkout iniciado y nunca pagado no es una "compra".
+   */
+  async listByCustomer(
+    customerId: string,
+    filter: ListOrdersByCustomerFilter,
+  ): Promise<{ data: Order[]; total: number }> {
+    const where = {
+      customer_id: customerId,
+      status: { not: 'pending_payment' },
+      created_at: { gte: filter.cutoff },
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.order.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        take: filter.limit,
+        skip: filter.offset,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { data, total };
+  }
+
+  /**
+   * Detalle del historial de compras del cliente autenticado (US-015 AC-2,
+   * AC-4, AC-5, AC-7, design.md §D3). NO distingue "orden inexistente" de
+   * "orden ajena" ni de "fuera de retención" — las tres colapsan a `null` →
+   * 404 (`OrderNotFoundError`), la misma disciplina IDOR que `listByCustomer`:
+   * la propiedad se verifica en la query, nunca en un `if` después de traerla.
+   */
+  findByOrderNumberForCustomer(
+    orderNumber: number,
+    customerId: string,
+    cutoff: Date,
+  ): Promise<OrderWithItems | null> {
+    return this.prisma.order.findFirst({
+      where: {
+        order_number: orderNumber,
+        customer_id: customerId,
+        status: { not: 'pending_payment' },
+        created_at: { gte: cutoff },
+      },
       include: { items: true },
     });
   }

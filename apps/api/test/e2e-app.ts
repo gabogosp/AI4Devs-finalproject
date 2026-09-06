@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { INestApplication, Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
@@ -5,6 +6,8 @@ import { AppConfigModule } from '../src/config/config.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { CatalogEventsModule } from '../src/observability/catalog-events.module';
 import { configureApp } from '../src/bootstrap';
+import { ACCESS_COOKIE } from '../src/auth/cookies';
+import { JWT_AUDIENCE, JWT_ISSUER } from '../src/auth/session.service';
 
 /**
  * Helper e2e-nest: arranca una app con Config validado + Prisma + los módulos
@@ -36,6 +39,23 @@ export function customerToken(): string {
   return jwt.sign({ role: 'customer', sub: 'c1' }, {
     secret: process.env.JWT_SECRET,
   });
+}
+
+/**
+ * Cookie de access de cliente lista para `set('Cookie', ...)` (US-015 T5.4).
+ *
+ * A diferencia de `customerToken()` (que omite `typ`/`jti` A PROPÓSITO, para
+ * probar el rechazo del header en vez de la cookie), este helper firma un
+ * token COMPLETO — `typ: 'access'`, `jti` presente — para pasar `CustomerGuard`
+ * de verdad, vía cookie, como lo haría un navegador real.
+ */
+export function customerAccessCookie(customerId: string): string {
+  const jwt = new JwtService({});
+  const token = jwt.sign(
+    { sub: customerId, role: 'customer', typ: 'access', jti: randomUUID() },
+    { secret: process.env.JWT_SECRET, issuer: JWT_ISSUER, audience: JWT_AUDIENCE },
+  );
+  return `${ACCESS_COOKIE}=${token}`;
 }
 
 /** Vacía el catálogo (products→categories por FK) para tests deterministas. */

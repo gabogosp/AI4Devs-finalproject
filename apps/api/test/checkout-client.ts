@@ -32,6 +32,11 @@ export class ClienteDeCheckout {
 
     const cookieHeader = [
       this.cliente.cookie('dsm_cart') && `dsm_cart=${this.cliente.cookie('dsm_cart')}`,
+      // US-015 — cookie de sesión de cliente, opcional: si el llamador la fijó
+      // vía `carrito.conCookies({ dsm_access: ... })`, viaja junto con
+      // `dsm_cart` para que `OptionalCustomerGuard` la resuelva. Ausente en
+      // todos los tests de US-008 (guest) — no cambia su comportamiento.
+      this.cliente.cookie('dsm_access') && `dsm_access=${this.cliente.cookie('dsm_access')}`,
     ]
       .filter(Boolean)
       .join('; ');

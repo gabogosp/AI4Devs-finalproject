@@ -4,6 +4,7 @@ import { OrdersRepository } from './orders.repository';
 import { OrdersRetentionEventsService } from '../observability/orders-retention-events.service';
 import { OrderNotFoundError } from './checkout-errors';
 import { AnonymizationReason } from './order-anonymization';
+import { computeRetentionCutoff } from './retention-cutoff';
 
 export interface AnonymizeResult {
   anonymizedAt: Date;
@@ -59,8 +60,6 @@ export class OrdersRetentionService {
   }
 
   private cutoffDate(): Date {
-    const d = new Date();
-    d.setMonth(d.getMonth() - this.retentionMonths);
-    return d;
+    return computeRetentionCutoff(this.retentionMonths);
   }
 }

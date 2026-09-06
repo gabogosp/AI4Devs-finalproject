@@ -16,6 +16,7 @@ import { RefreshTokensRepository } from './refresh-tokens.repository';
 import { PasswordResetTokensRepository } from './password-reset-tokens.repository';
 import { PasswordHasher } from './password/password-hasher';
 import { CustomerGuard } from './customer.guard';
+import { OptionalCustomerGuard } from './resolve-customer-session';
 import { CsrfGuard } from './csrf.guard';
 import { passwordResetMailerProvider } from './mail/password-reset-mailer.provider';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -108,6 +109,16 @@ import { AuthEventsService } from '../observability/auth-events.service';
           ttl: config.get<number>('PAYMENTS_SIMULATE_RATE_LIMIT_TTL_MS', 600_000),
           limit: Number.MAX_SAFE_INTEGER,
         },
+        // §7.3 — octavo throttler nombrado: el historial de compras del cliente
+        // (US-015). Mismo criterio que `checkout`/`payments_simulate`: techo
+        // inalcanzable acá, presupuesto real (`ORDERS_HISTORY_RATE_LIMIT_MAX`,
+        // 60/min) en el `@Throttle` del handler — así ningún controller
+        // existente necesita un `@SkipThrottle({ orders_history: true })`.
+        {
+          name: 'orders_history',
+          ttl: config.get<number>('ORDERS_HISTORY_RATE_LIMIT_TTL_MS', 60_000),
+          limit: Number.MAX_SAFE_INTEGER,
+        },
       ],
     }),
   ],
@@ -126,12 +137,23 @@ import { AuthEventsService } from '../observability/auth-events.service';
     CustomerAuthService,
     PasswordResetService,
     CustomerGuard,
+    // US-015 — variante fail-open del guard de cliente, para el checkout
+    // guest-first (design.md §D1). Vive al lado de `CustomerGuard`, mismo
+    // seam de sesión.
+    OptionalCustomerGuard,
     CsrfGuard,
     AuthEventsService,
     // El adapter de email se elige por entorno (T7.2): Resend con clave, log sin
     // ella. En producción, faltar la clave hace fallar el arranque (envSchema).
     passwordResetMailerProvider,
   ],
-  exports: [AdminGuard, AdminAuthService, JwtModule, CustomerGuard, AuthEventsService],
+  exports: [
+    AdminGuard,
+    AdminAuthService,
+    JwtModule,
+    CustomerGuard,
+    OptionalCustomerGuard,
+    AuthEventsService,
+  ],
 })
 export class AuthModule {}
