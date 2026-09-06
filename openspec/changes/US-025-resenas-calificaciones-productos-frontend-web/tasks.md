@@ -60,7 +60,7 @@ language: es
 
 ### Tipos provisionales
 
-- [ ] **T-A2 — `apps/web/src/features/reviews/types.provisional.ts`**
+- [x] **T-A2 — `apps/web/src/features/reviews/types.provisional.ts`**
   - **Pattern**: `per design.md §D1/§D2` — banner JSDoc explícito de provisionalidad + tipos de
     dominio de UI, ninguno derivado de un contrato:
     ```ts
