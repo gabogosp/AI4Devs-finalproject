@@ -3009,8 +3009,8 @@
   us-id: US-024
   discipline: backend
   variant: null
-  status: In Progress   # 8/8 tasks cerradas (tests+typecheck+lint+spectral verdes),
-  # falta commit+PR (/commit).
+  status: In Review   # 8/8 tasks cerradas (tests+typecheck+lint+spectral verdes), PR #128
+  # abierto contra main.
   parent-us: docs/user-stories/US-024-edicion-perfil-cliente.md
   linear-task-id: null
   audit-baseline: null
@@ -3037,4 +3037,6 @@
   # dentro del presupuesto (endpoint chico, sin infra nueva).
   assignee: claude-code
   branch: feat/US-024-edicion-perfil-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/128
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
