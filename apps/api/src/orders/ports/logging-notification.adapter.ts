@@ -10,13 +10,10 @@ import {
 
 /**
  * Adapter de **desarrollo y test** del `NotificationPort` — no manda ningún
- * email, escribe en el log. El adapter real (Resend) es responsabilidad de
- * US-011; este change sólo garantiza que el trigger se invoca en el momento
- * correcto (AC-4), sin acoplar el panel a un proveedor de mail que todavía no
- * existe.
- *
- * TODO(US-011): reemplazar por el adapter de Resend cuando esa US aterrice —
- * mismo seam que `PasswordResetMailer`/`LoggingPasswordResetMailer`.
+ * email, escribe en el log. Desde US-011, es el fallback que
+ * `notification.provider.ts` resuelve cuando `RESEND_API_KEY` no está
+ * presente (local/CI sin credenciales); en producción el binding real es
+ * `ResendNotificationAdapter`.
  *
  * `buyerName`/`buyerEmail` NUNCA se loguean — a diferencia del token de reset
  * de password, acá no hay ninguna razón operativa para necesitarlos en el log

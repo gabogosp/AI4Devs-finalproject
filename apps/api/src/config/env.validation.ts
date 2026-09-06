@@ -95,6 +95,31 @@ export const envSchema = z.object({
   PASSWORD_RESET_URL_BASE: z.string().url().optional(),
 
   /**
+   * US-011 — notificaciones por email del ciclo de vida de la orden
+   * (`NotificationPort`/`ResendNotificationAdapter`). Reutiliza
+   * `RESEND_API_KEY`/`RESEND_TIMEOUT_MS` (genéricos, no específicos de
+   * password-reset pese al nombre del archivo que los introdujo).
+   *
+   * Opcionales a nivel de campo, pero NO en producción: el refinement de abajo
+   * hace fallar el arranque si faltan con `NODE_ENV=production` — mismo
+   * criterio que `RESEND_API_KEY`/`PASSWORD_RESET_FROM`.
+   */
+  ORDER_NOTIFICATIONS_FROM: z.string().email().optional(),
+  /** Destinatario del aviso de nueva orden (`ownerNewOrder`, AC-2). */
+  OWNER_NOTIFICATION_EMAIL: z.string().email().optional(),
+  /**
+   * Reintentos del adapter ante un fallo transitorio de Resend (AC-4/AC-5),
+   * ADEMÁS del intento inicial. Mismo default que `MP_MAX_RETRIES` — no hay
+   * cola: el reintento vive en la misma llamada del caller (`design.md`
+   * Decisión 1).
+   */
+  NOTIFICATION_RETRY_MAX_ATTEMPTS: z.coerce.number().int().min(0).default(2),
+  /** Espera del primer reintento, en ms (backoff exponencial con jitter). */
+  NOTIFICATION_RETRY_BASE_MS: z.coerce.number().int().positive().default(300),
+  /** Techo de la espera entre reintentos, en ms. */
+  NOTIFICATION_RETRY_CAP_MS: z.coerce.number().int().positive().default(2_000),
+
+  /**
    * US-007 — carrito del invitado. Defaults seguros; un valor inválido hace
    * FALLAR el arranque (§7), nunca cae al default en silencio.
    *
@@ -418,6 +443,22 @@ export const envSchema = z.object({
         path: [campo],
         message:
           'requerida en producción: sin ella el reset caería al adapter de log y no se enviaría ningún email',
+      });
+    }
+  }
+
+  // US-011 — sin remitente/destinatario de los avisos de orden en producción, el
+  // adapter real arrancaría con `config.getOrThrow` listo para explotar en el
+  // primer envío, o (peor) el deploy quedaría atado al fallback de log sin que
+  // nadie lo note hasta que un cliente pregunte por qué no le llegó nada.
+  for (const campo of ['ORDER_NOTIFICATIONS_FROM', 'OWNER_NOTIFICATION_EMAIL'] as const) {
+    if (!env[campo]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [campo],
+        message: `requerida en producción: sin ella el aviso de ${
+          campo === 'ORDER_NOTIFICATIONS_FROM' ? 'orden' : 'nueva orden al dueño'
+        } no se envía`,
       });
     }
   }

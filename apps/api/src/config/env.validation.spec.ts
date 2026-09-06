@@ -214,6 +214,9 @@ describe('Enriquecimiento IA + embeddings (US-005 T0.3) — defaults y fail-fast
       PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
       MP_ACCESS_TOKEN: 'mp-clave-real',
       MP_WEBHOOK_SECRET: 'mp-secreto-real',
+      // US-011 sumó su propia exigencia de producción por el mismo criterio.
+      ORDER_NOTIFICATIONS_FROM: 'pedidos@dsmferreteria.com.ar',
+      OWNER_NOTIFICATION_EMAIL: 'dueno@dsmferreteria.com.ar',
     });
     expect(env.GEMINI_API_KEY).toBe('clave-real');
   });
@@ -478,6 +481,9 @@ describe('MercadoPago (US-010 T4.2) — defaults y fail-fast', () => {
       GEMINI_API_KEY: 'g_x',
       MP_ACCESS_TOKEN: 'token',
       MP_WEBHOOK_SECRET: 'secreto',
+      // US-011 sumó su propia exigencia de producción por el mismo criterio.
+      ORDER_NOTIFICATIONS_FROM: 'pedidos@dsmferreteria.com.ar',
+      OWNER_NOTIFICATION_EMAIL: 'dueno@dsmferreteria.com.ar',
     });
     expect(env.MP_ACCESS_TOKEN).toBe('token');
   });
@@ -540,6 +546,9 @@ describe('Medio simulado (US-010 T7.2, ADR-0006) — defaults y fail-fast', () =
       GEMINI_API_KEY: 'g_x',
       MP_ACCESS_TOKEN: 'token',
       MP_WEBHOOK_SECRET: 'secreto',
+      // US-011 sumó su propia exigencia de producción por el mismo criterio.
+      ORDER_NOTIFICATIONS_FROM: 'pedidos@dsmferreteria.com.ar',
+      OWNER_NOTIFICATION_EMAIL: 'dueno@dsmferreteria.com.ar',
     });
     expect(env.PAYMENTS_SIMULATED_ENABLED).toBe('false');
   });
@@ -573,6 +582,71 @@ describe('Jobs admin de US-010 (T9.1/T10/T11) — defaults y fail-fast', () => {
     expect(() => validateEnv({ ...base, ORDER_ABANDON_HOURS: 'abc' })).toThrow(
       /Config de entorno inválida/,
     );
+  });
+});
+
+describe('Notificaciones de órdenes (US-011) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+  const prodValida = {
+    ...base,
+    NODE_ENV: 'production' as const,
+    RESEND_API_KEY: 'k',
+    PASSWORD_RESET_FROM: 'a@b.com',
+    PASSWORD_RESET_URL_BASE: 'https://dsm.test/reset',
+    GEMINI_API_KEY: 'g_x',
+    MP_ACCESS_TOKEN: 'token',
+    MP_WEBHOOK_SECRET: 'secreto',
+    ORDER_NOTIFICATIONS_FROM: 'pedidos@dsmferreteria.com.ar',
+    OWNER_NOTIFICATION_EMAIL: 'dueno@dsmferreteria.com.ar',
+  };
+
+  it('sin las variables, aplica los 3 defaults numéricos exactos', () => {
+    const env = validateEnv({ ...base });
+    expect(env.ORDER_NOTIFICATIONS_FROM).toBeUndefined();
+    expect(env.OWNER_NOTIFICATION_EMAIL).toBeUndefined();
+    expect(env.NOTIFICATION_RETRY_MAX_ATTEMPTS).toBe(2);
+    expect(env.NOTIFICATION_RETRY_BASE_MS).toBe(300);
+    expect(env.NOTIFICATION_RETRY_CAP_MS).toBe(2_000);
+  });
+
+  it('fuera de producción, ninguna de las dos direcciones es requerida', () => {
+    expect(() => validateEnv({ ...base, NODE_ENV: 'development' })).not.toThrow();
+    expect(() => validateEnv({ ...base, NODE_ENV: 'test' })).not.toThrow();
+  });
+
+  it('en producción, faltar ORDER_NOTIFICATIONS_FROM hace FALLAR el arranque', () => {
+    const sinRemitente = { ...prodValida, ORDER_NOTIFICATIONS_FROM: undefined };
+    expect(() => validateEnv(sinRemitente)).toThrow(/ORDER_NOTIFICATIONS_FROM/);
+  });
+
+  it('en producción, faltar OWNER_NOTIFICATION_EMAIL hace FALLAR el arranque', () => {
+    const sinDueno = { ...prodValida, OWNER_NOTIFICATION_EMAIL: undefined };
+    expect(() => validateEnv(sinDueno)).toThrow(/OWNER_NOTIFICATION_EMAIL/);
+  });
+
+  it('en producción con las dos presentes, arranca', () => {
+    expect(() => validateEnv(prodValida)).not.toThrow();
+  });
+
+  it('las 3 vars numéricas nunca rompen el arranque si están ausentes, ni en producción', () => {
+    expect(() => validateEnv(prodValida)).not.toThrow();
+    const env = validateEnv(prodValida);
+    expect(env.NOTIFICATION_RETRY_MAX_ATTEMPTS).toBe(2);
+  });
+
+  it('NOTIFICATION_RETRY_MAX_ATTEMPTS=abc hace fallar el arranque, no cae al default', () => {
+    expect(() =>
+      validateEnv({ ...base, NOTIFICATION_RETRY_MAX_ATTEMPTS: 'abc' }),
+    ).toThrow(/Config de entorno inválida/);
+  });
+
+  it('un remitente que no es email válido falla aunque no sea producción', () => {
+    expect(() =>
+      validateEnv({ ...base, ORDER_NOTIFICATIONS_FROM: 'no-es-un-email' }),
+    ).toThrow(/ORDER_NOTIFICATIONS_FROM/);
   });
 });
 

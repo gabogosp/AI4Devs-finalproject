@@ -177,7 +177,18 @@ describe('ConfirmOrderService.confirm — providers automáticos (US-010)', () =
       });
 
       expect(notifications.orderConfirmed).toHaveBeenCalledWith(
-        expect.objectContaining({ orderId: orden.id, buyerName: 'Comprador de Prueba' }),
+        expect.objectContaining({
+          orderId: orden.id,
+          buyerName: 'Comprador de Prueba',
+          totalArsCents: orden.total_ars_cents,
+          items: expect.arrayContaining([
+            expect.objectContaining({
+              productName: 'x', // `crearOrdenPendiente` snapshotea `product_name: 'x'` (línea 69)
+              quantity: 1,
+              unitPriceArsCents: 100_000,
+            }),
+          ]),
+        }),
       );
       expect(notifications.ownerNewOrder).toHaveBeenCalledWith(
         expect.objectContaining({ orderId: orden.id, totalArsCents: orden.total_ars_cents }),

@@ -2562,3 +2562,56 @@
   completed-at: 2026-09-06T12:53:33Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-013-cancelacion-reembolso-qa
+
+- name: US-011-notificaciones-email-backend
+  us-id: US-011
+  discipline: backend
+  variant: null
+  status: In Progress   # /develop-backend US-011 (2026-09-06) — ejecución de tasks.md en curso
+  parent-us: docs/user-stories/US-011-notificaciones-email.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # `project-config.yml` no existe en este repo (verificado) — el stack Node/NestJS/Prisma
+  # se infirió del código (`apps/api` es Nest, `packages/db` es Prisma), no del default
+  # `go` del comando. No hay ambigüedad real: todo el backend del repo es Node.
+  #
+  # ALCANCE: US-011 §"Alcance reducido (2026-08-19)" ya sacó el patrón de adapter en sí
+  # (adelantado a US-014, `PasswordResetMailer`/`ResendPasswordResetMailer`). Este change
+  # sólo construye `ResendNotificationAdapter implements NotificationPort` (puerto de
+  # US-010, hoy en `LoggingNotificationAdapter`) + su selección por entorno + 4 plantillas
+  # + reintento con backoff — mismo seam, segundo puerto de email del proyecto.
+  #
+  # DECISIÓN 1 (retry vs cola): el reintento vive DENTRO del adapter, sin BullMQ/Redis.
+  # ADR-0004 (enmendada) ya nombra explícitamente "runners de notificaciones... del
+  # webhook de pago" como territorio cubierto por el patrón in-process — no hace falta
+  # ADR propio. Redis sigue sin aprovisionar (US-019 parqueada, cuentas externas
+  # pendientes). Ver design.md "Decisión 1" (reconcilia la palabra "encola" del E2E §6.1
+  # component description contra los diagramas de secuencia §9.2/§9.4, que NO dibujan
+  # cola — a diferencia de §9.3, que sí).
+  #
+  # DECISIÓN 2 (idempotencia AC-7): sin tabla nueva. Los dos callers ya garantizan
+  # invocación a lo sumo una vez por evento de forma ESTRUCTURAL (guardas condicionales
+  # ya existentes en `ConfirmOrderService`/`OrdersAdminService`, US-010/US-012). Se agrega
+  # `Idempotency-Key` del SDK de Resend como defensa en profundidad para el caso borde de
+  # timeout-cliente-con-éxito-de-servidor, que las guardas estructurales no cubren.
+  #
+  # DESVIACIÓN ADITIVA DECLARADA: `OrderConfirmedPayload` (puerto de US-010) gana `items`/
+  # `totalArsCents` — AC-1 pide "detalle de su orden (ítems, total)" y el payload original
+  # no lo traía. Cambio mínimo: `ConfirmOrderService.notificarConfirmacion` ensancha el
+  # tipo de su parámetro de `Order` a `OrderWithItems` (ya es el tipo real en runtime, sin
+  # query nueva). Ningún otro caller ni línea de negocio cambia.
+  #
+  # data-architect Mode B NO invocado: sin persistencia nueva (confirmado arriba,
+  # Decisión 2) — trivial per `data-architecture-patterns` skill.
+  #
+  # Sin endpoints HTTP nuevos/modificados — `api-contract-completeness` no aplica, sin
+  # yaml de contrato nuevo.
+  estimate-hours: null   # US §7 presupuesta BE-US-011 en 8-12h; 8 fases / 12 tasks
+  # closure-grade en tasks.md, sin ejecutar todavía — se reconcilia con el conteo real al
+  # desarrollar (mismo criterio que US-016/US-023 en este índice).
+  assignee: sin-asignar
+  branch: feat/US-011-notificaciones-email-backend
+  pr-url: null
+  pr-opened-at: null
+  created: 2026-09-06

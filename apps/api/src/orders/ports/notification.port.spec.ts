@@ -43,6 +43,8 @@ describe('LoggingNotificationAdapter — NotificationPort (T5.1)', () => {
       orderNumber: 1001,
       buyerName: CENTINELA_NOMBRE,
       buyerEmail: CENTINELA_EMAIL,
+      items: [{ productName: 'Tornillo', quantity: 2, unitPriceArsCents: 500 }],
+      totalArsCents: 1_000,
     });
 
     const lineaDeLog = JSON.stringify(capturado[0]);
