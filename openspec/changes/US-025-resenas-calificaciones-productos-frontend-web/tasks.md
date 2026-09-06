@@ -124,7 +124,7 @@ language: es
     en ninguno de los dos modos.
   - **Verify**: `pnpm --filter @dsm/web test -- StarRatingDisplay`
 
-- [ ] **T-A5 — `ReviewsSummary.tsx` + `.test.tsx` (AC-3/AC-4)**
+- [x] **T-A5 — `ReviewsSummary.tsx` + `.test.tsx` (AC-3/AC-4)**
   - **Exit criterion**: con `count > 0` renderiza el promedio formateado a 1 decimal y
     "{count} reseñas"; con `count === 0` renderiza el texto "Sin reseñas todavía" y NO renderiza
     ningún promedio ni "0 reseñas".
