@@ -245,7 +245,7 @@ language: es
     centinela del comprador.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/orders/orders.events.test.tsx -t "OrderCancelAction"`
 
-- [ ] **T6.3 — `a11y.test.tsx` — `OrderDetail` con "Cancelar orden" visible, sin violaciones serious/critical**
+- [x] **T6.3 — `a11y.test.tsx` — `OrderDetail` con "Cancelar orden" visible, sin violaciones serious/critical**
   - **Pattern**: nuevo `it` en el `describe` existente, mismo helper
     `auditar` (axe con `region` deshabilitada) que los 3 casos ya presentes.
   - **Exit criterion**: `OrderDetail` con una orden `new`/`preparing`/`ready`

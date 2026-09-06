@@ -116,4 +116,19 @@ describe('Accesibilidad del panel de órdenes (T10.1)', () => {
     );
     expect(graves).toEqual([]);
   });
+
+  it('OrderDetail con "Cancelar orden" visible (US-013) no tiene violaciones serious/critical', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(detalle({ status: 'preparing' }))),
+    );
+    const { container } = render(<OrderDetail id={ID} />);
+    await screen.findByText('Compresor Embraco');
+    expect(screen.getByRole('button', { name: /^cancelar orden$/i })).toBeInTheDocument();
+
+    const resultados = await auditar(container);
+    const graves = resultados.violations.filter(
+      (v) => v.impact === 'serious' || v.impact === 'critical',
+    );
+    expect(graves).toEqual([]);
+  });
 });
