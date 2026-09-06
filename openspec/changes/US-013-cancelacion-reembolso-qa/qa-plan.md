@@ -333,6 +333,12 @@ TC-013-E1 parcial).
   Postgres real, sembrando por `seed-metricas.ts` (checkout real + confirmación
   real + `PATCH` real), nunca por `prisma.order.create`/`@dsm/db` directo.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@cancelacion-ordenes and not @cross-feature"` (exit 0)
+- **Estado**: verde — 10 escenarios/58 steps en 0 (H-1×3, H-2, C-1, C-2, N-1×3,
+  N-2). `qa/acceptance/features/cancelacion-ordenes.feature` +
+  `qa/acceptance/steps/cancelacion-ordenes.steps.ts`. Corrido directo con
+  `cucumber-js` (el `--` de `pnpm --filter @dsm/qa <script> -- --flag` reenvía
+  literal al hijo y produce `ENOENT`, mismo hallazgo de entorno ya documentado
+  por `US-016-panel-metricas-qa`).
 
 ```yaml
 - id: QA-013-ACC-2
@@ -349,6 +355,8 @@ TC-013-E1 parcial).
   `POST /admin/orders/{id}/confirm-payment` reales, sin `INSERT`/`UPDATE`
   directo.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@cross-feature and @cancelacion-ordenes"` (exit 0)
+- **Estado**: verde — cubierto en la misma corrida de 3 escenarios/13 steps
+  (X-1, X-2, X-3) — ver Estado de QA-013-ACC-4.
 
 ```yaml
 - id: QA-013-ACC-3
@@ -364,6 +372,8 @@ TC-013-E1 parcial).
   la orden refleja `orders_count`/`total_ars_cents` sin esa orden, **después**
   de cancelarla con el endpoint real (antes de cancelar, sí contaba).
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@cross-feature and @cancelacion-ordenes"` (exit 0, mismo comando que ACC-2 — misma corrida cubre ambos tags)
+- **Estado**: verde — cubierto en la misma corrida de 3 escenarios/13 steps
+  (X-1, X-2, X-3) — ver Estado de QA-013-ACC-4.
 
 ```yaml
 - id: QA-013-ACC-4
@@ -380,6 +390,11 @@ TC-013-E1 parcial).
   `order_number` en ninguna página.
 - Verify: mismo comando que ACC-2/ACC-3 (los 3 escenarios `@cross-feature`
   corren en la misma invocación).
+- **Estado**: verde — `pnpm --filter @dsm/qa test:acceptance -- --tags
+  "@cross-feature and @cancelacion-ordenes"` → 3 escenarios/13 steps en 0
+  (X-1, X-2, X-3), Postgres descartable propio + API/web reales de este
+  worktree. Corrido directo con `cucumber-js` (mismo hallazgo de entorno del
+  `--` documentado en QA-013-ACC-1).
 
 ### 5.2 Contract testing
 
