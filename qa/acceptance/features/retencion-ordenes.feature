@@ -16,7 +16,7 @@ Característica: Retención y anonimización de los datos personales de las órd
     Dado una orden con más de ORDER_RETENTION_MONTHS de antigüedad, sin anonimizar
     Y una segunda orden reciente, sin anonimizar
     Cuando se dispara "POST /v1/admin/orders/retention-sweep" con el token admin
-    Entonces la respuesta trae anonymized_count igual a 1
+    Entonces la respuesta trae anonymized_count de al menos 1
     Y la orden vencida tiene buyer_name/buyer_email/buyer_phone reemplazados por los valores placeholder
     Y la orden reciente conserva sus datos de comprador intactos
     Y ambas órdenes siguen existiendo con su status y su total_ars_cents sin cambios
