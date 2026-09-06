@@ -130,8 +130,22 @@ Característica: Reseñas y calificaciones de productos (US-025)
 
 **Tooling**: Cucumber-js con `qa/acceptance/steps/resenas.steps.ts`.
 **Location**: `qa/acceptance/features/resenas.feature`.
-**Reuses**: `qa/support/seed-ordenes.ts` (`crearOrdenEnEstado(..., 'delivered')`)
-para la elegibilidad, `qa/support/customer-auth.ts` para la sesión.
+**Reuses**: `qa/support/seed-resenas.ts` (`compraEntregada`, ver nota de
+ejecución abajo — `crearOrdenEnEstado` original resultó ser siempre de
+invitado) para la elegibilidad, `qa/support/customer-auth.ts` para la sesión.
+
+**Ejecutado (2026-09-06, `/develop-qa`)**: 9/9 escenarios verdes contra el BE
+real (endpoints de reviews, ya mergeados a main) + Postgres aislado propio,
+3 corridas limpias consecutivas. **AC-8 (moderación) verificado sólo a nivel
+API** — el escenario de UI (el dueño oculta una reseña desde el panel admin)
+queda pendiente para cuando el FE de moderación (Fase B de FE-US-025)
+aterrice, per pedido explícito de la coordinadora tras el enrich de esa
+decisión (2026-09-06). **Corrección real sobre D-QA2** (ver `design.md`):
+`crearOrdenEnEstado` es SIEMPRE de invitado (`checkoutReal` usa
+`nuevoInvitado()`, deja `customer_id: null`) — no sirve para elegibilidad,
+que exige una orden ligada a un cliente logueado. Se construyó
+`compraEntregada` (checkout logueado real + `simulate-payment` + los mismos
+`PATCH` admin de avance de estado) en su lugar. Ver `tasks.md` T-QA2.
 
 ---
 

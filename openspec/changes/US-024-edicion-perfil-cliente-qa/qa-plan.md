@@ -110,6 +110,15 @@ Característica: Edición de perfil del cliente (US-024)
 **Reuses**: `qa/support/customer-auth.ts` (login real de cliente, ya existe
 desde US-014/US-020) para obtener la sesión del Antecedentes.
 
+**Ejecutado (2026-09-06, `/develop-qa`)**: 7/7 escenarios verdes contra el BE
+real (`PATCH /v1/me`, ya mergeado a main) + Postgres aislado propio, 3
+corridas limpias consecutivas (16/16 pasos, sin flakiness). Un ajuste real
+sobre el AC-6 (email no editable): el DTO real usa `forbidNonWhitelisted`
+— un campo `email` en el body rechaza la request ENTERA con 422, no la
+ignora en silencio como asumía el plan original. Se actualizó el escenario
+para afirmar el comportamiento real (más estricto, mismo AC cumplido). Ver
+`tasks.md` T-QA2.
+
 ---
 
 ## 4. Contract testing

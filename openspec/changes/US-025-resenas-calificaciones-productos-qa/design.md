@@ -15,12 +15,22 @@ plan la toma tal cual, no la reabre.
 
 ## D-QA2 — Elegibilidad se prueba con una orden real en `delivered`, no con un flag
 
-El seed que este plan necesita **ya existe**: `qa/support/seed-ordenes.ts`
-expone `crearOrdenEnEstado(..., 'delivered')`, que hace el checkout real +
-`simulate-payment` + los `PATCH` de avance de estado hasta `delivered` (no
-un `UPDATE` directo a la tabla — mismo principio de "todo vía la API real"
-que el resto de `qa/`, ver `seed-carrito.ts`). Los escenarios de elegibilidad
-(SC-025-H1, SC-025-N1) reusan esa función en vez de escribir un seed nuevo.
+**[CORREGIDO tras `/develop-qa`, 2026-09-06 — ver `tasks.md` T-QA2]** La
+premisa original de esta decisión era incorrecta: se asumió que
+`qa/support/seed-ordenes.ts` → `crearOrdenEnEstado(..., 'delivered')` servía
+para sembrar la elegibilidad, pero esa función es **siempre de invitado**
+(`checkoutReal` usa `nuevoInvitado()` internamente, deja `orders.customer_id
+= null`) — y `ReviewsService.upsertOwn` consulta exactamente ese campo. Una
+orden de invitado nunca habilita a reseñar, sin importar el estado.
+
+El seed real usado es `compraEntregada` (`qa/support/seed-resenas.ts`,
+nuevo): checkout **logueado** vía `compraLogueadaConSesion` (deja
+`customer_id` real) + `simulate-payment` (→ `new`) + los mismos `PATCH`
+admin de avance de estado (`preparing`/`ready`/`delivered`) que
+`crearOrdenEnEstado` usa para el resto de la FSM — sigue sin ningún `UPDATE`
+directo a la tabla, mismo principio de "todo vía la API real" que el resto
+de `qa/`. Los escenarios de elegibilidad (SC-025-H1, SC-025-N1, y el resto
+que necesitan una compra) usan esta función.
 
 ## D-QA3 — Carga (K6) es opcional y de scope chico
 
