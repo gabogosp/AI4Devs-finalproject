@@ -83,8 +83,8 @@ describe('el contenido es texto, no marcado', () => {
   );
 });
 
-describe('el texto provisional se declara como tal', () => {
-  it('conserva marcadores [PENDIENTE: …] visibles en la página', () => {
+describe('el texto ya no es provisional (gate humano del DoD, OQ-FE-17 (a))', () => {
+  it('no quedan marcadores [PENDIENTE: …] en la página', () => {
     const todos = documentos
       .flatMap((d) => [
         ...Object.values(d.required).flatMap((s) => s.paragraphs),
@@ -92,8 +92,9 @@ describe('el texto provisional se declara como tal', () => {
       ])
       .join('\n');
 
-    // No hay gate automático (decisión del PO, OQ-FE-17 (a)): la protección es
-    // que el hueco se vea en la propia página, no sólo en el código.
-    expect(todos).toContain('[PENDIENTE:');
+    // El dueño completó los 3 datos reales que faltaban (razón social, CUIT,
+    // condición IVA, plazo de retención) — el gate humano del DoD (OQ-FE-17 (a))
+    // ya no tiene ningún hueco que proteger.
+    expect(todos).not.toContain('[PENDIENTE:');
   });
 });

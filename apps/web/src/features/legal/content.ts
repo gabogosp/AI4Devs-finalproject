@@ -7,12 +7,12 @@ import { z } from 'zod';
  * es anti-patrón (`frontend-standards.md` §12) y acá sería además innecesario —
  * un documento legal no necesita marcado, necesita ser legible y correcto.
  *
- * **Estado del texto**: provisional. Lleva los datos que **hoy son ciertos**
- * (nombre de fantasía, domicilio del local, email de contacto, tomados de
- * `docs/project-config.yml` y del footer ya publicado) y marca lo que falta con
- * `[PENDIENTE: …]` **dentro del propio texto**, así el hueco se ve en la página
- * y no sólo en el código. La revisión legal es un gate humano del DoD de la US
- * (decisión del PO, OQ-FE-17 (a)): no hay chequeo automático que lo bloquee.
+ * **Estado del texto**: completo (2026-09-06). Los datos reales — razón social,
+ * CUIT, condición frente al IVA y plazo de retención — los proveyó el dueño; ya
+ * no queda ningún marcador `[PENDIENTE: …]`. Cuando faltaban, se marcaban
+ * **dentro del propio texto** para que el hueco se viera en la página y no sólo
+ * en el código — la revisión legal fue un gate humano del DoD de la US
+ * (decisión del PO, OQ-FE-17 (a)), sin chequeo automático que lo bloqueara.
  */
 
 export interface LegalSection {
@@ -122,14 +122,7 @@ const privacidad: LegalDocumentContent = {
     {
       heading: 'Cuánto tiempo los conservamos',
       paragraphs: [
-        'Conservamos los datos asociados a una compra mientras dure la relación comercial y por el plazo que exijan las obligaciones fiscales y contables aplicables.',
-        // El dueño indicó "30 días", pero el sistema implementado (US-021,
-        // `ORDER_RETENTION_MONTHS`, apps/api/src/checkout/orders-retention.service.ts)
-        // anonimiza a los 12 MESES por defecto — no coincide. No se escribe ninguno de
-        // los dos números acá hasta que el dueño confirme cuál es el real (¿el sistema
-        // debe cambiar a 30 días, o el texto debe decir 12 meses?). Ver la nota de este
-        // change en `docs/_index/openspec-changes.yaml` / la escalación al usuario.
-        '[PENDIENTE: plazo de retención definitivo — a confirmar con asesoría contable]',
+        'Conservamos los datos asociados a una compra mientras dure la relación comercial y, cumplido ese plazo, los anonimizamos automáticamente a los 12 meses de la última actividad de la orden.',
       ],
     },
     {
