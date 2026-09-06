@@ -1967,3 +1967,41 @@
   completed-at: 2026-09-05T21:15:53Z
   archived-at: 2026-09-05
   archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-backend/
+
+- name: US-021-retencion-datos-ordenes-frontend-web
+  us-id: US-021
+  discipline: frontend-web
+  variant: null
+  status: archived   # /archive-change 2026-09-06 — 27/27 tasks cerradas (Fase 0-7 + verificación
+  # de suite), PR #54 abierto. El gap de contrato de T0.1 (ver design.md "El gap de
+  # contrato") se resolvió en PR #52 (mergeado, 91aa3f1) antes de ejecutar
+  # /develop-frontend-web. Pendiente no bloqueante del pre-merge checklist: verificación
+  # manual en navegador de console errors/warnings (no automatizada en esta corrida).
+  parent-us: docs/user-stories/US-021-retencion-datos-ordenes.md
+  linear-task-id: null   # Linear MCP no conectado en esta sesión — creación de task en Linear omitida, sin simular
+  audit-baseline: null
+  audit-derived: false
+  # ALCANCE: acción "Anonimizar datos del comprador" dentro de OrderDetail (extiende el
+  # módulo apps/web/src/features/orders/ que ya existe desde US-012, sin ruta ni pantalla
+  # nueva). Reusa @/components/ui/ConfirmDialog (mismo patrón que ProductActions.archive)
+  # para la confirmación destructiva de dos pasos (AC-3); sección de contacto condicional
+  # que muestra "cuándo"/"por qué motivo" en vez de nombre/email/teléfono cuando la orden
+  # está anonimizada (AC-4/AC-5); AC-9 (FE) ya cubierta por el AdminGuard existente en
+  # apps/web/app/(admin)/layout.tsx, sin cambios. `POST /admin/orders/retention-sweep`
+  # queda EXPLÍCITAMENTE fuera de alcance — ningún AC pide un botón de barrido masivo en
+  # el panel del dueño, es una palanca operativa (rate-limit 5/hora), no una interacción
+  # de negocio.
+  #
+  # US §7 presupuesta FE-US-021 en 2-3 h — subestimado (mismo patrón que BE-US-021):
+  # además del componente + wiring, este change agrega el gate de contrato (Fase 0),
+  # tests MSW de éxito/error/idempotencia visual, extensión del a11y test suite existente
+  # y 3 eventos de observabilidad nuevos sin PII.
+  estimate-hours: 5.5
+  assignee: claude-code
+  branch: feat/US-021-retencion-datos-ordenes-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/54
+  pr-opened-at: 2026-09-05
+  created: 2026-09-05
+  completed-at: 2026-09-06T01:07:51Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-frontend-web/

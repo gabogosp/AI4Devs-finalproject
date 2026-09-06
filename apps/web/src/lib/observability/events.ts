@@ -83,7 +83,16 @@ export type BusinessEvent =
   // Vista de pendientes de pago (US-012 §D9, feature aditiva sobre el backend
   // hermano US-023). Sin `buyer_name`, mismo criterio que los eventos de
   // arriba.
-  | 'pending_payment_confirmed';
+  | 'pending_payment_confirmed'
+  // Anonimización de una orden a pedido del comprador (US-021 AC-3, AC-9).
+  // Backoffice — mismo criterio que `order_status_change_*`: sólo
+  // `{ order_id }`, nunca `buyer_name`/`buyer_email`/`anonymization_reason`
+  // (`design.md` §Observabilidad — el motivo no aporta a la analítica del
+  // panel y mantener la misma forma que los otros tres eventos evita que
+  // alguien agregue un campo de más mañana pensando que ya hay precedente).
+  | 'order_anonymize_attempted'
+  | 'order_anonymize_succeeded'
+  | 'order_anonymize_failed';
 
 export interface EventProps {
   operator_id?: string;

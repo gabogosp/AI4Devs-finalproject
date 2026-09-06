@@ -5,9 +5,11 @@ import type { AsyncState } from '@/lib/async';
 import { AppErrorException, networkError } from '@/lib/http/errors';
 import { Button } from '@/components/ui/Button';
 import { formatArs } from '@/lib/format/currency';
+import { formatDateTime } from '@/lib/format/datetime';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { OrderStatusActions } from './OrderStatusActions';
 import { OrderStatusHistory } from './OrderStatusHistory';
+import { OrderAnonymizeAction } from './OrderAnonymizeAction';
 import { ordersService, type OrderDetail as Order, type OrderStatus } from './ordersService';
 
 /**
@@ -125,21 +127,46 @@ export function OrderDetail({ id }: { id: string }) {
         <p className="mt-2 text-right font-medium">Total: {formatArs(order.total_ars_cents)}</p>
       </section>
 
+      {/* Sección de contacto condicional (AC-4/AC-5) — audit-trail surfacing
+          (frontend-standards.md §11.bis.4): "cuándo" y "por qué motivo" se
+          muestran junto al dato, no en un log aparte. Con anonymized_at
+          null el comportamiento es idéntico al anterior (sin regresión). */}
       <section aria-labelledby="orden-contacto-heading">
         <h3 id="orden-contacto-heading" className="font-medium">
           Datos de contacto
         </h3>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-          <dt className="text-muted">Nombre</dt>
-          <dd>{order.buyer_name}</dd>
-          <dt className="text-muted">Email</dt>
-          <dd>{order.buyer_email}</dd>
-          <dt className="text-muted">Teléfono</dt>
-          <dd>{order.buyer_phone}</dd>
-          <dt className="text-muted">Retiro</dt>
-          <dd>{order.fulfillment === 'pickup' ? 'Retiro en sucursal' : order.fulfillment}</dd>
-        </dl>
+        {order.anonymized_at ? (
+          <p className="text-sm text-muted">
+            Los datos personales del comprador fueron anonimizados{' '}
+            <time dateTime={order.anonymized_at}>{formatDateTime(order.anonymized_at)}</time>{' '}
+            (
+            {order.anonymization_reason === 'requested'
+              ? 'a pedido del comprador'
+              : 'por plazo de retención cumplido'}
+            ).
+          </p>
+        ) : (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+            <dt className="text-muted">Nombre</dt>
+            <dd>{order.buyer_name}</dd>
+            <dt className="text-muted">Email</dt>
+            <dd>{order.buyer_email}</dd>
+            <dt className="text-muted">Teléfono</dt>
+            <dd>{order.buyer_phone}</dd>
+            <dt className="text-muted">Retiro</dt>
+            <dd>{order.fulfillment === 'pickup' ? 'Retiro en sucursal' : order.fulfillment}</dd>
+          </dl>
+        )}
       </section>
+
+      <OrderAnonymizeAction
+        order={{
+          id: order.id,
+          anonymizedAt: order.anonymized_at,
+          anonymizationReason: order.anonymization_reason,
+        }}
+        onAnonymized={onConfirmed}
+      />
 
       <section aria-labelledby="orden-historial-heading">
         <h3 id="orden-historial-heading" className="font-medium">

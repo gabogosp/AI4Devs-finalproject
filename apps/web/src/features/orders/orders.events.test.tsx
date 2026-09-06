@@ -6,6 +6,7 @@ import { server } from '@/test/server';
 import { setEventSink } from '@/lib/observability/events';
 import { OrdersList } from './OrdersList';
 import { OrderStatusActions } from './OrderStatusActions';
+import { OrderAnonymizeAction } from './OrderAnonymizeAction';
 import type { OrderDetail, OrderSummary, OrderStatus } from './ordersService';
 
 const API = 'http://localhost:3000';
@@ -25,6 +26,8 @@ function orden(status: OrderStatus): OrderDetail {
     buyer_email: EMAIL_RECONOCIBLE,
     buyer_phone: '+54 351 555 0000',
     fulfillment: 'pickup',
+    anonymized_at: null,
+    anonymization_reason: null,
     items: [],
     status_history: [],
   };
@@ -124,5 +127,47 @@ describe('eventos del panel de órdenes (T9.1)', () => {
     const nombres = eventos.map((e) => e.event);
     expect(nombres).toContain('order_status_change_attempted');
     expect(nombres).not.toContain('order_status_change_succeeded');
+  });
+
+  it('OrderAnonymizeAction emite attempted antes del POST y succeeded al confirmar, sin buyer_name/buyer_email/anonymization_reason', async () => {
+    const user = userEvent.setup();
+    server.use(
+      http.post(`${API}/v1/admin/orders/${ID}/anonymize`, () =>
+        HttpResponse.json({
+          order_id: ID,
+          anonymized_at: '2026-09-05T12:00:00.000Z',
+          anonymization_reason: 'requested',
+        }),
+      ),
+      http.get(`${API}/v1/admin/orders/${ID}`, () =>
+        HttpResponse.json(
+          orden('preparing'),
+        ),
+      ),
+    );
+    render(
+      <OrderAnonymizeAction
+        order={{ id: ID, anonymizedAt: null, anonymizationReason: null }}
+        onAnonymized={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /anonimizar datos del comprador/i }));
+    await user.type(screen.getByLabelText(/escribí "anonimizar" para confirmar/i), 'ANONIMIZAR');
+    await user.click(screen.getByRole('button', { name: /^anonimizar$/i }));
+
+    await waitFor(() =>
+      expect(eventos.some((e) => e.event === 'order_anonymize_succeeded')).toBe(true),
+    );
+    const nombres = eventos.map((e) => e.event);
+    expect(nombres).toContain('order_anonymize_attempted');
+    expect(nombres).toContain('order_anonymize_succeeded');
+    expect(nombres).not.toContain('order_anonymize_failed');
+
+    const volcado = JSON.stringify(eventos);
+    expect(volcado).not.toContain(NOMBRE_RECONOCIBLE);
+    expect(volcado).not.toContain(EMAIL_RECONOCIBLE);
+    expect(volcado).not.toContain('anonymization_reason');
+    expect(volcado).not.toContain('requested');
   });
 });

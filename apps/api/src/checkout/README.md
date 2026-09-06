@@ -46,11 +46,13 @@ todavía no existe (US-012, el panel de órdenes del dueño, sigue sin backend).
 - Guardado por `WHERE anonymized_at IS NULL` — la idempotencia (AC-8) es
   estructural, no una excepción atrapada.
 
-**Open question para quien planifique US-012**: su DTO de lectura de orden
-todavía no expone `anonymized_at`/`anonymization_reason` (esas columnas nacen
-en este change). Sin eso, el panel no puede mostrar "datos anonimizados" en
-vez del nombre/email/teléfono real (AC-5) — agregarlos al DTO es tarea de esa
-US, no de esta.
+**Resuelto (2026-09-05, `fix/US-021-publish-order-anonymization-contract`)**:
+`AdminOrderDetailDto` (`apps/api/src/orders/dto/order.dto.ts`) ya proyecta
+`anonymized_at`/`anonymization_reason` — el panel puede mostrar "datos
+anonimizados" en vez del nombre/email/teléfono real (AC-5). El gap quedó
+abierto entre el archive de este change y el de `US-012-panel-ordenes-dueno-backend`
+(ninguno de los dos lo cerró); lo cerró el plan de FE de US-021 al necesitarlo
+para codegen.
 
 ## Qué NO hace este módulo
 
