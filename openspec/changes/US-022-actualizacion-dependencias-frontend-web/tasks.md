@@ -59,7 +59,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Fase 3 — Revalidación de superficie de producción (AC-3)
 
-- [ ] T3.1 Build de producción completo + comparación de conteo de tests contra el baseline de T0.3.
+- [x] T3.1 Build de producción completo + comparación de conteo de tests contra el baseline de T0.3.
   - **Exit criterion**: `pnpm --filter @dsm/web build` termina en exit 0; el número total de tests reportado por `pnpm -r test` es igual o mayor al baseline de T0.3, nunca menor (US §9 — "mismo número de tests").
   - **Verify**: `pnpm --filter @dsm/web build && pnpm -r test 2>&1 | tee /tmp/us-022-post-tests.log && diff <(grep -oE '[0-9]+ passed' /tmp/us-022-baseline-tests.log) <(grep -oE '[0-9]+ passed' /tmp/us-022-post-tests.log)`
 - [ ] T3.2 Verificar específicamente que el sitemap y los metadatos siguen intactos (AC-3 lo nombra explícito, no sólo "la suite pasa").
