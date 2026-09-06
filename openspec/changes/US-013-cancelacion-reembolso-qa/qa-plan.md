@@ -629,7 +629,12 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   dentro, `role="dialog"` + `aria-modal`, `Escape` cierra); el input de
   confirmación y los 2 botones del diálogo son alcanzables y operables sólo
   con teclado (`Tab`/`Enter`/`Escape`), foco visible.
-- Verify: `pnpm --filter @dsm/qa test:a11y -- --grep "cancelar orden" --reporter=list` (exit 0)
+- Verify: `pnpm --filter @dsm/qa test:a11y -- --grep "QA-013-A11Y" --reporter=list` (exit 0)
+- **Estado**: verde — 2/2 tests (diálogo cerrado + diálogo real abierto, foco
+  atrapado, `Escape` cierra, tab order sólo llega al botón de confirmar una
+  vez habilitado — un botón `disabled` es correctamente salteado por `Tab`,
+  no un defecto). 0 violaciones `serious`/`critical` en los dos casos.
+  Corregido respecto al plan original: NO bloqueado por PR #67 (ver §5.3).
 
 ### 5.5 Carga (k6)
 
