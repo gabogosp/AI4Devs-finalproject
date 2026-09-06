@@ -3009,8 +3009,8 @@
   us-id: US-024
   discipline: backend
   variant: null
-  status: In Review   # 8/8 tasks cerradas (tests+typecheck+lint+spectral verdes), PR #128
-  # abierto contra main.
+  status: archived   # /archive-change 2026-09-06 — PR #128 mergeado (23436d8). Extiende
+  # openspec/specs/cuentas/ (CAP-6) con PATCH /me + Customer.avatar_url.
   parent-us: docs/user-stories/US-024-edicion-perfil-cliente.md
   linear-task-id: null
   audit-baseline: null
@@ -3040,3 +3040,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/128
   pr-opened-at: 2026-09-06
   created: 2026-09-06
+  completed-at: 2026-09-06T22:15:25Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-024-edicion-perfil-cliente-backend

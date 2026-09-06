@@ -23,6 +23,11 @@ tags:
     description: Registro, login y sesión del cliente (US-014). Superficie pública.
   - name: admin-auth
     description: Emisión del token admin (US-001, endurecida por US-014). Única ruta bajo /admin/* sin adminBearer.
+  - name: account
+    description: >-
+      Autoservicio del cliente sobre su propia cuenta (US-024) — mismo par de
+      guards y misma fuente estructural de identidad que DELETE /me
+      (retencion-datos-personales).
 security: []
 components:
   securitySchemes:
@@ -69,16 +74,42 @@ components:
     Customer:
       type: object
       description: |
-        Vista pública del cliente: EXACTAMENTE estos cinco campos. Nunca
+        Vista pública del cliente: EXACTAMENTE estos seis campos. Nunca
         password_hash, role, failed_login_attempts, lockout_count,
         locked_until ni deleted_at.
-      required: [id, email, name, phone, created_at]
+      required: [id, email, name, phone, avatar_url, created_at]
       properties:
         id: { type: string, format: uuid }
         email: { type: string, format: email }
         name: { type: string }
         phone: { type: string, nullable: true }
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          description: |
+            URL pegada por el cliente (US-024), nunca un archivo subido.
+            `null` = sin avatar, el FE muestra un placeholder de iniciales.
         created_at: { type: string, format: date-time }
+    UpdateProfileRequest:
+      type: object
+      description: Entrada de PATCH /me (US-024). Formulario completo, no un patch parcial.
+      required: [name, avatar_url]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: No vacío ni sólo-espacios (se recorta antes de validar).
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 2048
+          description: |
+            `null` quita el avatar. Si no es `null`, debe ser una URL
+            http/https válida — mismo criterio que `avatar_url` de `Customer`.
     CustomerEnvelope:
       type: object
       required: [customer]
@@ -170,3 +201,5 @@ paths:
     $ref: ./openapi/paths/password-reset-confirm.yaml
   /admin/auth/login:
     $ref: ./openapi/paths/admin-auth-login.yaml
+  /me:
+    $ref: ./openapi/paths/update-profile.yaml

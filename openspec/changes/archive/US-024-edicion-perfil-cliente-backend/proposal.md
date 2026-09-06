@@ -5,6 +5,10 @@ parent-us: US-024
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 23436d8f1345ce0e4c6db6cb895c45985351b1af
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/128
 ---
 
 # US-024 Backend — Edición de perfil del cliente

@@ -1,0 +1,44 @@
+patch:
+  tags: [account]
+  operationId: updateProfile
+  summary: Editar nombre y avatar del cliente autenticado (US-024 AC-1, AC-2, AC-3)
+  description: |
+    Ambos campos van SIEMPRE presentes (formulario completo, no un patch
+    parcial): `name` no vacío/no sólo-espacios (AC-4) y `avatar_url` es
+    `null` para quitar el avatar (AC-3) o una URL http/https válida para
+    setearlo (AC-2) — cualquier otro valor no-null se rechaza (AC-5). El
+    email NO es parte del body: enviarlo es 422 por `additionalProperties:
+    false` (AC-6). La identidad sale exclusivamente de la sesión, nunca de
+    un parámetro del request (AC-7).
+  security:
+    - sessionCookie: []
+  parameters:
+    - $ref: '../../openapi.yaml#/components/parameters/CsrfToken'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema: { $ref: '../../openapi.yaml#/components/schemas/UpdateProfileRequest' }
+  responses:
+    '200':
+      description: Perfil actualizado.
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Customer' }
+    '401':
+      description: '`dsm:auth/unauthenticated` — sin cookie de sesión válida.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: '`dsm:auth/csrf`.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: Validación de `name`/`avatar_url` fallida, o `email` presente en el body.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

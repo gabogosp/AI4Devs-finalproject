@@ -72,3 +72,14 @@ copias).
   adapter Resend arriba. El `Deferred: US-011` de la sección "Puerto de
   email" quedó anulado por la decisión del PO del 2026-08-19; el AS-BUILT es
   la fuente de verdad, no el `design.md` original.
+- **US-024 (`PATCH /v1/me`, backend) — `avatar_url` valida forma de URL real
+  (`@IsUrl`, http/https), a diferencia del validador laxo de `image_url` de
+  producto** (`@IsOptional() @IsString()`, sin verificar forma) — decisión
+  deliberada, no una inconsistencia: el AC-5 de US-024 pide explícitamente
+  rechazar valores mal formados, cosa que `image_url` nunca prometió.
+- **`orders.buyer_name` en checkout SIGUE sin derivarse de `Customer.name`
+  server-side** tras US-024 — sale siempre de `body.buyer.name` del form de
+  checkout. Que un nombre editado por `PATCH /v1/me` aparezca en el próximo
+  pedido de un cliente logueado depende de que el FE de checkout pre-llene
+  ese campo con el nombre actual — pieza 100% frontend, sin contraparte en
+  el backend de esta capacidad (US-024 backend proposal.md, tabla de ACs).
