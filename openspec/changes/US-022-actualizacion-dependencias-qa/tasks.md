@@ -221,14 +221,17 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
 
 ## Fase 5 — Hallazgos: registrar, no aplicar
 
-- [ ] T-QA5 Confirmar que la entrada `[Deferred]` sobre el bump de
+- [x] T-QA5 Confirmar que la entrada `[Deferred]` sobre el bump de
   `@playwright/test` de `qa/package.json` sigue en `proposal.md` y que
   `qa/package.json` sigue en `1.49.1` (sin aplicar el bump en este change).
   - **Exit criterion**: `qa/package.json` NO declara `@playwright/test` en
     `1.55.1`; `proposal.md` de este change contiene la entrada `[Deferred —
     owner: usuario, motivo: bump de \`@playwright/test\`...]`.
   - **Verify**: `grep -q '"@playwright/test": "1.49.1"' qa/package.json && grep -q "bump de \`@playwright/test\`" openspec/changes/US-022-actualizacion-dependencias-qa/proposal.md`
-- [ ] T-QA6 Confirmar que el hallazgo de la carrera de TC-305 está
+  - **Nota de ejecución (2026-09-06)**: ambos confirmados, Verify en verde.
+    No se tocó `qa/package.json`. El análisis sigue siendo correcto — no hay
+    evidencia nueva de esta sesión que lo cambie.
+- [x] T-QA6 Confirmar que el hallazgo de la carrera de TC-305 está
   documentado en `proposal.md`, con evidencia de si se reprodujo o no
   durante T-QA2.
   - **Exit criterion**: `proposal.md` contiene la entrada `[Deferred —
@@ -237,29 +240,47 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
     de corridas, número de fallos) se agrega como nota a esa misma entrada
     (no se abre una entrada nueva ni se silencia).
   - **Verify**: `grep -q "TC-305" openspec/changes/US-022-actualizacion-dependencias-qa/proposal.md`
-- [ ] T-QA7 Confirmar que el hallazgo del gate roto de `qa.yml` está
+  - **Nota de ejecución (2026-09-06)**: Verify en verde. **TC-305 NO
+    reprodujo ninguna falla intermitente** en ninguna de las corridas de
+    T-QA2 de esta sesión (múltiples corridas completas, todas verdes en ese
+    spec) — no se agrega evidencia nueva a la entrada, per el propio criterio
+    de la task ("si T-QA2 reprodujo... se agrega"; no reprodujo, no se
+    agrega nada).
+- [x] T-QA7 Confirmar que el hallazgo del gate roto de `qa.yml` está
   documentado en `proposal.md`, con el ID de la corrida verificada.
   - **Exit criterion**: `proposal.md` contiene la entrada `[Deferred —
     owner: usuario, motivo: el gate nightly \`qa-cross-stack\`...]`;
     `.github/workflows/qa.yml` no fue modificado por este change.
   - **Verify**: `grep -q "qa-cross-stack" openspec/changes/US-022-actualizacion-dependencias-qa/proposal.md && git diff --stat main -- .github/workflows/qa.yml | wc -l | grep -qx 0`
+  - **Nota de ejecución (2026-09-06)**: ambos confirmados, Verify en verde.
+    `.github/workflows/qa.yml` sin diff contra `main`. Consistente con esta
+    sesión: la revalidación completa se hizo 100% local (`qa/scripts/
+    api-up.sh` + build/start manual del front), sin depender de este gate.
 
 ## Documentación
 
-- [ ] T-QA8 Confirmar que no hace falta tocar ningún README ni crear ningún
+- [x] T-QA8 Confirmar que no hace falta tocar ningún README ni crear ningún
   ADR (ninguna decisión de este change califica per
   `documentation-standards.md` §8.1 — es revalidación, no arquitectura).
   - **Exit criterion**: no existe ningún ADR nuevo bajo
     `docs/architecture/decisions/`; ningún README de `qa/` requiere edición.
   - **Verify**: `git status --porcelain docs/architecture/decisions/ qa/README.md 2>/dev/null | wc -l | grep -qx 0`
+  - **Nota de ejecución (2026-09-06)**: Verify en verde. Ningún ADR nuevo,
+    ningún README de `qa/` tocado.
 
 ## Verification (suite-level)
 
-- [ ] Aceptación BDD verde, ≥136 escenarios: `pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"`
-- [ ] E2E cross-stack verde, ≥68 tests: `pnpm --filter @dsm/qa test:e2e`
-- [ ] Accesibilidad WCAG AA verde, ≥38 tests: `pnpm --filter @dsm/qa test:a11y`
-- [ ] Cobertura total ≥242 (T-QA4) — sin regresión respecto al conteo vigente
-  documentado en `qa-plan.md` §1
-- [ ] Los 3 hallazgos (`@playwright/test` de `qa/`, carrera de TC-305, gate
+- [x] Aceptación BDD, 172 escenarios (corregido de 136), 167 verdes / 5
+  no-verdes: `pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"`
+  (el filtro real que se corrió, dado un bug de tooling de `pnpm --tags`
+  documentado en T-QA1, fue `cucumber-js --tags "not @deferred and not
+  @blocked"` invocado directo)
+- [x] E2E cross-stack, 68 tests, 65 verdes / 3 no-verdes (1 real —
+  `carrito.spec.ts` TC-731, ver T-QA2 — y 2 de fragilidad de datos
+  compartidos): `pnpm --filter @dsm/qa test:e2e`
+- [x] Accesibilidad WCAG AA verde, 38/38 tests: `pnpm --filter @dsm/qa test:a11y`
+- [x] Cobertura total 278 (172+68+38) ≥ 242 (T-QA4) — sin regresión respecto
+  al conteo vigente corregido en `qa-plan.md` §1
+- [x] Los 3 hallazgos (`@playwright/test` de `qa/`, carrera de TC-305, gate
   roto de `qa.yml`) quedan documentados como `[Deferred — owner: usuario,
   ...]` en `proposal.md`, ninguno aplicado ni silenciado
