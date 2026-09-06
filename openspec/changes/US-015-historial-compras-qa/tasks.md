@@ -250,14 +250,14 @@ checklist humano.
 
 ## Fase 6: Exploratorio y cierre
 
-- [ ] T6.1 Charter `qa/exploratory/us-015-historial-compras.md` —
+- [x] T6.1 Charter `qa/exploratory/us-015-historial-compras.md` —
   QA-015-EXP-1 (manual).
   - **Exit criterion**: documenta los 3 charters de `qa-plan.md` §10 con su
     tiempo asignado, el riesgo que exploran y dónde se registran los
     hallazgos. Queda como checklist humano; `/develop-qa` no lo scaffoldea.
   - **Verify**: `test -f qa/exploratory/us-015-historial-compras.md && grep -c "^## Charter" qa/exploratory/us-015-historial-compras.md | grep -qx 3`
 
-- [ ] T6.2 Trazabilidad AC → escenario, sin huecos.
+- [x] T6.2 Trazabilidad AC → escenario, sin huecos.
   - **Exit criterion**: los 7 AC de US-015 aparecen en la matriz de
     `qa-plan.md` §3 con al menos un escenario ejecutable; cada `SC-`/`QA-` de
     la matriz existe como escenario Gherkin, contract test, script k6 o
