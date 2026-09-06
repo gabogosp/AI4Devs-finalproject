@@ -12,6 +12,12 @@ info:
     **Colisión de rutas con la capacidad `ordenes`** (US-012): ambos
     controllers comparten el prefijo `/admin/orders`. Resuelto del lado de
     `ordenes` (su `:id` restringido a forma UUID) — sin cambio de este lado.
+
+    **Extendido por US-010-orden-webhook-stock-backend** (archivada 2026-09-05): confirmación
+    automática vía webhook de MercadoPago + medio simulado «DSM» + 3 jobs admin
+    (reconciliación, limpieza de abandonadas, reintento de reembolsos). `ConfirmOrderService`
+    (US-023) se amplía con una unión discriminada de `provider` — la rama `manual` no cambia
+    una línea.
   contact:
     name: DSM
     url: https://example.com
@@ -21,6 +27,10 @@ servers:
 tags:
   - name: admin-payments
     description: Confirmación de pago manual/offline (US-023). Superficie admin, gateada por AdminGuard.
+  - name: webhooks
+    description: Notificaciones asíncronas de proveedores de pago (US-010).
+  - name: checkout
+    description: Superficie pública del checkout, autorizada por `order_token` (US-010).
 security:
   - adminBearer: []
 components:
@@ -38,6 +48,26 @@ components:
       properties:
         order_number: { type: integer, example: 1042 }
         status: { type: string, enum: [new] }
+    MercadoPagoWebhookBody:
+      type: object
+      description: Sólo `data.id` se usa. El resto se ignora — la verdad sale de la re-consulta a MercadoPago (US-010 D2/D5).
+      required: [type, data]
+      properties:
+        type: { type: string, example: payment }
+        action: { type: string, example: payment.updated }
+        data:
+          type: object
+          required: [id]
+          properties:
+            id: { type: string, example: "1234567890" }
+    SimulatePaymentRequest:
+      type: object
+      required: [order_token]
+      properties:
+        order_token:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: Claro devuelto una sola vez por `POST /v1/checkout`.
     PendingPaymentOrder:
       type: object
       required: [id, order_number, buyer_name, total_ars_cents, created_at]
@@ -59,7 +89,9 @@ components:
       description: |
         Envelope RFC 7807 (`api-standards.md` §8). Types de esta capacidad:
         `dsm:payments/order-not-pending-payment` (409),
-        `dsm:payments/insufficient-stock` (409).
+        `dsm:payments/insufficient-stock` (409),
+        `dsm:payments/webhook-unverified` (401, US-010),
+        `dsm:payments/auto-cancelled-insufficient-stock` (409, US-010).
       required: [type, title, status]
       properties:
         type: { type: string }
@@ -68,8 +100,46 @@ components:
         detail:
           type: string
           description: '**Nunca** contiene PII del comprador.'
+  responses:
+    WebhookUnverified:
+      description: |
+        Firma inválida, ausente, malformada o con `ts` fuera de ventana (US-010 AC-7). Único
+        status de error del webhook; no se consulta el pago ni se toca la base.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: "dsm:payments/webhook-unverified"
+            title: Webhook no verificable
+            status: 401
+            detail: La firma no pudo verificarse.
+    AutoCancelledInsufficientStock:
+      description: |
+        Uno o más ítems se quedaron sin stock suficiente entre el checkout y la
+        confirmación (US-010 AC-4). La orden ya quedó `cancelled` y el pago `refunded`
+        (o `refund_pending` si el reembolso a MercadoPago falló — se reintenta vía
+        `POST /admin/payments/retry-refunds`) — no hay acción de reintento posible desde
+        el cliente.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          example:
+            type: "dsm:payments/auto-cancelled-insufficient-stock"
+            title: Orden cancelada por falta de stock
+            status: 409
+            detail: Uno o más productos se quedaron sin stock; la orden fue cancelada.
 paths:
   /admin/orders/{orderId}/confirm-payment:
     $ref: ./openapi/paths/confirm-payment.yaml
   /admin/orders/pending-payment:
     $ref: ./openapi/paths/pending-payment.yaml
+  /webhooks/mercadopago:
+    $ref: ./openapi/paths/webhook-mercadopago.yaml
+  /checkout/simulate-payment:
+    $ref: ./openapi/paths/simulate-payment.yaml
+  /admin/payments/reconcile:
+    $ref: ./openapi/paths/reconcile-payments.yaml
+  /admin/orders/cleanup-abandoned:
+    $ref: ./openapi/paths/cleanup-abandoned-orders.yaml
+  /admin/payments/retry-refunds:
+    $ref: ./openapi/paths/retry-refunds.yaml

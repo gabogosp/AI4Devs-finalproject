@@ -5,6 +5,10 @@ parent-us: US-010
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-05
+merged_commit: dea4f25
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/49
 ---
 
 # US-010 Backend — Webhook de MercadoPago, medio simulado y decremento atómico de stock
