@@ -2152,6 +2152,39 @@
   archived-at: null
   archive-path: null
 
+# Planificado 2026-09-06 (/plan-qa US-015, modo A variante sibling). Backend
+# mergeado (PR #70+#71); frontend-web en curso en paralelo, otro worktree, sin
+# cerrar — este change cubre SÓLO lo QA-owned alcanzable hoy vía API (Layer 1
+# backend-aislado): aceptación BDD (11 escenarios Gherkin, 18 casos contando
+# Examples), contract testing contra el contrato PUBLICADO
+# (apps/api/docs/api/openapi.yaml — el "vivo" en openspec/specs/ no existe
+# todavía porque el backend no se archivó), k6 sobre el único NFR cuantificado
+# de la US (§9, p95 < 300ms del listado) y 3 charters exploratorios. E2E
+# cross-stack (Layer 3) DIFERIDO explícitamente — no hay UI construida
+# todavía (ver proposal.md §Out of scope, OQ-QA-015-1). Linear MCP no
+# conectado — sin sub-task de tracker que anotar (tracker-handoff §2.4).
+- name: US-015-historial-compras-qa
+  us-id: US-015
+  discipline: qa
+  variant: null
+  status: in-review   # /commit 2026-09-06: PR #79. Automatizables 100% verdes (BDD 16/16,
+  # contract 9/9, k6 dentro de NFR). Único ítem manual (QA-015-EXP-1, charter) escrito,
+  # ejecución humana pendiente. Sin bloqueados (US-015 no depende de proveedor externo).
+  parent-us: docs/user-stories/US-015-historial-compras.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 4   # US §7 presupuesta QA-US-015 en 3-4h; este plan (14 tasks,
+  # 7 fases + pre-requisitos) entra en el techo del rango.
+  assignee: claude-code
+  branch: feat/US-015-historial-compras-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/79
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
 # Planificado 2026-09-06 (/plan-frontend-web-ticket US-015). Linear MCP no conectado —
 # creación de task/comentario en el tracker omitida, sin simular.
 - name: US-015-historial-compras-frontend-web

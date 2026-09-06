@@ -442,7 +442,10 @@
   blocked_by: [US-001]
 - id: US-015
   slug: historial-compras
-  status: In Progress   # primera planificación 2026-09-06 (/plan-backend-ticket, disciplina BE).
+  status: In Review   # /commit 2026-09-06: QA (tercera y última disciplina declarada) llega
+  # a in-review, PR #79. Las 3/3 disciplinas de `disciplines: [BE, FE, QA]` tienen PR
+  # abierto (BE #70/#71, FE #74, QA #79) — la US avanza de In Progress a In Review.
+  # NOTA histórica: primera planificación 2026-09-06 (/plan-backend-ticket, disciplina BE).
   # Alcance ampliado por decisión del PO: BE construye también el escritor de
   # `orders.customer_id` que US-008 dejó diferido a esta US (ver
   # openspec/changes/US-015-historial-compras-backend/proposal.md §Why).
@@ -454,9 +457,8 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-09-06   # primera planificación (/plan-backend-ticket)
-  in-review-at: 2026-09-06     # backend PR #70 (mergeado) + FE PR #74 abierto (/commit) —
-                                # QA todavía no arrancó, el status de la US se queda en
-                                # In Progress
+  in-review-at: 2026-09-06     # backend PR #70 (mergeado) + FE PR #74 abierto (/commit) +
+                                # QA PR #79 abierto (/commit) — 3/3 disciplinas en review.
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas
