@@ -109,4 +109,23 @@ describe('ordersService', () => {
       anonymization_reason: 'requested',
     });
   });
+
+  it('cancel() llama a POST /admin/orders/{id}/cancel y devuelve el CancelOrderResponse parseado', async () => {
+    let metodoRecibido: string | null = null;
+    server.use(
+      http.post(`${API}/v1/admin/orders/${ID}/cancel`, ({ request }) => {
+        metodoRecibido = request.method;
+        return HttpResponse.json({
+          ...orden({ status: 'cancelled' }),
+          refund: { status: 'refunded', provider: 'mercadopago' },
+        });
+      }),
+    );
+
+    const resultado = await ordersService.cancel(ID);
+
+    expect(metodoRecibido).toBe('POST');
+    expect(resultado.status).toBe('cancelled');
+    expect(resultado.refund).toEqual({ status: 'refunded', provider: 'mercadopago' });
+  });
 });

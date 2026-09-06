@@ -83,7 +83,7 @@ language: es
     crudo.
   - **Verify**: `pnpm --filter @dsm/web exec tsc --noEmit`
 
-- [ ] **T2.2 — `ordersService.test.ts` — caso `cancel`**
+- [x] **T2.2 — `ordersService.test.ts` — caso `cancel`**
   - **Exit criterion**: un test nuevo en el archivo existente cubre el
     happy path (`POST /v1/admin/orders/{id}/cancel` responde 200 con
     `CancelOrderResponse` completo) y valida que `ordersService.cancel`
