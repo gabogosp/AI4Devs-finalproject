@@ -568,6 +568,23 @@
   #   2. El texto legal es PROVISIONAL con marcadores `[PENDIENTE: …]` visibles en la página.
   #      Publicar así es incumplimiento con apariencia de cumplimiento. El gate es humano
   #      (dueño + asesoría legal) porque el PO descartó el automático (OQ-FE-17 (a)).
+  #
+  # NOTA (2026-09-06, /archive-change US-017-paginas-legales-consentimiento-frontend-web):
+  # el change de FE (24/24 tasks en su tasks.md actual) estaba mergeado a main desde
+  # 2026-08-29 (bundle "Entrega 2", PR #3) pero openspec-changes.yaml nunca se había
+  # actualizado tras ese merge — drift de índice puro, corregido ahora (status → archived).
+  # Re-verificado el estado de los dos motivos que dejó abierto la nota de 2026-08-23:
+  #   1. RESUELTO — `ConsentCheckbox.tsx` (US-008 FE, PR #23, mergeado) SÍ consume
+  #      `CONSENT_COPY`/`LEGAL_ROUTES` de `features/legal/routes.ts` (verificado leyendo
+  #      el componente real, no asumido).
+  #   2. SIGUE ABIERTO — `apps/web/src/features/legal/content.ts` todavía tiene los 3
+  #      marcadores `[PENDIENTE: …]` (razón social/CUIT/domicilio, plazo de retención,
+  #      condición IVA) verificados en el código actual, sin cambios desde el diseño
+  #      original. Gate humano (dueño + asesoría legal), no técnico — ninguna sesión de
+  #      Claude puede cerrarlo.
+  # `status` de la US se queda en `In Progress` por el motivo 2, ya con FE archivado —
+  # única disciplina con change (QA vive dentro del código de FE, sin change propio, per
+  # la norma del repo documentada arriba).
 - id: US-018
   slug: contacto-whatsapp
   status: Done
