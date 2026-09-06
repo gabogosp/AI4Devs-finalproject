@@ -275,7 +275,7 @@
 
 ## Phase 13 — Documentación
 
-- [ ] T13.1 `apps/web/README.md` — agregar `/admin/metricas` a la fila "Panel
+- [x] T13.1 `apps/web/README.md` — agregar `/admin/metricas` a la fila "Panel
       del dueño (privado, `noindex`)" del mapa de rutas.
   - **Exit criterion**: la tabla de rutas incluye la nueva ruta.
   - **Verify**: `grep -n "admin/metricas" apps/web/README.md`.
