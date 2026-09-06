@@ -21,6 +21,7 @@
     "test:contract:pago-manual": "tsx contract/pago-manual.contract.ts",
     "test:contract:pago-webhook": "tsx contract/pago-webhook.contract.ts",
     "test:contract:retencion-ordenes": "tsx contract/retencion-ordenes.contract.ts",
+    "test:contract:order-history": "tsx contract/order-history.contract.ts",
     "test:contract:reports": "tsx contract/reports.contract.ts",
     "test:contract:enrichment": "tsx contract/enrichment.contract.ts",
     "test:load": "k6 run performance/baseline.js",

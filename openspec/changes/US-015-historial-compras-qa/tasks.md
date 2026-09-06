@@ -199,7 +199,7 @@ checklist humano.
 
 ## Fase 4: Contract testing
 
-- [ ] T4.1 `qa/contract/order-history.contract.ts` — QA-015-CT-1.
+- [x] T4.1 `qa/contract/order-history.contract.ts` — QA-015-CT-1.
   - **Pattern**: script `tsx` standalone con `fetch`, mismo estilo que
     `pago-webhook.contract.ts`/`retencion-ordenes.contract.ts` (sin jest, sin
     `supertest`), per `design.md` §D-QA1 — valida contra
