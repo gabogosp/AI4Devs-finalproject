@@ -605,7 +605,15 @@
   us-id: US-009
   discipline: backend
   variant: null
-  status: draft
+  status: deferred   # 2026-09-06 (F53): decisión de producto del PO — MercadoPago real
+  # queda fuera de alcance del MVP (gate 3 del cierre de dev de US-022). US-023
+  # (pago manual/offline, Done) es el único medio de pago del MVP. No bloquea US-009 Done —
+  # la US pasa a `Deferred` en us-status.yaml, no a `Done` (F53 es a nivel de change, no
+  # promueve la US: no hubo implementación real que cerrar).
+  deferral:
+    owner: PO (Gabriel Suarez)
+    trigger: "El negocio decide ofrecer pago con tarjeta online post-MVP Y se consiguen credenciales reales de MercadoPago (el bloqueo original: US-008 sin planificar, ya resuelto, pero las credenciales de MP nunca llegaron)."
+    rationale: "US-023-pago-manual-offline (Done) ya cubre transaccionar en el MVP con pago manual/offline confirmado por el dueño. Integrar MercadoPago real es trabajo nuevo de fase prod (credenciales + integración), no deuda de esta entrega — decisión de alcance, no de calidad."
   parent-us: docs/user-stories/US-009-pago-mercadopago.md
   linear-task-id: null
   audit-baseline: null

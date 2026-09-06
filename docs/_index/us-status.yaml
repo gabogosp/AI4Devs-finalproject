@@ -184,13 +184,13 @@
   blocked_by: [US-007]
 - id: US-009
   slug: pago-mercadopago
-  status: Blocked        # 2026-08-30: confirmado por el usuario — sin credenciales de MP
-  # (us-status.schema.yaml no tiene "On Hold"; "Blocked" es el valor canónico per
-  # governance-state-machine.md §2.8 — "any state with dependency / issue").
-  # US-023-pago-manual-offline nace como "puro modelo local" independiente de este pago;
-  # extrae PaymentConfirmationPort de forma que MercadoPago quede como OTRO adaptador del
-  # mismo puerto cuando esta US se retome. No se cancela — retomar cuando existan las
-  # credenciales.
+  status: Deferred        # 2026-09-06: decisión de producto del PO — MercadoPago real
+  # (pago online con tarjeta) queda FUERA DE ALCANCE del MVP. US-023-pago-manual-offline
+  # (ya Done) es el único medio de pago del MVP y cubre transaccionar. No es deuda
+  # técnica: es una decisión de alcance explícita, gate 3 del cierre de dev de US-022.
+  # PaymentConfirmationPort (extraído desde el diseño de US-023) sigue dejando a
+  # MercadoPago como un adaptador enchufable si el negocio decide agregarlo post-MVP.
+  # deferred-reason abajo documenta el trigger de reactivación.
   priority: High
   prd-capacity: 4
   disciplines: [BE, QA, INFRA]
@@ -199,7 +199,9 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
-  blocked_by: [US-008]              # US-008 sigue sin planificar: el change de US-009 arranca con pre-requisito en rojo
+  deferred-at: 2026-09-06
+  deferred-reason: "Decisión de producto del PO (2026-09-06): pago online real con MercadoPago no es necesario para el MVP — el pago manual/offline de US-023 (Done) ya permite transaccionar. Trigger de reactivación: el negocio decide ofrecer pago con tarjeta online post-MVP Y se consiguen credenciales reales de MercadoPago (bloqueo original, US-008 sin planificar)."
+  blocked_by: [US-008]              # histórico — US-008 seguía sin planificar cuando se bloqueó; ya no aplica en Deferred (excluida de active-work/build-order)
 - id: US-010
   slug: orden-webhook-stock
   status: Done   # /archive-change 2026-09-06: QA archivada (PR #57 mergeado ed9512a). Con
