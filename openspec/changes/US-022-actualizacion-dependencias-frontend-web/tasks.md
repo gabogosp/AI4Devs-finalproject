@@ -51,7 +51,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 - [x] T2.4 Bump `postcss` (devDependency directa de `apps/web`) a `8.5.18`.
   - **Exit criterion**: `apps/web/package.json` declara `"postcss": "8.5.18"` en `devDependencies`.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web ls postcss`
-- [ ] T2.5 Agregar `postcss: "8.5.18"` a `pnpm.overrides` en el `package.json` raíz, para forzar también la copia interna que `next` fija (hoy `8.4.31`).
+- [x] T2.5 Agregar `postcss: "8.5.18"` a `pnpm.overrides` en el `package.json` raíz, para forzar también la copia interna que `next` fija (hoy `8.4.31`).
   - **Pattern**: extender el objeto `pnpm.overrides` existente (mismo mecanismo que `multer: "^2.0.0"`, commit `a4ea348`) — `per design.md D3`.
   - **Exit criterion**: `pnpm-lock.yaml` no resuelve ninguna copia de `postcss` por debajo de `8.5.18` en todo el árbol.
   - **Verify**: `pnpm install && grep -c "postcss@8.4" pnpm-lock.yaml` (debe imprimir `0`)
