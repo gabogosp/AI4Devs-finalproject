@@ -314,7 +314,7 @@ language: es
 
 ## Fase 6: Superficie HTTP — 1,3 h
 
-- [ ] T6.1 DTOs — `ReportsRangeQueryDto`, `SalesQueryDto`, `TopProductsQueryDto`
+- [x] T6.1 DTOs — `ReportsRangeQueryDto`, `SalesQueryDto`, `TopProductsQueryDto`
   - **Pattern**: `class-validator` + `ValidationPipe` global, mismo estilo
     que `ListOrdersQueryDto` — `per backend-node-standards.md §4`. Rango
     como campos ISO 8601 (`_from`/`_to`) — `per api-standards.md §5.3, §7.1`.
