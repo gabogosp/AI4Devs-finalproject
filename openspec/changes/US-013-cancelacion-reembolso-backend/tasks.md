@@ -315,7 +315,7 @@ language: es
     `delivered`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=e2e-payments-cancel-order`
 
-- [ ] **T8.2 — Agregar la ruta al barrido de `e2e-rbac.spec.ts` (AC-9)**
+- [x] **T8.2 — Agregar la ruta al barrido de `e2e-rbac.spec.ts` (AC-9)**
   - **Pattern**: una línea nueva en el array `routes` — `per
     e2e-rbac.spec.ts` ya existente:
     ```ts

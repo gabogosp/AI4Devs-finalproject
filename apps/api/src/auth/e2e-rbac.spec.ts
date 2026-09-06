@@ -5,6 +5,7 @@ import { CategoriesModule } from '../categories/categories.module';
 import { MetricsModule } from '../observability/metrics.module';
 import { ProductsModule } from '../products/products.module';
 import { OrdersModule } from '../orders/orders.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { ReportsModule } from '../reports/reports.module';
 
 type Method = 'get' | 'post' | 'patch';
@@ -22,6 +23,7 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
       MetricsModule,
       ProductsModule,
       OrdersModule,
+      PaymentsModule,
       ReportsModule,
     ]);
   });
@@ -55,6 +57,8 @@ describe('RBAC admin end-to-end (e2e-rbac, AC-8)', () => {
     ['get', '/v1/admin/reports/top-products/export'],
     ['get', '/v1/admin/reports/summary'],
     ['get', '/v1/admin/reports/summary/export'],
+    // US-013 — cancelación de orden + reembolso.
+    ['post', `/v1/admin/orders/${uuid}/cancel`],
   ];
 
   function call(method: Method, path: string): request.Test {
