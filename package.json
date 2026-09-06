@@ -12,7 +12,8 @@
   "scripts": {
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "audit:gate": "pnpm audit --audit-level=high --json | node scripts/check-audit-exclusions.mjs"
   },
   "pnpm": {
     "overrides": {

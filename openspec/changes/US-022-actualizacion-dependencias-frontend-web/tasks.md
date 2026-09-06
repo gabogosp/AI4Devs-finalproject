@@ -107,7 +107,7 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
   - **Pattern**: script Node plano (sin dependencias nuevas), lee JSON de `pnpm audit --audit-level=high --json` por stdin, cruza contra `.audit-exclusions.json` por `package`+`advisoryId`, `console.error` + `process.exit(1)` en el camino de falla — mismo estilo que `apps/web/scripts/check-whatsapp-configured.mjs` — `per design.md D6`.
   - **Exit criterion**: con un input de audit sintético que contenga UN hallazgo `high` sin excluir, el script termina con exit 1 y un mensaje que nombra el paquete; con el mismo input pero el hallazgo cubierto por una exclusión completa en `.audit-exclusions.json`, termina con exit 0.
   - **Verify**: `echo '{"advisories":{"1":{"module_name":"fake-pkg","severity":"high","github_advisory_id":"GHSA-fake-0000"}}}' | node scripts/check-audit-exclusions.mjs; echo "exit=$?"` (debe imprimir `exit=1`, y el mensaje debe nombrar `fake-pkg`)
-- [ ] T6.3 Agregar el script `"audit:gate"` al `package.json` raíz.
+- [x] T6.3 Agregar el script `"audit:gate"` al `package.json` raíz.
   - **Pattern**: `"audit:gate": "pnpm audit --audit-level=high --json | node scripts/check-audit-exclusions.mjs"` — el `--audit-level=high` queda hardcodeado en esta línea, nunca parametrizable desde `.audit-exclusions.json` ni desde variables de entorno (es lo que impide subir el umbral por accidente, AC-7).
   - **Exit criterion**: `pnpm run audit:gate` es invocable desde la raíz del monorepo sin argumentos adicionales.
   - **Verify**: `grep -n '"audit:gate"' package.json`
