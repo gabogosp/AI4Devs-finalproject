@@ -2785,7 +2785,7 @@
   us-id: US-020
   discipline: frontend-web
   variant: null
-  status: in progress   # /develop-frontend-web US-020 (2026-09-06) — pre-requisitos verificados, tasks en curso
+  status: archived   # /archive-change (2026-09-06) — PR #96 mergeado 7c19fe2, 27/27 tasks
   parent-us: docs/user-stories/US-020-borrado-cuenta-datos-personales.md
   linear-task-id: null   # Linear MCP no conectado en esta sesión
   audit-baseline: null
@@ -2829,9 +2829,9 @@
   # post-borrado" que exige levantar estado por encima del guard, y la fase completa de
   # E2E dev-owned (stub + spec Playwright) que ninguna US-013-shaped-task presupuesta.
   assignee: claude-code
-  branch: null
-  pr-url: null
+  branch: feat/US-020-borrado-cuenta-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/96
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T16:30:48Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-020-borrado-cuenta-datos-personales-frontend-web
