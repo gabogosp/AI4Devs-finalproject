@@ -317,6 +317,83 @@ describe('OrdersRepository (integration)', () => {
     });
   });
 
+  /** T1.3 (US-020) — bloqueo de baja de cuenta + anonimización por cliente. */
+  describe('listBlockingForCustomer / anonymizeAllForCustomer (US-020 T1.3)', () => {
+    async function crearCliente(sufijo: string) {
+      return prisma.customer.create({
+        data: {
+          email: `cliente-${sufijo}@test.local`,
+          password_hash: 'hash-de-prueba',
+          name: `Cliente ${sufijo}`,
+        },
+      });
+    }
+
+    async function crearOrdenDe(sufijo: string, customerId: string, status: string) {
+      const orden = await repo.createPendingOrder({
+        ...ordenBase(sufijo),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId: productoB,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Gas R134a',
+            productSku: 'ORD-REPO-B',
+          },
+        ],
+      });
+      await prisma.order.update({
+        where: { id: orden.id },
+        data: { customer_id: customerId, ...(status !== 'pending_payment' ? { status } : {}) },
+      });
+      return orden;
+    }
+
+    it('listBlockingForCustomer: sólo las 4 estados bloqueantes del cliente, ninguna delivered/cancelled ni ajena', async () => {
+      const propio = await crearCliente('block-propio');
+      const ajeno = await crearCliente('block-ajeno');
+
+      const pendiente = await crearOrdenDe('block-pending', propio.id, 'pending_payment');
+      const nueva = await crearOrdenDe('block-new', propio.id, 'new');
+      const entregada = await crearOrdenDe('block-delivered', propio.id, 'delivered');
+      const cancelada = await crearOrdenDe('block-cancelled', propio.id, 'cancelled');
+      await crearOrdenDe('block-ajena', ajeno.id, 'new');
+
+      const bloqueantes = await repo.listBlockingForCustomer(propio.id);
+
+      expect(bloqueantes.map((o) => o.id).sort()).toEqual(
+        [pendiente.id, nueva.id].sort(),
+      );
+      expect(bloqueantes.map((o) => o.id)).not.toContain(entregada.id);
+      expect(bloqueantes.map((o) => o.id)).not.toContain(cancelada.id);
+    });
+
+    it('anonymizeAllForCustomer: anonimiza todas las no anonimizadas del cliente, deja intacta la de otro cliente, segunda corrida en 0', async () => {
+      const propio = await crearCliente('anon-propio');
+      const ajeno = await crearCliente('anon-ajeno');
+
+      const propia1 = await crearOrdenDe('anon-c-1', propio.id, 'delivered');
+      const propia2 = await crearOrdenDe('anon-c-2', propio.id, 'cancelled');
+      const ajena = await crearOrdenDe('anon-c-3', ajeno.id, 'delivered');
+
+      const primeraCorrida = await repo.anonymizeAllForCustomer(propio.id, 'account_deletion');
+      expect(primeraCorrida).toBe(2);
+
+      const [releida1, releida2, releidaAjena] = await Promise.all([
+        prisma.order.findUniqueOrThrow({ where: { id: propia1.id } }),
+        prisma.order.findUniqueOrThrow({ where: { id: propia2.id } }),
+        prisma.order.findUniqueOrThrow({ where: { id: ajena.id } }),
+      ]);
+      expect(releida1.anonymization_reason).toBe('account_deletion');
+      expect(releida2.anonymization_reason).toBe('account_deletion');
+      expect(releidaAjena.anonymized_at).toBeNull();
+
+      const segundaCorrida = await repo.anonymizeAllForCustomer(propio.id, 'account_deletion');
+      expect(segundaCorrida).toBe(0);
+    });
+  });
+
   /** T3.1 — list/findById/updateStatusConditional (US-012, admin fulfillment). */
   async function crearOrdenConEstado(sufijo: string, status: string) {
     const creada = await repo.createPendingOrder({

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RefreshToken } from '@dsm/db';
+import { Prisma, RefreshToken } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface IssueRefreshTokenData {
@@ -69,9 +69,18 @@ export class RefreshTokensRepository {
     return count;
   }
 
-  /** Todas las sesiones del cliente. Lo usa el reset de contraseña (§3.7). */
-  async revokeAllForCustomer(customerId: string): Promise<number> {
-    const { count } = await this.prisma.refreshToken.updateMany({
+  /**
+   * Todas las sesiones del cliente. Lo usa el reset de contraseña (§3.7) y el
+   * borrado de cuenta (US-020, T3.1). `tx` opcional (por defecto `this.prisma`)
+   * — aditivo: ningún llamador existente pasa `tx`, así que su comportamiento
+   * no cambia; el borrado de cuenta lo llama con el `tx` de su transacción
+   * para que la revocación forme parte del mismo rollback atómico.
+   */
+  async revokeAllForCustomer(
+    customerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<number> {
+    const { count } = await tx.refreshToken.updateMany({
       where: { customer_id: customerId, revoked_at: null },
       data: { revoked_at: new Date() },
     });

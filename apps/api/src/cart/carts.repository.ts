@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Cart, CartItem } from '@dsm/db';
+import { Cart, CartItem, Prisma } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotFoundError, ValidationError } from '../common/errors/domain-errors';
 import {
@@ -203,6 +203,25 @@ export class CartsRepository {
     } catch (error) {
       throw this.translate(error);
     }
+  }
+
+  /**
+   * Desvincula todos los carritos del cliente (US-020, borrado de cuenta):
+   * pone `customer_id = null`, sin borrar filas de `carts` ni de `cart_items`
+   * — el carrito guest sigue existiendo y usable hasta que venza por su
+   * propia ventana de retención (§Trade-offs de US-007), sólo deja de estar
+   * asociado a una cuenta que ya no existe. `tx` opcional: siempre corre
+   * dentro de la transacción de `AccountDeletionService.deleteAccount`.
+   */
+  async unlinkAllForCustomer(
+    customerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<number> {
+    const { count } = await tx.cart.updateMany({
+      where: { customer_id: customerId },
+      data: { customer_id: null },
+    });
+    return count;
   }
 
   /** Purga por vencimiento. Devuelve cuántas filas se borraron. */

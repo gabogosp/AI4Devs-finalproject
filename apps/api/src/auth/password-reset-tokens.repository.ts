@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PasswordResetToken } from '@dsm/db';
+import { PasswordResetToken, Prisma } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface IssueResetTokenData {
@@ -79,9 +79,17 @@ export class PasswordResetTokensRepository {
    * había varios emitidos, el que se usó consume todos los demás. Un enlace
    * viejo que siguiera vivo tras un cambio de contraseña es exactamente el
    * camino por el que un atacante que pidió un reset antes recupera el acceso.
+   *
+   * `tx` opcional (US-020, T1.4): aditivo — ningún llamador existente lo pasa,
+   * así que el reset de contraseña no cambia. El borrado de cuenta lo llama
+   * con el `tx` de su transacción para que el borrado forme parte del mismo
+   * rollback atómico.
    */
-  async deleteAllForCustomer(customerId: string): Promise<number> {
-    const { count } = await this.prisma.passwordResetToken.deleteMany({
+  async deleteAllForCustomer(
+    customerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<number> {
+    const { count } = await tx.passwordResetToken.deleteMany({
       where: { customer_id: customerId },
     });
     return count;

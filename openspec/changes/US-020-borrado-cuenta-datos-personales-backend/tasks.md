@@ -108,7 +108,7 @@ language: es
 
 ## Fase 1: Constantes + repositorios de los 3 módulos — 2,6 h
 
-- [ ] T1.1 Constantes de anonimización de `customers`
+- [x] T1.1 Constantes de anonimización de `customers`
   - **Pattern**: `apps/api/src/auth/customer-anonymization.ts`, espejo de
     `checkout/order-anonymization.ts` (US-021) — ver `design.md` §Approach. El
     email usa TLD `.invalid` (RFC 2606) y es **función**, no constante, porque
@@ -119,7 +119,7 @@ language: es
     para 2 `id` distintos y contiene `.invalid`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=customer-anonymization` en 0, con un caso que llama la función con 2 UUID distintos y asegura `!==` entre los resultados
 
-- [ ] T1.2 `AnonymizationReason` ensanchado + `AdminOrderDetailDto` sincronizado
+- [x] T1.2 `AnonymizationReason` ensanchado + `AdminOrderDetailDto` sincronizado
   - **Pattern**: `checkout/order-anonymization.ts` — `export type
     AnonymizationReason = 'retention_policy' | 'requested' | 'account_deletion'`.
     `orders/dto/order.dto.ts:124` (`AdminOrderDetailDto.anonymization_reason`)
@@ -133,7 +133,7 @@ language: es
     (`o.anonymization_reason as AdminOrderDetailDto['anonymization_reason']`).
   - **Verify**: `pnpm --filter @dsm/api typecheck` en 0
 
-- [ ] T1.3 `OrdersRepository.listBlockingForCustomer` + `anonymizeAllForCustomer`
+- [x] T1.3 `OrdersRepository.listBlockingForCustomer` + `anonymizeAllForCustomer`
   - **Pattern**: ver `design.md` §Approach ("OrdersRepository — dos métodos
     nuevos") — `per backend-node-standards.md §5 — el repositorio es el único
     punto de ORM`. `BLOCKING_ORDER_STATUSES = ['pending_payment', 'new',
@@ -147,7 +147,7 @@ language: es
     segunda corrida devuelve `0` sin error.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=orders.repository` en 0, con 2 casos nuevos (filtro de estados bloqueantes / anonimización de conjunto + segunda corrida en 0)
 
-- [ ] T1.4 `RefreshTokensRepository`/`PasswordResetTokensRepository` ganan `tx` opcional
+- [x] T1.4 `RefreshTokensRepository`/`PasswordResetTokensRepository` ganan `tx` opcional
   - **Pattern**: agregar `tx: Prisma.TransactionClient | PrismaService =
     this.prisma` a `revokeAllForCustomer` y `deleteAllForCustomer` (ya
     existían desde US-014) — mismo idioma que T1.3, ver `design.md` §Approach.
@@ -159,7 +159,7 @@ language: es
     rollback del `tx` revierte también su escritura).
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern="refresh-tokens.repository|password-reset-tokens.repository"` en 0, con 1 caso nuevo por archivo que pasa un `tx` y fuerza un rollback, verificando que la escritura no persiste
 
-- [ ] T1.5 `CartsRepository.unlinkAllForCustomer`
+- [x] T1.5 `CartsRepository.unlinkAllForCustomer`
   - **Pattern**: ver `design.md` §Approach ("CartsRepository") — mismo idioma
     `tx` opcional.
   - **Exit criterion**: pone `customer_id = null` en todos los carritos del

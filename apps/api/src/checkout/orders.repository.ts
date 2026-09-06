@@ -17,6 +17,19 @@ export interface ListOrdersByCustomerFilter {
   offset: number;
 }
 
+/**
+ * US-020 (decisión del PO §10.5) — estados que bloquean el borrado de cuenta:
+ * el cliente tiene una compra en curso que todavía puede requerir contactarlo
+ * (reclamo de pago, entrega). `delivered`/`cancelled` no bloquean: ya están
+ * cerradas.
+ */
+export const BLOCKING_ORDER_STATUSES = [
+  'pending_payment',
+  'new',
+  'preparing',
+  'ready',
+] as const;
+
 export interface ListOrdersFilter {
   statusIn: string[];
   sortField: 'order_number' | 'created_at' | 'total_ars_cents';
@@ -139,6 +152,25 @@ export class OrdersRepository {
   }
 
   /**
+   * Órdenes bloqueantes del borrado de cuenta (US-020, decisión §10.5):
+   * cualquier orden del cliente en uno de los 4 estados en curso. Acepta
+   * `tx` opcional porque `AccountDeletionService` la llama como la PRIMERA
+   * lectura dentro de la misma transacción que hace todas las escrituras del
+   * borrado — el chequeo y las escrituras comparten la misma serialización de
+   * Postgres, así que la ventana de carrera es la duración de la transacción,
+   * no el tiempo de pensar del usuario entre leer el aviso y confirmar.
+   */
+  listBlockingForCustomer(
+    customerId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<Order[]> {
+    return tx.order.findMany({
+      where: { customer_id: customerId, status: { in: [...BLOCKING_ORDER_STATUSES] } },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
    * Detalle del historial de compras del cliente autenticado (US-015 AC-2,
    * AC-4, AC-5, AC-7, design.md §D3). NO distingue "orden inexistente" de
    * "orden ajena" ni de "fuera de retención" — las tres colapsan a `null` →
@@ -248,6 +280,33 @@ export class OrdersRepository {
   ): Promise<number> {
     const { count } = await this.prisma.order.updateMany({
       where: { anonymized_at: null, created_at: { lt: cutoff } },
+      data: {
+        buyer_name: ANONYMIZED_BUYER_NAME,
+        buyer_email: ANONYMIZED_BUYER_EMAIL,
+        buyer_phone: ANONYMIZED_BUYER_PHONE,
+        anonymized_at: new Date(),
+        anonymization_reason: reason,
+      },
+    });
+    return count;
+  }
+
+  /**
+   * Anonimiza TODAS las órdenes no anonimizadas del cliente en un único
+   * `UPDATE` de conjunto (US-020, mismo idioma que `anonymizeRetentionEligible`
+   * de US-021, pero con `customer_id` en el `WHERE` en vez de un corte de
+   * fecha). Guardado por `anonymized_at: null`: una segunda corrida sobre el
+   * mismo cliente afecta 0 filas, sin error — es el mismo caso idempotente de
+   * `anonymize()`. Acepta `tx` porque siempre corre dentro de la transacción
+   * de `AccountDeletionService.deleteAccount`.
+   */
+  async anonymizeAllForCustomer(
+    customerId: string,
+    reason: AnonymizationReason,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<number> {
+    const { count } = await tx.order.updateMany({
+      where: { customer_id: customerId, anonymized_at: null },
       data: {
         buyer_name: ANONYMIZED_BUYER_NAME,
         buyer_email: ANONYMIZED_BUYER_EMAIL,
