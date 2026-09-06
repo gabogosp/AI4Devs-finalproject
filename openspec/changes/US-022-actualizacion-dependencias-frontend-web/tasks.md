@@ -71,13 +71,14 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 - [ ] T4.1 Bump `@playwright/test` de `apps/web/package.json` de `1.49.1` a `1.55.1`.
   - **Exit criterion**: `apps/web/package.json` declara `"@playwright/test": "1.55.1"`; la suite E2E completa de `apps/web` sigue verde con la misma cantidad de specs.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web test:e2e`
-- [ ] T4.2 **Spike de `vitest` 2.1.8 → 3.2.6 (major) — decisión del usuario 2026-09-06: opción (b), spike aislado antes de decidir.**
+- [x] T4.2 **Spike de `vitest` 2.1.8 → 3.2.6 (major) — decisión del usuario 2026-09-06: opción (b), spike aislado antes de decidir.**
   Crear una rama de spike separada (`spike/US-022-vitest-3` desde esta misma rama, o un commit fácilmente revertible en esta rama si el spike resulta limpio) y aplicar el bump ahí para medir el blast radius real, ANTES de decidir si se integra a esta US:
   - Bump `vitest`/`@vitest/coverage-v8` (o el provider de coverage que use el repo) a `3.2.6` en los `package.json` que lo declaren.
   - Correr la suite completa de `apps/web` (unit + component) y anotar: qué se rompe (config de `vitest.config.ts`, compatibilidad con `msw@2.7.0`, `@testing-library/react@16`, setup de `jsdom`), cuántos tests fallan y por qué (config vs. assertion real), y si el arreglo es mecánico (cambiar config) o estructural (reescribir tests).
   - **Exit criterion**: existe un resumen escrito del blast radius (en el propio PR del spike, o en una nota que se agregue a `proposal.md` bajo la pregunta Deferred original) con datos concretos — no una opinión ("parece que rompe poco"), sino el conteo real de fallas y su causa.
   - **Verify**: `pnpm --filter @dsm/web test` corrido contra el bump del spike, con el resumen de resultados documentado.
   - **Decisión posterior** (fuera de esta task, vuelve al usuario con el dato del spike en mano): si el blast radius es chico/mecánico → se integra el bump a esta US como una nueva task con su propio `Exit criterion:`/`Verify:`. Si es grande/estructural → se difiere por AC-6 (exclusión nominal en `scripts/.audit-exclusions.json`, Fase 6), documentando el motivo con el dato real del spike, no una suposición.
+  - **Resultado del spike (2026-09-06)**: rama `spike/US-022-vitest-3` (commit `a742d15`), bump aislado sin tocar `vitest.config.ts` ni ningún test. Blast radius **CERO / mecánico**: `pnpm --filter @dsm/web test` 996/996 tests (160/160 files) exit 0, idéntico al baseline; `pnpm --filter @dsm/web typecheck` exit 0; los 16 `[MSW] Error: intercepted...` en el log son preexistentes (mismo conteo exacto en el baseline de T0.3). Sin incompatibilidad detectada con `msw@2.7.0`/`@testing-library/react@16`/`jsdom`. `@vitest/coverage-v8` no está en uso en este repo (sin `--coverage` en `ci.yml`), esa superficie no se ejercitó. **Decisión queda para el usuario** — el bump NO se integró a esta rama (queda sólo en la rama de spike) hasta que decida.
 
 ## Fase 5 — Transitivas restantes vía `pnpm.overrides`
 
