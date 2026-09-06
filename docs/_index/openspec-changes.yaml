@@ -831,11 +831,14 @@
   us-id: US-017
   discipline: frontend-web
   variant: null
-  status: implemented
-  parent-us: docs/user-stories/US-017-paginas-legales-consentimiento.md
-  linear-task-id: null
-  audit-baseline: null
-  audit-derived: false
+  status: archived   # /archive-change 2026-09-06 — drift de índice corregido: el change ya
+  # estaba implementado (24/24 tasks) y mergeado a main desde 2026-08-29 vía el bundle
+  # "Entrega 2" (PR #3, feature-entrega2-GOSP), pero openspec-changes.yaml nunca se
+  # actualizó tras ese merge (quedó marcado "implemented" con metadata de "planificado,
+  # 0 tasks cerradas" contradictoria — no era trabajo pendiente). Sin spec delta (no
+  # consume/publica contrato de API). La US NO pasa a Done: el texto legal sigue
+  # provisional ([PENDIENTE: …] en content.ts, Decisión D6, riesgo aceptado por el PO) —
+  # ver us-status.yaml.
   # DECISIONES DEL PO 2026-08-22: OQ-FE-15 (a) rutas /legales/privacidad + /legales/terminos ·
   # OQ-FE-16 (b) chequeo de deriva de la versión, implementado como TEST de la suite
   # (versionContract.test.ts) en vez de script de deploy — corre en cada CI y no depende de
@@ -880,13 +883,13 @@
   # verificación del texto final; y (c) check-whatsapp-configured.mjs (US-018) sigue esperando
   # enganche en el mismo job.
   estimate-hours: 3.9
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: null   # nunca tuvo rama propia — llegó a main vía el bundle "Entrega 2" (PR #3)
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
   created: 2026-08-22
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-08-29T14:24:44-03:00
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-017-paginas-legales-consentimiento-frontend-web/
 
 - name: US-007-carrito-compra-frontend-web
   us-id: US-007

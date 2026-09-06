@@ -6,7 +6,23 @@ discipline: frontend-web
 variant: null
 language: es
 created: 2026-08-22
+archived: true
+archived_at: 2026-09-06
+merged_commit: 9a9fc53ef86bcba180979eccbaba3381facfb6a7
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/3
 ---
+
+> **Nota de archivo (2026-09-06)**: este change se implementó y mergeó a `main` el
+> 2026-08-29 como parte del bundle "Entrega 2" (PR #3, `feature-entrega2-GOSP` — el
+> modelo de rama de integración compartida que este repo abandonó después). 24/24
+> tasks cerradas, código real en `apps/web/src/features/legal/`. `openspec-changes.yaml`
+> nunca se actualizó tras ese merge (quedó con metadata de "planificado, sin ejecutar")
+> — drift puro de índice, detectado y corregido recién ahora, no trabajo pendiente.
+>
+> **El texto legal SIGUE siendo provisional** (`[PENDIENTE: …]` visible en
+> `content.ts`, per Decisión D6 — sin gate automático, riesgo aceptado por el PO). Esta
+> disciplina (FE) se archiva porque el código está completo y shippeado tal como se
+> diseñó; la US **no pasa a Done** por esto — ver `us-status.yaml`.
 
 # US-017 Frontend Web — Páginas legales + consentimiento
 
