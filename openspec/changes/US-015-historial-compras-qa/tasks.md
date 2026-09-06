@@ -83,7 +83,7 @@ checklist humano.
 
 ## Fase 1: Suite de aceptación — happy path y estado vacío
 
-- [ ] T1.1 `qa/acceptance/features/historial-compras.feature` +
+- [x] T1.1 `qa/acceptance/features/historial-compras.feature` +
   `qa/acceptance/steps/historial-compras.steps.ts` — SC-015-H1, SC-015-H2.
   - **Pattern**: `Característica`/`Antecedentes`/`Escenario` en español, mismo
     estilo que `pago-webhook.feature`; steps contra `APIRequestContext` (nunca
@@ -97,7 +97,7 @@ checklist humano.
     detalle trae `items[]` (con cantidad/precio), `status` y `fulfillment`.
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015 and @happy"`
 
-- [ ] T1.2 SC-015-A1 (estado vacío, AC-3).
+- [x] T1.2 SC-015-A1 (estado vacío, AC-3).
   - **Pattern**: cliente registrado sin ninguna compra (`nuevaCuenta()` sola,
     sin `compraLogueada`) → `GET /v1/me/orders`.
   - **Exit criterion**: responde 200 con `data: []` y `pagination.total === 0`

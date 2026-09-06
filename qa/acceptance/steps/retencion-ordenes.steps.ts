@@ -133,7 +133,12 @@ async function dispararSweep(w: CatalogWorld): Promise<{ status: number; body: a
   return r;
 }
 
-async function dispararAnonimizacion(
+/**
+ * Exportada (US-015, `historial-compras.steps.ts` §SC-015-C5, `design.md`
+ * §D-QA5): "se importa del step file de retencion-ordenes, no se copia" — el
+ * único cambio de este archivo para esa US es esta palabra clave.
+ */
+export async function dispararAnonimizacion(
   w: CatalogWorld,
   id: string,
   token = w.token,

@@ -48,11 +48,14 @@ export interface CompraLogueada {
   totalArsCents: number;
 }
 
-async function comprarConSesion(slug: string, sufijoCuenta: string): Promise<{
+async function comprarConSesion(
+  slug: string,
+  actor: string | Sesion,
+): Promise<{
   sesion: Sesion;
   checkout: CheckoutCreated;
 }> {
-  const sesion = await nuevaCuenta(sufijoCuenta);
+  const sesion = typeof actor === 'string' ? await nuevaCuenta(actor) : actor;
   // `Invitado` (pese al nombre) es un wrapper agnóstico de `APIRequestContext`
   // — envolver acá el `ctx` de una cuenta CON sesión ejercita exactamente el
   // camino que `OptionalCustomerGuard` intercepta (design.md §D-QA3, Trade-offs).
@@ -116,6 +119,36 @@ export async function compraLogueadaPendiente(
   sufijoCuenta = '',
 ): Promise<CompraLogueada> {
   const { sesion, checkout } = await comprarConSesion(slug, sufijoCuenta);
+  return {
+    sesion,
+    orderNumber: checkout.order_number,
+    orderToken: checkout.order_token,
+    totalArsCents: checkout.total_ars_cents,
+  };
+}
+
+/**
+ * Segunda compra del MISMO cliente ya autenticado (`SC-015-H1` — "un cliente
+ * con sesión que compró dos veces"). Reusa la sesión existente en vez de
+ * crear una cuenta nueva — extensión de `comprarConSesion` más allá del
+ * snippet mínimo de `design.md` §D-QA3, necesaria porque ese escenario exige
+ * que las DOS compras sean de la MISMA cuenta, no de dos cuentas distintas.
+ */
+export async function compraLogueadaConSesion(
+  sesion: Sesion,
+  slug: string,
+): Promise<CompraLogueada> {
+  const { checkout } = await comprarConSesion(slug, sesion);
+  const confirm = await fetch(`${API}/v1/checkout/simulate-payment`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ order_token: checkout.order_token }),
+  });
+  if (confirm.status !== 200) {
+    throw new Error(
+      `[qa/seed-order-history] simulate-payment → ${confirm.status}: ${await confirm.text()}`,
+    );
+  }
   return {
     sesion,
     orderNumber: checkout.order_number,
