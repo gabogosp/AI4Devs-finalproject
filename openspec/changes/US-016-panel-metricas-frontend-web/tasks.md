@@ -110,7 +110,7 @@
   - **Exit criterion**: `null` cuando `requested` es `undefined` o coincide con
     `effective`; string con la fecha efectiva cuando difiere.
   - **Verify**: `pnpm --filter @dsm/web exec vitest run src/features/metrics/rangeClampNote.test.ts`.
-- [ ] T5.2 `src/features/metrics/RangeFilterForm.tsx` — dos `<input
+- [x] T5.2 `src/features/metrics/RangeFilterForm.tsx` — dos `<input
       type="date">` (from/to) con estado "borrador" local + botón "Aplicar";
       valida `from <= to` inline (deshabilita "Aplicar" + mensaje) antes de
       llamar `onApply`.
