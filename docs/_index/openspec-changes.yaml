@@ -2025,7 +2025,7 @@
   us-id: US-016
   discipline: frontend-web
   variant: null
-  status: in progress   # /develop-frontend-web 2026-09-05 — T0.1/T0.2 cerradas
+  status: draft
   parent-us: docs/user-stories/US-016-panel-metricas.md
   linear-task-id: null
   audit-baseline: null
