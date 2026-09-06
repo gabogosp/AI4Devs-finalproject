@@ -171,7 +171,7 @@ language: es
     explícitos, mismo patrón que `PurchaseHistoryList.tsx`).
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewsSection`
 
-- [ ] **T-A10 — `ReviewsSection.a11y.test.tsx` — axe-core sobre los 4 `viewerState` (mismo criterio que `order-history/a11y.test.tsx`)**
+- [x] **T-A10 — `ReviewsSection.a11y.test.tsx` — axe-core sobre los 4 `viewerState` (mismo criterio que `order-history/a11y.test.tsx`)**
   - **Exit criterion**: montado con datos de fixture para cada uno de los 4 `viewerState` (más
     `reviews.status === 'loading'` y `'error'`), axe-core reporta 0 violaciones
     `serious`/`critical` en los 6 casos.

@@ -23,7 +23,7 @@ export function StarRatingDisplay({ value, mode }: StarRatingDisplayProps) {
       : `${formatted} de 5 estrellas`;
 
   return (
-    <span aria-label={label} className="inline-flex gap-0.5">
+    <span role="img" aria-label={label} className="inline-flex gap-0.5">
       {RATINGS.map((n) => (
         <span
           key={n}
