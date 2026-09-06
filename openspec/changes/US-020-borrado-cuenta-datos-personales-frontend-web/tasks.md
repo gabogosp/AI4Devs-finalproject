@@ -71,7 +71,7 @@ language: es
 
 ## Fase 1 — Contrato: verificar que el cliente generado sigue vigente
 
-- [ ] **T1.1 — `pnpm --filter @dsm/web codegen` no produce diff (gate `frontend-codegen-fresh`)**
+- [x] **T1.1 — `pnpm --filter @dsm/web codegen` no produce diff (gate `frontend-codegen-fresh`)**
   - **Pattern**: verificación de frescura, no regeneración — `per
     openapi-client-codegen` skill, "nunca a mano". El orquestador ya corrió
     el codegen antes de este plan.
