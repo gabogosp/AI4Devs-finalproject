@@ -206,7 +206,7 @@
     widgets con el mismo `{from, to}`; si `SalesChart` devuelve `error`,
     `TopProductsTable`/`SummaryCards` no se ven afectados.
   - **Verify**: `pnpm --filter @dsm/web exec vitest run src/features/metrics/MetricsDashboard.test.tsx`.
-- [ ] T9.2 `apps/web/app/(admin)/admin/metricas/page.tsx` — Server Component
+- [x] T9.2 `apps/web/app/(admin)/admin/metricas/page.tsx` — Server Component
       delgado: `<h1>Métricas</h1>` + `<MetricsDashboard />`.
   - **Pattern**: mismo estilo que `admin/ordenes/page.tsx` — el `AdminGuard`
     y el `X-Robots-Tag` los hereda del route group `(admin)`, cero
@@ -214,7 +214,7 @@
   - **Exit criterion**: la ruta renderiza `MetricsDashboard` dentro del layout
     `(admin)`.
   - **Verify**: `pnpm --filter @dsm/web exec vitest run "app/(admin)/admin/metricas/page.test.tsx"`.
-- [ ] T9.3 `apps/web/app/(admin)/admin/metricas/page.test.tsx` — smoke test de
+- [x] T9.3 `apps/web/app/(admin)/admin/metricas/page.test.tsx` — smoke test de
       la ruta con MSW (mirror de `admin/ordenes/page.test.tsx`): con los 3
       endpoints devolviendo 200, la página monta los 3 widgets.
   - **Exit criterion**: los `data-testid` de los 3 widgets están presentes.
