@@ -5,12 +5,16 @@ import nextConfig from '@/../next.config.mjs';
  * T0.3 — la topología de las superficies con cookies (ADR-0013).
  *
  * Este test NO prueba que la cookie viaje: eso sólo se puede demostrar contra la
- * app construida, y lo hace `e2e/cart-topology.spec.ts` (T5.1). Lo que prueba
- * acá es que las dos entradas del rewrite existen y derivan su destino de
+ * app construida, y lo hace `e2e/cart-topology.spec.ts` (T5.1) para carrito/checkout
+ * y `qa/e2e/cuenta-compras-cross-stack.spec.ts` (US-015) para el historial. Lo que
+ * prueba acá es que las cuatro entradas del rewrite existen y derivan su destino de
  * `API_INTERNAL_ORIGIN`, que es la parte que se rompe en silencio: un rewrite
  * ausente no falla en local —el navegador y el API comparten `localhost`— y
  * revienta recién en producción, donde `up.railway.app` está en la Public Suffix
- * List y el sitio y el API son sitios distintos.
+ * List y el sitio y el API son sitios distintos. La entrada de `/v1/me/*` faltó
+ * durante todo US-015 FE sin que ningún test unitario/componente lo detectara
+ * (mockeados por URL, nunca enrutados de verdad) — sólo el E2E cross-stack contra
+ * la app construida lo encontró.
  */
 type Rewrite = { source: string; destination: string };
 
@@ -27,15 +31,16 @@ async function rewrites(): Promise<Rewrite[]> {
 }
 
 describe('rewrites same-origin (ADR-0013)', () => {
-  it('cubre la superficie de sesión, la del carrito Y la del checkout', async () => {
+  it('cubre la superficie de sesión, la del carrito, la del checkout Y la del historial', async () => {
     const sources = (await rewrites()).map((r) => r.source);
 
     expect(sources).toContain('/v1/auth/:path*');
     expect(sources).toContain('/v1/cart/:path*');
     expect(sources).toContain('/v1/checkout/:path*');
+    expect(sources).toContain('/v1/me/:path*');
   });
 
-  it('deriva los tres destinos de API_INTERNAL_ORIGIN', async () => {
+  it('deriva los cuatro destinos de API_INTERNAL_ORIGIN', async () => {
     process.env.API_INTERNAL_ORIGIN = 'http://api-interno.test:9999';
 
     const rules = await rewrites();
@@ -48,6 +53,9 @@ describe('rewrites same-origin (ADR-0013)', () => {
     );
     expect(rules.find((r) => r.source === '/v1/checkout/:path*')?.destination).toBe(
       'http://api-interno.test:9999/v1/checkout/:path*',
+    );
+    expect(rules.find((r) => r.source === '/v1/me/:path*')?.destination).toBe(
+      'http://api-interno.test:9999/v1/me/:path*',
     );
   });
 
@@ -70,7 +78,7 @@ describe('rewrites same-origin (ADR-0013)', () => {
 
   it('no agrega superficies inesperadas al rewrite', async () => {
     // El rewrite es un puente hacia el API: cada entrada nueva amplía lo que el
-    // sitio proxea. Que sean exactamente tres es parte del contrato de este change.
-    expect(await rewrites()).toHaveLength(3);
+    // sitio proxea. Que sean exactamente cuatro es parte del contrato de este change.
+    expect(await rewrites()).toHaveLength(4);
   });
 });

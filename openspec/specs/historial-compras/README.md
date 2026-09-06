@@ -82,9 +82,20 @@ Layer 3 en sí sigue como candidato de follow-up, no construido en este QA chang
 - **Exploratorio**: 1 charter escrito (`qa/exploratory/us-015-historial-compras.md`) —
   ejecución queda como checklist humano.
 
-**E2E cross-stack (Layer 3)**: diferido explícitamente por el propio plan de QA (§D-QA2)
-porque la UI no existía al planificar — el FE ya aterrizó (PR #74), así que queda como
-candidato real de follow-up, no como trabajo pendiente de este archive.
+**E2E cross-stack (Layer 3)**: cerrado como follow-up (`qa/e2e/cuenta-compras-cross-stack.spec.ts`,
+sobre el harness Playwright ya existente, sin change/worktree nuevo — la QA de esta US ya
+está archivada). El escenario dirige registro + checkout REAL por el navegador (misma
+cookie que lee `OptionalCustomerGuard`), confirma el pago fuera de banda
+(`simulate-payment`, no necesita cookie) y verifica el historial + detalle en el mismo
+navegador logueado. La primera corrida contra la app **construida** (no el dev server)
+encontró un defecto real que ningún test unitario/de componente había visto: a
+`apps/web/next.config.mjs` le faltaba la entrada de rewrite same-origin para `/v1/me/*`
+(ADR-0013) — `orderHistoryService.ts` ya marcaba sus llamadas `session: 'customer'`, pero
+sin el rewrite la petición nunca llegaba al backend; Next.js devolvía su propio 404. El
+historial de compras estaba **completamente roto en cualquier deploy real** desde que
+aterrizó el FE (PR #74) hasta este fix. Corregido junto con el test (misma entrada que ya
+tienen `/v1/auth/*`, `/v1/cart/*` y `/v1/checkout/*`); `next-config.rewrites.test.ts`
+(dev-owned) actualizado para exigir las cuatro.
 
 ## Extiende `checkout` (CAP-10)
 
