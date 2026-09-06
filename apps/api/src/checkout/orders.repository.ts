@@ -433,6 +433,26 @@ export class OrdersRepository {
     return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });
   }
 
+  /**
+   * Elegibilidad para reseñar (US-025 AC-6): `true` sólo si el cliente tiene
+   * un `OrderItem` de este producto dentro de una orden PROPIA en estado
+   * `delivered`. Único punto de acceso a `orders`/`order_items` (§5) — el
+   * módulo de reseñas nunca consulta estas tablas directamente.
+   */
+  async hasDeliveredOrderWithProduct(
+    customerId: string,
+    productId: string,
+  ): Promise<boolean> {
+    const item = await this.prisma.orderItem.findFirst({
+      where: {
+        product_id: productId,
+        order: { customer_id: customerId, status: 'delivered' },
+      },
+      select: { id: true },
+    });
+    return item !== null;
+  }
+
   private translate(error: unknown): unknown {
     if (isPrismaError(error, PRISMA_FK_VIOLATION)) {
       // Un producto de la orden dejó de existir entre la lectura del carrito y

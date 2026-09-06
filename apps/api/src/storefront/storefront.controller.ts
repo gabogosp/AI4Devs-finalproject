@@ -3,6 +3,7 @@ import {
   Get,
   Headers,
   Param,
+  Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -13,6 +14,12 @@ import { StorefrontProductDto } from './dto/storefront-product.dto';
 import { StorefrontThrottlerGuard } from './storefront-throttler.guard';
 import { StorefrontCacheInterceptor } from './storefront-cache.interceptor';
 import { CatalogEventsService } from '../observability/catalog-events.service';
+import { ReviewsService } from '../reviews/reviews.service';
+import {
+  ListReviewsQueryDto,
+  PublicReviewDto,
+  PublicReviewsResponseDto,
+} from '../reviews/dto/review.dto';
 
 /**
  * Superficie **pública** del storefront (US-003) — la primera de `@dsm/api` sin
@@ -33,6 +40,7 @@ export class StorefrontProductsController {
     private readonly storefront: StorefrontService,
     private readonly events: CatalogEventsService,
     private readonly config: ConfigService,
+    private readonly reviews: ReviewsService,
   ) {}
 
   @Get(':slug')
@@ -50,5 +58,21 @@ export class StorefrontProductsController {
       product,
       this.config.getOrThrow<number>('STOREFRONT_LOW_STOCK_THRESHOLD'),
     );
+  }
+
+  /**
+   * Reseñas públicas del producto (US-025 AC-3/AC-4) — mismo throttler/caché
+   * de clase que el resto de la ficha, sin guard/interceptor propio.
+   */
+  @Get(':slug/reviews')
+  async getReviews(
+    @Param('slug') slug: string,
+    @Query() query: ListReviewsQueryDto,
+  ): Promise<PublicReviewsResponseDto> {
+    const { average, count, data, pagination } = await this.reviews.listPublic(slug, {
+      limit: query.limit,
+      offset: query.offset,
+    });
+    return { average, count, data: data.map(PublicReviewDto.from), pagination };
   }
 }

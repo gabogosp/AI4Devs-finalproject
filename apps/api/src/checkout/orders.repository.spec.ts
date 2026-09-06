@@ -1023,4 +1023,81 @@ describe('OrdersRepository (integration)', () => {
       expect(enBase.cancelled_at).toBeNull();
     },
   );
+
+  /** T2 (US-025) — elegibilidad para reseñar: orden `delivered` con el producto. */
+  describe('hasDeliveredOrderWithProduct (US-025 T2)', () => {
+    async function crearCliente(sufijo: string) {
+      return prisma.customer.create({
+        data: {
+          email: `resena-${sufijo}@test.local`,
+          password_hash: 'hash-de-prueba',
+          name: `Cliente ${sufijo}`,
+        },
+      });
+    }
+
+    async function crearOrdenConProducto(
+      sufijo: string,
+      customerId: string,
+      productId: string,
+      status: string,
+    ) {
+      const orden = await repo.createPendingOrder({
+        ...ordenBase(sufijo),
+        totalArsCents: 850_000,
+        lines: [
+          {
+            productId,
+            quantity: 1,
+            unitPriceArsCents: 850_000,
+            productName: 'Producto de prueba',
+            productSku: 'RESENA-SKU',
+          },
+        ],
+      });
+      await prisma.order.update({
+        where: { id: orden.id },
+        data: { customer_id: customerId, ...(status !== 'pending_payment' ? { status } : {}) },
+      });
+      return orden;
+    }
+
+    it('orden delivered con el producto: true', async () => {
+      const cliente = await crearCliente('elegible');
+      await crearOrdenConProducto('elegible-1', cliente.id, productoA, 'delivered');
+
+      expect(await repo.hasDeliveredOrderWithProduct(cliente.id, productoA)).toBe(true);
+    });
+
+    it.each(['pending_payment', 'new', 'preparing', 'ready', 'cancelled'])(
+      'orden en %s con el producto: false (sólo delivered habilita)',
+      async (status) => {
+        const cliente = await crearCliente(`no-elegible-${status}`);
+        await crearOrdenConProducto(`no-elegible-${status}`, cliente.id, productoA, status);
+
+        expect(await repo.hasDeliveredOrderWithProduct(cliente.id, productoA)).toBe(false);
+      },
+    );
+
+    it('orden delivered pero de OTRO producto: false', async () => {
+      const cliente = await crearCliente('otro-producto');
+      await crearOrdenConProducto('otro-producto-1', cliente.id, productoA, 'delivered');
+
+      expect(await repo.hasDeliveredOrderWithProduct(cliente.id, productoB)).toBe(false);
+    });
+
+    it('orden delivered del producto pero de OTRO cliente: false', async () => {
+      const propio = await crearCliente('propio-delivered');
+      const ajeno = await crearCliente('ajeno-delivered');
+      await crearOrdenConProducto('ajeno-delivered-1', ajeno.id, productoA, 'delivered');
+
+      expect(await repo.hasDeliveredOrderWithProduct(propio.id, productoA)).toBe(false);
+    });
+
+    it('cliente sin ninguna orden: false', async () => {
+      const cliente = await crearCliente('sin-ordenes');
+
+      expect(await repo.hasDeliveredOrderWithProduct(cliente.id, productoA)).toBe(false);
+    });
+  });
 });

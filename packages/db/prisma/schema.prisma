@@ -91,6 +91,7 @@ model Product {
   cart_items  CartItem[]
   order_items OrderItem[]
   embedding   ProductEmbedding?
+  reviews     Review[]
 
   @@index([category_id, status])
   @@map("products")
@@ -196,6 +197,7 @@ model Customer {
   password_reset_tokens PasswordResetToken[]
   carts                 Cart[]
   orders                Order[]
+  reviews               Review[]
 
   @@map("customers")
 }
@@ -396,4 +398,27 @@ model Payment {
   @@index([external_id])
   @@index([order_id])
   @@map("payments")
+}
+
+/// Reseña de producto (US-025) — estrellas 1-5 + comentario opcional, una
+/// por cliente por producto (`@@unique`, AC-5: reeditar actualiza la MISMA
+/// fila, no crea una segunda). `hidden_at` es un soft-flag de moderación
+/// (AC-8): el dueño oculta, nunca borra ni edita el contenido — el autor
+/// sigue viendo su propia reseña marcada como oculta si vuelve a la ficha.
+/// El `CHECK` de `rating` vive en la migración (Prisma no lo declara).
+model Review {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id String    @db.Uuid
+  customer    Customer  @relation(fields: [customer_id], references: [id], onDelete: Restrict)
+  product_id  String    @db.Uuid
+  product     Product   @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  rating      Int
+  comment     String?
+  hidden_at   DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now()) @updatedAt
+
+  @@unique([customer_id, product_id])
+  @@index([product_id, hidden_at])
+  @@map("reviews")
 }

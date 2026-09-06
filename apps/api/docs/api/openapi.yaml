@@ -73,6 +73,15 @@ tags:
       propia, nunca un tercero. Anonimiza `customers` (no borra la fila),
       revoca sesiones y resets pendientes, desvincula carritos y anonimiza
       órdenes históricas reusando el mecanismo de US-021
+  - name: reviews
+    description: >-
+      Reseñas y calificaciones de producto (US-025). Restringido a clientes con
+      una orden `delivered` que incluya el producto — verificado SIEMPRE
+      server-side, nunca confiando en que el FE oculte el control.
+  - name: admin-reviews
+    description: >-
+      Moderación básica del dueño sobre reseñas (US-025 AC-8): ocultar/mostrar,
+      nunca editar el contenido — soft-flag transparente hacia el autor.
       (`anonymization_reason=account_deletion`). Inmediato e irreversible: sin
       ventana de gracia. Bloquea si el titular tiene órdenes sin pagar o
       pagadas y sin entregar.
@@ -536,6 +545,37 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+  /products/{slug}/reviews:
+    get:
+      operationId: getPublicReviews
+      tags: [reviews]
+      summary: Reseñas públicas de un producto publicado (US-025 AC-3, AC-4)
+      description: >-
+        Ruta PÚBLICA sin auth. SIEMPRE excluye reseñas ocultas (moderación,
+        AC-8) del agregado y de la lista. `average: null` + `count: 0`
+        distingue "sin reseñas" (AC-4) de "reseñas con promedio bajo" (nunca
+        `0` cuando hay al menos una). Mismo criterio de 404 que la ficha
+        (draft/archived/inexistente → 404 uniforme).
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Agregado + lista paginada de reseñas visibles.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicReviewsResponse' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /categories:
     get:
       operationId: storefrontListCategories
@@ -1015,6 +1055,100 @@ paths:
         '403': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
         '429': { $ref: '#/components/responses/RateLimited' }
+  /me/reviews/{productId}:
+    get:
+      operationId: getOwnReview
+      tags: [reviews]
+      summary: Elegibilidad y reseña propia de un producto (US-025 AC-6, AC-7, AC-8)
+      description: >-
+        `eligible` refleja si el cliente tiene una orden `delivered` con este
+        producto (AC-6) — el FE lo usa para decidir si mostrar el control de
+        reseña. `review` es la reseña propia si existe, SIN IMPORTAR si está
+        oculta por moderación (AC-8 — transparencia hacia el autor); `null`
+        si todavía no reseñó. Requiere sesión (AC-7).
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OwnReviewResponse' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+    put:
+      operationId: upsertOwnReview
+      tags: [reviews]
+      summary: Dejar o editar la propia reseña de un producto (US-025 AC-1, AC-2, AC-5)
+      description: >-
+        Upsert idempotente: crea si no existe, actualiza la MISMA reseña si
+        ya existe (AC-5 — una reseña por cliente por producto). `comment` es
+        opcional (AC-2). Se rechaza con 403 si el cliente no tiene una orden
+        `delivered` con este producto (AC-6, verificado SIEMPRE server-side,
+        sin importar lo que envíe el cliente) y con 422 si `rating` está
+        fuera de 1-5 (AC-9).
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpsertReviewRequest' }
+      responses:
+        '200':
+          description: Reseña creada o actualizada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403':
+          description: '`dsm:reviews/not-eligible` — el cliente no compró el producto en una orden entregada (AC-6).'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /admin/reviews/{id}:
+    patch:
+      operationId: moderateReview
+      tags: [admin-reviews]
+      summary: Ocultar/mostrar una reseña (US-025 AC-8)
+      description: >-
+        Soft-flag de moderación — nunca borra la fila ni edita el contenido.
+        `hidden: true` la excluye del agregado y de la lista pública; el
+        autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como
+        oculta (transparencia, no censura invisible).
+      security:
+        - adminBearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModerateReviewRequest' }
+      responses:
+        '200':
+          description: Reseña actualizada.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
   /admin/imports:
     post:
       operationId: createImport
@@ -1904,6 +2038,73 @@ components:
             `null` quita el avatar (AC-3). Si no es `null`, debe ser una URL
             http/https válida (AC-5) — mismo criterio que `avatar_url` de
             `Customer`.
+    Review:
+      type: object
+      description: Reseña propia del cliente (US-025). `hidden` es real sin importar quién pregunte.
+      required: [id, rating, comment, hidden, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        hidden: { type: boolean, description: 'true si el dueño la ocultó (AC-8).' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    OwnReviewResponse:
+      type: object
+      required: [eligible, review]
+      properties:
+        eligible:
+          type: boolean
+          description: 'true si el cliente tiene una orden delivered con este producto (AC-6).'
+        review:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Review'
+    UpsertReviewRequest:
+      type: object
+      required: [rating]
+      additionalProperties: false
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5, description: 'Fuera de 1-5 → 422 (AC-9).' }
+        comment:
+          type: string
+          maxLength: 2000
+          description: Opcional — sólo calificar es válido (AC-2).
+    PublicReview:
+      type: object
+      description: Reseña en la lista pública — nunca expone `customer_id` ni `hidden_at`.
+      required: [id, customer_name, rating, comment, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        customer_name: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    PublicReviewsResponse:
+      type: object
+      required: [average, count, data, pagination]
+      properties:
+        average:
+          type: number
+          nullable: true
+          description: '`null` si no hay reseñas visibles (AC-4) — nunca `0` cuando hay al menos una.'
+        count: { type: integer, description: 'Cantidad de reseñas visibles (AC-3).' }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/PublicReview' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    ModerateReviewRequest:
+      type: object
+      required: [hidden]
+      additionalProperties: false
+      properties:
+        hidden: { type: boolean }
     CustomerEnvelope:
       type: object
       required: [customer]
