@@ -82,11 +82,11 @@ Journeys críticos identificados:
 |---|---|---|
 | Unit backend (`cancel-order.service.spec.ts`, `payment-confirmation-errors`) | dev | ✅ construido — `US-013-cancelacion-reembolso-backend/tasks.md` (mergeado, PR #66) |
 | Integration/E2E-nest backend (`e2e-payments-cancel-order.spec.ts` con `MercadoPagoClient` mockeado por DI, `e2e-rbac.spec.ts` extendido) | dev | ✅ construido — mergeado |
-| Unit/component frontend (Vitest+RTL+MSW: `ordersService.test.ts`, `OrderCancelAction.test.tsx`, `OrderDetail.test.tsx`, `orders.events.test.tsx`, `a11y.test.tsx` de componente) | dev | ✅ construido — `US-013-cancelacion-reembolso-frontend-web/tasks.md`, PR #67 en review |
+| Unit/component frontend (Vitest+RTL+MSW: `ordersService.test.ts`, `OrderCancelAction.test.tsx`, `OrderDetail.test.tsx`, `orders.events.test.tsx`, `a11y.test.tsx` de componente) | dev | ✅ construido — `US-013-cancelacion-reembolso-frontend-web/tasks.md`, PR #67 mergeado a `main` el 2026-09-06 |
 | **Aceptación BDD cross-stack (API-level, contra Postgres real)** | **QA** | este plan — **ejecutable hoy** (backend en `main`) |
 | **Contract testing** (`cancel-order` vs OpenAPI publicado) | **QA** | este plan — **ejecutable hoy** |
-| **E2E de navegador cross-stack** (backend + frontend reales) | **QA** | este plan — **bloqueada por el merge de PR #67** |
-| **Accesibilidad L3** (axe + teclado sobre la página servida, con el diálogo real abierto) | **QA** | este plan — **bloqueada por el merge de PR #67** |
+| **E2E de navegador cross-stack** (backend + frontend reales) | **QA** | este plan — **ejecutable hoy**, ver corrección §5.0/§5.3 |
+| **Accesibilidad L3** (axe + teclado sobre la página servida, con el diálogo real abierto) | **QA** | este plan — **ejecutable hoy**, ver corrección §5.0/§5.3 |
 | **Carga (k6)** | **QA** | este plan — **ejecutable hoy** (sólo backend) |
 | **Exploratorio** | **QA** | este plan (manual) — mixto, ver §5.6 |
 
@@ -299,22 +299,33 @@ bajo prueba.
 | QA-013-ACC-3 | X-2 | Cucumber+Playwright | 3 | — (ejecutable hoy) |
 | QA-013-ACC-4 | X-3 | Cucumber+Playwright | 3 | — (ejecutable hoy) |
 | QA-013-CT-1 | contrato `cancel-order` | tsx standalone (`qa/contract/`) | 3 | — (ejecutable hoy) |
-| QA-013-E2E-1 | E-1 (confirmación de dos pasos, AC-6) | Playwright | 3 | `US-013-cancelacion-reembolso-frontend-web` PR #67 |
-| QA-013-E2E-2 | E-2 (botón oculto por estado, AC-1/AC-7) | Playwright | 3 | PR #67 |
-| QA-013-E2E-3 | E-3 (mensaje según `refund.status`, AC-5 parcial) | Playwright | 3 | PR #67 |
-| QA-013-E2E-4 | E-4 (409 real, diálogo permanece abierto, AC-7) | Playwright | 3 | PR #67 |
-| QA-013-E2E-5 | E-5 (historial visible sin recargar, AC-10) | Playwright | 3 | PR #67 |
-| QA-013-E2E-6 | E-6 (acceso denegado end-to-end, AC-9) | Playwright | 3 | PR #67 |
-| QA-013-A11Y-1 | NFR WCAG 2.1 AA + teclado (diálogo real abierto) | axe-core+Playwright | 3 | PR #67 |
-| QA-013-PERF-1 | L-1 (NFR p95 < 200ms, camino sin llamada externa) | k6 | 3 | — (ejecutable hoy) |
-| TC-013-E1 | charter | manual | 3 | PR #67 (parcial) |
+| QA-013-E2E-1 | E-1 (confirmación de dos pasos, AC-6) | Playwright | 3 | — (verde) |
+| QA-013-E2E-2 | E-2 (botón oculto por estado, AC-1/AC-7) | Playwright | 3 | — (verde) |
+| QA-013-E2E-3 | E-3 (mensaje según `refund.status`, AC-5 parcial) | Playwright | 3 | — (verde, ver Estado — encontró un defecto real, resuelto por PR #72) |
+| QA-013-E2E-4 | E-4 (409 real, diálogo permanece abierto, AC-7) | Playwright | 3 | — (verde) |
+| QA-013-E2E-5 | E-5 (historial visible sin recargar, AC-10) | Playwright | 3 | — (verde) |
+| QA-013-E2E-6 | E-6 (acceso denegado end-to-end, AC-9) | Playwright | 3 | — (verde) |
+| QA-013-A11Y-1 | NFR WCAG 2.1 AA + teclado (diálogo real abierto) | axe-core+Playwright | 3 | — (verde) |
+| QA-013-PERF-1 | L-1 (NFR p95 < 200ms, camino sin llamada externa) | k6 | 3 | — (verde) |
+| TC-013-E1 | charter | manual | 3 | — (ejecutable hoy) |
 | TC-013-E2 | charter | manual | 3 | — |
 
 **Por herramienta**: Cucumber+Playwright 4 · tsx standalone 1 · Playwright 6 ·
-axe-core+Playwright 1 · k6 1 · charter manual 2. **15 test cases, 7
-ejecutables hoy** (QA-013-ACC-1..4, QA-013-CT-1, QA-013-PERF-1, TC-013-E2)
-**, 8 bloqueados por el merge de PR #67** (QA-013-E2E-1..6, QA-013-A11Y-1,
-TC-013-E1 parcial).
+axe-core+Playwright 1 · k6 1 · charter manual 2. **15 test cases, las 13
+automatizadas verdes** (QA-013-ACC-1..4, QA-013-CT-1, QA-013-E2E-1..6,
+QA-013-A11Y-1, QA-013-PERF-1) **+ 2 charters manuales documentados**.
+
+**Corrección respecto a la versión original de este plan**: cuando se
+planificó, `US-013-cancelacion-reembolso-frontend-web` (PR #67) todavía no
+había mergeado a `main`, y esta sección declaraba 8 test cases "bloqueados"
+por ese merge. Eso resultó innecesariamente conservador: este worktree ya
+estaba stacked sobre la rama del FE (el código de `OrderCancelAction.tsx` ya
+existía acá), así que `apps/web` se pudo construir y servir directo desde
+este worktree sin esperar el merge — nada estuvo realmente bloqueado. PR #67
+mergeó a `main` el 2026-09-06 mientras este plan se ejecutaba, volviendo el
+punto discutible en la práctica, pero se corrige acá para que quien lea este
+plan más tarde no interprete "bloqueado por PR #67" como una limitación real
+del entorno.
 
 ### 5.1 Aceptación BDD API-level
 
@@ -431,7 +442,8 @@ TC-013-E1 parcial).
 > con `pnpm --filter @dsm/web build && start`, contra el backend real de este
 > mismo worktree. Mismo criterio ya aplicado por `US-016-panel-metricas-qa`.
 > Las 6 corrieron; ver Estado por test case abajo — **QA-013-E2E-3 encontró
-> un defecto real** (no un bloqueo de entorno).
+> un defecto real** (no un bloqueo de entorno), **resuelto 2026-09-06 vía
+> PR #72 y re-verificado — las 6 quedan verdes contra el código corregido**.
 
 | Escenario | Definición | AC |
 |---|---|---|
@@ -458,7 +470,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: Playwright
   gherkin_scenario: "E-1 — confirmación de dos pasos contra un backend real (AC-1/AC-6)"
   name: OrderCancelActionUI_TipeaCancelarYConfirma_DisparaLaCancelacionRealYActualizaElEstado
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: con una orden real en `new`, el botón "Cancelar orden" abre
@@ -479,7 +490,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: Playwright
   gherkin_scenario: "E-2 — botón oculto por estado terminal (AC-1/AC-7 superficie)"
   name: OrderCancelActionUI_OrdenEntregadaOCancelada_NoRenderizaElBotonDeCancelar
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: en el detalle de una orden real `delivered` y de una orden
@@ -496,7 +506,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: Playwright
   gherkin_scenario: "E-3 — mensaje según refund.status, variantes alcanzables (AC-5 parcial)"
   name: OrderCancelActionUI_TrasCancelarConMedioManualOSimulado_MuestraElMensajeDeReembolsoCorrecto
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: cancelar una orden pagada por confirmación manual muestra
@@ -504,35 +513,31 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   por el medio simulado muestra el mismo mensaje (ambos casos son `refunded`
   sin llamada externa, D3 del backend).
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-3" --reporter=list` (exit 0)
-- **Estado**: 🔴 ROJO — **defecto real encontrado en `apps/web`, no un problema
-  de entorno ni de este test**. El mensaje de resultado
-  (`REFUND_MESSAGE[refund.status]`, `OrderCancelAction.tsx`) nunca llega a
-  verse: el componente arranca con
+- **Estado**: 🟢 VERDE — **RESUELTO 2026-09-06** (`fix/US-013-cancel-result-message-not-shown`,
+  PR #72). Se había encontrado un **defecto real en `apps/web`, no un problema
+  de entorno ni de este test**: el mensaje de resultado
+  (`REFUND_MESSAGE[refund.status]`, `OrderCancelAction.tsx`) nunca llegaba a
+  verse — el componente arrancaba con
   `if (order.status === 'delivered' || order.status === 'cancelled') return null;`
   ANTES del JSX que renderiza `{message && <div role="status">{message}</div>}`.
   `confirm()` llama `setMessage(...)` y, en el mismo ciclo, `onCancelled(cancelado)`
   — que en `OrderDetail.tsx` reemplaza el `order` completo por el que devolvió
-  el `200` (con `status: 'cancelled'`). En el próximo render, `OrderCancelAction`
-  recibe `order.status === 'cancelled'` y el early-return corta ANTES de
-  llegar al div del mensaje — que queda seteado en estado pero nunca se
-  pinta. Verificado con un spec de debug ad-hoc (descartado): tras cancelar,
-  `page.locator('body').innerText()` confirma que el badge pasa a "Cancelada"
-  y el historial gana una fila, pero el texto
-  "Se canceló la orden y se reintegró el pago." está ausente del DOM incluso
-  2s después. **Hallazgo secundario, menor, en el mismo componente**: la fila
-  de historial muestra "Nueva → cancelled" (inglés crudo), no "Nueva →
-  Cancelada" — `STATUS_LABEL` de `orderStatus.ts` (usado por
-  `OrderStatusHistory`) no tiene una entrada para `cancelled` (`OrderStatusBadge`
-  sí la tiene, en `LABELS`). Ninguno de los dos hallazgos bloquea AC-1/AC-6/AC-7
-  (que sí se ven, y sí pasan en QA-013-E2E-1/E2E-2/E2E-4) — el AC-5 (mensaje de
-  reembolso) es el único afectado. **Sugerencia de fix (no aplicada acá — fuera
-  de alcance de un change de QA)**: en `OrderCancelAction.tsx`, no cortar con un
-  early-return sobre TODO el componente; condicionar sólo el botón/diálogo
-  (`{order.status !== 'delivered' && order.status !== 'cancelled' && (<>...botón
-  y diálogo...</>)}`) dejando `error`/`message` fuera de ese gate. Para el
-  hallazgo secundario: agregar `cancelled: 'Cancelada'` a `STATUS_LABEL` (o a un
-  mapa de labels específico de `OrderStatusHistory`, ya que `FulfillmentStatus`
-  no incluye `cancelled` por diseño).
+  el `200` (con `status: 'cancelled'`). En el render siguiente,
+  `OrderCancelAction` recibía `order.status === 'cancelled'` y el early-return
+  cortaba ANTES de llegar al div del mensaje. **Hallazgo secundario, menor, en
+  el mismo componente, también resuelto**: la fila de historial mostraba
+  "Nueva → cancelled" (inglés crudo) en vez de "Nueva → Cancelada" —
+  `STATUS_LABEL` de `orderStatus.ts` no tiene (deliberadamente) una entrada
+  para `cancelled`; la traducción se agregó en el `label()` propio de
+  `OrderStatusHistory.tsx`. Fix aplicado: separa "ofrecer una nueva
+  cancelación" (gated por estado terminal) de "mostrar el resultado de la
+  última acción" (siempre se renderiza si hay mensaje/error) — con test de
+  regresión que reproduce el re-render real del padre. **Re-verificado en esta
+  sesión, independientemente**, con el fix aplicado (cherry-pick local de
+  `0091611`, no incluido en este PR de QA — vive en #72): QA-013-E2E-1..6
+  (6/6), QA-013-A11Y-1a/1b (2/2), QA-013-ACC-1..4 (13/13 escenarios, 71/71
+  steps), QA-013-CT-1 (6/6) y QA-013-PERF-1 (p95 15.31ms) TODOS verdes contra
+  el código corregido.
 
 ```yaml
 - id: QA-013-E2E-4
@@ -542,7 +547,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: Playwright
   gherkin_scenario: "E-4 — 409 real, diálogo permanece abierto (AC-7 negativo)"
   name: OrderCancelActionUI_Conflicto409DelBackendReal_MuestraElMensajeEspecificoYElDialogoSigueAbierto
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: forzando una carrera real (dos `POST` casi simultáneos vía
@@ -568,7 +572,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: Playwright
   gherkin_scenario: "E-5 — historial visible sin recargar (AC-10)"
   name: OrderCancelActionUI_TrasCancelarConExito_OrderStatusHistoryMuestraLaFilaNuevaSinRecargar
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: tras cancelar con éxito, sin ninguna navegación ni
@@ -576,9 +579,9 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   fila nueva con `to_status` "Cancelada".
 - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "QA-013-E2E-5" --reporter=list` (exit 0)
 - **Estado**: verde — el conteo de filas del historial crece en 1 sin
-  navegación/recarga. Nota: el TEXTO de esa fila muestra "cancelled" en vez
-  de "Cancelada" — ver el hallazgo secundario documentado en el Estado de
-  QA-013-E2E-3 (no afecta este assert, que sólo verifica el conteo).
+  navegación/recarga. El hallazgo secundario de QA-013-E2E-3 (el TEXTO de esa
+  fila mostraba "cancelled" en vez de "Cancelada") está resuelto por el mismo
+  fix (PR #72) — re-verificado, la fila ahora muestra "Cancelada".
 
 ```yaml
 - id: QA-013-E2E-6
@@ -588,7 +591,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: Playwright
   gherkin_scenario: "E-6 — acceso denegado end-to-end (AC-9)"
   name: OrderCancelActionUI_SinSesionDeAdminNiConSesionDeClienteReal_NoEjerceLaAccion
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: un visitante sin sesión que navega directo al detalle de
@@ -621,7 +623,6 @@ dev-owned (`OrderCancelAction.test.tsx`, con MSW simulando esa respuesta).
   target_tooling: axe-core+Playwright
   gherkin_scenario: "NFR — 0 violaciones AA con el diálogo de confirmación real abierto"
   name: OrderCancelActionUI_SinViolacionesAA_ConElDialogoDeConfirmacionRealAbierto
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado"
 ```
 
 - Exit criterion: 0 violaciones `serious`/`critical` en el detalle de una
@@ -688,7 +689,6 @@ presupuestos), mismo criterio que `simulate_payment`/`order_transition`.
   target_tooling: charter
   gherkin_scenario: "—"
   name: Charter_CancelarUnaOrdenConDosPestanasAbiertasYConectividadIntermitente
-  blocked_by: "US-013-cancelacion-reembolso-frontend-web PR #67, no mergeado (parcial — la mitad backend-only es ejecutable hoy)"
 ```
 
 - **Misión**: sondear la acción de cancelar tal como la va a usar el dueño en
@@ -790,7 +790,7 @@ extenderlo ni crear un archivo "hermano" nuevo.
 | # | Qué | Estado | Efecto |
 |---|---|---|---|
 | **QA-013-F1** | **AC-3 (reembolso real MercadoPago) no tiene ningún camino de API real, en este entorno, que produzca una orden con un pago `provider='mercadopago'` `approved`** — el único camino sería el webhook real de US-010, que necesita que `MercadoPagoClient.getPayment` real devuelva `approved`, y este entorno no tiene cuenta sandbox (mismo hallazgo estructural que `QA-010-F1`). A diferencia de `SC-010-N2` (que sí tenía un punto de partida y sólo bloqueaba el desenlace), acá falta el punto de partida mismo. | Declarado, no oculto — **no es un gap nuevo de este plan**, es la extensión natural de un límite de entorno ya aceptado por el repo (US-010 QA) | Ninguna aceptación/E2E de este plan intenta producir una orden `mercadopago` real; la cobertura de ese camino es 100% dev-owned (`cancel-order.service.spec.ts`, `e2e-payments-cancel-order.spec.ts`, ambos con el cliente mockeado por DI de NestJS) |
-| **B-1** | **Frontend de US-013 con PR #67 abierto, no mergeado a `main`.** El código existe en este worktree (stacked), pero la corrida real de E2E/a11y necesita `apps/web` construido desde `main`. | Bloquea QA-013-E2E-1..6, QA-013-A11Y-1, la mitad de TC-013-E1 | `/develop-frontend-web` termina el merge de PR #67 (o el propio flujo de revisión lo mergea) |
+| **B-1** | ~~Frontend de US-013 con PR #67 abierto, no mergeado a `main`.~~ **RESUELTO/no era un bloqueo real**: el worktree ya estaba stacked sobre la rama del FE, así que `apps/web` se construyó y sirvió directo desde acá sin esperar el merge (ver corrección en §5.0). PR #67 mergeó a `main` el 2026-09-06 durante la ejecución de este plan. | No bloqueó nada — corregido, ver §5.0 | — |
 | **B-2** | **Entorno**: la API tiene que arrancar con `ADMIN_BOOTSTRAP_TOKEN` (login admin real) y con las cuentas de cliente de `customer-auth.ts` operativas (US-014, ya mergeado) para N-2/E-6. | Bloquea la corrida, no el plan | ver `qa/support/qa-env.ts` (ya existe) |
 | **B-3** | **`MP_ACCESS_TOKEN` de este entorno no es una credencial de sandbox real** (`.env.example` declara `replace-me`) — consecuencia directa de QA-013-F1, no una configuración a corregir por este plan. | Informativo, no bloquea nada de lo planificado acá | Aprovisionar una cuenta sandbox de MercadoPago es tarea de infraestructura/negocio, fuera de alcance de un `qa-plan.md` |
 
@@ -824,8 +824,8 @@ extenderlo ni crear un archivo "hermano" nuevo.
 | Aceptación API-level (QA-013-ACC-1..4) | PR y nightly | sí — ejecutable desde hoy |
 | Contract testing (QA-013-CT-1) | PR y nightly | sí — ejecutable desde hoy |
 | Carga p95 < 200ms camino sin llamada externa (QA-013-PERF-1) | pre-release | sí — ejecutable desde hoy |
-| E2E de navegador cross-stack (QA-013-E2E-1..6) | pre-uat promotion | sí — desde que PR #67 mergee |
-| Accesibilidad L3 0 violaciones AA (QA-013-A11Y-1) | pre-release | sí — desde que PR #67 mergee |
+| E2E de navegador cross-stack (QA-013-E2E-1..6) | pre-uat promotion | sí — ejecutable desde hoy |
+| Accesibilidad L3 0 violaciones AA (QA-013-A11Y-1) | pre-release | sí — ejecutable desde hoy |
 | Charters exploratorios | pre-release | no (informan) |
 
 ---
@@ -905,7 +905,7 @@ plan no repite el análisis, sólo verifica AC-9/E-6 contra sesiones reales),
 | Dependencia | Estado | Efecto |
 |---|---|---|
 | `US-013-cancelacion-reembolso-backend` | Mergeado a `main` (`e296d3f`, PR #66) | Resuelto — desbloquea QA-013-ACC-1..4, QA-013-CT-1, QA-013-PERF-1 |
-| `US-013-cancelacion-reembolso-frontend-web` | PR #67 abierto, no mergeado | Bloquea QA-013-E2E-1..6, QA-013-A11Y-1 |
+| `US-013-cancelacion-reembolso-frontend-web` | PR #67, mergeado a `main` el 2026-09-06 | Resuelto — no bloqueó nada en la práctica, ver B-1/§5.0. `fix/US-013-cancel-result-message-not-shown` (PR #72) corrige el defecto que encontró QA-013-E2E-3 |
 | `US-008-checkout-guest-backend` | Archivado | Resuelto — origen del checkout real de X-1 |
 | `US-023-pago-manual-offline-backend` | Archivado | Resuelto — `confirm-payment` real, vía `seed-metricas.ts` |
 | `US-010-orden-webhook-stock-backend` | Archivado | Resuelto — `simulate-payment` real, vía `seed-metricas.ts`; también el origen del hallazgo gemelo QA-010-F1 que fundamenta QA-013-F1 |
