@@ -10,9 +10,9 @@
 | AC-1 | Ninguna dependencia de producción con vulnerabilidad critical | T2.1–T2.5, T7.1, T8.1 | in this change |
 | AC-2 | `next` en línea 15.x sin critical/high | T2.1, T2.2, T8.1 | in this change |
 | AC-3 | El sitio sigue funcionando igual | T2.2, T3.1, T3.2 | in this change |
-| AC-4 | Dependencias de dev saneadas | T4.1 (playwright) | in this change — **`vitest` 2→3: BLOCKED, ver T4.2** |
+| AC-4 | Dependencias de dev saneadas | T4.1 (playwright), T4.2 (spike de vitest, decisión posterior según blast radius) | in this change |
 | AC-5 | Audit como gate ejecutable | T6.1, T6.2, T6.3, T8.1 | in this change |
-| AC-6 | No se actualiza a ciegas | T4.2 (bloqueada, no ejecutar), cláusula de escalamiento en T5.1–T5.3 | in this change (como restricción de proceso) |
+| AC-6 | No se actualiza a ciegas | T4.2 (spike de vitest antes de decidir integrar/diferir), cláusula de escalamiento en T5.1–T5.3 | in this change (como restricción de proceso) |
 | AC-7 | No se silencia una vulnerabilidad para pasar el gate | T6.1, T6.2 | in this change |
 
 Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitamente bloqueada** (el bump de `vitest`) que no se ejecuta en este change hasta que el usuario resuelva la pregunta abierta en `proposal.md`. No se marca "deferred → change de seguimiento" porque la propia US ya prevé esta rama en su AC-6 (negative space) — la resolución queda dentro de este mismo change, simplemente sin ese task cerrado.
@@ -66,14 +66,18 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
   - **Exit criterion**: `apps/web/src/features/storefront/sitemap.test.ts` sigue verde con el mismo contenido esperado (mismas URLs, mismo `lastmod` shape); no aparece ningún `loading.tsx` nuevo en `(storefront)` (regla ya documentada en `apps/web/README.md` — un soft-200 rompería el 404 real de categoría/ficha, gap F59).
   - **Verify**: `pnpm --filter @dsm/web test -- sitemap.test.ts && find apps/web/app/\(storefront\) -iname "loading.tsx"` (el `find` debe imprimir vacío)
 
-## Fase 4 — Dev-only: `playwright` (bump) y `vitest` (bloqueada)
+## Fase 4 — Dev-only: `playwright` (bump) y `vitest` (spike aislado)
 
 - [ ] T4.1 Bump `@playwright/test` de `apps/web/package.json` de `1.49.1` a `1.55.1`.
   - **Exit criterion**: `apps/web/package.json` declara `"@playwright/test": "1.55.1"`; la suite E2E completa de `apps/web` sigue verde con la misma cantidad de specs.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web test:e2e`
-- [ ] T4.2 **BLOQUEADA — NO EJECUTAR sin decisión explícita del usuario.** `vitest` 2.1.8 → 3.2.6 (major). Ver `proposal.md` Open questions (primera entrada) para las tres opciones planteadas.
-  - **Exit criterion**: N/A — esta tarea permanece sin marcar `[x]` hasta que el usuario elija una opción. Si elige (a) diferir, la resolución es una entrada en `scripts/.audit-exclusions.json` (Fase 6), no un bump. Si elige (b) o (c), esta tarea se reemplaza por una nueva con su propio `Exit criterion:`/`Verify:` una vez decidido.
-  - **Verify**: N/A — `develop-frontend-web` debe saltar esta tarea y continuar con Fase 5, dejándola explícitamente sin resolver en el reporte final.
+- [ ] T4.2 **Spike de `vitest` 2.1.8 → 3.2.6 (major) — decisión del usuario 2026-09-06: opción (b), spike aislado antes de decidir.**
+  Crear una rama de spike separada (`spike/US-022-vitest-3` desde esta misma rama, o un commit fácilmente revertible en esta rama si el spike resulta limpio) y aplicar el bump ahí para medir el blast radius real, ANTES de decidir si se integra a esta US:
+  - Bump `vitest`/`@vitest/coverage-v8` (o el provider de coverage que use el repo) a `3.2.6` en los `package.json` que lo declaren.
+  - Correr la suite completa de `apps/web` (unit + component) y anotar: qué se rompe (config de `vitest.config.ts`, compatibilidad con `msw@2.7.0`, `@testing-library/react@16`, setup de `jsdom`), cuántos tests fallan y por qué (config vs. assertion real), y si el arreglo es mecánico (cambiar config) o estructural (reescribir tests).
+  - **Exit criterion**: existe un resumen escrito del blast radius (en el propio PR del spike, o en una nota que se agregue a `proposal.md` bajo la pregunta Deferred original) con datos concretos — no una opinión ("parece que rompe poco"), sino el conteo real de fallas y su causa.
+  - **Verify**: `pnpm --filter @dsm/web test` corrido contra el bump del spike, con el resumen de resultados documentado.
+  - **Decisión posterior** (fuera de esta task, vuelve al usuario con el dato del spike en mano): si el blast radius es chico/mecánico → se integra el bump a esta US como una nueva task con su propio `Exit criterion:`/`Verify:`. Si es grande/estructural → se difiere por AC-6 (exclusión nominal en `scripts/.audit-exclusions.json`, Fase 6), documentando el motivo con el dato real del spike, no una suposición.
 
 ## Fase 5 — Transitivas restantes vía `pnpm.overrides`
 
