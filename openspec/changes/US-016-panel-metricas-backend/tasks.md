@@ -397,7 +397,7 @@ language: es
     ceros), nunca un archivo vacío ni un error.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac5-empty-period`
 
-- [ ] T7.2 AC-7 — extender el barrido de RBAC existente
+- [x] T7.2 AC-7 — extender el barrido de RBAC existente
   - **Pattern**: agregar las 6 rutas nuevas al array `routes` de
     `e2e-rbac.spec.ts` existente y `ReportsModule` al array de módulos de
     `bootTestApp` — **no** un spec nuevo, el invariante "ninguna ruta
