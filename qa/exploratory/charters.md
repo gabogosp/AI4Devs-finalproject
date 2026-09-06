@@ -405,3 +405,60 @@
   aserción determinista.
 - **Salida esperada**: veredicto de legibilidad del mensaje de 429 para el
   dueño, o una mejora de copy propuesta si no lo es.
+
+---
+
+# US-016 — Panel de métricas del dueño
+
+## TC-016-E1 — El panel de métricas con datos reales del dueño durante pre-UAT
+
+- **Misión**: sondear el panel con el volumen y la forma reales del catálogo del
+  dueño (no el fixture prolijo de 2-3 productos), buscando combinaciones de
+  rango+granularidad que produzcan un chart ilegible o un ranking con empates
+  no resueltos.
+- **Áreas**: rango de 12 meses completo con granularidad "día" (¿el chart se
+  vuelve ilegible con ~365 puntos?); productos con nombres largos en el
+  ranking (¿el layout de la tabla se rompe?); exportar un CSV de 12 meses y
+  abrirlo en la planilla que el dueño realmente usa; combinaciones de rango
+  que crucen el cambio de año.
+- **Riesgos**: un chart de 365 barras sin agregación visual queda inutilizable
+  aunque los datos sean correctos; un nombre de producto muy largo rompe la
+  tabla de ranking en mobile (el panel es desktop-first, pero el dueño puede
+  abrirlo desde el celular).
+- **Heurísticas**: "volumen real" (usar el catálogo real del dueño, no un
+  fixture); boundary (el cambio de año, el rango máximo de retención);
+  "sigue el dato" (abrir el CSV exportado en la planilla real del dueño).
+- **Justificación manual**: el criterio es de legibilidad y juicio, no un
+  assert determinista — mismo criterio que `TC-241` (US-002, no presente en
+  este archivo) y `TC-1250` (US-012) para charters de "uso real" de un panel
+  admin.
+- **Salida esperada**: veredicto de legibilidad del chart/ranking con volumen
+  real, o un hallazgo puntual (ilegibilidad, layout roto, CSV mal interpretado
+  por la planilla) para priorizar.
+
+## TC-016-E2 — Consistencia del resumen tras una anonimización real de US-021
+
+- **Misión**: verificar que anonimizar una orden real (`US-021`, ya archivada)
+  no cambia los números del panel de métricas — el diseño del backend
+  (`design.md` §D2/§D9) declara que `anonymized_at` sólo pisa PII del
+  comprador, nunca `status`/`total_ars_cents`, pero ningún test automatizado
+  de este plan ni de `US-021-*-qa` cruza las dos superficies.
+- **Áreas**: `POST /admin/orders/{id}/anonymize` (US-021) sobre una orden que
+  ya cuenta en el resumen del panel de métricas; comparar
+  `orders_count`/`total_ars_cents`/ranking antes y después de anonimizar esa
+  misma orden.
+- **Riesgos**: un cambio futuro en la anonimización que toque una columna que
+  `reports/` sí lee (por ejemplo, si algún día se decide anonimizar también
+  `order_items.product_name`) rompería el ranking sin que ningún test de
+  `US-021` lo note, porque esa capacidad no conoce `reports/`.
+- **Heurísticas**: "cruzar capacidades archivadas" (dos features que nunca se
+  probaron juntas); comparar snapshot antes/después de la mutación de otra
+  capacidad.
+- **Justificación manual**: cruza dos capacidades archivadas por sesiones
+  distintas (`retencion-datos-personales` y `metricas`) sin un AC formal que
+  las una — explorar la costura antes de automatizarla evita comprometer un
+  test determinista sobre una interacción que hoy es sólo una lectura del
+  diseño, no un comportamiento verificado.
+- **Salida esperada**: confirmación de que el resumen no cambia tras
+  anonimizar, o un hallazgo puntual + candidato a AC nuevo en `US-016`/`US-021`
+  si el PO quiere esa garantía automatizada (ver qa-plan.md OQ-QA-016-2).
