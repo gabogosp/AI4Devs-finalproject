@@ -81,7 +81,7 @@ language: es
 
 ## Fase 2 — Repositorios (stock / orders / payments)
 
-- [ ] **T2.1 — `StockRepository.incrementForOrder` (reintegro)**
+- [x] **T2.1 — `StockRepository.incrementForOrder` (reintegro)**
   - **Pattern**: inverso simétrico de `decrementForOrder`, sin guard `gte`
     (un incremento nunca puede fallar por cantidad) — `per
     data-architecture-patterns` (workload trivial, mismo store):
