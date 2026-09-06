@@ -109,6 +109,15 @@ Detalle completo (decisiones D10-D16, threat model STRIDE, requisitos R-7 a R-17
 - **Aviso al comprador (seam)**: `NotificationPort.orderCancelledByOwner`
   (método nuevo, mismo puerto de US-010/US-012) — entrega real
   `Deferred: US-011`.
+- **Panel del dueño** (`OrderCancelAction.tsx`, `apps/web/src/features/orders/`):
+  botón "Cancelar orden" con confirmación de dos pasos (reusa `ConfirmDialog`
+  sin modificarlo), montado junto a `OrderStatusActions` en `OrderDetail.tsx`.
+  Reconciliación directa desde `CancelOrderResponse` (sin segundo `GET`),
+  mensaje de resultado según `refund.status`, gate de visibilidad por estado
+  terminal. **Un defecto real encontrado por QA** (el mensaje de éxito nunca
+  se veía — el gate de visibilidad se disparaba en el mismo render que debía
+  mostrarlo) se corrigió en `PR #72` antes de este archive; ver
+  `decisions.md` D24.
 
 ## Qué NO está vivo todavía
 
@@ -189,6 +198,7 @@ quien toque cualquiera de los dos controllers.
 | [`US-010-orden-webhook-stock-backend`](../../changes/archive/US-010-orden-webhook-stock-backend/) | BE | Webhook de MercadoPago, medio simulado «DSM», `MercadoPagoClient`, 3 jobs admin (reconciliación/limpieza/reintento de reembolsos), `confirmed_at`/`cancelled_at`/`refund_pending` |
 | [`US-010-orden-webhook-stock-qa`](../../changes/archive/US-010-orden-webhook-stock-qa/) | QA | Suite L1/L3: 15 aceptación BDD, 13 contract, 1 k6, 2 E2E de navegador, 3 charters. Continúa el contrato de comportamiento que US-023 QA (embebida en su propio backend) construyó para el camino manual |
 | [`US-013-cancelacion-reembolso-backend`](../../changes/archive/US-013-cancelacion-reembolso-backend/) | BE | `POST /admin/orders/{id}/cancel` — cero migración, reusa `refund_pending`/`retry-refunds` de US-010 tal cual |
+| [`US-013-cancelacion-reembolso-frontend-web`](../../changes/archive/US-013-cancelacion-reembolso-frontend-web/) | FE | Acción "Cancelar orden" en `OrderDetail.tsx`, reusa `ConfirmDialog`. Defecto real encontrado por QA (mensaje de éxito nunca se veía) corregido en `PR #72` antes de este archive |
 
 Con esto, `disciplines: [BE, QA]` de US-010 queda completo — ambas disciplinas
 archivadas. Sin disciplina FE propia — la UI de confirmación manual (si existe)
@@ -196,10 +206,9 @@ vive dentro de `US-012-panel-ordenes-dueno-frontend-web`
 (`PendingPaymentsPanel.tsx`, componente separado del listado de
 fulfillment), no como un change propio de esta capacidad.
 
-FE/QA de US-013 (acción de cancelar en el panel + suite cross-stack) se
-archivan en PRs separados inmediatamente después de este — ver el índice
-(`docs/_index/openspec-changes.yaml`) para su estado más reciente si esta
-tabla no se actualizó todavía.
+QA de US-013 (suite cross-stack) se archiva en un PR separado inmediatamente
+después de este — ver el índice (`docs/_index/openspec-changes.yaml`) para
+su estado más reciente si esta tabla no se actualizó todavía.
 
 ## Estado de la provisión
 
