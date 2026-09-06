@@ -576,6 +576,10 @@ Agregar a `qa/exploratory/charters.md`:
   costura antes de automatizarla evita comprometer un test determinista sobre una
   interacción que hoy es sólo una lectura del diseño, no un comportamiento verificado.
 
+**Estado de TC-016-E1/TC-016-E2**: agregados como apéndice a `qa/exploratory/charters.md`
+(sección `# US-016 — Panel de métricas del dueño`) — quedan como checklist para el tester
+humano en pre-UAT, sin automatizar (`execution_mode: manual`, per §alcance de este plan).
+
 ---
 
 ## 6. Infraestructura de test
