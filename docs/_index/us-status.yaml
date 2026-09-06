@@ -442,9 +442,9 @@
   blocked_by: [US-014]    # no hay cuenta que borrar hasta que exista el registro
 - id: US-021
   slug: retencion-datos-ordenes
-  status: In Review   # /commit US-021-retencion-datos-ordenes-frontend-web 2026-09-05 —
-                       # las 3 disciplinas tienen PR (BE archivado, QA archivado inline,
-                       # FE #54 en review). Pasa a Done cuando FE también archive.
+  status: Done   # /archive-change US-021-retencion-datos-ordenes-frontend-web 2026-09-06 —
+                 # 3/3 disciplinas archivadas: BE (#41/#48), QA (#51, inline en el backend),
+                 # FE (#54). done-at abajo.
   priority: High
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
@@ -456,6 +456,7 @@
   in-review-at: 2026-09-05          # FE PR #54 abierto (/commit) — primera vez que se
                                      # estampa este campo: BE y QA ya habían pasado por
                                      # review y se archivaron sin que quedara registrado acá
+  done-at: 2026-09-06                # 3/3 disciplinas archivadas (/archive-change FE)
   # Origen: hueco detectado por el plan de backend de US-008 al modelar la PII del checkout
   # (su OQ-BE-5). El PO decidió el 2026-08-22 abrirla como CONDICIÓN PREVIA A PRODUCCIÓN.
   # US-020 cubre el borrado de CUENTAS; el comprador invitado no tiene cuenta que borrar, y

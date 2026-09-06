@@ -1926,7 +1926,7 @@
   us-id: US-021
   discipline: frontend-web
   variant: null
-  status: in review   # /commit 2026-09-05 — 27/27 tasks cerradas (Fase 0-7 + verificación
+  status: archived   # /archive-change 2026-09-06 — 27/27 tasks cerradas (Fase 0-7 + verificación
   # de suite), PR #54 abierto. El gap de contrato de T0.1 (ver design.md "El gap de
   # contrato") se resolvió en PR #52 (mergeado, 91aa3f1) antes de ejecutar
   # /develop-frontend-web. Pendiente no bloqueante del pre-merge checklist: verificación
@@ -1956,6 +1956,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/54
   pr-opened-at: 2026-09-05
   created: 2026-09-05
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T01:07:51Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-021-retencion-datos-ordenes-frontend-web/
