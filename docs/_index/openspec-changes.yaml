@@ -2082,9 +2082,13 @@
   us-id: US-015
   discipline: backend
   variant: null
-  status: in review   # /commit 2026-09-06 — 26/26 tasks cerradas, suite completa + e2e
-  # verdes (235 suites/1927 tests tras merge de main), lint/typecheck limpios, cero
-  # regresión en los 12 archivos de US-008. PR #70 abierto.
+  status: archived   # /archive-change 2026-09-06 — 26/26 tasks cerradas, suite completa
+  # + e2e verdes (235 suites/1927 tests), lint/typecheck limpios, cero regresión en los
+  # 12 archivos de US-008. PR #70 mergeado. Crea openspec/specs/historial-compras/
+  # (CAP-8, primera entrega) + suma una decisión a openspec/specs/checkout/decisions.md
+  # (OptionalCustomerGuard). El contrato publicado se completó en PR #71 (follow-up
+  # dedicado, T6.1 del tasks.md sólo lintiaba el draft, no lo mergeaba al spec del
+  # servicio — mismo patrón de gap ya visto en US-021, ver decisions.md de la capacidad).
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null
@@ -2148,9 +2152,9 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/70
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T12:14:11Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-015-historial-compras-backend/
 
 # Planificado 2026-09-06 (/plan-qa US-015, modo A variante sibling). Backend
 # mergeado (PR #70+#71); frontend-web en curso en paralelo, otro worktree, sin

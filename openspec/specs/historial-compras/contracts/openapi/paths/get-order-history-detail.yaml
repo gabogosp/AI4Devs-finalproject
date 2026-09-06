@@ -1,0 +1,35 @@
+get:
+  operationId: getOrderHistoryDetail
+  tags: [customer-orders]
+  summary: Detalle de una compra propia (US-015 AC-2)
+  description: >-
+    Ítems con cantidades y precios, estado actual y retiro en sucursal. La
+    propiedad (`customer_id`) y la ventana de retención (AC-7) se verifican
+    en la misma consulta que resuelve la orden.
+  parameters:
+    - name: order_number
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1000 }
+      description: Identificador público legible de la orden ("Pedido #1042").
+  responses:
+    '200':
+      description: Detalle de la orden — ítems, cantidades, precios, estado y retiro.
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/OrderHistoryDetail' }
+    '401':
+      description: Sin sesión de cliente válida.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: >-
+        `dsm:checkout/order-not-found` — la orden no existe, no pertenece al
+        cliente autenticado, o quedó fuera de la ventana de retención
+        vigente. Las tres causas responden igual (IDOR).
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'
