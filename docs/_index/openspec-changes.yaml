@@ -2199,15 +2199,19 @@
   # genérico durante una corrida real (reusa thresholds YA existentes —
   # list_products/storefront_product de qa/performance/lib/thresholds.js, no inventa un
   # número nuevo), 3 charters exploratorios.
-  status: draft
+  status: in-review   # /commit 2026-09-06: PR #68. Automatizables 100% verdes (BDD 16/16,
+  # contract 12/12, k6 dentro de NFR). Quedan 2 ítems manuales por diseño, no por
+  # incompletitud: QA-005-ACC-2 (5 escenarios) bloqueado sin GEMINI_API_KEY real (hallazgo
+  # QA-005-F1); QA-005-EXP-1 charter escrito, ejecución humana pendiente.
   parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 9
-  assignee: sin-asignar
+  assignee: claude-code
   branch: feat/US-005-enriquecimiento-ia-embeddings-qa
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/68
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
   completed-at: null
   archived-at: null
