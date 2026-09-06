@@ -390,7 +390,7 @@ language: es
     siempre da 0, un falso-verde silencioso que el propio test detectó antes
     de este fix.
 
-- [ ] T5.10 AC-15 — doble confirmación (negative-space)
+- [x] T5.10 AC-15 — doble confirmación (negative-space)
   - **Pattern**: llamar `DELETE /v1/me` dos veces seguidas con la misma cookie
     de sesión (simula doble clic / dos pestañas), y también con
     `Promise.all` (simula la carrera real de dos pestañas en paralelo).
@@ -399,6 +399,13 @@ language: es
     `AccountEventsService.count('account.deleted')` incrementa exactamente 1,
     no 2.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac15-double-confirm-idempotent` en 0 (spec nuevo)
+  - Resultado real: 2/2 passed (2.768s). Secuencial: `deleted_at` es el MISMO
+    instante entre la 1ª y la 2ª llamada (no sólo "no nulo") y exactamente 1
+    orden queda anonimizada. Concurrente (`Promise.all`, misma cookie): ambas
+    responden 204, un solo efecto — ejercita la carrera real, no sólo el orden
+    secuencial. Contador `account.deleted` +1 en ambos casos (delta contra el
+    valor previo, no `toBe(1)` — el contador de `MetricsService` es un
+    Prometheus real, nunca se resetea entre tests).
 
 ---
 
