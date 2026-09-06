@@ -92,11 +92,15 @@
   # vivos (2 endpoints admin: GET /admin/enrichment/status, POST /admin/enrichment/runs).
   # `status` de la US NO avanza a `Done`: INFRA (tercera disciplina declarada) nunca se
   # planificó — no hay `openspec/changes/US-005-*-infrastructure/`.
-  # NOTA (2026-09-06, /plan-qa + /develop-qa + /commit US-005): QA planificada, ejecutada y
-  # en review en `openspec/changes/US-005-enriquecimiento-ia-embeddings-qa/` (PR #68) — BDD
-  # 16/16, contract 12/12, k6 dentro de NFR, más el fix de higiene de entorno compartido
+  # NOTA (2026-09-06, /archive-change US-005-enriquecimiento-ia-embeddings-qa, PR #68
+  # mergeado a9e0a18): disciplina QA archivada
+  # (openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-qa/). BDD 16/16,
+  # contract 12/12, k6 dentro de NFR, más el fix de higiene de entorno compartido
   # (QA-005-F1: `ENRICHMENT_ENABLED=false` default en `qa/scripts/api-up.sh`). No se repiten
-  # `QA-004-REL-*`/`QA-004-PERF-3`, ya derivadas al qa-plan de US-004. Se queda en
+  # `QA-004-REL-*`/`QA-004-PERF-3`, ya derivadas al qa-plan de US-004. Con BE + QA
+  # archivados, `status` de la US SIGUE sin avanzar a `Done`: INFRA (tercera disciplina
+  # declarada) nunca se planificó — no hay `openspec/changes/US-005-*-infrastructure/`. Se
+  # queda en
   # `In Progress` (INFRA pendiente, nunca planificada). `blocked_by` sin tocar (propiedad de
   # otro agente).
   blocked_by: [US-001, US-006]
