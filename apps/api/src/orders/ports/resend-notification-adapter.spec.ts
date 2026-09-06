@@ -150,6 +150,22 @@ describe('ResendNotificationAdapter (US-011 T6.1)', () => {
     expect(enviados[0].to).toBe('dueno@dsmferreteria.com.ar');
     expect(enviados[0].from).toBe('pedidos@dsmferreteria.com.ar');
   });
+
+  it('orderCancelledByOwner (US-013 AC-4) envía al comprador con Idempotency-Key propia', async () => {
+    const { cliente, send, opciones } = resendFalso([{}]);
+    const events = new NotificationEventsService();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
+
+    await new ResendNotificationAdapter(cliente, CONFIG, events).orderCancelledByOwner({
+      orderId: 'order-3',
+      orderNumber: 1003,
+      buyerName: CENTINELA_NOMBRE,
+      buyerEmail: CENTINELA_EMAIL,
+    });
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(opciones[0]).toEqual({ idempotencyKey: 'order_cancelled_by_owner:order-3' });
+  });
 });
 
 describe('selección del adapter por entorno (US-011 T7.1)', () => {

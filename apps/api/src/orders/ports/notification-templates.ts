@@ -1,4 +1,5 @@
 import {
+  OrderCancelledByOwnerPayload,
   OrderCancelledNoStockPayload,
   OrderConfirmedPayload,
   OrderReadyForPickupPayload,
@@ -6,7 +7,9 @@ import {
 } from './notification.port';
 
 /**
- * Plantillas de los 4 emails del `NotificationPort` (US-011 T4.1) — texto +
+ * Plantillas de los emails del `NotificationPort` (US-011 T4.1; la 5ª,
+ * `orderCancelledByOwner`, la agregó US-013 al ampliar el puerto durante el
+ * rebase de este change — mismo patrón, sin AC propio de US-011) — texto +
  * HTML, sin librería de templating, mismo patrón que
  * `ResendPasswordResetMailer.cuerpoTexto`/`cuerpoHtml`.
  *
@@ -140,5 +143,33 @@ export function orderCancelledNoStockHtml(payload: OrderCancelledNoStockPayload)
     `<p>Tu orden #${payload.orderNumber} se canceló porque no había stock suficiente para completarla.</p>`,
     '<p>Si ya pagaste, te reintegramos el importe: no tenés que hacer nada más.</p>',
     '<p>Disculpá las molestias — escribinos por WhatsApp si tenés cualquier duda.</p>',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// orderCancelledByOwner (US-013 AC-4 — completitud del puerto, sin AC propio
+// de US-011; el método lo agregó US-013 al ampliar `NotificationPort` mientras
+// esta US estaba en curso — mismo criterio que `orderCancelledNoStock`: dejarlo
+// mudo reabriría el problema que el puerto fue diseñado para evitar)
+// ---------------------------------------------------------------------------
+
+export function orderCancelledByOwnerText(payload: OrderCancelledByOwnerPayload): string {
+  return [
+    `Hola ${payload.buyerName},`,
+    '',
+    `Tu orden #${payload.orderNumber} fue cancelada.`,
+    '',
+    'Si ya pagaste, te reintegramos el importe: no tenés que hacer nada más.',
+    '',
+    'Si tenés dudas, escribinos por WhatsApp.',
+  ].join('\n');
+}
+
+export function orderCancelledByOwnerHtml(payload: OrderCancelledByOwnerPayload): string {
+  return [
+    `<p>Hola ${escapeHtml(payload.buyerName)},</p>`,
+    `<p>Tu orden #${payload.orderNumber} fue cancelada.</p>`,
+    '<p>Si ya pagaste, te reintegramos el importe: no tenés que hacer nada más.</p>',
+    '<p>Si tenés dudas, escribinos por WhatsApp.</p>',
   ].join('\n');
 }

@@ -5,7 +5,8 @@ export type NotificationType =
   | 'order_confirmed'
   | 'owner_new_order'
   | 'order_ready_for_pickup'
-  | 'order_cancelled_no_stock';
+  | 'order_cancelled_no_stock'
+  | 'order_cancelled_by_owner';
 
 /**
  * Eventos de negocio del envío de notificaciones por email (US-011,
@@ -14,8 +15,10 @@ export type NotificationType =
  * sale por `GET /v1/admin/metrics` como
  * `dsm_notifications_events_total{event="..."}`.
  *
- * `type` es la única label además de `event` (cardinalidad acotada: 4
- * valores). `orderId`/`attempts` van al **log**, nunca a la métrica.
+ * `type` es la única label además de `event` (cardinalidad acotada: 5
+ * valores — el 5°, `order_cancelled_by_owner`, lo agrega US-013 al ampliar
+ * `NotificationPort` con un método más durante el rebase de este change).
+ * `orderId`/`attempts` van al **log**, nunca a la métrica.
  *
  * Cero PII: ni `buyerName` ni `buyerEmail` llegan nunca a este servicio.
  */

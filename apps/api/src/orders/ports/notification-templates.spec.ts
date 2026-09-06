@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import {
+  orderCancelledByOwnerHtml,
+  orderCancelledByOwnerText,
   orderCancelledNoStockHtml,
   orderCancelledNoStockText,
   orderConfirmedHtml,
@@ -82,6 +84,15 @@ describe('notification-templates (US-011 T4.1)', () => {
 
   it('orderCancelledNoStockText incluye el número de orden', () => {
     expect(orderCancelledNoStockText(CANCELLED_PAYLOAD)).toContain('1003');
+  });
+
+  it('orderCancelledByOwnerText incluye el número de orden (US-013 AC-4)', () => {
+    expect(orderCancelledByOwnerText(CANCELLED_PAYLOAD)).toContain('1003');
+  });
+
+  it('orderCancelledByOwnerHtml escapa buyerName', () => {
+    const payload = { ...CANCELLED_PAYLOAD, buyerName: '<script>x</script>' };
+    expect(orderCancelledByOwnerHtml(payload)).not.toContain('<script>x</script>');
   });
 
   it('AC-8 defensivo: el archivo completo no contiene subcadenas de datos de pago', () => {

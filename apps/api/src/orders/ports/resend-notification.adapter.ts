@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import {
   NotificationPort,
+  OrderCancelledByOwnerPayload,
   OrderCancelledNoStockPayload,
   OrderConfirmedPayload,
   OrderReadyForPickupPayload,
@@ -10,6 +11,8 @@ import {
 } from './notification.port';
 import { backoffDelayMs, isTransientResendError } from './notification-backoff';
 import {
+  orderCancelledByOwnerHtml,
+  orderCancelledByOwnerText,
   orderCancelledNoStockHtml,
   orderCancelledNoStockText,
   orderConfirmedHtml,
@@ -31,9 +34,11 @@ interface EnvioParams {
 }
 
 /**
- * Adapter de producción del `NotificationPort` (US-011 T6.1) — envía los 4
- * emails vía Resend. Mismo contrato que `ResendPasswordResetMailer`: nunca
- * propaga, timeout acotado por intento, sin PII en logs.
+ * Adapter de producción del `NotificationPort` (US-011 T6.1) — envía los 5
+ * emails del puerto vía Resend (el 5°, `orderCancelledByOwner`, lo agregó
+ * US-013 durante el rebase de este change). Mismo contrato que
+ * `ResendPasswordResetMailer`: nunca propaga, timeout acotado por intento,
+ * sin PII en logs.
  *
  * Reintento con backoff DENTRO de esta misma llamada síncrona — sin cola,
  * ver `design.md` "Decisión 1". Clasifica transitorio/permanente por
@@ -96,6 +101,18 @@ export class ResendNotificationAdapter implements NotificationPort {
       subject: `Tu orden #${payload.orderNumber} se canceló`,
       text: orderCancelledNoStockText(payload),
       html: orderCancelledNoStockHtml(payload),
+    });
+  }
+
+  /** US-013 AC-4 — el dueño canceló manualmente una orden pagada no entregada. */
+  async orderCancelledByOwner(payload: OrderCancelledByOwnerPayload): Promise<void> {
+    await this.enviarConReintentos({
+      type: 'order_cancelled_by_owner',
+      orderId: payload.orderId,
+      to: payload.buyerEmail,
+      subject: `Tu orden #${payload.orderNumber} fue cancelada`,
+      text: orderCancelledByOwnerText(payload),
+      html: orderCancelledByOwnerHtml(payload),
     });
   }
 
