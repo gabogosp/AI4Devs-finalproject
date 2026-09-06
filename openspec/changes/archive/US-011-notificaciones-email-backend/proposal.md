@@ -1,3 +1,14 @@
+---
+archived: true
+archived_at: 2026-09-06
+pr-urls:
+  - https://github.com/gabogosp/AI4Devs-finalproject/pull/82   # backend
+  - https://github.com/gabogosp/AI4Devs-finalproject/pull/88   # QA (Mode A, inline)
+merged_commits:
+  - 7a9bb58f488bb7ebe84eac43ec0751793a8f6e3d   # PR #82
+  - 64b1a32345e5f406d36c74b8a706d3b65855cd45   # PR #88
+---
+
 # US-011 backend — Notificaciones por email (Resend)
 
 ## Why
