@@ -161,6 +161,19 @@ function est(w: CatalogWorld): EstadoHistorial {
   return w.state.historial as EstadoHistorial;
 }
 
+/**
+ * Guarda la última respuesta también bajo `w.state.ultima` (sin
+ * namespacing) — el campo que lee el `Then('recibe {int}', ...)` genérico ya
+ * registrado por `pago-manual.steps.ts`. Reusar ESE step (en vez de definir
+ * `Then('recibe 401', ...)`/`Then('recibe 404', ...)` acá) evita la colisión
+ * "Multiple step definitions match" que Cucumber reporta cuando dos patrones
+ * matchean el mismo texto literal.
+ */
+function guardarUltima(w: CatalogWorld, respuesta: { status: number; body: unknown }): void {
+  est(w).ultimaRespuesta = respuesta;
+  (w.state as { ultima?: { status: number; body: unknown } }).ultima = respuesta;
+}
+
 async function abrirHistorial(w: CatalogWorld): Promise<void> {
   const e = est(w);
   const res = await e.sesionActiva!.ctx.get('/v1/me/orders');
@@ -537,17 +550,15 @@ When('un visitante sin sesión pide {string}', PASO, async function (
   this: CatalogWorld,
   endpoint: string,
 ) {
-  const e = est(this);
   const anon = await request.newContext({ baseURL: API });
   const path = endpoint.includes('detalle') ? '/v1/me/orders/1000' : '/v1/me/orders';
   const res = await anon.get(path);
-  e.ultimaRespuesta = { status: res.status(), body: await res.json().catch(() => undefined) };
+  guardarUltima(this, { status: res.status(), body: await res.json().catch(() => undefined) });
   await anon.dispose();
 });
 
-Then('recibe 401', function (this: CatalogWorld) {
-  assert.equal(est(this).ultimaRespuesta!.status, 401);
-});
+// "recibe {int}" ya está definido globalmente en `pago-manual.steps.ts` — se
+// reusa tal cual para "recibe 401" (lee `w.state.ultima`, ver `guardarUltima`).
 
 Then('la respuesta no contiene ninguna orden', function (this: CatalogWorld) {
   const body = est(this).ultimaRespuesta!.body as Record<string, unknown> | undefined;
@@ -580,12 +591,11 @@ When('el segundo cliente pide el detalle de la orden del primero', PASO, async f
 ) {
   const e = est(this);
   const res = await e.sesionB!.ctx.get(`/v1/me/orders/${e.compraA!.orderNumber}`);
-  e.ultimaRespuesta = { status: res.status(), body: await res.json().catch(() => undefined) };
+  guardarUltima(this, { status: res.status(), body: await res.json().catch(() => undefined) });
 });
 
-Then('recibe 404', function (this: CatalogWorld) {
-  assert.equal(est(this).ultimaRespuesta!.status, 404);
-});
+// "recibe {int}" ya está definido globalmente en `pago-manual.steps.ts` — se
+// reusa tal cual para "recibe 404" (lee `w.state.ultima`, ver `guardarUltima`).
 
 Then(
   'la respuesta es indistinguible de pedir un número de orden que no existe',
@@ -599,9 +609,17 @@ Then(
       e.ultimaRespuesta!.status,
       'el status difiere entre orden ajena e inexistente',
     );
+    // `instance` (RFC 7807) es el eco del path pedido — difiere SIEMPRE entre
+    // las dos llamadas porque usan `order_number` distinto, y eso NO filtra
+    // nada (el visitante ya sabe qué número pidió). Lo que debe ser
+    // indistinguible es `type`/`title`/`status`/`detail`: el resto del cuerpo.
+    const sinInstance = (o: unknown) => {
+      const { instance: _instance, ...resto } = o as Record<string, unknown>;
+      return resto;
+    };
     assert.deepEqual(
-      bodyInexistente,
-      e.ultimaRespuesta!.body,
+      sinInstance(bodyInexistente),
+      sinInstance(e.ultimaRespuesta!.body),
       'el cuerpo difiere entre orden ajena e inexistente — filtra que la orden SÍ existe',
     );
   },

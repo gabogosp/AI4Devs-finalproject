@@ -162,7 +162,7 @@ checklist humano.
 
 ## Fase 3: Suite de aceptación — negative space
 
-- [ ] T3.1 SC-015-N1 (sin sesión, AC-5, Esquema del escenario: listado y
+- [x] T3.1 SC-015-N1 (sin sesión, AC-5, Esquema del escenario: listado y
   detalle).
   - **Pattern**: `request.newContext()` sin ninguna cookie de sesión →
     `GET /v1/me/orders` y `GET /v1/me/orders/{n}` (cualquier `n`).
@@ -171,7 +171,7 @@ checklist humano.
     con filas (verificado con `Object.keys()`/longitud, no sólo por status).
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015 and @negative and @critical-path"`
 
-- [ ] T3.2 SC-015-N2 (detalle ajena — IDOR, AC-4).
+- [x] T3.2 SC-015-N2 (detalle ajena — IDOR, AC-4).
   - **Pattern**: dos `compraLogueada()` de cuentas distintas → el segundo
     cliente pide `GET /v1/me/orders/{order_number del primero}`.
   - **Exit criterion**: responde 404 con el mismo `type`
@@ -180,7 +180,7 @@ checklist humano.
     cuerpos de respuesta, no sólo el status).
   - **Verify**: `pnpm --filter @dsm/qa test:acceptance --tags "@us-015 and @negative and @critical-path"` (mismo tag que T3.1; corren juntos)
 
-- [ ] T3.3 SC-015-N3 (guest con mismo email no se vincula, AC-6, privacidad).
+- [x] T3.3 SC-015-N3 (guest con mismo email no se vincula, AC-6, privacidad).
   - **Pattern**: `nuevoInvitado()` (`cart-client.ts`, sin sesión) →
     `fijar()`/`checkout(buildCheckoutBody({ buyer: buildBuyerData({ email:
     EMAIL_COMPARTIDO }) }))` → confirmar vía `simulate-payment` — produce una
