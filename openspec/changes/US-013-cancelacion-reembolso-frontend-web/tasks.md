@@ -93,7 +93,7 @@ language: es
 
 ## Fase 3 — `OrderCancelAction` (componente base + gating)
 
-- [ ] **T3.1 — Componente base: gate de visibilidad + apertura del `ConfirmDialog`**
+- [x] **T3.1 — Componente base: gate de visibilidad + apertura del `ConfirmDialog`**
   - **Pattern**: calcado a `OrderAnonymizeAction.tsx` (gate de visibilidad
     temprano con `return null`, estado local `confirmOpen`/`busy`/`message`/
     `error`, `ConfirmDialog` reusado sin modificar) — `per design.md §D3, §D6, §D7`:
