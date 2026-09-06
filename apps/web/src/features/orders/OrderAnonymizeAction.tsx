@@ -84,6 +84,7 @@ export function OrderAnonymizeAction({
         confirmLabel="Anonimizar"
         onConfirm={() => void confirm()}
         onCancel={() => setConfirmOpen(false)}
+        busy={busy}
       />
     </div>
   );

@@ -166,6 +166,52 @@ describe('OrderAnonymizeAction — T3.2 (wiring de la mutación)', () => {
   });
 });
 
+describe('OrderAnonymizeAction — idempotencia visual (design.md §Patrones de resiliencia, F51)', () => {
+  it('el botón de confirmar queda deshabilitado mientras la mutación está en curso — un doble-click no dispara un segundo POST', async () => {
+    const user = userEvent.setup();
+    let llamadas = 0;
+    let resolverPost!: () => void;
+    server.use(
+      http.post(`${API}/v1/admin/orders/${ID}/anonymize`, async () => {
+        llamadas += 1;
+        await new Promise<void>((resolve) => {
+          resolverPost = resolve;
+        });
+        return HttpResponse.json({
+          order_id: ID,
+          anonymized_at: '2026-09-05T12:00:00.000Z',
+          anonymization_reason: 'requested',
+        });
+      }),
+      http.get(`${API}/v1/admin/orders/${ID}`, () => HttpResponse.json(orden())),
+    );
+
+    render(
+      <OrderAnonymizeAction
+        order={{ id: ID, anonymizedAt: null, anonymizationReason: null }}
+        onAnonymized={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: /anonimizar datos del comprador/i }));
+    await user.type(screen.getByLabelText(/escribí "anonimizar" para confirmar/i), 'ANONIMIZAR');
+    const confirmar = screen.getByRole('button', { name: /^anonimizar$/i });
+
+    await user.click(confirmar);
+    await waitFor(() => expect(confirmar).toBeDisabled());
+    // Un segundo click mientras está busy no debería llegar a onConfirm — el
+    // propio `disabled` del botón lo impide a nivel DOM.
+    await user.click(confirmar);
+
+    expect(llamadas).toBe(1);
+    // Se deja completar el round-trip (POST + refetch) ANTES de terminar el
+    // test — si no, la promesa pendiente resuelve durante el test siguiente
+    // y dispara un GET sin handler (MSW "unhandled request" en otro `it`).
+    resolverPost();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+});
+
 describe('OrderAnonymizeAction — T3.3 (copy y tono)', () => {
   it('muestra el copy exacto de irreversibilidad', async () => {
     const user = userEvent.setup();

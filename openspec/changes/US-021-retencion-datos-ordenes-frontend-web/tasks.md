@@ -219,17 +219,17 @@
 
 ## Verification (suite-level)
 
-- [ ] Unit + component completos: `pnpm --filter @dsm/web test` (forma terminante, ya
+- [x] Unit + component completos: `pnpm --filter @dsm/web test` (forma terminante, ya
   configurada como `vitest run` en `package.json` — no hay riesgo F49 de modo watch).
-- [ ] Typecheck limpio: `pnpm --filter @dsm/web typecheck`.
-- [ ] Lint limpio: `pnpm --filter @dsm/web lint`.
-- [ ] Codegen sin diff pendiente: `pnpm --filter @dsm/web codegen && git diff --exit-code apps/web/src/api/generated/`.
-- [ ] Gate de contrato consumido (F48): `bash scripts/check-consumer-contract.sh` (o el
+- [x] Typecheck limpio: `pnpm --filter @dsm/web typecheck`.
+- [x] Lint limpio: `pnpm --filter @dsm/web lint`.
+- [x] Codegen sin diff pendiente: `pnpm --filter @dsm/web codegen && git diff --exit-code apps/web/src/api/generated/`.
+- [x] Gate de contrato consumido (F48): `bash scripts/check-consumer-contract.sh` (o el
   script equivalente que respalda `.github/workflows/consumer-contract-check.yml`) sin
   hallazgos nuevos en `apps/web/src/features/orders/`.
-- [ ] a11y: `apps/web/src/features/orders/a11y.test.tsx` verde (incluye el caso nuevo de
+- [x] a11y: `apps/web/src/features/orders/a11y.test.tsx` verde (incluye el caso nuevo de
   T6.1).
-- [ ] Ningún test de este change usa un DTO/Zod/mock hand-escrito fuera de
+- [x] Ningún test de este change usa un DTO/Zod/mock hand-escrito fuera de
   `apps/web/src/api/generated/` para la operación `anonymizeOrder` — verificación manual:
   `grep -rn "anonymize" apps/web/src/features/orders/*.test.tsx` sólo debe referenciar
   tipos importados desde `@/api/generated/*` o desde `./ordersService`, nunca una
@@ -237,10 +237,10 @@
 
 ## Pre-merge checklist
 
-- [ ] T0.1 resuelto (contrato publicado) — **si no lo está, este change no se mergea**,
+- [x] T0.1 resuelto (contrato publicado) — **si no lo está, este change no se mergea**,
   sólo se deja planificado.
-- [ ] Todos los tests pasan localmente (`vitest run`).
-- [ ] Linter y typecheck limpios.
+- [x] Todos los tests pasan localmente (`vitest run`).
+- [x] Linter y typecheck limpios.
 - [ ] Sin console errors/warnings nuevos en `pnpm --filter @dsm/web dev` al abrir
   `/admin/ordenes/{id}` de una orden anonimizada y de una no anonimizada.
 - [ ] PR describe el ticket (US-021), referencia este change

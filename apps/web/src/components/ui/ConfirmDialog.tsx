@@ -17,6 +17,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   onCancel,
+  busy = false,
 }: {
   open: boolean;
   title: string;
@@ -25,6 +26,13 @@ export function ConfirmDialog({
   confirmLabel: string;
   onConfirm: () => void;
   onCancel: () => void;
+  /**
+   * Deshabilita el botón de confirmar mientras la mutación está en curso
+   * (US-021 `design.md` §"Patrones de resiliencia" — un doble-click no debe
+   * poder disparar un segundo intento). Opcional, por defecto `false`: los
+   * consumidores existentes (`ProductActions.archive`) no cambian.
+   */
+  busy?: boolean;
 }) {
   const [typed, setTyped] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +87,8 @@ export function ConfirmDialog({
           </Button>
           <Button
             variant="destructive"
-            disabled={!canConfirm}
+            disabled={!canConfirm || busy}
+            loading={busy}
             onClick={onConfirm}
           >
             {confirmLabel}
