@@ -58,9 +58,10 @@ Una **UI del panel** construida sobre esta superficie (US-012 frontend-web, PR #
 - **Métricas agregadas / gráficos del panel** — US-016.
 - **FSM de 6 estados completa** (`pending_payment`/`cancelled` incluidos) — sólo se
   gestionan acá las 4 transiciones activas de fulfillment.
-- **Reconciliación con `US-010-orden-webhook-stock-backend`** — indefinidamente
-  pospuesta; si se retoma, hay que revisar contra lo que este panel ya construyó (ver
-  `decisions.md` "Riesgo de reconciliación").
+- ~~Reconciliación con `US-010-orden-webhook-stock-backend`~~ — **resuelta** (archivada
+  2026-09-05, sin conflicto): US-010 vive del lado de la capacidad hermana `pagos`, no
+  tocó esta capacidad. Ver `decisions.md` "Riesgo de reconciliación con US-010 —
+  RESUELTO".
 - **Notificación real al cliente** ("lista para retirar") — el seam
   (`NotificationPort.orderReadyForPickup`) existe y se invoca; el adaptador real
   (Resend u otro proveedor) es US-011.

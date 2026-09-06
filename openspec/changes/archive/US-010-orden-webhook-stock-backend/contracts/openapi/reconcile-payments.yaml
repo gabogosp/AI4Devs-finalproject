@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: "reconcile-payments — reconciliación admin de webhooks faltantes (AC-10)"
+  version: v1
+  description: |
+    Toma hasta `RECONCILE_BATCH_SIZE` órdenes `pending_payment` con más de
+    `RECONCILE_MIN_AGE_MS` de antigüedad, consulta su estado a MercadoPago por
+    `external_reference` y procesa las aprobadas por el mismo `ConfirmOrderService` que
+    usa el webhook — idempotente por construcción (E2E §18.5 runbook: "job/endpoint
+    manual idempotente"). Superficie admin de bajo volumen, sin throttler dedicado.
+servers:
+  - url: https://api.dsm-ferreteria.example.com
+    description: PROD
+paths:
+  /v1/admin/payments/reconcile:
+    post:
+      operationId: reconcilePayments
+      tags: [payments, admin]
+      summary: Disparar la reconciliación de pagos pendientes contra MercadoPago
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Resumen de la corrida.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [scanned, confirmed, stillPending]
+                properties:
+                  scanned: { type: integer }
+                  confirmed: { type: integer }
+                  stillPending: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+  responses:
+    Unauthorized:
+      description: Falta o es inválido el JWT admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }

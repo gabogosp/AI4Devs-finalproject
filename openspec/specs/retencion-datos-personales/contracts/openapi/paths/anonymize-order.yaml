@@ -1,0 +1,47 @@
+post:
+  operationId: anonymizeOrder
+  tags: [admin-orders-retention]
+  summary: Anonimizar los datos personales de una orden a pedido del comprador (AC-3, AC-9)
+  description: |
+    El comprador invitado no tiene cuenta ni autoservicio: su pedido de
+    supresión llega por email o WhatsApp y lo ejecuta el dueño desde el
+    panel, golpeando esta ruta. `reason` queda fijo en `requested` — nunca
+    viene del body, así que no hay superficie de tampering sobre el motivo.
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+      description: UUID interno de la orden (no el `order_token` público del comprador).
+  responses:
+    '200':
+      description: |
+        Anonimizada (o ya lo estaba — misma respuesta, AC-8). El `200` en
+        vez de `204` porque el llamador necesita ver `anonymized_at` para
+        confirmar que la acción se aplicó (AC-3 — "el dueño ve una
+        confirmación").
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/OrderAnonymizationResult' }
+    '401':
+      description: Sin token admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '403':
+      description: Token sin `role=admin`.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '404':
+      description: '`dsm:checkout/order-not-found` — la orden no existe (distinto de "ya anonimizada", que es 200).'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '422':
+      description: '`id` no es un UUID válido.'
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

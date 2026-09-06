@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: "webhook-mercadopago — confirmar orden y decrementar stock ante pago aprobado"
+  version: v1
+  description: |
+    Núcleo transaccional de US-010. Confianza cero en el cuerpo: sólo se usa `data.id`; la
+    verdad del pago sale de `GET /v1/payments/{id}` contra la API de MercadoPago
+    (ADR-0006), nunca del payload recibido. Firma `x-signature` verificada con HMAC en
+    tiempo constante + ventana de tolerancia sobre `ts` (`MP_WEBHOOK_TOLERANCE_SEC`).
+    Idempotente por el guard de `orders.status='pending_payment'` (US-023) — un webhook
+    duplicado/tardío/fuera de orden es un no-op. Siempre responde 200 salvo firma inválida
+    (401): MercadoPago reintenta ante cualquier no-2xx, y un 500 propio desataría una
+    tormenta de reintentos justo cuando el sistema está mal. Sin rate-limit ni CSRF, a
+    propósito (design.md §D5).
+servers:
+  - url: https://api.dsm-ferreteria.example.com
+    description: PROD
+  - url: https://api.uat.dsm-ferreteria.example.com
+    description: UAT
+paths:
+  /v1/webhooks/mercadopago:
+    post:
+      operationId: handleMercadoPagoWebhook
+      tags: [payments, webhooks]
+      summary: Procesar notificación de pago de MercadoPago
+      security: []
+      parameters:
+        - name: x-signature
+          in: header
+          required: true
+          description: "Formato `ts=...,v1=...`. `v1` es el HMAC-SHA256 sobre `id:{data.id};request-id:{x-request-id};ts:{ts};` con MP_WEBHOOK_SECRET."
+          schema: { type: string }
+        - name: x-request-id
+          in: header
+          required: true
+          description: Parte del manifiesto firmado.
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MercadoPagoWebhookBody'
+            examples:
+              payment_updated:
+                value: { type: payment, action: payment.updated, data: { id: "1234567890" } }
+      responses:
+        '200':
+          description: |
+            Procesado, ignorado por idempotencia, o dejado para la reconciliación admin —
+            los tres casos devuelven 200 porque un reintento de MercadoPago no aportaría
+            nada distinto (design.md §D2).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [received]
+                additionalProperties: false
+                properties:
+                  received: { type: boolean, enum: [true] }
+              examples:
+                ack: { value: { received: true } }
+        '401':
+          $ref: '#/components/responses/WebhookUnverified'
+components:
+  schemas:
+    MercadoPagoWebhookBody:
+      type: object
+      description: Sólo `data.id` se usa. El resto se ignora — la verdad sale de la re-consulta.
+      required: [type, data]
+      properties:
+        type: { type: string, example: payment }
+        action: { type: string, example: payment.updated }
+        data:
+          type: object
+          required: [id]
+          properties:
+            id: { type: string, example: "1234567890" }
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+  responses:
+    WebhookUnverified:
+      description: |
+        Firma inválida, ausente, malformada o con `ts` fuera de ventana (AC-7). Único
+        status de error del endpoint; no se consulta el pago ni se toca la base.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }
+          example:
+            type: "dsm:payments/webhook-unverified"
+            title: Webhook no verificable
+            status: 401
+            detail: La firma no pudo verificarse.

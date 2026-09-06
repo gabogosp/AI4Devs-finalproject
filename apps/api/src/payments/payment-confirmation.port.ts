@@ -6,11 +6,18 @@
  * 'simulated_dsm'`, con `externalId` en vez de `confirmedBy`) — sin
  * renombrar nada, per `design.md` §Approach.
  */
-export interface ConfirmPaymentInput {
+export interface ConfirmManualPaymentInput {
   orderId: string;
   provider: 'manual';
   /** El `sub` del JWT admin que confirmó — uuid de `Customer` o `'admin'` (bootstrap). */
   confirmedBy: string;
+}
+
+export interface ConfirmWebhookPaymentInput {
+  orderId: string;
+  provider: 'mercadopago' | 'simulated_dsm';
+  externalId: string;
+  amountArsCents: number;
 }
 
 export interface ConfirmedPayment {
@@ -21,5 +28,5 @@ export interface ConfirmedPayment {
 }
 
 export interface PaymentConfirmationPort {
-  confirm(input: ConfirmPaymentInput): Promise<ConfirmedPayment>;
+  confirm(input: ConfirmManualPaymentInput | ConfirmWebhookPaymentInput): Promise<ConfirmedPayment>;
 }

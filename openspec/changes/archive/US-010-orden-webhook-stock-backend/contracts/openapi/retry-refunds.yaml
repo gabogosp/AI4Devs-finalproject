@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: "retry-refunds — reintento durable de reembolsos (AC-4)"
+  version: v1
+  description: |
+    Reintenta hasta `REFUND_RETRY_BATCH_SIZE` pagos en `refund_pending` (provider
+    `mercadopago` — el simulado nunca se atasca, no hay llamada externa) contra
+    `MercadoPagoClient.refund`. Un fallo nunca cierra la fila como fallido definitivo
+    (OQ-BE-2 de design.md): es plata de un cliente. Superficie admin de bajo volumen.
+servers:
+  - url: https://api.dsm-ferreteria.example.com
+    description: PROD
+paths:
+  /v1/admin/payments/retry-refunds:
+    post:
+      operationId: retryRefunds
+      tags: [payments, admin]
+      summary: Reintentar reembolsos que quedaron refund_pending
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Resumen del reintento.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [attempted, succeeded, failed]
+                properties:
+                  attempted: { type: integer }
+                  succeeded: { type: integer }
+                  failed: { type: integer }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ProblemDetails:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+  responses:
+    Unauthorized:
+      description: Falta o es inválido el JWT admin.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ProblemDetails' }

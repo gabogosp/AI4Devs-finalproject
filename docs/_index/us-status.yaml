@@ -180,7 +180,26 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # primera planificación (/plan-backend-ticket)
-  blocked_by: [US-009]              # cadena: US-008 → US-009 → US-010, ninguna construida aún
+  in-review-at: 2026-09-05   # /commit — backend (primera disciplina) llega a in-review, PR #49, 42/42 tasks. QA todavía no arrancó — US-level se queda In Progress.
+  #
+  # NOTA (2026-09-05, /archive-change US-010-orden-webhook-stock-backend, PR #49 mergeado
+  # dea4f25): disciplina backend archivada (openspec/changes/archive/US-010-orden-webhook-stock-backend/).
+  # Extiende la capacidad `pagos` (CAP-4, ya existente desde US-023) con "Desde US-010
+  # backend" en requirements.md/decisions.md/README.md/contracts — webhook de MercadoPago,
+  # medio simulado «DSM», MercadoPagoClient, 3 jobs admin. Resuelve D-2/D-3 de
+  # `pagos/requirements.md` (antes diferidos). Reconciliación con la capacidad `ordenes`
+  # (CAP-5, US-012) confirmada sin conflicto — US-010 no la toca, vive del lado de `pagos`.
+  # `status` de la US NO avanza a `Done` ni a `QA`: la disciplina QA nunca se planificó (no
+  # existe `openspec/changes/US-010-*-qa/` en ningún estado, pese a `disciplines: [BE, QA]`).
+  # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
+  # REGENERADO 2026-09-05 (/plan-backend-ticket US-010 --regenerate): desacoplado de US-009.
+  # US-008 y payments (US-023) ya existen y son lo único que este change necesita; construye
+  # su propio MercadoPagoClient de alcance mínimo (getPayment/searchByExternalReference/
+  # refund) en vez de esperar a que US-009 lo entregue. US-009 sigue Blocked (sin
+  # credenciales) y ya no es un pre-requisito de este change — ver
+  # openspec-changes.yaml (US-010-orden-webhook-stock-backend) y design.md §D6 para el
+  # detalle de qué se puede construir/verificar hoy vs qué necesita la cuenta real de MP.
+  blocked_by: []
 - id: US-011
   slug: notificaciones-email
   status: Ready
@@ -444,6 +463,34 @@
   # Publicado ahora — PR #41 abierto contra main. `status` de la US NO avanza: falta
   # merge + archive del backend, y hay un worktree/rama `feat/US-021-retencion-datos-ordenes-qa`
   # en curso (otra sesión) para la disciplina QA. `blocked_by` sin tocar.
+  #
+  # NOTA (2026-09-05, /archive-change US-021-retencion-datos-ordenes-backend, PR #41
+  # mergeado): disciplina backend archivada (openspec/changes/archive/US-021-...
+  # -backend/), 30/30 tasks. Crea la capacidad nueva
+  # `openspec/specs/retencion-datos-personales/` (CAP-13) — README + requirements +
+  # decisions + contratos vivos (2 endpoints admin, seedeados desde los yaml draft
+  # del change porque nunca llegaron al spec publicado del servicio). `status` de la
+  # US NO avanza: QA sigue en curso (otra sesión, worktree
+  # `feat/US-021-retencion-datos-ordenes-qa`) y FE NO existe como change ni parece
+  # absorbido por US-012 (a diferencia de US-023, cuyo FE sí quedó cubierto por
+  # PendingPaymentsPanel — acá no hay referencia a anonimización en
+  # apps/web/src/features/orders/). Falta confirmar con el PO/Arquitecto si la
+  # acción "anonimizar" en el panel es un change FE propio o se agrega a US-012 FE.
+  # `blocked_by` sin tocar.
+  #
+  # NOTA (2026-09-05, /develop-qa US-021, PR #51 mergeado): disciplina QA cerrada —
+  # Mode A (inline en `openspec/changes/archive/US-021-...-backend/qa-plan.md`, no
+  # hay change `-qa` separado que archivar). Suite de aceptación real contra el
+  # backend mergeado: 11/11 escenarios (74/74 steps) + contract testing 11/11 casos,
+  # verde, reproducido en corridas consecutivas. Sin defectos en la implementación.
+  # Gaps documentados, no rellenados en falso: TC-021-004b bloqueado — el DTO de
+  # US-012 (`AdminOrderSummaryDto`/`AdminOrderDetailDto`) no expone `anonymized_at`/
+  # `anonymization_reason`, PR #41 no lo cerró; TC-021-007 manual (consentimiento,
+  # sin superficie API); QA-021-CT-2 sin contract test de US-012 contra el que
+  # comparar. El gap del DTO queda a cargo de quien planifique el FE de US-021
+  # (`a7`, en curso) — extenderlo es la vía más chica para completar AC-4/AC-5 a
+  # nivel UI. `status` de la US sigue sin avanzar: sólo falta FE. `blocked_by` sin
+  # tocar.
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend

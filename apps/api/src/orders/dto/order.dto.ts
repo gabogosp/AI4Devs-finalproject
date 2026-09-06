@@ -118,6 +118,10 @@ export class AdminOrderDetailDto extends AdminOrderSummaryDto {
   fulfillment!: string;
   items!: AdminOrderItemDto[];
   status_history!: AdminOrderStatusChangeDto[];
+  /** null si la orden nunca se anonimizó (US-021). */
+  anonymized_at!: string | null;
+  /** null si la orden nunca se anonimizó; distingue plazo cumplido de pedido del comprador (US-021 AC-4). */
+  anonymization_reason!: 'retention_policy' | 'requested' | null;
 
   static fromWithHistory(
     o: OrderWithItems,
@@ -130,6 +134,9 @@ export class AdminOrderDetailDto extends AdminOrderSummaryDto {
       fulfillment: o.fulfillment,
       items: o.items.map(AdminOrderItemDto.from),
       status_history: history.map(AdminOrderStatusChangeDto.from),
+      anonymized_at: o.anonymized_at ? o.anonymized_at.toISOString() : null,
+      anonymization_reason:
+        o.anonymization_reason as AdminOrderDetailDto['anonymization_reason'],
     };
   }
 }

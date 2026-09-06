@@ -1,0 +1,94 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Retención y anonimización de datos personales (CAP-13)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-021-retencion-datos-ordenes-backend (Ley 25.326) — anonimiza en vez de
+    borrar: el historial comercial de la orden no se pierde, sólo se
+    sobrescribe la PII de contacto del comprador invitado.
+
+    Seedeado directo desde los contratos draft del change
+    (`anonymize-order.yaml` + `retention-sweep.yaml`) — el spec publicado del
+    servicio (`apps/api/docs/api/openapi.yaml`) no llegó a incluir estos 2
+    endpoints (brecha conocida, ver `decisions.md`).
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: admin-orders-retention
+    description: Retención y anonimización de PII de órdenes (US-021). Sólo admin.
+security:
+  - adminBearer: []
+components:
+  securitySchemes:
+    adminBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT con `role=admin` (ADR-0009). Sin él, 401; con otro rol, 403.
+  responses:
+    RateLimited:
+      description: |
+        Presupuesto de la superficie de retención excedido
+        (`security-standards §7.3`). Cubo `auth` reusado, sin registrar uno
+        nuevo. Incluye `Retry-After` + las cabeceras `RateLimit-*`
+        (`api-standards §12`).
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    OrderAnonymizationResult:
+      type: object
+      required: [order_id, anonymized_at, anonymization_reason]
+      additionalProperties: false
+      properties:
+        order_id: { type: string, format: uuid }
+        anonymized_at:
+          type: string
+          format: date-time
+          description: Momento en que se anonimizó (AC-4 — queda registrado y es auditable).
+        anonymization_reason:
+          type: string
+          enum: [retention_policy, requested]
+          description: Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).
+    RetentionSweepResult:
+      type: object
+      required: [anonymized_count, reason]
+      additionalProperties: false
+      properties:
+        anonymized_count:
+          type: integer
+          minimum: 0
+          description: Cuántas órdenes anonimizó ESTA corrida (US §9 — observabilidad, sin PII en el evento).
+        reason:
+          type: string
+          enum: [retention_policy]
+          description: Fijo — este endpoint sólo produce anonimizaciones por plazo cumplido.
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). Type propio de esta
+        capacidad: `dsm:checkout/order-not-found` (404, sólo en
+        `:id/anonymize` — el barrido no tiene 404 posible).
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene PII del comprador.'
+paths:
+  /admin/orders/{id}/anonymize:
+    $ref: ./openapi/paths/anonymize-order.yaml
+  /admin/orders/retention-sweep:
+    $ref: ./openapi/paths/retention-sweep.yaml

@@ -168,6 +168,10 @@ describe('fail-fast de producción (§7)', () => {
         // roto): sin `GEMINI_API_KEY` el enriquecimiento queda `disabled` y la búsqueda
         // semántica no tendría vectores. Un entorno de producción válido las incluye todas.
         GEMINI_API_KEY: 'g_x',
+        // US-010 sumó la suya: sin credenciales de MercadoPago el webhook no puede
+        // verificar firmas ni confirmar pagos reales.
+        MP_ACCESS_TOKEN: 'mp_x',
+        MP_WEBHOOK_SECRET: 'mp_secret_x',
       }),
     ).not.toThrow();
   });
