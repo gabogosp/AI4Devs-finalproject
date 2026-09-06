@@ -3,11 +3,13 @@ import {
   listAdminOrders,
   getAdminOrder,
   updateAdminOrderStatus,
+  anonymizeOrder,
 } from '@/api/generated/endpoints';
 import {
   ListAdminOrdersResponse,
   GetAdminOrderResponse,
   UpdateAdminOrderStatusResponse,
+  AnonymizeOrderResponse,
 } from '@/api/generated/zod';
 import type {
   AdminOrderSummary,
@@ -16,6 +18,7 @@ import type {
   ListAdminOrdersStatus,
   ListAdminOrdersSort,
   UpdateAdminOrderStatusStatus,
+  OrderAnonymizationResult,
 } from '@/api/generated/model';
 
 /**
@@ -73,5 +76,16 @@ export const ordersService = {
       { headers: { 'idempotency-key': idempotencyKey } },
     );
     return parseContract(UpdateAdminOrderStatusResponse, res.data);
+  },
+
+  /**
+   * `POST /admin/orders/{id}/anonymize` (AC-3). Devuelve el resultado PARCIAL
+   * del contrato (`OrderAnonymizationResult`), no el `AdminOrderDetail`
+   * completo — quien llama (`OrderAnonymizeAction`) decide si refetchea
+   * (`design.md` §Approach, "Decisión explícita de shape de retorno").
+   */
+  async anonymize(id: string): Promise<OrderAnonymizationResult> {
+    const res = await anonymizeOrder(id);
+    return parseContract(AnonymizeOrderResponse, res.data);
   },
 };

@@ -311,3 +311,97 @@
   puntual contra `US-023` o contra este panel, según dónde diverja.
 - **Bloqueado por**: `US-023-pago-manual-offline-backend` (0 tasks al momento
   de escribir este charter) — no ejecutable hasta que publique el endpoint.
+# US-021 — Retención y anonimización
+
+> Al momento de escribir estos charters (`/develop-qa US-021`), el backend estaba
+> en 0/16 tasks (bloqueado). **Actualización**: el backend mergeó a `main` como
+> parte de PR #41 (commit `c9bb229`, 30/30 tasks) — estas misiones ya son
+> ejecutables contra `OrdersRetentionController`/`Service`/`Runner` reales.
+
+## TC-021-E1 — Carrera entre el barrido oportunista y la acción a pedido
+
+- **Misión**: disparar `POST retention-sweep` y `POST :id/anonymize` sobre la
+  misma orden casi al mismo tiempo (dos pestañas / dos requests concurrentes) y
+  confirmar que sólo uno "gana".
+- **Áreas**: el `WHERE anonymized_at IS NULL` de `OrdersRepository.anonymize`/
+  `anonymizeRetentionEligible` (`design.md` §Approach); el evento emitido por
+  cada camino (`orders_retention.swept` vs `orders_retention.anonymized_on_request`).
+- **Riesgos**: dos eventos para el mismo efecto (doble contabilidad de
+  `anonymized_count`); un `reason` final inconsistente con quién ganó realmente
+  la carrera; una ventana donde ambos caminos "ganan" y el segundo `UPDATE`
+  pisa al primero sin que el guard lo impida.
+- **Heurísticas**: "romper a propósito" (concurrencia deliberada, no accidental);
+  seguir el dato (leer `anonymized_at`/`anonymization_reason` directo en
+  Postgres entre los dos disparos, no sólo las respuestas HTTP).
+- **Justificación manual**: reproducir la carrera de forma determinista
+  requiere control fino de timing entre dos requests reales — no es la
+  invariante estructural que ya prueba el negative-space automatizado
+  (SC-021-N3/N4), es el *camino* por el que se llega a la idempotencia.
+  Complementa (no duplica) el threat model "Repudiation" de `design.md`.
+- **Salida esperada**: confirmación de que exactamente un evento se emite y de
+  que el `reason` final es consistente con el camino que efectivamente escribió
+  — o un defecto puntual si alguno de los dos no es así.
+
+## TC-021-E2 — Cutoff en el borde de la ventana de retención (timezone/boundary)
+
+- **Misión**: verificar de qué lado del corte cae una orden creada exactamente
+  en el límite de `ORDER_RETENTION_MONTHS` (mismo día, mismo segundo del corte
+  calculado con `setMonth`), y si ese comportamiento es estable entre corridas.
+- **Áreas**: `OrdersRetentionService.cutoffDate()` (`design.md` §Approach —
+  `new Date(); d.setMonth(d.getMonth() - retentionMonths)`); zona horaria del
+  proceso de la API vs. la de Postgres.
+- **Riesgos**: un desfasaje de huso horario entre el `Date` de Node y el
+  `TIMESTAMP` de Postgres que corra el borde medio día para un lado u otro sin
+  que nadie lo haya decidido; `setMonth` sobre fin de mes (día 31 restando un
+  mes que tiene 30) produciendo un corte "sorpresa" un día antes/después de lo
+  esperado.
+- **Heurísticas**: boundary testing (corte exacto, corte ±1 segundo, ±1 día);
+  "el calendario no es aritmética simple" (fin de mes, año bisiesto).
+- **Justificación manual**: depende de backdatear `created_at` a un instante
+  exacto y de observar cómo se comporta el reloj real del proceso — explorar el
+  borde con corridas reales, no con un mock de reloj que ya asume la respuesta.
+- **Salida esperada**: documentación de qué lado cae el borde exacto y si es
+  estable, o un defecto si el corte se mueve de forma inesperada entre corridas.
+
+## TC-021-E3 — Residuo de PII en logs/errores tras anonimizar
+
+- **Misión**: con centinelas (email/teléfono/nombre reconocibles) en una orden,
+  anonimizarla y revisar que ningún log de la API — incluidos los de error
+  4xx/5xx sobre esa orden — siga mostrando los valores originales.
+- **Áreas**: logs de acceso de Nest por defecto, trazas de excepción no
+  manejadas, el log del propio `OrdersRetentionEventsService` (T2.2, ya
+  probado en unit, pero acá se explora la ruta completa del proceso, no el
+  servicio aislado).
+- **Riesgos**: un log de acceso por defecto de Nest serializando el body de un
+  request fallido que todavía traía el buyer original; una traza de excepción
+  no manejada que incluya el objeto `Order` completo antes de anonimizar.
+- **Heurísticas**: "seguir el dato" hasta cada sumidero de logging, no sólo el
+  evento de negocio; provocar errores a propósito (payloads inválidos) sobre
+  una orden con centinelas, para ver qué queda en el log de la excepción.
+- **Justificación manual**: más allá del test unitario ya dirigido de T2.2/T5.6
+  (dev-owned), este charter explora rutas de logging no anticipadas por ningún
+  test — es exactamente el tipo de hallazgo que un test determinista no busca
+  porque no sabe dónde mirar.
+- **Salida esperada**: confirmación de que ningún sumidero de logging retiene
+  PII post-anonimización, o un hallazgo puntual (con el log exacto) si alguno sí.
+
+## TC-021-E4 — `retention-sweep` bajo rate-limit agotado en operación real
+
+- **Misión**: con el presupuesto angosto (`ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX`,
+  5/hora), simular a un operador humano reintentando manualmente tras un 429 y
+  verificar que el mensaje de error es comprensible para alguien sin contexto
+  técnico (el dueño, per US §10).
+- **Áreas**: la respuesta 429 (RFC 7807 + `Retry-After`) de `retention-sweep`;
+  la redacción del `detail` que llegaría al dueño si operara el endpoint a
+  mano (p. ej. vía un cliente HTTP simple o una automatización de operaciones).
+- **Riesgos**: un 429 técnicamente correcto pero con un mensaje que no le dice
+  al dueño cuánto tiene que esperar ni por qué; `Retry-After` ausente o con un
+  valor que no coincide con la ventana real (`ORDER_RETENTION_SWEEP_RATE_LIMIT_TTL_MS`).
+- **Heurísticas**: "el usuario real no es el test" (leer el mensaje como lo
+  leería el dueño, no como lo lee quien escribió el código); agotar el
+  presupuesto a propósito y seguir intentando, como haría un operador impaciente.
+- **Justificación manual**: juzgar si una redacción de error es "comprensible
+  para alguien sin contexto técnico" es una evaluación humana, no una
+  aserción determinista.
+- **Salida esperada**: veredicto de legibilidad del mensaje de 429 para el
+  dueño, o una mejora de copy propuesta si no lo es.

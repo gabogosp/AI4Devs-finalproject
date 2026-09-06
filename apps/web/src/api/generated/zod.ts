@@ -406,7 +406,9 @@ export const GetAdminOrderResponse = zod.object({
   "to_status": zod.string(),
   "changed_by": zod.string().nullable().describe('sub del JWT admin (uuid) o el literal admin (bootstrap token).'),
   "changed_at": zod.string().datetime({"offset":true})
-}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).'))
+}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).')),
+  "anonymized_at": zod.string().datetime({"offset":true}).nullable().describe('Momento de anonimización (US-021). null si la orden nunca se anonimizó.'),
+  "anonymization_reason": zod.enum(['retention_policy', 'requested']).nullable().describe('Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).')
 }))
 
 
@@ -445,7 +447,9 @@ export const UpdateAdminOrderStatusResponse = zod.object({
   "to_status": zod.string(),
   "changed_by": zod.string().nullable().describe('sub del JWT admin (uuid) o el literal admin (bootstrap token).'),
   "changed_at": zod.string().datetime({"offset":true})
-}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).'))
+}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).')),
+  "anonymized_at": zod.string().datetime({"offset":true}).nullable().describe('Momento de anonimización (US-021). null si la orden nunca se anonimizó.'),
+  "anonymization_reason": zod.enum(['retention_policy', 'requested']).nullable().describe('Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).')
 }))
 
 
@@ -751,6 +755,35 @@ export const ListPendingPaymentOrdersResponseItem = zod.object({
   "created_at": zod.string().datetime({"offset":true})
 })
 export const ListPendingPaymentOrdersResponse = zod.array(ListPendingPaymentOrdersResponseItem)
+
+
+/**
+ * El comprador invitado no tiene cuenta ni autoservicio: su pedido de supresión llega por email o WhatsApp y lo ejecuta el dueño desde el panel. reason queda fijo en requested — nunca viene del body. 200 idéntico si la orden ya estaba anonimizada (AC-8, nunca error).
+ * @summary Anonimizar los datos personales de una orden a pedido del comprador (US-021 AC-3, AC-9)
+ */
+export const AnonymizeOrderParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const AnonymizeOrderResponse = zod.object({
+  "order_id": zod.string().uuid(),
+  "anonymized_at": zod.string().datetime({"offset":true}).describe('Momento en que se anonimizó (AC-4 — queda registrado y es auditable).'),
+  "anonymization_reason": zod.enum(['retention_policy', 'requested']).describe('Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).')
+})
+
+
+/**
+ * Barrido manual por plazo cumplido — mismo barrido que corre oportunistamente al arrancar la API (ADR-0012). Síncrono: un único UPDATE de conjunto sobre un índice de rango. reason queda fijo en retention_policy. Siempre 200, incluso anonymized_count: 0.
+ * @summary Anonimizar todas las órdenes con el plazo de retención cumplido (US-021 AC-1)
+ */
+export const runOrderRetentionSweepResponseAnonymizedCountMin = 0;
+
+
+
+export const RunOrderRetentionSweepResponse = zod.object({
+  "anonymized_count": zod.number().int().min(runOrderRetentionSweepResponseAnonymizedCountMin).describe('Cuántas órdenes anonimizó ESTA corrida.'),
+  "reason": zod.enum(['retention_policy']).describe('Fijo — este endpoint sólo produce anonimizaciones por plazo cumplido.')
+})
 
 
 /**

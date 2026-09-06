@@ -80,3 +80,30 @@ export function buildCheckoutBody(
     ...over,
   };
 }
+
+/** Identidad de comprador conocida para US-021 (retención/anonimización). */
+export interface OrderRetentionFixture {
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+}
+
+/**
+ * Comprador determinista para `qa/support/seed-orders-retention.ts`: valores
+ * conocidos de antemano para poder comparar, después de anonimizar, contra el
+ * placeholder real que escribe `apps/api/src/checkout/order-anonymization.ts`
+ * — sin importar esas constantes acá (qa-plan.md US-021 §7: comparación por
+ * regex del dominio `.invalid`, no un valor hardcodeado dos veces que pueda
+ * divergir en silencio de la implementación real).
+ */
+export function buildOrderRetentionFixture(
+  over: Partial<OrderRetentionFixture> = {},
+): OrderRetentionFixture {
+  const id = uniq();
+  return {
+    buyerName: `Comprador Retención ${id}`,
+    buyerEmail: `comprador-retencion-${id}@qa.dsm.test`,
+    buyerPhone: '+54 11 4000-0000',
+    ...over,
+  };
+}

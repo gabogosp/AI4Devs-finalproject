@@ -18,6 +18,8 @@ function orden(over: Partial<OrderDetail> = {}): OrderDetail {
     buyer_email: 'comprador@test.local',
     buyer_phone: '+54 351 555 0000',
     fulfillment: 'pickup',
+    anonymized_at: null,
+    anonymization_reason: null,
     items: [],
     status_history: [],
     ...over,
@@ -83,5 +85,28 @@ describe('ordersService', () => {
     const resultado = await ordersService.get('id-1');
 
     expect(resultado.id).toBe(ID);
+  });
+
+  it('anonymize() llama a POST /admin/orders/{id}/anonymize y devuelve el resultado parseado', async () => {
+    let metodoRecibido: string | null = null;
+    server.use(
+      http.post(`${API}/v1/admin/orders/${ID}/anonymize`, ({ request }) => {
+        metodoRecibido = request.method;
+        return HttpResponse.json({
+          order_id: ID,
+          anonymized_at: '2026-09-05T12:00:00.000Z',
+          anonymization_reason: 'requested',
+        });
+      }),
+    );
+
+    const resultado = await ordersService.anonymize(ID);
+
+    expect(metodoRecibido).toBe('POST');
+    expect(resultado).toEqual({
+      order_id: ID,
+      anonymized_at: '2026-09-05T12:00:00.000Z',
+      anonymization_reason: 'requested',
+    });
   });
 });

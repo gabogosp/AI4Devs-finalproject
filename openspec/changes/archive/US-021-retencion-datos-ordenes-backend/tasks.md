@@ -7,6 +7,13 @@ language: es
 
 # US-021 Backend — Tasks
 
+> **QA (Mode A, QA-US-021)**: el plan de pruebas QA-owned de este change (aceptación BDD,
+> contract testing contra servidor real, exploratorio) vive en `qa-plan.md`, agregado
+> `inline` a este mismo change — no hay un change de QA dedicado. Ver ahí §1.2/§1.3 para
+> dos gaps concretos detectados (FE de US-021 sin change todavía; el GET real de
+> US-012-backend no expone `anonymized_at`/`anonymization_reason`) que condicionan qué
+> AC son 100% verificables hoy vs. qué queda con `execution_mode: blocked|manual`.
+
 > Closure-grade: cada task tiene `Exit criterion:` observable y `Verify:` con el
 > comando exacto que `/develop-backend` corre (forma terminante, F49). Cwd =
 > raíz del repo. Runner: `pnpm --filter @dsm/api test -- --testPathPattern=<patrón>`

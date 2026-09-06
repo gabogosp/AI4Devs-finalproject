@@ -40,7 +40,7 @@ Superficie cubierta: `POST /admin/orders/{id}/anonymize`,
 
 | # | Requisito | Dueño / disparador |
 |---|---|---|
-| D-1 | Panel de lectura que muestre `anonymized_at`/`anonymization_reason` (AC-5). | `US-012-panel-ordenes-dueno-backend` — ya archivado, pero su `AdminOrderDetail` no expone estos campos todavía; quien lo extienda debe leer esta nota primero. |
+| D-1 | ~~Panel de lectura que muestre `anonymized_at`/`anonymization_reason` (AC-5).~~ **Resuelto 2026-09-05** (`fix/US-021-publish-order-anonymization-contract`): `AdminOrderDetailDto` ya proyecta ambos campos; ver `decisions.md`. | `US-012-panel-ordenes-dueno-backend` |
 | D-2 | Disparador externo real (cron de Railway u operación manual documentada) para la cadencia mensual de AC-1. | Owner: `/plan-deployment` u operaciones — el barrido al arrancar (R-5) cubre sólo el caso de redeploy, no reemplaza un disparador mensual real. |
 | D-3 | Ejecutor BullMQ real para el barrido periódico. | Owner: Arquitecto — `Deferred: operaciones/US-019`, condicionado a que `REDIS_URL` se aprovisione (ADR-0004). El contrato HTTP no cambia cuando eso ocurra. |
 | D-4 | Flujo de exportación / derecho de acceso (otro derecho de la Ley 25.326). | Owner: PO — otra US, fuera de alcance de este change. |

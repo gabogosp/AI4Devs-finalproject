@@ -1,20 +1,7 @@
 import type { AdminOrderStatusChange } from '@/api/generated/model';
+import { formatDateTime } from '@/lib/format/datetime';
 import { STATUS_LABEL } from './orderStatus';
 import type { FulfillmentStatus } from './ordersService';
-
-// `dateStyle`/`timeStyle` no se pueden combinar con `timeZoneName` (error real
-// en runtime: "Invalid option : option" — Intl.DateTimeFormat lo rechaza).
-// Componentes explícitos en su lugar — mismo resultado visual, con el huso
-// horario visible (§11.bis.1 "Always show timezone").
-const formatter = new Intl.DateTimeFormat('es-AR', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  timeZone: 'America/Argentina/Buenos_Aires',
-  timeZoneName: 'short',
-});
 
 /** Traduce a label en español; si el valor no está en el mapa (caso raro,
  * fila mezclada de otro módulo), muestra el valor crudo antes que romper. */
@@ -34,7 +21,7 @@ export function OrderStatusHistory({ entries }: { entries: AdminOrderStatusChang
         <li key={i}>
           {label(entry.from_status)} → {label(entry.to_status)}
           {' · '}
-          {formatter.format(new Date(entry.changed_at))}
+          {formatDateTime(entry.changed_at)}
           {entry.changed_by ? ` · cambiado por ${entry.changed_by}` : ''}
         </li>
       ))}

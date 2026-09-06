@@ -454,7 +454,9 @@
   blocked_by: [US-014]    # no hay cuenta que borrar hasta que exista el registro
 - id: US-021
   slug: retencion-datos-ordenes
-  status: In Progress
+  status: In Review   # /commit US-021-retencion-datos-ordenes-frontend-web 2026-09-05 —
+                       # las 3 disciplinas tienen PR (BE archivado, QA archivado inline,
+                       # FE #54 en review). Pasa a Done cuando FE también archive.
   priority: High
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
@@ -463,6 +465,9 @@
   created: 2026-08-22
   ready-at: 2026-08-22
   in-progress-at: 2026-08-30        # primera planificación (/plan-backend-ticket)
+  in-review-at: 2026-09-05          # FE PR #54 abierto (/commit) — primera vez que se
+                                     # estampa este campo: BE y QA ya habían pasado por
+                                     # review y se archivaron sin que quedara registrado acá
   # Origen: hueco detectado por el plan de backend de US-008 al modelar la PII del checkout
   # (su OQ-BE-5). El PO decidió el 2026-08-22 abrirla como CONDICIÓN PREVIA A PRODUCCIÓN.
   # US-020 cubre el borrado de CUENTAS; el comprador invitado no tiene cuenta que borrar, y
@@ -489,6 +494,30 @@
   # apps/web/src/features/orders/). Falta confirmar con el PO/Arquitecto si la
   # acción "anonimizar" en el panel es un change FE propio o se agrega a US-012 FE.
   # `blocked_by` sin tocar.
+  #
+  # NOTA (2026-09-05, /develop-qa US-021, PR #51 mergeado): disciplina QA cerrada —
+  # Mode A (inline en `openspec/changes/archive/US-021-...-backend/qa-plan.md`, no
+  # hay change `-qa` separado que archivar). Suite de aceptación real contra el
+  # backend mergeado: 11/11 escenarios (74/74 steps) + contract testing 11/11 casos,
+  # verde, reproducido en corridas consecutivas. Sin defectos en la implementación.
+  # Gaps documentados, no rellenados en falso: TC-021-004b bloqueado — el DTO de
+  # US-012 (`AdminOrderSummaryDto`/`AdminOrderDetailDto`) no expone `anonymized_at`/
+  # `anonymization_reason`, PR #41 no lo cerró; TC-021-007 manual (consentimiento,
+  # sin superficie API); QA-021-CT-2 sin contract test de US-012 contra el que
+  # comparar. El gap del DTO queda a cargo de quien planifique el FE de US-021
+  # (`a7`, en curso) — extenderlo es la vía más chica para completar AC-4/AC-5 a
+  # nivel UI. `status` de la US sigue sin avanzar: sólo falta FE. `blocked_by` sin
+  # tocar.
+  #
+  # NOTA (2026-09-05, /commit US-021-retencion-datos-ordenes-frontend-web, PR #54
+  # abierto): el gap del DTO que dejó QA (TC-021-004b) se resolvió antes de planificar
+  # el FE, en un change de backend chico dedicado (PR #52, mergeado) — no tocó el
+  # change de US-012 como sugería la nota de QA, fue un follow-up propio. FE: 27/27
+  # tasks cerradas (acción "anonimizar" con confirmación de dos pasos, indicación de
+  # anonimizado en `OrderDetail`, `retention-sweep` fuera de alcance del panel). Con
+  # esto las 3 disciplinas tienen PR (BE #41/#48 archivado, QA #51 archivado inline,
+  # FE #54 en review) — `status` avanza a `In Review`; pasa a `Done` cuando FE también
+  # se mergee y archive.
   blocked_by: [US-008]    # tiene que existir la orden con PII antes de poder anonimizarla
 - id: US-022
   slug: actualizacion-dependencias-frontend

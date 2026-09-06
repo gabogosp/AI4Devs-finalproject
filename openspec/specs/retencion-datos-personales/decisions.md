@@ -36,16 +36,30 @@ el AC-5 de esta US sea observable desde el panel — hoy no los expone (ver
 `requirements.md` D-1). Esta nota se declaró en el `design.md` original de
 US-021 como *open question* para quien planificara `US-012-panel-ordenes-dueno-backend`,
 pero ese change ya se planificó y archivó sin incorporarla (`ordenes/`
-archivado antes que esta capacidad). Queda registrada acá como deuda
-explícita, no oculta, para la próxima vez que se toque `ordenes/`.
+archivado antes que esta capacidad). Quedó registrada acá como deuda
+explícita, no oculta.
+
+**RESUELTO (2026-09-05, fix/US-021-publish-order-anonymization-contract)**: al
+planificar el FE de US-021 (`/plan-frontend-web-ticket US-021`), el bloqueo se
+hizo concreto — sin estos 2 campos ni el spec publicado, el codegen del panel
+no podía generar el cliente. Se extendió `AdminOrderDetailDto.fromWithHistory`
+(`apps/api/src/orders/dto/order.dto.ts`) con `anonymized_at`/
+`anonymization_reason` (ambas columnas ya existían en `orders`, sólo faltaba
+proyectarlas al DTO) y se documentaron en el schema `AdminOrderDetail` de
+`openspec/specs/ordenes/contracts/openapi.yaml` (living contract) y de
+`apps/api/docs/api/openapi.yaml` (spec publicado). Ver la desviación de abajo
+para el segundo fix (publicar los 2 endpoints).
 
 ## Desviaciones conscientes registradas
 
-- **El spec publicado (`apps/api/docs/api/openapi.yaml`) no incluye estos 2
-  endpoints.** El `tasks.md` de este change no tuvo una task de "mergear al
+- **RESUELTO (2026-09-05, fix/US-021-publish-order-anonymization-contract)**:
+  el spec publicado (`apps/api/docs/api/openapi.yaml`) no incluía estos 2
+  endpoints. El `tasks.md` de este change no tuvo una task de "mergear al
   spec publicado" (a diferencia de otros changes archivados, que sí la
-  tenían) — la capacidad vive hoy sólo en el contrato acumulado de
-  `openspec/specs/`, seedeado directo desde los dos yaml draft del change
-  (`contracts/openapi/anonymize-order.yaml` + `retention-sweep.yaml`).
-  Brecha conocida, no bloqueante para el archive (los dos yaml lintean
-  limpio y describen fielmente lo implementado).
+  tenían) — la capacidad vivía sólo en el contrato acumulado de
+  `openspec/specs/`, seedeado directo desde los dos yaml draft del change.
+  Se mergearon `POST /admin/orders/{id}/anonymize` y
+  `POST /admin/orders/retention-sweep` (tag `admin-orders-retention`) al spec
+  publicado, reusando los componentes compartidos existentes
+  (`#/components/responses/Problem`, `RateLimited`, `#/components/parameters/Id`)
+  en vez de duplicar los que declaraban los yaml draft en aislamiento.
