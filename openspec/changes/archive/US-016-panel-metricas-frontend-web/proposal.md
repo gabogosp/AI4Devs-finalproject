@@ -6,6 +6,10 @@ discipline: frontend-web
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-06
+merged_commit: ad21184b1a1d571682afcab85f9a92687cd21932
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/59
 ---
 
 # Proposal — Panel de métricas del dueño (frontend-web)

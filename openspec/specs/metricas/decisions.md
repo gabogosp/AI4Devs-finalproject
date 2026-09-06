@@ -90,9 +90,51 @@ debe revisar si `SALE_STATUSES` (D2 arriba) sigue siendo correcto — no hay
 un mecanismo automático que lo detecte, es responsabilidad de quien toque
 esas capacidades hermanas.
 
-## Desviaciones conscientes registradas
+## Desviaciones conscientes registradas (backend)
 
 Ninguna. El `tasks.md` de este change sí tuvo su task de "mergear al spec
 publicado" (`apps/api/docs/api/openapi.yaml`) y quedó verde antes del
 archive — a diferencia de `retencion-datos-personales` (US-021), no hay
 brecha de sincronización que documentar acá.
+
+## Decisiones de implementación (frontend-web)
+
+### D7 — Nombre de la feature: `metrics` (FE) vs `reports`/`Reports*` (BE)
+
+El backend usa `Reports*`/`reports` por la colisión de nombre con
+`MetricsService` de observabilidad (D1 arriba). El frontend **no tiene esa
+colisión** — no existe ningún `Metrics*` en `apps/web`. Se eligió
+`src/features/metrics/`, siguiendo el nombre de la pantalla tal como la
+nombra la US y el E2E ("panel de métricas"), en vez de espejar el nombre del
+módulo backend. `metricsService.ts` consume operaciones cuyo path HTTP es
+`admin/reports/*` — la asimetría de nombres (capacidad `metricas`, feature
+FE `metrics`, endpoints/clases BE `reports`/`Reports*`) es intencional y
+está documentada en los 3 lugares (D1, D7, y el README de esta capacidad)
+para que no se lea como un error de tres personas distintas.
+
+### D8 — Un chart, una tabla, tarjetas — no chart×3
+
+AC-1 (evolución de ventas) es una serie temporal → `SalesChart`
+(`ComposedChart` de Recharts). AC-2 (ranking de productos) es mejor servido
+por una tabla ordenable (`TopProductsTable`, TanStack Table) que por una
+barra — permite ver SKU/cantidad/monto en la misma fila y ordenar por
+cualquier columna. AC-3 (totales del período) son KPIs puntuales, no una
+serie → `SummaryCards`. Forzar un chart en los 3 widgets habría inflado la
+superficie de Recharts sin ganancia de legibilidad y contradicho
+`frontend-standards.md` §11.bis.7 (tablas como default en backoffice para
+datos tabulares).
+
+### D9 — Aislamiento de fallas por widget
+
+Los 3 endpoints del backend son independientes (sin transacción
+compartida) — si `top-products` está momentáneamente lento o falla, no hay
+razón de negocio para esconder el chart de ventas que sí respondió. Cada
+widget tiene su propio `AsyncState<T>` (frontend-standards §11.9) y su
+propio botón "Reintentar" — mismo patrón que `OrdersList`
+(`frontend-resilience-patterns` skill, patrón #10: aislar fallas por
+componente).
+
+## Desviaciones conscientes registradas (frontend-web)
+
+Ninguna. `RangeFilterForm` (aplicación explícita del rango) y el resto de
+los 25 tasks cerraron verdes contra sus `Verify:` sin necesitar excepciones.
