@@ -23,7 +23,7 @@
 
 ## Phase 1 — Codegen (contrato → artefactos derivados)
 
-- [ ] T1.1 Confirmar que el cliente/Zod/MSW regenerado desde el contrato
+- [x] T1.1 Confirmar que el cliente/Zod/MSW regenerado desde el contrato
       (`orval.config.ts` ya apunta a `../api/docs/api/openapi.yaml`, sin
       cambios de config) sigue en sync — ya se heredó de la rama del backend,
       pero se re-corre para blindar contra drift si el contrato cambió desde
@@ -42,7 +42,7 @@
     la salida real de orval — el `typecheck` de T4.1 los ata en firme).
   - **Verify**: `grep -c "AdminReports" apps/web/src/api/generated/model/index.ts`
     devuelve > 0; `pnpm --filter @dsm/web typecheck` limpio.
-- [ ] T1.2 Confirmar que el gate `frontend-codegen-fresh` queda satisfecho
+- [x] T1.2 Confirmar que el gate `frontend-codegen-fresh` queda satisfecho
       (regenerar no produce diff adicional tras T1.1).
   - **Exit criterion**: segunda corrida de codegen no cambia nada.
   - **Verify**: `pnpm --filter @dsm/web codegen && git diff --quiet -- apps/web/src/api/generated && echo OK`.
