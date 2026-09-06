@@ -192,7 +192,7 @@
 
 ## Phase 9 — Orquestador + ruta
 
-- [ ] T9.1 `src/features/metrics/MetricsDashboard.tsx` — `'use client'`;
+- [x] T9.1 `src/features/metrics/MetricsDashboard.tsx` — `'use client'`;
       único estado compartido `appliedRange: { from?: string; to?: string }`;
       renderiza `RangeFilterForm` + `SalesChart` + `TopProductsTable` +
       `SummaryCards`, pasando `appliedRange` a los 3 widgets; emite
