@@ -274,6 +274,32 @@ Then('la respuesta trae anonymized_count igual a {int}', function (
   );
 });
 
+/**
+ * SC-021-H1: `>=`, no `===`. El barrido es GLOBAL (`retention-sweep` no acepta
+ * ningún scope) y esta suite no resetea Postgres entre features — otras
+ * features siembran a propósito órdenes "vencidas, sin anonimizar" que no son
+ * de este escenario: `historial-compras.steps.ts` (SC-015-C1, ejemplo "un
+ * milisegundo antes del corte") y `seed-metricas.ts` (AC-9, orden real "hace
+ * 13 meses" para el clamp de métricas). Cuando la suite corre completa (como
+ * hace el gate CI, sin `--tags @us-021`), esas quedan vivas y se suman al
+ * barrido de este escenario — encontrado real: `anonymized_count=3` en vez
+ * de 1 al restaurar el gate. La prueba real de AC-1 ("anonimiza toda vencida
+ * Y NINGUNA otra") ya la hacen los dos `Then` scoped de abajo (la orden
+ * vencida quedó anonimizada, la reciente no) — el conteo global sólo prueba
+ * que el barrido hizo *algo*, nunca puede prometer *sólo* nuestra orden en un
+ * Postgres compartido con el resto de la suite.
+ */
+Then('la respuesta trae anonymized_count de al menos {int}', function (
+  this: CatalogWorld,
+  minimo: number,
+) {
+  const body = est(this).ultima?.body as { anonymized_count?: number } | undefined;
+  assert.ok(
+    typeof body?.anonymized_count === 'number' && body.anonymized_count >= minimo,
+    `anonymized_count vino ${body?.anonymized_count}, se esperaba >= ${minimo}`,
+  );
+});
+
 Then(
   'la orden vencida tiene buyer_name\\/buyer_email\\/buyer_phone reemplazados por los valores placeholder',
   PASO,

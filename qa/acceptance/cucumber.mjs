@@ -5,5 +5,10 @@ export default {
   import: ['acceptance/steps/**/*.ts'],
   format: ['progress'],
   strict: true,
-  tags: 'not @deferred',
+  // `@frontend` (hoy sólo SC-008-X3): escenarios cross-feature que requieren
+  // renderizado real de UI — no tienen (ni deben tener) step defs acá, viven en
+  // Playwright (`qa/e2e/*.spec.ts`, Layer 3). Sin esta exclusión, cucumber los
+  // levanta igual y falla con "undefined step" — visto real al restaurar el
+  // gate CI (`qa.yml`), que corre esta suite sin filtrar `@frontend`.
+  tags: 'not @deferred and not @frontend',
 };

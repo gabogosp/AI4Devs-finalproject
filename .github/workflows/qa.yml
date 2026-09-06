@@ -80,7 +80,7 @@ jobs:
 
       - name: Aceptación BDD (Cucumber)
         if: hashFiles('qa/acceptance/**/*.feature') != ''
-        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred"
+        run: pnpm --filter @dsm/qa test:acceptance -- --tags "not @deferred and not @frontend"
 
       # E2E y a11y corren en el browser contra el FE: necesitan apps/web arriba,
       # no sólo la API (faltaba en la versión original de este workflow).
