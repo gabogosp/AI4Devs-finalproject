@@ -311,6 +311,93 @@
   puntual contra `US-023` o contra este panel, según dónde diverja.
 - **Bloqueado por**: `US-023-pago-manual-offline-backend` (0 tasks al momento
   de escribir este charter) — no ejecutable hasta que publique el endpoint.
+# US-008 — Checkout guest
+
+## TC-008-E1 — Doble-submit del checkout
+
+- **Misión**: enviar el mismo `POST /v1/checkout` dos veces rápido (mismo
+  carrito, sin esperar la primera respuesta) y confirmar el comportamiento
+  documentado en `design.md` §Approach.4 — no hay idempotencia, es una
+  decisión consciente.
+- **Áreas**: dos requests concurrentes sobre el mismo carrito; el `order_number`
+  de cada una; el estado del carrito después (¿sigue con líneas, o algo lo
+  vació?); el stock de los productos involucrados.
+- **Riesgos**: que se creen DOS órdenes (el comportamiento documentado y
+  aceptado — ADR: no se previene) pero que además alguna quede con un total
+  incoherente si las dos transacciones leyeron el catálogo en momentos
+  distintos con un precio cambiando en el medio; que una de las dos deje
+  stock retenido por error (violaría AC-6 en un camino no cubierto por
+  `ac6-stock-untouched.spec.ts`, que ejercita un solo checkout por vez).
+- **Heurísticas**: "romper a propósito" (dos requests deliberadamente
+  simultáneos, no un timing accidental); seguir el dato (comparar las dos
+  órdenes creadas campo a campo, no sólo los dos status 201).
+- **Justificación manual**: el resultado esperado (dos órdenes, ambas
+  inertes) ya es una decisión de diseño explícita y no una invariante que
+  deba quedar en rojo si cambia — lo que vale la pena explorar es si alguna
+  combinación de timing produce un efecto colateral no documentado (stock,
+  total, o una tercera orden), que sí sería un hallazgo.
+- **Salida esperada**: confirmación de que el comportamiento observado
+  coincide con lo documentado (dos órdenes inertes, sin stock tocado), o un
+  defecto puntual si aparece un efecto colateral no previsto.
+
+## TC-008-E2 — PII en logs del checkout
+
+- **Misión**: con centinelas de comprador (nombre/email/teléfono
+  reconocibles) en un checkout real, revisar que ningún log de la API —
+  incluidos los de los 4 caminos de rechazo (carrito vacío, no comprable,
+  validación, CSRF) — muestra esos valores.
+- **Áreas**: el log de acceso HTTP por default de Nest/pino (que serializa
+  headers y a veces el body de la request); el `CheckoutEventsService`
+  (dev-owned, ya probado en unit — acá se explora la ruta completa del
+  proceso, no el servicio aislado); trazas de una excepción no manejada que
+  pudiera incluir el objeto `CreateCheckoutDto` completo.
+- **Riesgos**: el interceptor de logging de request/response de Nest
+  incluyendo el `body` crudo del `POST /v1/checkout` en el log de acceso —
+  ahí viven `buyer.name`/`buyer.email`/`buyer.phone` en texto plano, y sería
+  un canal que ningún test dirigido de `e2e-checkout-pii.spec.ts` (dev-owned)
+  recorre porque ese spec captura las llamadas al logger de la aplicación,
+  no el log de acceso HTTP de la infraestructura del framework.
+- **Heurísticas**: "seguir el dato" hasta cada sumidero de logging real (no
+  sólo el logger de dominio); provocar los 4 rechazos con los centinelas
+  puestos, buscando la cadena exacta en el archivo de log completo.
+- **Justificación manual**: complementa (no duplica) T4.2 dev-owned, que
+  prueba el logger de la aplicación de forma dirigida — este charter explora
+  sumideros de logging no anticipados (acceso HTTP, trazas de excepción) con
+  el mismo estándar de evidencia que `TC-021-E3`.
+- **Salida esperada**: confirmación de que ningún sumidero de logging retiene
+  la PII del comprador, o un hallazgo puntual con el log exacto si alguno sí.
+
+## TC-008-E3 — Timezone del consentimiento
+
+- **Misión**: verificar que `orders.consent_accepted_at` se graba en UTC —
+  no en la hora local del proceso de la API ni la del entorno del contenedor
+  — para que la marca temporal sirva como evidencia legal (Ley 25.326) sin
+  importar en qué huso corre el servidor.
+- **Áreas**: el valor persistido (`new Date()` en `CheckoutService`, T2.3) vs.
+  la hora real del request; el comportamiento si el proceso corre con
+  `TZ` distinto de UTC (Node/Postgres); cómo lo muestra el panel de US-012
+  cuando exista.
+- **Riesgos**: que el timestamp se guarde correcto en UTC en la columna
+  (`timestamptz`, que Postgres siempre normaliza) pero que alguna
+  serialización aguas abajo (el futuro email de US-011, el panel de US-012)
+  lo interprete con el TZ del proceso donde corre esa lectura y muestre una
+  hora de aceptación distinta de la real — no rompe AC-8 hoy (no hay
+  consumidor todavía) pero sería un defecto silencioso el día que aparezca.
+- **Heurísticas**: boundary/comparación (arrancar el proceso con `TZ=America/
+  Argentina/Buenos_Aires` y con `TZ=UTC`, comparar el valor crudo leído de
+  Postgres en los dos casos — debe ser idéntico porque `timestamptz` no
+  guarda el offset); "seguir el dato" desde el `Date()` de Node hasta la fila.
+- **Justificación manual**: depende de arrancar el proceso con distintas
+  variables de entorno de sistema y comparar comportamiento — no es una
+  aserción unitaria determinista sobre el código, es una verificación de
+  configuración/infraestructura.
+- **Salida esperada**: confirmación de que `consent_accepted_at` es estable
+  frente al TZ del proceso (columna `timestamptz`, ya lo garantiza
+  estructuralmente), documentada como evidencia para el día que un consumidor
+  la muestre; o un defecto si se encuentra una ruta que sí la corrompe.
+
+---
+
 # US-021 — Retención y anonimización
 
 > Al momento de escribir estos charters (`/develop-qa US-021`), el backend estaba

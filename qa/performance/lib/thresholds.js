@@ -63,6 +63,25 @@ export const cart_write = {
 };
 
 /**
+ * Escritura de `POST /v1/checkout` de US-008 (QA-008-PERF-1). El número sale
+ * del mismo NFR que `cart_write`: PRD §4 fija «p95 de escritura
+ * (carrito/orden) < 500 ms» y la US §9 lo repite explícitamente para el
+ * checkout — no es un número nuevo, es el mismo presupuesto de escritura
+ * aplicado al endpoint que efectivamente crea la orden.
+ *
+ * `rate_limited` con `count<1`: mismo criterio que `cart_write`/`auth_login` —
+ * el checkout tiene su propio throttler (`CHECKOUT_RATE_LIMIT_MAX`, §7.3) y la
+ * corrida real se hace contra la instancia QA con el presupuesto elevado
+ * (`qa/scripts/api-up.sh`); un solo 429 invalida la medición.
+ */
+export const checkout = {
+  'http_req_duration{endpoint:checkout}': ['p(95)<500'],
+  http_req_failed: ['rate<0.01'],
+  checks: ['rate>0.99'],
+  rate_limited: ['count<1'],
+};
+
+/**
  * Login de cuenta de cliente de US-014 (TC-160). **Presupuesto NO ratificado**
  * (OQ-QA-5, `openspec/changes/US-014-registro-login-qa/proposal.md`): el PRD
  * §4 fija «p95 de escritura (carrito/orden) < 500 ms», pero esa fila dice
@@ -176,6 +195,7 @@ export default {
   list_products,
   storefront_product,
   cart_write,
+  checkout,
   auth_login,
   search,
   confirm_payment,

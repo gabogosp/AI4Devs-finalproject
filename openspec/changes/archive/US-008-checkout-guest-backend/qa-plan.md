@@ -3,7 +3,21 @@
 > **Ticket**: US-008 — Checkout guest — datos, consentimiento y retiro
 > **Author**: qa-engineer agent
 > **Date**: 2026-08-23 (regenerado 2026-08-30)
-> **Status**: Proposed
+> **Status**: Executed (2026-09-05, `/develop-qa US-008`)
+> **Resumen de cierre**: las 4 capas QA-owned corrieron por primera vez contra el `main`
+> ya mergeado (backend + frontend-web), sin ningún stub — **todo en verde, sin defectos
+> reales encontrados**. Acceptance BDD: **14/14 escenarios** (10 declarados en §3, uno de
+> ellos —SC-008-A2— expande a 3 por su Esquema del escenario; SC-008-X3 excluida de esta
+> capa por diseño, cubierta en el E2E) verdes en 2 corridas consecutivas (determinismo
+> confirmado). Contract (QA-008-CT-1): **5/5 casos** (201/403/409/422 contra la instancia QA
+> compartida + 429 contra una instancia efímera de límite bajo, apagada al terminar) verde
+> en 2 corridas. Performance (QA-008-PERF-1/2): **p95 ≈ 3.8–5.1 ms** contra el umbral de
+> 500 ms (PRD §4) — muy por debajo, verde en 2 corridas de 15 s / 3 VUs / ~6.000 iteraciones
+> cada una, 0 rate-limited, 0 fallos. E2E cross-stack (QA-008-E2E-1): **2/2 casos** (happy
+> path SC-008-H1 + SC-008-X3, y la mitad UI de SC-008-A3) verdes en 3 corridas consecutivas.
+> Exploratory: 3 charters agregados a `qa/exploratory/charters.md` (§8, ninguno bloqueado).
+> Sin flakiness detectada en ninguna capa tras las reejecuciones. Ver `docs/audits/` no
+> aplica — este cierre vive sólo acá y en los `outcome:` inline de cada ítem de §4/§5/§6.
 > **Affected platform(s)**: backend
 > **Service tier(s)**: 1 (loop de compra — camino crítico)
 > **Companion files**: `proposal.md`, `tasks.md`, `design.md`
@@ -181,25 +195,76 @@ contra el build real del FE.
 (cross-stack, cubre `SC-008-X3`).
 **Reuses**: seed de `qa/support/seed-carrito.ts` + `qa/support/cart-client.ts`.
 
+### Outcome de ejecución (2026-09-05)
+
+**PASS, 14/14 escenarios** (10 declarados arriba menos `SC-008-X3`, más 2 escenarios extra
+de la expansión de `SC-008-A2` por su Esquema del escenario de 3 Ejemplos), en **2 corridas
+consecutivas** (`--tags "@us-008 and not @frontend"` — se excluye `SC-008-X3` así, sin tocar
+el Gherkin: el `@frontend` de su tag alcanza). Determinismo confirmado.
+
+Dos ajustes de implementación respecto de lo asumido acá, ninguno un defecto del backend:
+
+- **No es `supertest`**: sigue la convención real ya establecida por `carrito.steps.ts`/
+  `pago-manual.steps.ts` — Playwright `APIRequestContext` vía `qa/support/cart-client.ts`
+  (`Invitado.checkout()`, extendido en esta ejecución con `conCsrf`/`extra` para
+  `SC-008-X2`/`SC-008-N2`), no `supertest`. El plan original asumía el runner que
+  `qa/acceptance/cucumber.mjs` en realidad no usa.
+- **Lecturas directas vía Prisma para lo que ningún endpoint expone**: `order_items`
+  (unit_price/total, SC-008-H2), `consent_accepted*`/`consent_terms_version` (SC-008-N3) y
+  el barrido de `information_schema.columns` (SC-008-N2) no tienen superficie HTTP mientras
+  la orden sigue `pending_payment` (`GET /v1/admin/orders/:id` da 404 en ese estado — sólo
+  `GET /v1/admin/orders/pending-payment` existe, y es angosto a propósito). Misma excepción
+  angosta y documentada que `pago-manual.steps.ts` ya usa para `payments` (nunca para
+  sembrar, sólo para asertar — la orden siempre se crea con el checkout real).
+
+Fixtures nuevos: `qa/support/seed-checkout.ts` (`seedCheckoutConCarrito`, combina
+`seedCarrito()` + un invitado con 2 productos reales en el carrito, per Antecedentes).
+`buildBuyerData`/`buildCheckoutBody` de §7 **ya existían** en `qa/support/builders.ts` —
+los había adelantado `US-023-pago-manual-offline` (que también hace checkouts reales) antes
+de que este plan se ejecutara.
+
 ---
 
 ## 4. Contract testing
 
-- [ ] **QA-008-CT-1**: Supertest contract test para `POST /v1/checkout` vs OpenAPI
+- [x] **QA-008-CT-1**: Supertest contract test para `POST /v1/checkout` vs OpenAPI
   - Exit criterion: un spec valida que el 201 matchee el schema de response, que el 409 y 422 matcheen `application/problem+json`, y que el 429 incluya las cabeceras `RateLimit-*`.
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=checkout` (exit 0)
+  - **outcome (2026-09-05)**: **PASS, 5/5 casos, 2 corridas verdes**. Implementado en
+    `qa/contract/checkout.contract.ts` (script `tsx` standalone, misma convención real que
+    `pago-manual.contract.ts` — el `Verify:` de arriba asume un runner jest-style que no
+    existe en este repo; el script real corre por `pnpm --filter @dsm/qa test:contract:checkout`).
+    Casos: 201 con `CheckoutCreated` (`additionalProperties:false`) + `Cache-Control: no-store`;
+    403 sin `X-CSRF-Token` con envelope `application/problem+json`; 409
+    `dsm:checkout/cart-empty`; 422 sin `consent` con `errors[]`; y **429 con las 4 cabeceras
+    `RateLimit-*`/`Retry-After`** — este último no se puede disparar contra la instancia QA
+    compartida (`CHECKOUT_RATE_LIMIT_MAX` elevado a propósito por `qa/scripts/api-up.sh` para
+    no chocar con otras sesiones concurrentes), así que el script levanta y apaga una
+    instancia **efímera** de la misma API compilada con `CHECKOUT_RATE_LIMIT_MAX=2` sólo para
+    ese caso (verificado: proceso limpio, puerto libre al terminar). Sin defectos.
 
 ---
 
 ## 5. Performance (k6)
 
-- [ ] **QA-008-PERF-1**: Script k6 para `POST /v1/checkout` con target p95 < 500 ms
+- [x] **QA-008-PERF-1**: Script k6 para `POST /v1/checkout` con target p95 < 500 ms
   - Exit criterion: `qa/performance/checkout.js` crea carritos → ejecuta checkouts con datos válidos, midiendo la escritura. Threshold: `'http_req_duration{endpoint:checkout}': ['p(95)<500']`. Requiere seed previo.
   - Verify: `k6 run --vus 3 --duration 15s qa/performance/checkout.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"`
+  - **outcome (2026-09-05)**: **PASS, 2 corridas verdes** contra la instancia QA aislada
+    (`http://localhost:4310`, puerto propio de esta ejecución). Corrida 1: **p95 = 3.77 ms**
+    (`endpoint:checkout`), 6.034 iteraciones, 0 `http_req_failed`, 0 `rate_limited`, checks
+    100%. Corrida 2 (rerun de determinismo): **p95 = 3.83 ms**, 6.019 iteraciones, mismos
+    ceros. Ambas **muy por debajo** del umbral de 500 ms (PRD §4) — sin asteriscos, tal como
+    predijo `design.md` §NFRs (transacción corta, cero llamadas salientes). Cada iteración usa
+    un invitado nuevo con su propio carrito de una línea (el checkout consume el carrito,
+    OQ-QA-008-1). Registrado también en `qa/package.json` como `test:load:checkout`.
 
-- [ ] **QA-008-PERF-2**: Threshold de checkout agregado a `thresholds.js`
+- [x] **QA-008-PERF-2**: Threshold de checkout agregado a `thresholds.js`
   - Exit criterion: `qa/performance/lib/thresholds.js` exporta `checkout` con `'http_req_duration{endpoint:checkout}': ['p(95)<500']`.
   - Verify: `grep -q "p(95)<500" qa/performance/lib/thresholds.js && grep -q "checkout" qa/performance/lib/thresholds.js`
+  - **outcome (2026-09-05)**: **PASS**. Export `checkout` agregado (con `rate_limited:
+    ['count<1']`, mismo criterio de honestidad que `cart_write`/`auth_login`) y sumado al
+    `default` del módulo.
 
 ---
 
@@ -215,7 +280,7 @@ contra el build real del FE.
 > detiene ahí porque no hay nada más que hacer con la orden hasta que exista la pantalla de pago
 > (US-009 FE, sin planificar).
 
-- [ ] **QA-008-E2E-1**: Spec Playwright cross-stack — checkout completo (FE real + BE real)
+- [x] **QA-008-E2E-1**: Spec Playwright cross-stack — checkout completo (FE real + BE real)
 
   ```yaml
   id: QA-008-E2E-1
@@ -247,8 +312,25 @@ contra el build real del FE.
        **no** navega, el banner "Tenés que aceptar los términos…" queda visible, y no se dispara
        ningún `POST /v1/checkout` (`page.waitForResponse` con timeout corto debe **no** resolver).
   - Verify: `pnpm --filter @dsm/qa test:e2e -- --grep "checkout" --reporter=list` (exit 0)
-
-  **Nota de alcance (evita duplicar con el FE)**: este spec es el E2E **QA-owned** de Layer 3 —
+  - **outcome (2026-09-05)**: **PASS, 2/2 casos, 3 corridas consecutivas verdes** (sin
+    flakiness). Implementado en `qa/e2e/checkout.spec.ts` contra el build real de producción
+    de `apps/web` (`next build` + `next start`) y la API real compilada, ambas en puertos
+    propios de esta ejecución. Caso 1 (SC-008-H1/X3): agrega desde la ficha → `/carrito` →
+    "Ir al pago" habilitado → `/checkout` → completa datos → verifica los dos links del
+    consentimiento (acotados al `<label for="checkout-consent">` — el footer del sitio linkea
+    a las mismas dos páginas legales, y sin acotar el locator resuelve a 2 elementos) →
+    confirma → espera el `201` real de `POST /v1/checkout` → el `order_number` en pantalla
+    coincide con el de la respuesta. Caso 2 (SC-008-A3, mitad UI): mismo flujo sin marcar el
+    checkbox → el banner "Tenés que aceptar los términos para continuar." queda visible, la
+    URL sigue en `/checkout` y **ningún** `POST /v1/checkout` se disparó (verificado por
+    listener de `request`, no por timeout arbitrario). **Sin defectos reales** — las dos
+    iteraciones de estabilización que hicieron falta fueron del spec, no de la app: (a) el
+    `getByLabel(/^nombre$/i)` con anclas exactas no matcheaba porque el asterisco visual de
+    campo requerido (`<span aria-hidden="true"> *</span>`, `Field.tsx`) SÍ forma parte del
+    nombre accesible que usa `getByLabel` en Chromium/Playwright pese al `aria-hidden` —
+    se relajó a `/nombre/i` sin anclas; (b) el locator de los links de consentimiento sin
+    acotar violaba "strict mode" contra el footer del sitio. Ninguna de las dos requirió tocar
+    `apps/web`.
   corre contra API y UI reales, con datos sembrados por la API. **No** duplica el E2E dev-owned de
   Layer 2 que ya vive en `apps/web/e2e/checkout-happy-path.spec.ts` y
   `apps/web/e2e/checkout-topology.spec.ts`: esos son smoke del FE en aislamiento, corren contra el
