@@ -2110,7 +2110,7 @@
   us-id: US-016
   discipline: qa
   variant: null
-  status: in review   # /commit 2026-09-06 — 10/10 stubs automatizados + 2 charters manuales, PR abierto (stacked sobre #59)
+  status: archived   # /archive-change 2026-09-06 — última disciplina de US-016, US pasa a Done
   parent-us: docs/user-stories/US-016-panel-metricas.md
   linear-task-id: null
   audit-baseline: null
@@ -2150,6 +2150,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/60
   pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06T03:32:29Z
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-016-panel-metricas-qa
