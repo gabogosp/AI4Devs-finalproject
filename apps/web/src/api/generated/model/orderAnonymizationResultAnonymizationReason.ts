@@ -7,7 +7,7 @@
  */
 
 /**
- * Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).
+ * Distingue si fue por plazo cumplido, a pedido del comprador, o por borrado de cuenta (AC-4, AC-3 de US-020).
  */
 export type OrderAnonymizationResultAnonymizationReason = typeof OrderAnonymizationResultAnonymizationReason[keyof typeof OrderAnonymizationResultAnonymizationReason];
 
@@ -15,4 +15,5 @@ export type OrderAnonymizationResultAnonymizationReason = typeof OrderAnonymizat
 export const OrderAnonymizationResultAnonymizationReason = {
   retention_policy: 'retention_policy',
   requested: 'requested',
+  account_deletion: 'account_deletion',
 } as const;

@@ -11,6 +11,6 @@ export interface OrderAnonymizationResult {
   order_id: string;
   /** Momento en que se anonimizó (AC-4 — queda registrado y es auditable). */
   anonymized_at: string;
-  /** Distingue si fue por plazo cumplido o a pedido del comprador (AC-4). */
+  /** Distingue si fue por plazo cumplido, a pedido del comprador, o por borrado de cuenta (AC-4, AC-3 de US-020). */
   anonymization_reason: OrderAnonymizationResultAnonymizationReason;
 }
