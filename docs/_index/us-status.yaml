@@ -467,6 +467,16 @@
   # en `In Review`. La capacidad `historial-compras` (CAP-8) todavía no existe — se crea
   # recién cuando BE archive; ese archive debe sumar la sección "Qué verificó QA" con lo
   # que este change dejó documentado (ver nota en su `design.md` archivado).
+  #
+  # NOTA (2026-09-06, /archive-change US-015-historial-compras-backend, PR #70/#71
+  # mergeados): disciplina BE archivada
+  # (openspec/changes/archive/US-015-historial-compras-backend/). Crea
+  # `openspec/specs/historial-compras/` (CAP-8, primera entrega) con la sección "Qué
+  # verificó QA" que dejó pendiente la nota de arriba, e incorpora la publicación del
+  # contrato del follow-up (PR #71). Suma una fila a
+  # `openspec/specs/checkout/decisions.md` (OptionalCustomerGuard) sin tocar su
+  # contrato público. `status` de la US sigue sin avanzar: falta archivar FE (PR #74,
+  # `in review`) — 2/3 disciplinas archivadas.
   blocked_by: [US-014, US-010]
 - id: US-016
   slug: panel-metricas

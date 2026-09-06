@@ -1,0 +1,143 @@
+openapi: 3.0.3
+info:
+  title: DSM — Contrato vivo de la capacidad Historial de compras (CAP-8)
+  version: 1.0.0
+  description: |
+    Contrato VIVO de la capacidad, acumulado por /archive-change. Creado por
+    US-015-historial-compras-backend: historial de compras del cliente
+    autenticado (listado + detalle de sus propias órdenes) y el escritor de
+    `orders.customer_id` que vincula una orden nueva a la cuenta cuando el
+    checkout se hace con sesión activa (US-008 dejó ese campo sin escritor,
+    diferido explícitamente a esta US).
+
+    Publicado en el spec del servicio (`apps/api/docs/api/openapi.yaml`) por
+    un follow-up dedicado (`fix/US-015-publish-order-history-contract`,
+    PR #71) — el `tasks.md` del backend original (PR #70) sólo lintiaba los 2
+    yaml draft sin mergearlos al spec publicado (mismo patrón de gap ya visto
+    en `US-021-retencion-datos-ordenes-backend`, ver `decisions.md`). Este
+    contrato vivo se seedea desde esos 2 yaml draft, ya coherentes con el
+    controller real.
+  contact:
+    name: DSM
+    url: https://example.com
+servers:
+  - url: /v1
+    description: Base URL versionada
+tags:
+  - name: customer-orders
+    description: >-
+      Historial de compras del cliente autenticado (US-015). Superficie de
+      CLIENTE, distinta de `admin-orders` (panel del dueño, capacidad
+      `ordenes`) aunque lee las mismas tablas — nunca expone el UUID interno
+      de la orden ni datos de contacto del comprador (el cliente ya sabe
+      quién es). Autorización estructural: `customer_id` + la ventana de
+      retención (12 meses, PRD §6) se verifican en la misma consulta que
+      resuelve la orden, nunca un chequeo posterior — un `order_number` ajeno
+      o fuera de retención responde 404, indistinguible de "no existe" (IDOR,
+      `threat-modeling-lite`).
+security:
+  - sessionCookie: []
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsm_access
+      description: >-
+        Access JWT de cliente, corto y `httpOnly` (US-014, `CustomerGuard`
+        fail-closed). La API no lo acepta por header `Authorization` — mismo
+        criterio que el resto de la superficie de cliente.
+  responses:
+    RateLimited:
+      description: |
+        Presupuesto del historial excedido (`ORDERS_HISTORY_RATE_LIMIT_MAX`/
+        `_TTL_MS`, `security-standards §7.3`). Cubo propio (`orders_history`),
+        con los presupuestos ajenos (auth/storefront/cart/checkout/enrichment/
+        search/payments_simulate) explícitamente salteados — agotar el
+        historial no puede consumir el cupo de otra superficie. Incluye
+        `Retry-After` + las cabeceras `RateLimit-*` (`api-standards §12`).
+      headers:
+        Retry-After: { schema: { type: integer } }
+        RateLimit-Limit: { schema: { type: integer } }
+        RateLimit-Remaining: { schema: { type: integer } }
+        RateLimit-Reset: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    OrderHistorySummary:
+      type: object
+      description: >-
+        Nunca incluye el UUID interno de la orden ni datos de contacto del
+        comprador — a diferencia de `AdminOrderSummary` (capacidad
+        `ordenes`), que sí los incluye para el panel del dueño.
+      required: [order_number, status, total_ars_cents, created_at]
+      additionalProperties: false
+      properties:
+        order_number:
+          type: integer
+          description: Identificador público y legible ("Pedido #1042").
+        status:
+          type: string
+          enum: [new, preparing, ready, delivered, cancelled]
+        total_ars_cents: { type: integer }
+        created_at: { type: string, format: date-time }
+    OrderHistoryListResponse:
+      type: object
+      required: [data, pagination]
+      additionalProperties: false
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/OrderHistorySummary' }
+        pagination:
+          type: object
+          required: [limit, offset, total]
+          properties:
+            limit: { type: integer }
+            offset: { type: integer }
+            total: { type: integer }
+    OrderHistoryItem:
+      type: object
+      required: [product_name, product_sku, quantity, unit_price_ars_cents, subtotal_ars_cents]
+      additionalProperties: false
+      properties:
+        product_name: { type: string }
+        product_sku: { type: string }
+        quantity: { type: integer }
+        unit_price_ars_cents: { type: integer }
+        subtotal_ars_cents: { type: integer }
+    OrderHistoryDetail:
+      allOf:
+        - { $ref: '#/components/schemas/OrderHistorySummary' }
+        - type: object
+          required: [fulfillment, items]
+          properties:
+            fulfillment:
+              type: string
+              description: Modalidad de retiro/entrega (hoy sólo "pickup" en sucursal).
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/OrderHistoryItem' }
+    Problem:
+      type: object
+      description: |
+        Envelope RFC 7807 (`api-standards.md` §8). Type propio de esta
+        capacidad: `dsm:checkout/order-not-found` (404, reusado de
+        `checkout` — mismo puerto de resolución de orden, sin motivo de
+        inventar uno nuevo). Las tres causas del 404 (no existe, no es del
+        cliente, fuera de retención) responden igual — IDOR, no se distingue
+        el motivo hacia afuera.
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: '**Nunca** contiene PII del comprador.'
+paths:
+  /me/orders:
+    $ref: ./openapi/paths/list-order-history.yaml
+  /me/orders/{order_number}:
+    $ref: ./openapi/paths/get-order-history-detail.yaml

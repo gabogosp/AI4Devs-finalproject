@@ -1,0 +1,30 @@
+get:
+  operationId: listOrderHistory
+  tags: [customer-orders]
+  summary: Listar mis órdenes (US-015 AC-1)
+  description: >-
+    Ordenadas de la más reciente a la más antigua, dentro de la ventana de
+    retención vigente (AC-7). Excluye `pending_payment` (checkout iniciado y
+    nunca pagado no es una "compra"). Sin `sort` ni `status` parametrizables:
+    AC-1 fija el orden y el filtro como reglas de negocio, no como opciones
+    del cliente.
+  parameters:
+    - name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    - name: offset
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+  responses:
+    '200':
+      description: Listado paginado, posiblemente vacío (AC-3, sin caso especial).
+      content:
+        application/json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/OrderHistoryListResponse' }
+    '401':
+      description: Sin sesión de cliente válida.
+      content:
+        application/problem+json:
+          schema: { $ref: '../../openapi.yaml#/components/schemas/Problem' }
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

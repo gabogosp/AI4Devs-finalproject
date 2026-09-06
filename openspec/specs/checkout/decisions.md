@@ -49,3 +49,9 @@ del change archivado).
 | `useCheckout.ts` es un `useReducer` de 4 casos (idle/submitting/success/error), no el patrón de mutaciones por línea del carrito. | Una sola operación con un solo consumidor (`CheckoutForm`) no necesita contexto compartido ni `mutatingSlugs` — mezclar "¿el carrito es válido?" (chequeo separado sobre `useCartContext()`) con "¿la orden se está creando?" en la misma unión obligaría a modelar transiciones que no existen. |
 | El mapeo de errores reusa el catálogo de `AppError.kind` existente (`validation`/`conflict`/`forbidden`/`rateLimited`/`network`/`server`), sin agregar un `kind` nuevo. | Los seis ya cubren checkout íntegramente; la única pieza nueva es el discriminador `problemType` sobre 409 (`dsm:checkout/cart-empty` vs `dsm:checkout/cart-not-purchasable`), que `mapProblemToAppError` ya propagaba para el carrito. |
 | Selección de sucursal y recuperación del `order_token` tras cerrar la pestaña quedan fuera de alcance. | Sucursal única (sin AC que pida selección); recuperar el token tras cerrar la pestaña no tiene AC — `sessionStorage` se borra por diseño al cerrar, y hasta que exista US-009 no hay nada que hacer con la orden de todos modos. |
+
+## Desde US-015 backend (archivada 2026-09-06)
+
+| Decisión | Motivo |
+|---|---|
+| El checkout resuelve `customer_id` vía `OptionalCustomerGuard` si hay sesión de cliente — no cambia el contrato público de `POST /v1/checkout` (misma request, misma respuesta), sólo agrega un escritor al campo `customer_id` del DER que este change había dejado sin escritor (US-008 es 100% guest). | `orders.customer_id` existía en el schema desde esta migración (nullable, sin FK obligatoria) precisamente para que un change futuro pudiera completarlo sin `ALTER` — ver `US-015-historial-compras-backend` (capacidad `historial-compras`) para el detalle del guard. Sin sesión, el comportamiento es idéntico al de antes: guest, `customer_id` sigue `null`. |
