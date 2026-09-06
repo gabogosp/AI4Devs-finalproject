@@ -668,6 +668,13 @@ propio: la ausencia acá **es** la decisión, no un olvido.
   de `refund.status === 'refunded'` en el body
   (`k6-load-scaffolding` §Checks vs thresholds).
 - Verify: `k6 run qa/performance/cancel-order-write.js --summary-trend-stats="p(95)" 2>&1 | grep -q "✓"` (exit 0)
+- **Estado**: verde — 150/150 iteraciones, 3 VUs, **p95 7.74ms** vs presupuesto
+  200ms (holgura amplia, mismo patrón que el resto de la suite de este
+  repo), `checks` 300/300 (status 200 + `refund.status === "refunded"`),
+  `http_req_failed` 0.00%. Setup: 150 checkouts reales + 1 sola
+  `GET /pending-payment` + 150 `confirm-payment` reales, dejando el pool en
+  `new` antes de la carga (cancelar es de un solo uso, nunca la misma orden
+  dos veces).
 
 Se agrega `cancel_order` a `qa/performance/lib/thresholds.js` (fuente única de
 presupuestos), mismo criterio que `simulate_payment`/`order_transition`.

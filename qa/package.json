@@ -31,6 +31,7 @@
     "test:load:confirm-payment": "k6 run performance/confirm-payment.js",
     "test:load:reports": "k6 run performance/reports-read.js",
     "test:load:simulate-payment": "k6 run performance/simulate-payment.js",
+    "test:load:cancel-order": "k6 run performance/cancel-order-write.js",
     "seed:load": "tsx performance/seed-load-data.ts",
     "api:up": "bash scripts/api-up.sh"
   },
