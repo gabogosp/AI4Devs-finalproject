@@ -52,7 +52,7 @@ language: es
 
 ## Pre-requisitos
 
-- [ ] **US-014/US-015/US-021 backend en `main`** (§6 de la US: los tres tienen su
+- [x] **US-014/US-015/US-021 backend en `main`** (§6 de la US: los tres tienen su
   backend mergeado — US-021 archivada/`Done`, US-014/US-015 mid-lifecycle en
   otras disciplinas pero su código ya está en `main`). Sin esto no existen
   `customers.deleted_at`, `orders.customer_id`, ni el mecanismo de anonimización
@@ -60,8 +60,8 @@ language: es
   **Verify**: `grep -c "deleted_at" packages/db/prisma/schema.prisma` ≥ 1 **y**
   `grep -c "anonymized_at" packages/db/prisma/schema.prisma` ≥ 1 **y**
   `grep -c "customer_id" packages/db/prisma/schema.prisma` ≥ 3
-- [ ] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
-- [ ] **Working tree limpio en `packages/db/prisma/`, `apps/api/src/auth/`,
+- [x] **Postgres local arriba**: `docker compose up -d postgres` (host `:55432`).
+- [x] **Working tree limpio en `packages/db/prisma/`, `apps/api/src/auth/`,
   `apps/api/src/checkout/`, `apps/api/src/cart/`, `apps/api/src/config/`** — este
   change toca los 5 simultáneamente; otra tarea en vuelo sobre esos archivos se
   pisa (precedente: colisión de sesiones de US-007/US-021).
