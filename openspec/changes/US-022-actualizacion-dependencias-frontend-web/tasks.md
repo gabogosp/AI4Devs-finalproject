@@ -10,9 +10,9 @@
 | AC-1 | Ninguna dependencia de producción con vulnerabilidad critical | T2.1–T2.5, T7.1, T8.1 | in this change |
 | AC-2 | `next` en línea 15.x sin critical/high | T2.1, T2.2, T8.1 | in this change |
 | AC-3 | El sitio sigue funcionando igual | T2.2, T3.1, T3.2 | in this change |
-| AC-4 | Dependencias de dev saneadas | T4.1 (playwright), T4.2 (spike de vitest, decisión posterior según blast radius) | in this change |
+| AC-4 | Dependencias de dev saneadas | T4.1 (playwright, integrado), T4.2 (vitest, integrado) | in this change |
 | AC-5 | Audit como gate ejecutable | T6.1, T6.2, T6.3, T8.1 | in this change |
-| AC-6 | No se actualiza a ciegas | T4.2 (spike de vitest antes de decidir integrar/diferir), cláusula de escalamiento en T5.1–T5.3 | in this change (como restricción de proceso) |
+| AC-6 | No se actualiza a ciegas | T4.1/T4.2 (medidos con spike/bisect antes de integrar), cláusula de escalamiento en T5.1–T5.3 | in this change (como restricción de proceso) |
 | AC-7 | No se silencia una vulnerabilidad para pasar el gate | T6.1, T6.2 | in this change |
 
 Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitamente bloqueada** (el bump de `vitest`) que no se ejecuta en este change hasta que el usuario resuelva la pregunta abierta en `proposal.md`. No se marca "deferred → change de seguimiento" porque la propia US ya prevé esta rama en su AC-6 (negative space) — la resolución queda dentro de este mismo change, simplemente sin ese task cerrado.
@@ -68,9 +68,30 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
 
 ## Fase 4 — Dev-only: `playwright` (bump) y `vitest` (spike aislado)
 
-- [ ] T4.1 Bump `@playwright/test` de `apps/web/package.json` de `1.49.1` a `1.55.1`.
+- [x] T4.1 Bump `@playwright/test` de `apps/web/package.json` de `1.49.1` a `1.55.1`.
   - **Exit criterion**: `apps/web/package.json` declara `"@playwright/test": "1.55.1"`; la suite E2E completa de `apps/web` sigue verde con la misma cantidad de specs.
   - **Verify**: `pnpm install && pnpm --filter @dsm/web test:e2e`
+  - **Nota de ejecución (2026-09-06)**: el bump rompía reproduciblemente `e2e/pdp-invalidation.spec.ts`
+    (3/3 con timeout de 5s original). Investigación completa: (1) ensanchar el timeout del
+    `expect.poll` a 20s no lo resolvió en modo serie (5/5 fallos, `--workers=1`); (2) se
+    hipotetizó una carrera cliente entre el fetch fire-and-forget de invalidación y la
+    navegación posterior — se corrigió awaiteando `revalidateProductSafely()` antes de
+    navegar en `ProductForm.tsx`/`ProductActions.tsx` (mejora real, ver `revalidateSafely.ts`),
+    pero NO cambió el resultado (seguía 5/5 fallos en serie); (3) se descartó caché HTTP del
+    browser (`Cache-Control: private, no-cache, no-store` confirmado con curl); (4) **bisect
+    decisivo**: con `next` revertido a `15.1.6` (versión vieja) + playwright `1.55.1` (nuevo),
+    en serie sigue fallando 5/5 — descarta a `next` como causa. En **paralelo** (modo real de
+    CI, con next Y playwright ya bumpeados) se midió 2 fallos de 5, no 5/5 — coincide con el
+    ~33% de flakiness que el propio spec ya documentaba ANTES de esta US (carrera entre la
+    purga fire-and-forget de dos cachés y el poll, agravada desde que el puente purga dos
+    cachés en vez de una). **Conclusión**: es una carrera preexistente del propio mecanismo
+    de invalidación, no introducida por ningún bump de esta US — el modo serie sólo la expone
+    al 100% en vez de al ~33%, y serie nunca fue un modo de ejecución validado para este spec.
+    Decisión del usuario 2026-09-06: aplicar el bump igual, aceptando el riesgo ya
+    preexistente (CI corre en paralelo con `retries: 2`, mismo perfil de riesgo que antes de
+    esta US). El timeout ensanchado a 20s y el fix de awaitear quedan aplicados como mejoras
+    reales aunque no resuelvan la carrera de raíz — la carrera de fondo queda como hallazgo
+    separado, fuera de alcance de una US de actualización de dependencias.
 - [x] T4.2 **Spike de `vitest` 2.1.8 → 3.2.6 (major) — decisión del usuario 2026-09-06: opción (b), spike aislado antes de decidir.**
   Crear una rama de spike separada (`spike/US-022-vitest-3` desde esta misma rama, o un commit fácilmente revertible en esta rama si el spike resulta limpio) y aplicar el bump ahí para medir el blast radius real, ANTES de decidir si se integra a esta US:
   - Bump `vitest`/`@vitest/coverage-v8` (o el provider de coverage que use el repo) a `3.2.6` en los `package.json` que lo declaren.
@@ -78,7 +99,8 @@ Ninguna AC se difiere completa: **AC-4 y AC-6 tienen una porción explícitament
   - **Exit criterion**: existe un resumen escrito del blast radius (en el propio PR del spike, o en una nota que se agregue a `proposal.md` bajo la pregunta Deferred original) con datos concretos — no una opinión ("parece que rompe poco"), sino el conteo real de fallas y su causa.
   - **Verify**: `pnpm --filter @dsm/web test` corrido contra el bump del spike, con el resumen de resultados documentado.
   - **Decisión posterior** (fuera de esta task, vuelve al usuario con el dato del spike en mano): si el blast radius es chico/mecánico → se integra el bump a esta US como una nueva task con su propio `Exit criterion:`/`Verify:`. Si es grande/estructural → se difiere por AC-6 (exclusión nominal en `scripts/.audit-exclusions.json`, Fase 6), documentando el motivo con el dato real del spike, no una suposición.
-  - **Resultado del spike (2026-09-06)**: rama `spike/US-022-vitest-3` (commit `a742d15`), bump aislado sin tocar `vitest.config.ts` ni ningún test. Blast radius **CERO / mecánico**: `pnpm --filter @dsm/web test` 996/996 tests (160/160 files) exit 0, idéntico al baseline; `pnpm --filter @dsm/web typecheck` exit 0; los 16 `[MSW] Error: intercepted...` en el log son preexistentes (mismo conteo exacto en el baseline de T0.3). Sin incompatibilidad detectada con `msw@2.7.0`/`@testing-library/react@16`/`jsdom`. `@vitest/coverage-v8` no está en uso en este repo (sin `--coverage` en `ci.yml`), esa superficie no se ejercitó. **Decisión queda para el usuario** — el bump NO se integró a esta rama (queda sólo en la rama de spike) hasta que decida.
+  - **Resultado del spike (2026-09-06)**: rama `spike/US-022-vitest-3` (commit `a742d15`), bump aislado sin tocar `vitest.config.ts` ni ningún test. Un solo `pnpm --filter @dsm/web test`: 996/996 tests (160/160 files) exit 0, idéntico al baseline; typecheck exit 0. Sin incompatibilidad detectada con `msw@2.7.0`/`@testing-library/react@16`/`jsdom`. `@vitest/coverage-v8` no está en uso en este repo, esa superficie no se ejercitó.
+  - **Integración real (2026-09-06, decisión del usuario: integrar ahora)**: bump aplicado a esta rama (`apps/web/package.json` `vitest: 3.2.6`). **Corriendo la suite completa 3 veces seguidas apareció un hallazgo que el spike de una sola corrida no detectó**: vitest 3.x reporta como "Unhandled Rejection" (exit 1, aunque los 996 tests individuales sigan pasando) cualquier `setState` que ocurre DESPUÉS de que el entorno jsdom de un test ya se desmontó — antes (vitest 2.x) esto se ignoraba en silencio. Encontrados y corregidos 3 archivos con el mismo patrón preexistente (un fetch/mutación con delay que el test no esperaba a que asiente antes de terminar): `OrdersList.test.tsx` (dos `render()` con fetch demorado 50ms sin awaitear), `PurchaseHistoryList.test.tsx` y `PurchaseDetail.test.tsx` (mismo patrón, fetch demorado 20ms), y `OrderStatusActions.test.tsx` (test de UI optimista que verifica el estado ANTES de que resuelva el PATCH demorado 50ms, sin esperar luego su resolución). Los 4 se corrigieron agregando un `await` final (`waitForElementToBeRemoved`/`findByRole` según el caso) que espera la resolución sin cambiar ninguna aserción existente. **12/12 corridas completas consecutivas limpias tras los 4 fixes** (exit 0, cero errores no manejados). Exclusión nominal de `vitest` en `scripts/.audit-exclusions.json` **removida** (ya no aplica, bump integrado).
 
 ## Fase 5 — Transitivas restantes vía `pnpm.overrides`
 

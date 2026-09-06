@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
 import { OrdersList } from './OrdersList';
@@ -109,7 +109,7 @@ describe('OrdersList (T4.1, AC-1/AC-5/AC-8)', () => {
 });
 
 describe('OrdersList — estados (T4.2)', () => {
-  it('loading renderiza filas skeleton, no texto plano', () => {
+  it('loading renderiza filas skeleton, no texto plano', async () => {
     server.use(
       http.get(`${API}/v1/admin/orders`, async () => {
         await new Promise((r) => setTimeout(r, 50));
@@ -121,6 +121,14 @@ describe('OrdersList — estados (T4.2)', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
     const { container } = render(<OrdersList />);
     expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+
+    // Ambos fetches (uno por render) resuelven ~50ms después — esperarlos acá
+    // evita que sigan en vuelo cuando vitest ya desmontó el entorno de este
+    // test (ReferenceError: window is not defined en un `setState` tardío,
+    // vitest 3.x lo reporta como error no manejado en vez de ignorarlo).
+    await waitFor(() => {
+      expect(screen.queryAllByRole('status')).toHaveLength(0);
+    });
   });
 
   it('error renderiza role="alert" + botón Reintentar que re-dispara la misma request', async () => {

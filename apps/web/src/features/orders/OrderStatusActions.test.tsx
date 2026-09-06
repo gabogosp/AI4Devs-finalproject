@@ -75,6 +75,12 @@ describe('OrderStatusActions — T6.1 (AC-3/AC-6, UI optimista + rollback)', () 
     await user.click(screen.getByRole('button', { name: /marcar/i }));
     // Justo después del click, antes de que el delay(50) resuelva: ya optimista.
     expect(estadoActual).toBe('preparing');
+
+    // El PATCH demorado igual resuelve ~50ms después — esperarlo acá (la
+    // confirmación no cambia el assert de arriba, ya verificado) evita que
+    // siga en vuelo cuando vitest ya desmontó el entorno de este test
+    // (vitest 3.x reporta el `setState` tardío como error no manejado).
+    await screen.findByRole('button', { name: /marcar como lista/i });
   });
 
   it('con 409 (dsm:orders/invalid-transition), el estado vuelve al original + role=alert', async () => {
