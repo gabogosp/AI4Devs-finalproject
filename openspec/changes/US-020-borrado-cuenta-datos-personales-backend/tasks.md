@@ -354,7 +354,7 @@ language: es
     /v1/auth/password-reset/confirm` con ese token → `dsm:auth/invalid-reset-token`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac10-three-doors-closed` en 0 (spec nuevo)
 
-- [ ] T5.8 AC-13 — autorización (negative-space)
+- [x] T5.8 AC-13 — autorización (negative-space)
   - **Pattern**: e2e, mismo estilo que `e2e-rbac.spec.ts`.
   - **Exit criterion**: sin sesión de cliente → 401, ninguna cuenta cambia;
     con sesión de OTRO cliente autenticado → borra la propia (nunca la de un
@@ -364,6 +364,11 @@ language: es
     `resolveCustomerSession`), y no existe ninguna ruta bajo `/v1/admin/*` que
     llegue a `AccountDeletionService`.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=ac13-only-owner-deletes` en 0 (spec nuevo)
+  - Resultado real: 4/4 passed (2.968s). El caso admin resuelve a **401**
+    (no 403) — `resolveCustomerSession()` colapsa `role !== ROL_CLIENTE` a
+    `null` antes de que exista distinción de permisos; documentado en el
+    test mismo. Barrido negativo extra: `DELETE /v1/admin/me` y
+    `/v1/admin/customers/me` → 404 (no existe tal ruta).
 
 - [ ] T5.9 AC-14 — observabilidad sin PII (negative-space)
   - **Pattern**: mismo estilo que `e2e-auth-observability.spec.ts`/T2.2 de
