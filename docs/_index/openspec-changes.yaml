@@ -2079,7 +2079,8 @@
   us-id: US-015
   discipline: backend
   variant: null
-  status: draft
+  status: in progress   # /develop-backend US-015 — 26/26 tasks cerradas, suite completa
+  # + e2e verdes (1894 + 529 tests), lint/typecheck limpios. PR aún no abierto.
   parent-us: docs/user-stories/US-015-historial-compras.md
   linear-task-id: null
   audit-baseline: null

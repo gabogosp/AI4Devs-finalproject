@@ -334,9 +334,9 @@ language: es
 
 ## Verification (suite-level)
 
-- [ ] Suite completa de `@dsm/api` verde: `pnpm --filter @dsm/api test`
-- [ ] E2E verde: `pnpm --filter @dsm/api test:e2e`
-- [ ] Lint/typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
-- [ ] Migración aplicada limpia en Postgres local: `pnpm --filter @dsm/db migrate:deploy`
-- [ ] Los 2 yaml OpenAPI nuevos validan sin errores (T6.1)
-- [ ] Diff vacío sobre los 12 archivos de la suite de US-008 (T5.5): `git diff --quiet -- apps/api/src/checkout/checkout.service.spec.ts apps/api/src/checkout/checkout.module.spec.ts apps/api/src/checkout/checkout-errors.spec.ts apps/api/src/checkout/e2e-checkout-cache.spec.ts apps/api/src/checkout/e2e-checkout-pii.spec.ts apps/api/src/checkout/e2e-checkout-ratelimit.spec.ts apps/api/src/checkout/e2e-checkout-security.spec.ts apps/api/src/checkout/e2e-checkout-validation.spec.ts apps/api/src/checkout/ac2-order-metrics-preserved.spec.ts apps/api/src/checkout/ac2-price-snapshot.spec.ts apps/api/src/checkout/ac6-order-not-deleted.spec.ts apps/api/src/checkout/ac6-stock-untouched.spec.ts`
+- [x] Suite completa de `@dsm/api` verde: `pnpm --filter @dsm/api test`
+- [x] E2E verde: `pnpm --filter @dsm/api test:e2e`
+- [x] Lint/typecheck limpios: `pnpm --filter @dsm/api lint && pnpm --filter @dsm/api typecheck`
+- [x] Migración aplicada limpia en Postgres local: `pnpm --filter @dsm/db migrate:deploy`
+- [x] Los 2 yaml OpenAPI nuevos validan sin errores (T6.1)
+- [x] Diff vacío sobre los 12 archivos de la suite de US-008 (T5.5): `git diff --quiet -- apps/api/src/checkout/checkout.service.spec.ts apps/api/src/checkout/checkout.module.spec.ts apps/api/src/checkout/checkout-errors.spec.ts apps/api/src/checkout/e2e-checkout-cache.spec.ts apps/api/src/checkout/e2e-checkout-pii.spec.ts apps/api/src/checkout/e2e-checkout-ratelimit.spec.ts apps/api/src/checkout/e2e-checkout-security.spec.ts apps/api/src/checkout/e2e-checkout-validation.spec.ts apps/api/src/checkout/ac2-order-metrics-preserved.spec.ts apps/api/src/checkout/ac2-price-snapshot.spec.ts apps/api/src/checkout/ac6-order-not-deleted.spec.ts apps/api/src/checkout/ac6-stock-untouched.spec.ts`
