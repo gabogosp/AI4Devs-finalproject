@@ -123,7 +123,7 @@ language: es
     tipada, no la atrapa — a diferencia de `logout()`).
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/accountService.test.ts`
 
-- [ ] **T3.3 — `SessionProvider` gana `accountDeleted()`**
+- [x] **T3.3 — `SessionProvider` gana `accountDeleted()`**
   - **Pattern**: `per design.md §D4` — mismo cuerpo que el `finally` de
     `logout()`, expuesto como función propia (NO llama al backend):
     ```ts

@@ -18,7 +18,7 @@ const customer = {
 
 /** Espía del estado: renderiza el `kind` para poder assertear sobre él. */
 function Sonda() {
-  const { state, logout } = useSession();
+  const { state, logout, accountDeleted } = useSession();
   return (
     <div>
       <span data-testid="kind">{state.kind}</span>
@@ -26,6 +26,7 @@ function Sonda() {
         <span data-testid="nombre">{state.customer.name}</span>
       )}
       <button onClick={() => void logout()}>salir</button>
+      <button onClick={() => accountDeleted()}>borrar cuenta</button>
     </div>
   );
 }
@@ -111,6 +112,26 @@ describe('SessionProvider (T1.2)', () => {
     );
 
     await userEvent.click(screen.getByRole('button', { name: 'salir' }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('kind')).toHaveTextContent('anonymous'),
+    );
+    expect(window.localStorage.getItem(SESSION_HINT_KEY)).toBeNull();
+  });
+
+  it('accountDeleted() (US-020) deja anónimo y borra la marca, SIN tocar la red', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));
+    montar();
+    await waitFor(() =>
+      expect(screen.getByTestId('kind')).toHaveTextContent('authenticated'),
+    );
+
+    // Con `onUnhandledRequest: 'error'` (src/test/setup.ts), si esto
+    // disparara una llamada de red no mockeada el test explotaría acá — a
+    // diferencia de `logout()`, `accountDeleted()` NO debe llamar al backend
+    // (el DELETE /v1/me ya cerró la sesión del lado del servidor).
+    await userEvent.click(screen.getByRole('button', { name: 'borrar cuenta' }));
 
     await waitFor(() =>
       expect(screen.getByTestId('kind')).toHaveTextContent('anonymous'),
