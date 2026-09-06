@@ -381,6 +381,15 @@
   # PR #55 abierto. `status` de la US se queda en `In Progress` (FE/QA todavía sin
   # planificar).
   in-review-at: 2026-09-05
+  #
+  # NOTA (2026-09-05, /plan-frontend-web-ticket US-016): planificado el change
+  # US-016-panel-metricas-frontend-web (draft) — consume el contrato
+  # admin-reports de US-016-panel-metricas-backend (PR #55, in review) sólo vía
+  # openapi.yaml (cliente ya regenerado, heredado por rama). Feature nueva
+  # src/features/metrics/ (3 widgets independientes) + recharts (design-system
+  # §9, ya Approved) + refactor compartido (Extract Method) de la descarga CSV
+  # entre imports y metrics. No se toca `status` (FE es la segunda disciplina,
+  # QA sigue sin planificar) ni `blocked_by` (propiedad de otro agente).
   blocked_by: [US-010]
 - id: US-017
   slug: paginas-legales-consentimiento
