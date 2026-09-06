@@ -23,7 +23,7 @@ export type AdminOrderDetail = AdminOrderSummary & ({
      */
   anonymized_at: string | null;
   /**
-     * Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).
+     * Motivo de la anonimización (US-021/US-020) — null si nunca se anonimizó; distingue plazo cumplido, pedido del comprador, o borrado de cuenta (AC-4, AC-3 de US-020).
      * @nullable
      */
   anonymization_reason: AdminOrderDetailAnonymizationReason;

@@ -77,6 +77,16 @@ el escritor**, sin tocar el comportamiento guest.
   `openspec/changes/archive/US-015-historial-compras-backend/design.md` §D2
   (una vez archivado el change).
 
+## `OrdersRepository` gana 2 métodos consumidos desde `account/` — US-020
+
+`listBlockingForCustomer` y `anonymizeAllForCustomer` (este último ya existía para
+US-021, sólo ensanchó su `AnonymizationReason` a `account_deletion`) los llama
+`AccountDeletionService` (`apps/api/src/account/`) dentro de la transacción del
+borrado de cuenta. `CheckoutModule` no sabe nada de `account/` — es `AccountModule`
+el que importa `CheckoutModule` para usar `OrdersRepository`, nunca al revés (mismo
+motivo por el que `AccountModule` no vive dentro de `AuthModule`, ver
+`account/README.md`).
+
 ## Qué NO hace este módulo
 
 - No cobra ni conoce MercadoPago — US-009.

@@ -1,4 +1,4 @@
-export type AnonymizationReason = 'retention_policy' | 'requested';
+export type AnonymizationReason = 'retention_policy' | 'requested' | 'account_deletion';
 
 /** No colisiona con ningún comprador real ni pasado ni futuro (US §9 — irreversibilidad). */
 export const ANONYMIZED_BUYER_NAME = 'Comprador anonimizado';

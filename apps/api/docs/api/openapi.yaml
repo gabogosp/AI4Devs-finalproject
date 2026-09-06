@@ -66,6 +66,16 @@ tags:
       se verifican en la misma consulta que resuelve la orden, nunca un
       chequeo posterior — un `order_number` ajeno o fuera de retención
       responde 404, indistinguible de "no existe" (IDOR, `threat-modeling-lite`).
+  - name: account
+    description: >-
+      Borrado de cuenta y datos personales del cliente autenticado — derecho al
+      olvido (US-020, Ley 25.326). Autoservicio: sólo el titular con sesión
+      propia, nunca un tercero. Anonimiza `customers` (no borra la fila),
+      revoca sesiones y resets pendientes, desvincula carritos y anonimiza
+      órdenes históricas reusando el mecanismo de US-021
+      (`anonymization_reason=account_deletion`). Inmediato e irreversible: sin
+      ventana de gracia. Bloquea si el titular tiene órdenes sin pagar o
+      pagadas y sin entregar.
   - name: admin-imports
     description: >-
       Importación masiva del catálogo desde CSV/XLSX (US-006). Sólo admin. El POST
@@ -935,6 +945,44 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: '#/components/schemas/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+  /me:
+    delete:
+      operationId: deleteAccount
+      tags: [account]
+      summary: Borrar la cuenta y los datos personales del cliente autenticado (US-020 AC-1, AC-2, AC-3)
+      description: >-
+        Autoservicio, inmediato e irreversible: sin ventana de gracia. Anonimiza
+        `customers` (name/email/phone sobrescritos, deleted_at sellado, email
+        liberado para re-registro), revoca todas las sesiones y enlaces de
+        recuperación pendientes, desvincula los carritos y anonimiza las
+        órdenes históricas no anonimizadas (`anonymization_reason=account_deletion`,
+        mismo mecanismo que US-021). Bloquea con 409 si el titular tiene
+        órdenes sin pagar o pagadas y sin entregar. Idempotente: una segunda
+        confirmación sobre una cuenta ya borrada responde 204 sin error ni
+        segundo efecto (AC-15).
+      security:
+        - sessionCookie: []
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204':
+          description: >-
+            Borrado aplicado (o ya lo estaba — misma respuesta, AC-15). Las
+            cookies de sesión del dispositivo que llamó se limpian en la
+            respuesta.
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SessionCookies' }
+        '401': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '409':
+          description: >-
+            El titular tiene al menos una orden sin pagar (`pending_payment`) o
+            pagada y sin entregar (`new`/`preparing`/`ready`) — AC-4, AC-9. No
+            se modifica ningún dato.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/AccountHasActiveOrdersProblem' }
         '429': { $ref: '#/components/responses/RateLimited' }
   /admin/imports:
     post:
@@ -2117,9 +2165,9 @@ components:
               description: 'Momento de anonimización (US-021). null si la orden nunca se anonimizó.'
             anonymization_reason:
               type: string
-              enum: [retention_policy, requested]
+              enum: [retention_policy, requested, account_deletion]
               nullable: true
-              description: 'Motivo de la anonimización (US-021) — null si nunca se anonimizó; distingue plazo cumplido de pedido del comprador (AC-4).'
+              description: 'Motivo de la anonimización (US-021/US-020) — null si nunca se anonimizó; distingue plazo cumplido, pedido del comprador, o borrado de cuenta (AC-4, AC-3 de US-020).'
     UpdateAdminOrderStatus:
       type: object
       required: [status]
@@ -2137,8 +2185,8 @@ components:
           description: Momento en que se anonimizó (AC-4 — queda registrado y es auditable).
         anonymization_reason:
           type: string
-          enum: [retention_policy, requested]
-          description: Distingue si fue por plazo cumplido o a pedido del comprador (AC-4).
+          enum: [retention_policy, requested, account_deletion]
+          description: Distingue si fue por plazo cumplido, a pedido del comprador, o por borrado de cuenta (AC-4, AC-3 de US-020).
     RetentionSweepResult:
       type: object
       required: [anonymized_count, reason]
@@ -2169,6 +2217,19 @@ components:
           enum: [new, preparing, ready, delivered, cancelled]
         total_ars_cents: { type: integer }
         created_at: { type: string, format: date-time }
+    AccountHasActiveOrdersProblem:
+      description: >-
+        US-020 AC-4/AC-9 — el 409 de DELETE /me. `blocking_orders` reusa el
+        mismo shape que `OrderHistorySummary` (US-015): sin PII adicional,
+        sólo lo que el titular ya ve en su propio historial.
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          required: [blocking_orders]
+          properties:
+            blocking_orders:
+              type: array
+              items: { $ref: '#/components/schemas/OrderHistorySummary' }
     OrderHistoryListResponse:
       type: object
       required: [data, pagination]
@@ -2313,7 +2374,7 @@ components:
         anonymization_reason:
           type: string
           nullable: true
-          enum: [retention_policy, requested]
+          enum: [retention_policy, requested, account_deletion]
         refund:
           type: object
           required: [status, provider]

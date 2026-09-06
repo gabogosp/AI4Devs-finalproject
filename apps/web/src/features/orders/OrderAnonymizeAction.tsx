@@ -27,7 +27,7 @@ export function OrderAnonymizeAction({
   order: {
     id: string;
     anonymizedAt: string | null;
-    anonymizationReason: 'retention_policy' | 'requested' | null;
+    anonymizationReason: 'retention_policy' | 'requested' | 'account_deletion' | null;
   };
   onAnonymized: (updated: OrderDetail) => void;
 }) {

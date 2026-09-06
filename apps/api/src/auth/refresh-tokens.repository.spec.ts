@@ -138,6 +138,24 @@ describe('RefreshTokensRepository (integration)', () => {
       expect(await repo.revokeAllForCustomer(ana)).toBe(2);
       expect((await repo.findByHash('beto-1'))?.revoked_at).toBeNull();
     });
+
+    it('llamado con un tx en curso, un rollback posterior revierte la revocación (US-020 T1.4)', async () => {
+      await repo.issue({
+        customerId: ana,
+        tokenHash: 'ana-tx-1',
+        familyId: famA,
+        expiresAt: enUnaHora(),
+      });
+
+      await expect(
+        prisma.$transaction(async (tx) => {
+          await repo.revokeAllForCustomer(ana, tx);
+          throw new Error('rollback deliberado');
+        }),
+      ).rejects.toThrow('rollback deliberado');
+
+      expect((await repo.findByHash('ana-tx-1'))?.revoked_at).toBeNull();
+    });
   });
 
   describe('purgeExpiredForCustomer', () => {

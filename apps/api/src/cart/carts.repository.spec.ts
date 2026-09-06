@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CartsRepository } from './carts.repository';
+import { CustomersRepository } from '../auth/customers.repository';
 
 /**
  * T2.1 — integration contra el Postgres real de docker-compose. Lo que se prueba
@@ -11,6 +12,7 @@ import { CartsRepository } from './carts.repository';
 describe('CartsRepository (integration)', () => {
   const prisma = new PrismaService();
   const repo = new CartsRepository(prisma);
+  const customers = new CustomersRepository(prisma);
 
   const enUnaHora = () => new Date(Date.now() + 3_600_000);
   const haceUnaHora = () => new Date(Date.now() - 3_600_000);
@@ -26,7 +28,7 @@ describe('CartsRepository (integration)', () => {
   });
   beforeEach(async () => {
     await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE carts, cart_items, products, categories RESTART IDENTITY CASCADE',
+      'TRUNCATE TABLE carts, cart_items, products, categories, customers RESTART IDENTITY CASCADE',
     );
     const cat = await prisma.category.create({
       data: { name: 'Fijaciones', slug: 'fijaciones' },
@@ -252,6 +254,45 @@ describe('CartsRepository (integration)', () => {
 
       expect(await repo.deleteExpired()).toBe(2);
       expect(await repo.findByTokenHash('vivo')).not.toBeNull();
+    });
+  });
+
+  describe('unlinkAllForCustomer (US-020 T1.5)', () => {
+    it('desvincula los 2 carritos del cliente, no borra filas, y no toca el carrito ajeno', async () => {
+      const HASH = '$2b$12$'.padEnd(60, 'x');
+      const propio = await customers.create({
+        email: 'propio@example.com',
+        name: 'Propio',
+        passwordHash: HASH,
+      });
+      const ajeno = await customers.create({
+        email: 'ajeno@example.com',
+        name: 'Ajeno',
+        passwordHash: HASH,
+      });
+
+      const carrito1 = await repo.create({ tokenHash: 'unlink-1', expiresAt: enUnaHora() });
+      const carrito2 = await repo.create({ tokenHash: 'unlink-2', expiresAt: enUnaHora() });
+      const carritoAjeno = await repo.create({ tokenHash: 'unlink-ajeno', expiresAt: enUnaHora() });
+      await prisma.cart.update({ where: { id: carrito1.id }, data: { customer_id: propio.id } });
+      await prisma.cart.update({ where: { id: carrito2.id }, data: { customer_id: propio.id } });
+      await prisma.cart.update({ where: { id: carritoAjeno.id }, data: { customer_id: ajeno.id } });
+
+      const totalAntes = await prisma.cart.count();
+
+      expect(await repo.unlinkAllForCustomer(propio.id)).toBe(2);
+
+      const totalDespues = await prisma.cart.count();
+      expect(totalDespues).toBe(totalAntes);
+
+      const [releido1, releido2, releidoAjeno] = await Promise.all([
+        prisma.cart.findUniqueOrThrow({ where: { id: carrito1.id } }),
+        prisma.cart.findUniqueOrThrow({ where: { id: carrito2.id } }),
+        prisma.cart.findUniqueOrThrow({ where: { id: carritoAjeno.id } }),
+      ]);
+      expect(releido1.customer_id).toBeNull();
+      expect(releido2.customer_id).toBeNull();
+      expect(releidoAjeno.customer_id).toBe(ajeno.id);
     });
   });
 });

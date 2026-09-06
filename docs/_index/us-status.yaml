@@ -657,7 +657,7 @@
   blocked_by: []          # gated en dependencias externas (cuentas/billing), no en otra US
 - id: US-020
   slug: borrado-cuenta-datos-personales
-  status: Ready
+  status: In Progress
   priority: Medium
   prd-capacity: 13   # CAP-10 partida el 2026-08-23: la protección de datos es CAP-13
   disciplines: [BE, FE, QA]
@@ -688,6 +688,10 @@
   # órdenes de este cliente" no es un conjunto computable; US-021 aporta el mecanismo de
   # anonimización que esta US reusa en vez de duplicar).
   blocked_by: [US-014, US-015, US-021]
+  in-progress-at: 2026-09-06   # /develop-backend US-020 — 27/27 tasks cerradas
+  in-review-at: 2026-09-06     # BE PR #93 abierto (/commit) — primera disciplina en review;
+  # FE y QA de esta US todavía no planificadas (status de la US se queda en In Progress
+  # hasta que las 3 disciplinas declaradas [BE, FE, QA] tengan su PR abierto).
 - id: US-021
   slug: retencion-datos-ordenes
   status: Done   # /archive-change US-021-retencion-datos-ordenes-frontend-web 2026-09-06 —

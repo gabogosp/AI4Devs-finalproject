@@ -15,4 +15,5 @@ export type CancelOrderResponseAnonymizationReason = typeof CancelOrderResponseA
 export const CancelOrderResponseAnonymizationReason = {
   retention_policy: 'retention_policy',
   requested: 'requested',
+  account_deletion: 'account_deletion',
 } as const;
