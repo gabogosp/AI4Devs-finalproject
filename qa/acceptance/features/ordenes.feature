@@ -29,7 +29,7 @@ Característica: Panel de órdenes del dueño (US-012)
     Y el detalle de la orden expone esas tres transiciones en orden cronológico
     Y la orden entregada queda con su fecha de entrega poblada
 
-  @happy @critical-path
+  @happy @critical-path @us-011
   Escenario: H-4 — Marcar "lista para retirar" dispara el aviso al cliente
     Dado una orden real en estado "preparing"
     Cuando el dueño la marca como "lista para retirar"
@@ -52,7 +52,7 @@ Característica: Panel de órdenes del dueño (US-012)
     Entonces ve su detalle igual, sin que el sistema la trate como inexistente
     Y esa orden no aparece en el listado sin filtro
 
-  @corner
+  @corner @us-011
   Escenario: C-2 — Repetir la misma transición no duplica el historial ni el aviso
     Dado una orden real que el dueño ya marcó como "ready"
     Cuando el dueño repite exactamente esa misma transición
