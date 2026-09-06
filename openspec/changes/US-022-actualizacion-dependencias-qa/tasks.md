@@ -175,7 +175,7 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
 
 ## Fase 3 — Revalidación de accesibilidad WCAG AA (Layer 3)
 
-- [ ] T-QA3 Correr la suite completa de `test:a11y` (9 specs, 38 tests,
+- [x] T-QA3 Correr la suite completa de `test:a11y` (9 specs, 38 tests,
   axe-core contra `wcag2a`+`wcag2aa`) — el bump de `next` no debería cambiar
   ningún marcado de accesibilidad (US no toca ninguna pantalla), pero es
   exactamente el tipo de regresión silenciosa que un bump de framework puede
@@ -184,10 +184,14 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
     ninguna violación WCAG AA nueva (`results.violations` vacío en cada
     caso, tal como ya lo asertan los specs existentes).
   - **Verify**: `pnpm --filter @dsm/qa test:a11y 2>&1 | tee /tmp/us-022-qa-a11y.log && grep -E "^[0-9]+ passed" /tmp/us-022-qa-a11y.log`
+  - **Nota de ejecución (2026-09-06)**: **38/38 verdes, exit 0** — conteo
+    exacto, sin corrección, sin ninguna falla. Cero violaciones WCAG AA
+    nuevas. El bump de `next` no introdujo ninguna regresión de
+    accesibilidad detectable por esta suite.
 
 ## Fase 4 — Cierre: cobertura no bajó (AC-3, AC-4)
 
-- [ ] T-QA4 Confirmar que el conteo total de escenarios/tests de las tres
+- [x] T-QA4 Confirmar que el conteo total de escenarios/tests de las tres
   fases (T-QA1+T-QA2+T-QA3) es igual o mayor al documentado en `qa-plan.md`
   §1 al momento de planificar (136 + 68 + 38 = 242), nunca menor — mismo
   criterio que el `tasks.md` de FE ya aplicó a su propia suite dev-owned
@@ -200,6 +204,20 @@ revalidación de este change (per `design.md` D-QA1/D-QA3).
     el mismo número por definición, y la task confirma exactamente eso: cero
     regresión, no una mejora inventada).
   - **Verify**: `test $(grep -oE '^[0-9]+' /tmp/us-022-qa-acceptance.log | head -1) -ge 136 && test $(grep -oE '^[0-9]+' /tmp/us-022-qa-e2e.log | head -1) -ge 68 && test $(grep -oE '^[0-9]+' /tmp/us-022-qa-a11y.log | head -1) -ge 38 && echo OK`
+  - **Nota de ejecución (2026-09-06)**: cobertura total real = **172 + 68 +
+    38 = 278** ≥ 242 documentado originalmente (y ≥ el 278 corregido en
+    `qa-plan.md` §1) — cero regresión de cobertura. `qa/` no cambió durante
+    el change de FE (confirmado — el `git log` de `qa/` entre la fecha de
+    este plan y la ejecución no muestra commits), así que el "antes" y el
+    "después" de cada suite son la misma versión de test corrida contra dos
+    stacks (pre/post bump); la comparación real relevante es "¿sigue
+    pasando la misma proporción", no un conteo ciego. **10 de 278
+    escenarios/tests no pasan** (5 de T-QA1 + 3 de T-QA2 + 0 de T-QA3, más
+    2 `ambiguous`/1 `undefined` ya contados en T-QA1) — ninguno atribuible al
+    bump de dependencias según el análisis de T-QA1/T-QA2 (pre-existentes o
+    fragilidad de datos compartidos, salvo TC-731 que SÍ toca `apps/web`
+    bumpeado y queda reportado sin diagnosticar a fondo). AC-3/AC-4 de
+    US-022 quedan revalidados con esa salvedad explícita, no en silencio.
 
 ## Fase 5 — Hallazgos: registrar, no aplicar
 
