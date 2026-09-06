@@ -55,13 +55,14 @@ export function LoginForm() {
       const customer = await accountService.login(values);
       onAuthenticated(customer);
       track('login_succeeded');
-      // Sin `?next=` el destino es la cuenta; con `?next=` se usa el saneado.
-      // Se distinguen los dos casos porque `sanitizeNext(null)` devuelve `/`,
-      // que es un destino válido y por lo tanto ganaría sobre el default.
-      // El saneo importa: `?next=https://evil.tld` convertiría el login en una
-      // primitiva de phishing (T0.6).
+      // Sin `?next=` el destino es el home (decisión del PO, 2026-09-06 —
+      // supersede la de US-014 que mandaba a `/mi-cuenta`; ver
+      // `openspec/specs/cuentas/decisions.md`). `sanitizeNext(null)` ya
+      // devuelve `/`, así que no hace falta un default separado. El saneo
+      // sigue importando con `?next=` presente: `?next=https://evil.tld`
+      // convertiría el login en una primitiva de phishing (T0.6).
       const next = searchParams.get('next');
-      router.replace(next ? sanitizeNext(next) : '/mi-cuenta');
+      router.replace(sanitizeNext(next));
     } catch (err) {
       if (!(err instanceof AppErrorException)) {
         setBanner(COPY_GENERICO);

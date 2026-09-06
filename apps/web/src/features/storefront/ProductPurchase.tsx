@@ -1,13 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import { track } from '@/lib/observability/events';
 import { AddToCartButton } from '@/features/cart/AddToCartButton';
+import { QuantityStepper } from '@/features/cart/QuantityStepper';
 import { WhatsAppLink } from '@/features/contact/WhatsAppLink';
 import { WHATSAPP_MESSAGES } from '@/features/contact/whatsapp';
 
 /** Copy del design-system §10.2 — momento de ansiedad "sin stock". */
 const OUT_OF_STOCK_COPY =
   'Sin stock por ahora. Escribinos por WhatsApp y te avisamos cuando vuelva.';
+
+/**
+ * Techo de UI del stepper de la ficha (C2a, decisión del PO 2026-09-06 —
+ * revierte OQ-FE-2 de US-002). NO es el stock real: el storefront público lo
+ * mantiene oculto a propósito (C2b, mismo trade-off de US-002). Mismo valor
+ * que el default de `CART_MAX_QTY_PER_LINE` del backend — un pedido por
+ * encima del stock real igual lo rechaza el servidor (409), que
+ * `AddToCartButton` ya maneja mostrando el conflicto en vez de un falso
+ * "agregado".
+ */
+const CANTIDAD_MAX_UI = 99;
 
 /**
  * Estados de compra de la ficha.
@@ -32,6 +45,8 @@ export function ProductPurchase({
   productName: string;
   productSlug: string;
 }) {
+  const [cantidad, setCantidad] = useState(1);
+
   /**
    * Salida al canal humano. `context` distingue las dos superficies: sin stock
    * mide demanda perdida; con stock mide el camino de compra real del MVP
@@ -66,7 +81,19 @@ export function ProductPurchase({
       <span className="inline-flex w-fit items-center rounded-full bg-success-subtle px-3 py-1 text-sm font-medium text-foreground">
         En stock
       </span>
-      <AddToCartButton slug={productSlug} productName={productName} className="w-fit" />
+      <QuantityStepper
+        productName={productName}
+        quantity={cantidad}
+        maxQuantity={CANTIDAD_MAX_UI}
+        onChange={setCantidad}
+      />
+      <AddToCartButton
+        slug={productSlug}
+        productName={productName}
+        className="w-fit"
+        quantity={cantidad}
+        onAdded={() => setCantidad(1)}
+      />
       {/* El canal humano se conserva: consultar medidas o compatibilidades sigue
           siendo un camino legítimo, no un respaldo del carrito. */}
       <WhatsAppLink

@@ -4,10 +4,18 @@ import {
   type BusinessEvent,
   type EventProps,
 } from '@/lib/observability/events';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProductPurchase } from './ProductPurchase';
 import { CartProvider } from '@/features/cart/CartProvider';
+import { DEBOUNCE_MS } from '@/features/cart/QuantityStepper';
+
+/** El stepper agrupa clics con debounce (`QuantityStepper` §comentario) — acá
+ * se espera el mismo tiempo real que producción usa, no un mock del reloj
+ * (el propio componente documenta que falsear el reloj cuelga `userEvent`),
+ * envuelto en `act` porque el `onChange` que dispara actualiza estado de React
+ * fuera de cualquier evento que Testing Library ya envuelva. */
+const esperarDebounce = () => act(() => new Promise((r) => setTimeout(r, DEBOUNCE_MS + 50)));
 
 // `AddToCartButton` (US-007) vive dentro del CTA con stock, así que necesita el
 // provider y el servicio mockeado. El resto de los casos no cambia.
@@ -63,6 +71,69 @@ describe('ProductPurchase — con stock (AC-3)', () => {
 
     const href = screen.getByRole('link', { name: /WhatsApp/ }).getAttribute('href') ?? '';
     expect(decodeURIComponent(href)).toContain('Heladera exhibidora');
+  });
+});
+
+describe('ProductPurchase — cantidad elegible antes de agregar (C2a, revierte OQ-FE-2)', () => {
+  it('ofrece el stepper de cantidad junto al CTA, arrancando en 1', () => {
+    renderConCarrito(
+      <ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />,
+    );
+
+    expect(
+      screen.getByRole('spinbutton', { name: /cantidad de heladera exhibidora/i }),
+    ).toHaveValue(1);
+  });
+
+  it('sumar con el stepper y agregar manda la cantidad elegida, no 1', async () => {
+    const user = userEvent.setup();
+    renderConCarrito(
+      <ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />,
+    );
+
+    const sumar = screen.getByRole('button', {
+      name: /sumar una unidad de heladera exhibidora/i,
+    });
+    await user.click(sumar);
+    await user.click(sumar);
+    await esperarDebounce();
+    expect(
+      screen.getByRole('spinbutton', { name: /cantidad de heladera exhibidora/i }),
+    ).toHaveValue(3);
+
+    await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }));
+
+    const { cartService } = await import('@/features/cart/cartService');
+    expect(vi.mocked(cartService.setItemQuantity)).toHaveBeenCalledWith(
+      'heladera-exhibidora',
+      3,
+    );
+  });
+
+  it('tras agregar, el stepper vuelve a 1 (no queda una cantidad vieja seleccionada)', async () => {
+    const user = userEvent.setup();
+    renderConCarrito(
+      <ProductPurchase inStock productName="Heladera exhibidora" productSlug="heladera-exhibidora" />,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: /sumar una unidad de heladera exhibidora/i }),
+    );
+    await esperarDebounce();
+    await user.click(screen.getByRole('button', { name: 'Agregar al carrito' }));
+    await screen.findByRole('status');
+
+    expect(
+      screen.getByRole('spinbutton', { name: /cantidad de heladera exhibidora/i }),
+    ).toHaveValue(1);
+  });
+
+  it('sin stock, NO ofrece el stepper (no hay nada que elegir)', () => {
+    render(
+      <ProductPurchase inStock={false} productName="Heladera exhibidora" productSlug="heladera-exhibidora" />,
+    );
+
+    expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
   });
 });
 

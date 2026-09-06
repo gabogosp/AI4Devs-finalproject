@@ -2,8 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Cart } from '@/api/generated/model';
+import { AppErrorException } from '@/lib/http/errors';
 import { CartProvider } from './CartProvider';
 import { AddToCartButton } from './AddToCartButton';
+import { CartBadge } from './CartBadge';
 import { AUTO_CLOSE_MS } from './MiniCart';
 import { cartService } from './cartService';
 
@@ -147,5 +149,80 @@ describe('AddToCartButton + MiniCart (AC-1)', () => {
     await user.click(screen.getByRole('button', { name: /cerrar el aviso/i }));
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+});
+
+describe('AddToCartButton — cantidad elegible (C2a, ficha con QuantityStepper)', () => {
+  beforeEach(() => {
+    servicio.get.mockResolvedValue(cart());
+    servicio.setItemQuantity.mockResolvedValue(cart());
+  });
+  afterEach(() => vi.clearAllMocks());
+
+  it('con `quantity` explícita, agrega ESA cantidad, no siempre 1', async () => {
+    // `CartProvider` usa `autoload: false` (no corresponde pedir el carrito en
+    // cada visita a una ficha) y acá no se monta `CartBadge` — nada dispara un
+    // `get()`, así que `add()` toma la rama "sin línea todavía" (igual que la
+    // PDP real la mayoría de las veces: recién se va a agregar). La suma
+    // contra una línea YA existente la cubre `useCart.test.ts`.
+    const user = userEvent.setup();
+    render(
+      <CartProvider>
+        <AddToCartButton slug="taco" productName="Taco Fischer SX 8mm" quantity={4} />
+      </CartProvider>,
+    );
+
+    await user.click(boton());
+
+    expect(servicio.setItemQuantity).toHaveBeenCalledWith('taco', 4);
+  });
+
+  it('llama a `onAdded` sólo cuando la mutación termina en éxito', async () => {
+    const onAdded = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <CartProvider>
+        <AddToCartButton slug="taco" productName="Taco Fischer SX 8mm" quantity={2} onAdded={onAdded} />
+      </CartProvider>,
+    );
+
+    await user.click(boton());
+    await screen.findByRole('status');
+
+    expect(onAdded).toHaveBeenCalledTimes(1);
+  });
+
+  it('un 409 (stock insuficiente) NO abre el mini-cart ni llama a `onAdded` — muestra el conflicto en su lugar', async () => {
+    servicio.setItemQuantity.mockRejectedValueOnce(
+      new AppErrorException({
+        kind: 'conflict',
+        message: 'Quedan 3 unidades y pediste 50.',
+        availableQuantity: 3,
+      }),
+    );
+    const onAdded = vi.fn();
+    const user = userEvent.setup();
+    // `CartBadge` está montado a propósito, igual que en la página real (vive
+    // en el header de todo el storefront): el reducer sólo aplica un
+    // `conflict` sobre estado `ready` — sin nada que dispare el `reload()`
+    // inicial (`CartProvider` usa `autoload: false`), el 409 se perdería en
+    // silencio, cosa que en la ficha real no pasa porque el badge ya lo
+    // disparó.
+    render(
+      <CartProvider>
+        <CartBadge />
+        <AddToCartButton slug="taco" productName="Taco Fischer SX 8mm" quantity={50} onAdded={onAdded} />
+      </CartProvider>,
+    );
+    await screen.findByRole('link', { name: /ver el carrito/i });
+
+    await user.click(boton());
+
+    // El mini-cart de éxito ("agregaste...") no aparece — mostrarlo sería
+    // mentir sobre un click que en realidad falló.
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toMatch(/quedan 3 unidades/i),
+    );
+    expect(onAdded).not.toHaveBeenCalled();
   });
 });
