@@ -141,6 +141,48 @@ describe('accountService', () => {
     ).rejects.toBeTruthy();
   });
 
+  it('deleteAccount resuelve con el 204 sin cuerpo (US-020 AC-1/AC-15)', async () => {
+    server.use(
+      http.delete(`${SITE}/v1/me`, () => new HttpResponse(null, { status: 204 })),
+    );
+
+    await expect(accountService.deleteAccount()).resolves.toBeUndefined();
+  });
+
+  it('deleteAccount con órdenes bloqueantes propaga el 409 tipado (US-020 AC-4/AC-9), no lo atrapa', async () => {
+    server.use(
+      http.delete(`${SITE}/v1/me`, () =>
+        HttpResponse.json(
+          {
+            type: 'dsm:account/active-orders',
+            title: 'Conflict',
+            status: 409,
+            detail: 'Tenés pedidos en curso',
+            blocking_orders: [
+              {
+                order_number: 1234,
+                status: 'pending_payment',
+                total_ars_cents: 500000,
+                created_at: '2026-01-01T00:00:00Z',
+              },
+            ],
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    // A diferencia de `logout()`, `deleteAccount` NO se traga su propio
+    // error: el componente necesita el `AppError.conflict.blockingOrders`
+    // para renderizar la lista de pedidos.
+    await expect(accountService.deleteAccount()).rejects.toMatchObject({
+      appError: {
+        kind: 'conflict',
+        blockingOrders: [expect.objectContaining({ order_number: 1234 })],
+      },
+    });
+  });
+
   it('una respuesta que no cumple el contrato falla en el borde, no en la UI', async () => {
     server.use(
       http.get(`${SITE}/v1/auth/me`, () =>

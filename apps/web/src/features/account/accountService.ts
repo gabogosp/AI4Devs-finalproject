@@ -1,6 +1,7 @@
 import { parseContract } from '@/lib/http/contract';
 import {
   confirmPasswordReset,
+  deleteAccount as deleteAccountRequest,
   getCurrentCustomer,
   loginCustomer,
   logoutCustomer,
@@ -96,5 +97,18 @@ export const accountService = {
   async confirmReset(input: ResetConfirm): Promise<void> {
     parseContract(ConfirmPasswordResetBody, input);
     await confirmPasswordReset(input, conSesion);
+  },
+
+  /**
+   * US-020 AC-1/AC-15: 204 sin cuerpo tanto en el borrado real como en una
+   * segunda confirmación sobre una cuenta ya borrada — no hay nada que
+   * parsear (mismo criterio que `logout()`). El backend limpia las cookies
+   * de sesión DENTRO de esta misma respuesta (design.md del backend,
+   * `clearSessionCookies`) — a diferencia de `logout()`, este método NO
+   * vuelve a llamar al backend de logout: sería una segunda escritura
+   * contra una sesión que el propio 204 ya cerró del lado del servidor.
+   */
+  async deleteAccount(): Promise<void> {
+    await deleteAccountRequest(conSesion);
   },
 };

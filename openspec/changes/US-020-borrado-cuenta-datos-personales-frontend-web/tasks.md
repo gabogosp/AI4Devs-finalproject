@@ -101,7 +101,7 @@ language: es
 
 ## Fase 3 — `accountService.deleteAccount` + `DeleteAccountSection`
 
-- [ ] **T3.1 — `accountService.deleteAccount()`**
+- [x] **T3.1 — `accountService.deleteAccount()`**
   - **Pattern**: `per design.md §D1` — alias de import para resolver la
     colisión de nombres (`deleteAccount` generado vs método del
     repositorio), mismo `conSesion` que el resto del archivo:
@@ -116,7 +116,7 @@ language: es
     crudo — y va con `session: 'customer'` (ADR-0013).
   - **Verify**: `pnpm --filter @dsm/web exec tsc --noEmit`
 
-- [ ] **T3.2 — `accountService.test.ts` — caso `deleteAccount`**
+- [x] **T3.2 — `accountService.test.ts` — caso `deleteAccount`**
   - **Exit criterion**: un test nuevo cubre el happy path (`DELETE /v1/me`
     responde `204`, `accountService.deleteAccount()` resuelve sin lanzar) y
     un caso de 409 con `blocking_orders` (el método propaga la excepción
