@@ -4,12 +4,14 @@ import {
   getAdminOrder,
   updateAdminOrderStatus,
   anonymizeOrder,
+  cancelOrder,
 } from '@/api/generated/endpoints';
 import {
   ListAdminOrdersResponse,
   GetAdminOrderResponse,
   UpdateAdminOrderStatusResponse,
   AnonymizeOrderResponse,
+  CancelOrderResponse as CancelOrderResponseSchema,
 } from '@/api/generated/zod';
 import type {
   AdminOrderSummary,
@@ -19,6 +21,7 @@ import type {
   ListAdminOrdersSort,
   UpdateAdminOrderStatusStatus,
   OrderAnonymizationResult,
+  CancelOrderResponse,
 } from '@/api/generated/model';
 
 /**
@@ -87,5 +90,16 @@ export const ordersService = {
   async anonymize(id: string): Promise<OrderAnonymizationResult> {
     const res = await anonymizeOrder(id);
     return parseContract(AnonymizeOrderResponse, res.data);
+  },
+
+  /**
+   * `POST /admin/orders/{id}/cancel` (US-013). A diferencia de `anonymize`,
+   * el shape de retorno YA es self-contained (`CancelOrderResponse` — mismo
+   * shape que `AdminOrderDetail` + `refund`) — quien llama no necesita
+   * refetchear (`design.md` §D2/§D4).
+   */
+  async cancel(id: string): Promise<CancelOrderResponse> {
+    const res = await cancelOrder(id);
+    return parseContract(CancelOrderResponseSchema, res.data);
   },
 };

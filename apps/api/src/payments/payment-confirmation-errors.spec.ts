@@ -1,5 +1,6 @@
 import { mapErrorToProblem } from '../common/filters/http-problem.filter';
 import {
+  OrderCannotBeCancelledError,
   OrderNotFoundError,
   OrderNotPendingPaymentError,
 } from './payment-confirmation-errors';
@@ -35,6 +36,23 @@ describe('errores de confirmación de pago (dsm:payments/*)', () => {
       const problem = mapErrorToProblem(new OrderNotFoundError(), INSTANCE);
       expect(problem.status).toBe(404);
       expect(problem.type).toBe('dsm:payments/order-not-found');
+    });
+  });
+
+  describe('OrderCannotBeCancelledError (US-013 AC-7)', () => {
+    it('es 409 con el detail mencionando el estado actual', () => {
+      const problem = mapErrorToProblem(new OrderCannotBeCancelledError('delivered'), INSTANCE);
+
+      expect(problem.status).toBe(409);
+      expect(problem.type).toBe('dsm:payments/order-cannot-be-cancelled');
+      expect(problem.detail).toContain('delivered');
+    });
+
+    it('el detail no contiene el nombre de la clase ni un stack', () => {
+      const problem = mapErrorToProblem(new OrderCannotBeCancelledError('cancelled'), INSTANCE);
+      expect(problem.detail).not.toContain('Error:');
+      expect(problem.detail).not.toContain('at ');
+      expect(problem.detail).not.toContain('OrderCannotBeCancelledError');
     });
   });
 });

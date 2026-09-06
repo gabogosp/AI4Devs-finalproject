@@ -86,4 +86,25 @@ describe('LoggingNotificationAdapter — NotificationPort (T5.1)', () => {
     expect(lineaDeLog).not.toContain(CENTINELA_NOMBRE);
     expect(lineaDeLog).not.toContain(CENTINELA_EMAIL);
   });
+
+  it('orderCancelledByOwner (US-013 T3.1) loguea order_id/order_number, sin PII', async () => {
+    const adapter = new LoggingNotificationAdapter();
+    const capturado: unknown[] = [];
+    jest
+      .spyOn(adapter['logger'], 'log')
+      .mockImplementation((linea: unknown) => void capturado.push(linea));
+
+    await adapter.orderCancelledByOwner({
+      orderId: 'order-4',
+      orderNumber: 1004,
+      buyerName: CENTINELA_NOMBRE,
+      buyerEmail: CENTINELA_EMAIL,
+    });
+
+    const lineaDeLog = JSON.stringify(capturado[0]);
+    expect(lineaDeLog).toContain('order-4');
+    expect(lineaDeLog).toContain('1004');
+    expect(lineaDeLog).not.toContain(CENTINELA_NOMBRE);
+    expect(lineaDeLog).not.toContain(CENTINELA_EMAIL);
+  });
 });

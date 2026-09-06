@@ -81,6 +81,8 @@
   created: 2026-06-15
   ready-at: 2026-06-15
   in-progress-at: 2026-08-22        # first plan invocation (backend-node-developer)
+  in-review-at: 2026-09-06   # /commit — QA (primera disciplina en llegar a in-review) PR #68.
+  # INFRA sigue sin planificar — US-level se queda In Progress.
   #
   # NOTA (2026-09-05, /archive-change US-005-enriquecimiento-ia-embeddings-backend, barrido
   # de archivos pendientes — PR #3 mergeado 2026-08-29): disciplina backend archivada
@@ -88,9 +90,15 @@
   # AS-BUILT. Crea la capacidad nueva `openspec/specs/enriquecimiento-ia/` (CAP-3, puente
   # entre catálogo y búsqueda semántica) — README + requirements + decisions + contratos
   # vivos (2 endpoints admin: GET /admin/enrichment/status, POST /admin/enrichment/runs).
-  # `status` de la US NO avanza a `Done`: QA e INFRA (las otras dos disciplinas declaradas)
-  # nunca se planificaron — no hay `openspec/changes/US-005-*-qa/` ni `-infrastructure/`.
-  # Se queda en `In Progress`. `blocked_by` sin tocar (propiedad de otro agente).
+  # `status` de la US NO avanza a `Done`: INFRA (tercera disciplina declarada) nunca se
+  # planificó — no hay `openspec/changes/US-005-*-infrastructure/`.
+  # NOTA (2026-09-06, /plan-qa + /develop-qa + /commit US-005): QA planificada, ejecutada y
+  # en review en `openspec/changes/US-005-enriquecimiento-ia-embeddings-qa/` (PR #68) — BDD
+  # 16/16, contract 12/12, k6 dentro de NFR, más el fix de higiene de entorno compartido
+  # (QA-005-F1: `ENRICHMENT_ENABLED=false` default en `qa/scripts/api-up.sh`). No se repiten
+  # `QA-004-REL-*`/`QA-004-PERF-3`, ya derivadas al qa-plan de US-004. Se queda en
+  # `In Progress` (INFRA pendiente, nunca planificada). `blocked_by` sin tocar (propiedad de
+  # otro agente).
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
@@ -338,7 +346,7 @@
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
-  status: Ready
+  status: In Progress
   priority: Medium
   prd-capacity: 11
   disciplines: [BE, FE, QA]
@@ -346,7 +354,26 @@
   linear-issue-id: null
   created: 2026-06-15
   ready-at: 2026-06-15
-  blocked_by: [US-010, US-012]
+  in-progress-at: 2026-09-06        # first plan invocation (backend-node-developer)
+  in-review-at: 2026-09-06          # backend (primera disciplina) — PR #66 abierto, 20/20 tasks + suite completa 225/225 verde
+  blocked_by: []
+  # US-010 y US-012 (bloqueantes declaradas) ya están archivadas — MercadoPagoClient.refund,
+  # refund_pending/retry-refunds, NotificationPort, order_status_history y el CHECK de 6
+  # estados de orders.status ya existen. Plan de backend en
+  # openspec/changes/US-013-cancelacion-reembolso-backend/ — sin migración de Prisma
+  # (design.md §D2), vive en apps/api/src/payments/ (no en orders/) para preservar la
+  # dirección acíclica payments → orders ya establecida (design.md §D1).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-backend): backend llega a
+  # in-review — 20/20 tasks (12 fases), suite completa apps/api 225/225 suites/1877/1877
+  # tests, lint+typecheck+spectral limpios, PR #66 abierto. `status` de la US se queda en
+  # `In Progress` (FE/QA todavía sin planificar).
+  #
+  # NOTA (2026-09-06, /commit US-013-cancelacion-reembolso-frontend-web): backend (#66)
+  # mergeado a main; FE (segunda disciplina) llega a in-review — 17/17 tasks (7 fases),
+  # suite completa apps/web 153/153 archivos/968/968 tests, lint+typecheck limpios,
+  # codegen fresco, PR #67 abierto. `status` de la US se queda en `In Progress` (QA
+  # todavía sin planificar).
 - id: US-014
   slug: registro-login
   status: In Progress

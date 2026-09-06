@@ -35,7 +35,8 @@ import { LoggingNotificationAdapter } from './ports/logging-notification.adapter
     { provide: NOTIFICATION_PORT, useClass: LoggingNotificationAdapter },
   ],
   // US-010 T8.1: PaymentsModule inyecta NOTIFICATION_PORT (nuevo edge
-  // payments → orders, acíclico — orders no importa payments).
-  exports: [NOTIFICATION_PORT],
+  // payments → orders, acíclico — orders no importa payments). US-013 T4.1:
+  // agrega un segundo export al mismo edge, ningún import nuevo de módulo.
+  exports: [NOTIFICATION_PORT, OrderStatusHistoryRepository],
 })
 export class OrdersModule {}

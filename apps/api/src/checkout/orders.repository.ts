@@ -354,6 +354,26 @@ export class OrdersRepository {
     return count;
   }
 
+  /**
+   * Cancelación manual del dueño (US-013 AC-1/AC-8): mismo compare-and-set
+   * guardado que `transitionToCancelledIfPending`, esta vez sobre los 3
+   * estados activos (`new`/`preparing`/`ready`) en vez de `pending_payment` —
+   * `delivered` (terminal) y `cancelled` (ya cancelada) devuelven `null` sin
+   * escribir nada. Incluye `items` porque el caller necesita las líneas para
+   * el reintegro de stock en la misma transacción.
+   */
+  async transitionToCancelledIfActive(
+    orderId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ): Promise<OrderWithItems | null> {
+    const { count } = await tx.order.updateMany({
+      where: { id: orderId, status: { in: ['new', 'preparing', 'ready'] } },
+      data: { status: 'cancelled', cancelled_at: new Date() },
+    });
+    if (count === 0) return null;
+    return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { items: true } });
+  }
+
   private translate(error: unknown): unknown {
     if (isPrismaError(error, PRISMA_FK_VIOLATION)) {
       // Un producto de la orden dejó de existir entre la lectura del carrito y

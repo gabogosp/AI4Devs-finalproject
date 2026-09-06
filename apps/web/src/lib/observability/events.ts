@@ -93,6 +93,12 @@ export type BusinessEvent =
   | 'order_anonymize_attempted'
   | 'order_anonymize_succeeded'
   | 'order_anonymize_failed'
+  // Cancelación de una orden por el dueño (US-013 AC-1/AC-10). Backoffice —
+  // mismo criterio que los eventos de arriba: sólo `{ order_id }`, nunca
+  // `buyer_name`/`buyer_email`/detalle del reembolso.
+  | 'order_cancel_attempted'
+  | 'order_cancel_succeeded'
+  | 'order_cancel_failed'
   // Panel de métricas (US-016 §9 — "registrar uso del panel"). Backoffice —
   // van con `operator_id: 'admin'`, no entran en PUBLIC_EVENTS.
   // `metrics_export_downloaded` lleva `{ dataset }` con un enum acotado a los

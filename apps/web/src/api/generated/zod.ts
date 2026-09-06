@@ -758,6 +758,46 @@ export const ListPendingPaymentOrdersResponse = zod.array(ListPendingPaymentOrde
 
 
 /**
+ * Transiciona new/preparing/ready -> cancelled, reintegra el stock de cada línea (inverso de ADR-0008), registra el cambio en el historial de estados y gestiona el reembolso del pago aprobado (real vía MercadoPago, no-op para simulated_dsm/manual). Sin body: todo sale de la orden y del pago encontrados server-side, y quién cancela sale del JWT (sub). Idempotente (AC-8): repetir la llamada sobre una orden ya cancelled responde 200 con el mismo shape, sin reintegrar stock ni reintentar el reembolso una segunda vez.
+ * @summary Cancelar una orden pagada no entregada, con reembolso y reintegro de stock (US-013 AC-1..AC-10)
+ */
+export const CancelOrderParams = zod.object({
+  "id": zod.string().uuid()
+})
+
+export const CancelOrderResponse = zod.object({
+  "id": zod.string().uuid(),
+  "order_number": zod.number().int(),
+  "buyer_name": zod.string(),
+  "total_ars_cents": zod.number().int(),
+  "status": zod.enum(['cancelled']),
+  "created_at": zod.string().datetime({"offset":true}),
+  "buyer_email": zod.string(),
+  "buyer_phone": zod.string(),
+  "fulfillment": zod.enum(['pickup']),
+  "items": zod.array(zod.object({
+  "product_name": zod.string(),
+  "product_sku": zod.string(),
+  "quantity": zod.number().int(),
+  "unit_price_ars_cents": zod.number().int(),
+  "subtotal_ars_cents": zod.number().int()
+})),
+  "status_history": zod.array(zod.object({
+  "from_status": zod.string().nullable(),
+  "to_status": zod.string(),
+  "changed_by": zod.string().nullable().describe('sub del JWT admin (uuid) o el literal admin (bootstrap token).'),
+  "changed_at": zod.string().datetime({"offset":true})
+}).describe('Sin la fila inicial pending_payment→new (fuera de scope de este panel — la escribe payments\/, US-023).')),
+  "anonymized_at": zod.string().datetime({"offset":true}).nullable(),
+  "anonymization_reason": zod.enum(['retention_policy', 'requested']).nullable(),
+  "refund": zod.object({
+  "status": zod.enum(['refunded', 'refund_pending', 'not_applicable']),
+  "provider": zod.enum(['mercadopago', 'simulated_dsm', 'manual']).nullable()
+})
+}).describe('Self-contained (US-013 design.md §D6) — no reusa AdminOrderDetail vía $ref: duplicación deliberada, mismo criterio que D13 de pagos\/decisions.md (backoff.ts duplicado en vez de importado).')
+
+
+/**
  * El comprador invitado no tiene cuenta ni autoservicio: su pedido de supresión llega por email o WhatsApp y lo ejecuta el dueño desde el panel. reason queda fijo en requested — nunca viene del body. 200 idéntico si la orden ya estaba anonimizada (AC-8, nunca error).
  * @summary Anonimizar los datos personales de una orden a pedido del comprador (US-021 AC-3, AC-9)
  */

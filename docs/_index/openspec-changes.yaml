@@ -2227,3 +2227,166 @@
   completed-at: 2026-09-06T03:32:29Z
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-016-panel-metricas-qa
+
+- name: US-005-enriquecimiento-ia-embeddings-qa
+  us-id: US-005
+  discipline: qa
+  variant: null
+  # MODO A, VARIANTE SIBLING: el backend ya está archivado (PR #3, 28/28 tasks, forma la
+  # capacidad `enriquecimiento-ia`). Su propio tasks.md deriva 2 piezas QA-owned que YA
+  # encontraron casa en el qa-plan de US-004 (QA-004-REL-*, QA-004-PERF-3, "el riesgo que
+  # miden sólo existe cuando enriquecimiento y búsqueda conviven") — no se repiten acá. Este
+  # change cubre la aceptación negro-caja de la capacidad `enriquecimiento-ia` en sí misma:
+  # los 2 endpoints admin, la matriz de decisión observable desde afuera, la degradación
+  # sin proveedor, y el NFR de que el runner no degrada la lectura del storefront GENÉRICO
+  # (E2E §17 — distinto de `/v1/search`, ya cubierto por QA-004-PERF-3).
+  #
+  # HALLAZGO QUE GOBIERNA EL DISEÑO (QA-005-F1, design.md §D-QA1 — no una incongruencia de
+  # producto, un riesgo de higiene de entorno compartido, mismo tipo que QA-010-F1 para
+  # MercadoPago): qa/scripts/api-up.sh deja la instancia compartida de QA con
+  # GEMINI_API_KEY=replace-me (no vacía → "configurada" para ai.providers.ts) y
+  # ENRICHMENT_ENABLED=true (default) — cualquier import real en esa instancia dispara la
+  # cola de enriquecimiento contra Google con una clave inválida, sin que nadie lo pida,
+  # ensuciando enrichment_attempts/enrichment_error_code del catálogo compartido de OTRAS
+  # sesiones. Fase 0 de tasks.md lo corrige (ENRICHMENT_ENABLED=false en la instancia
+  # compartida) antes de escribir el primer escenario.
+  #
+  # SEGUNDO HALLAZGO (QA-005-F2, contrato incompleto): UpdateProductDto acepta
+  # description_enriched (T4.3 del backend, AC-7) pero ni el contrato vivo de `catalogo`
+  # (openspec/specs/catalogo/contracts/openapi.yaml, schema UpdateProduct) lo declara ni
+  # ProductResponseDto (apps/api/src/products/dto/product.dto.ts) lo devuelve NUNCA — ni en
+  # el GET, ni en la respuesta del propio PATCH que lo setea. La curación es invisible para
+  # cualquier cliente API. Este plan corrige la mitad segura (declarar el campo que ya se
+  # acepta) y deja la mitad insegura (exponerlo en lectura, requiere código) como
+  # recomendación explícita, no ejecutada.
+  #
+  # 16 escenarios Gherkin (SC-005-H1-H3, C1-C8, N1-N5) cubriendo los 10 AC — 11 ejecutables
+  # negro-caja, 5 (H1/H2/C3/N2/N3 → AC-1/AC-2/AC-6/AC-8/AC-7-completa) `@blocked` explícito:
+  # necesitan que Gemini responda CON ÉXITO al menos una vez, y este entorno sólo tiene el
+  # placeholder de `.env.example`. Desbloqueo más barato que el caso análogo de US-010
+  # (MercadoPago): Gemini tiene tier gratuito (ADR-0003), conseguir una clave real es
+  # trámite de minutos, no una cuenta sandbox de un proveedor de pagos. Backoff durable +
+  # circuit-breaker cooldown SÍ son ejecutables sin clave real: el conteo de fallas del
+  # runner no distingue error transitorio de permanente, así que una clave real INVÁLIDA
+  # produce fallas reales (no un doble) que ejercitan el mismo mecanismo.
+  # Contract testing (2 endpoints + corrección de catalogo), k6 sobre lecturas de storefront
+  # genérico durante una corrida real (reusa thresholds YA existentes —
+  # list_products/storefront_product de qa/performance/lib/thresholds.js, no inventa un
+  # número nuevo), 3 charters exploratorios.
+  status: in-review   # /commit 2026-09-06: PR #68. Automatizables 100% verdes (BDD 16/16,
+  # contract 12/12, k6 dentro de NFR). Quedan 2 ítems manuales por diseño, no por
+  # incompletitud: QA-005-ACC-2 (5 escenarios) bloqueado sin GEMINI_API_KEY real (hallazgo
+  # QA-005-F1); QA-005-EXP-1 charter escrito, ejecución humana pendiente.
+  parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 9
+  assignee: claude-code
+  branch: feat/US-005-enriquecimiento-ia-embeddings-qa
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/68
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-013-cancelacion-reembolso-backend
+  us-id: US-013
+  discipline: backend
+  variant: null
+  status: in review   # /commit 2026-09-06 — 20/20 tasks + suite completa 225/225 verde, PR #66 abierto
+  parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Planificado 2026-09-06 (backend-node-developer). US-010 y US-012 (bloqueantes
+  # declaradas) ya están archivadas — MercadoPagoClient.refund, refund_pending/
+  # retry-refunds, NotificationPort, order_status_history y el CHECK de 6 estados de
+  # orders.status ya existen; sin gate en rojo, plan ejecutable hoy.
+  #
+  # ALCANCE: endpoint nuevo POST /v1/admin/orders/{id}/cancel — vive en
+  # apps/api/src/payments/ (NO en orders/) para preservar la dirección acíclica
+  # payments → orders ya establecida por US-010 (D15 de pagos/decisions.md);
+  # construirlo del lado de orders/ crearía el ciclo orders → payments → orders.
+  # Mismo precedente real que ya usa PaymentConfirmationController
+  # (confirm-payment/pending-payment, mismo prefijo de ruta). Reintegro de stock
+  # (StockRepository.incrementForOrder, nuevo) + reembolso reusando literal
+  # refund_pending/retry-refunds de US-010 (mercadopago real; simulated_dsm y manual
+  # no-op) + NotificationPort.orderCancelledByOwner (método nuevo, mismo puerto) +
+  # trazabilidad vía order_status_history + payments.status, sin columnas nuevas.
+  #
+  # SIN MIGRACIÓN DE PRISMA (design.md §D2): confirmado leyendo las migraciones ya
+  # aplicadas (orders_status_check ya con los 6 estados, payments_status_check ya con
+  # refund_pending, order_status_history.to_status sin CHECK) — cero columna/tabla
+  # nueva. No se invoca data-architect Mode B (caso trivial).
+  #
+  # AC-6 (confirmación de dos pasos) es explícitamente FE — Deferred:
+  # US-013-cancelacion-reembolso-frontend-web, change separado no creado todavía.
+  #
+  # Open questions no bloqueantes (ver proposal.md): OQ-BE-1 (reembolso no-op para
+  # provider='manual', decisión sin AC literal — D3 de proposal.md) y OQ-BE-2 (schema
+  # de respuesta self-contained, sin $ref cruzado a la capacidad ordenes — D6 de
+  # design.md).
+  estimate-hours: 8.0   # AI-asistido, 20 tasks reales / 12 fases (proposal.md
+  # estimó 19; el count final subió a 20 al ejecutar — excede moderadamente el
+  # rango 8-12h tradicional de US §7 — flageado, no oculto).
+  assignee: claude-code
+  branch: feat/US-013-cancelacion-reembolso-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/66
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
+
+- name: US-013-cancelacion-reembolso-frontend-web
+  us-id: US-013
+  discipline: frontend-web
+  variant: null
+  status: in review   # /commit 2026-09-06 — 17/17 tasks + suite completa apps/web 153/153 verde, PR #67 abierto
+  parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # Planificado 2026-09-06 (frontend-web-developer). Cubre el único AC diferido
+  # explícitamente por el backend (PR #66, mergeado): AC-6, confirmación de dos
+  # pasos antes de cancelar. Agrega la acción "Cancelar orden" al detalle de
+  # orden que US-012 ya construyó (apps/web/src/features/orders/OrderDetail.tsx),
+  # reusando ConfirmDialog (apps/web/src/components/ui/ConfirmDialog.tsx) SIN
+  # modificarlo — ya tiene 2 consumidores en producción (ProductActions.archive
+  # de US-001, OrderAnonymizeAction de la anonimización de órdenes). Sin
+  # componente de confirmación nuevo, sin ruta nueva, sin ADR.
+  #
+  # Cliente/Zod/MSW ya regenerados por el orquestador antes de este plan
+  # (apps/web/src/api/generated/ ya tiene cancelOrder + CancelOrderResponse) —
+  # este change no regenera nada, sólo verifica frescura (T1.1 de tasks.md).
+  #
+  # CancelOrderResponse (self-contained, D6 del backend) se reconcilia DIRECTO
+  # en OrderDetail (mismo patrón que OrderStatusActions.onConfirmed, sin
+  # segundo GET) — a diferencia de OrderAnonymizeAction, cuyo endpoint SÍ
+  # devuelve un shape parcial y por eso refetchea. La razón está en el
+  # contrato de cada endpoint (design.md §D2).
+  #
+  # AC-9 (sólo admin) fuera de alcance: AdminGuard de FE (app/(admin)/layout.tsx)
+  # y de backend ya gatean la superficie completa, sin cambios.
+  #
+  # Sin Playwright E2E nuevo (mismo nivel de pirámide que el resto de
+  # features/orders/ — Vitest + RTL + MSW + axe-core) y sin cambios en el
+  # README de apps/web (evaluado y descartado explícitamente en proposal.md:
+  # ni ProductActions.archive ni OrderAnonymizeAction — los 2 precedentes de
+  # esta misma confirmación de dos pasos — están documentados ahí tampoco).
+  #
+  # Sin open questions bloqueantes.
+  estimate-hours: 3.5   # AI-asistido, 17 tasks / 7 fases + pre-requisitos. La
+  # US §7 presupuesta FE-US-013 en 4-6h tradicional — este plan queda por
+  # debajo por la reutilización total de ConfirmDialog (sin modificar) y por
+  # no requerir codegen nuevo (ya regenerado antes de este plan).
+  assignee: claude-code
+  branch: feat/US-013-cancelacion-reembolso-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/67
+  pr-opened-at: 2026-09-06
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null

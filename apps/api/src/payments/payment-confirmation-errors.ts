@@ -48,6 +48,20 @@ export class OrderAutoCancelledInsufficientStockError extends DomainError {
 }
 
 /**
+ * 409 — se intentó cancelar una orden en un estado terminal (US-013 AC-7:
+ * "entregada" es terminal, igual que "cancelada" ya lo era). El caller
+ * necesita el estado actual para el mensaje ("ya está entregada").
+ */
+export class OrderCannotBeCancelledError extends DomainError {
+  readonly status = 409;
+  readonly type = 'dsm:payments/order-cannot-be-cancelled';
+
+  constructor(currentStatus: string) {
+    super(`La orden está "${currentStatus}" — no se puede cancelar`);
+  }
+}
+
+/**
  * 401 — la firma del webhook de MercadoPago es inválida, ausente, malformada
  * o con `ts` fuera de la ventana de tolerancia (US-010 AC-7). Único status
  * de error del endpoint: no se consulta el pago ni se toca la base.
