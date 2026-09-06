@@ -336,7 +336,7 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
 
 ### 5.2 Contract testing
 
-- [ ] **QA-016-CT-1**: Contract test standalone para los 6 endpoints de `admin-reports`
+- [x] **QA-016-CT-1**: Contract test standalone para los 6 endpoints de `admin-reports`
   vs OpenAPI (mismo formato real que `qa/contract/pago-manual.contract.ts`, no
   `supertest`/`--testPathPattern` como asumían los planes anteriores a la corrección de
   US-023).
@@ -345,6 +345,9 @@ axe-core+Playwright 1 · k6 1 · charter manual 2. **12 test cases, 0 bloqueados
     `Content-Disposition: attachment`, 401/403/422) matcheen los schemas y los
     `Content-Type` declarados en `apps/api/docs/api/openapi.yaml`.
   - Verify: `pnpm --filter @dsm/qa test:contract:reports` (exit 0)
+  - **Estado**: verde — `pnpm --filter @dsm/qa test:contract:reports` → `✓ admin-reports
+    (6 endpoints) conforma el contrato — 21/21 casos` contra la API real (Postgres
+    descartable, `qa/contract/reports.contract.ts`).
 
 ### 5.3 E2E de navegador cross-stack (Playwright, backend + frontend reales)
 
