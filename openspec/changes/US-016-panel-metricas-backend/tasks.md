@@ -91,7 +91,7 @@ language: es
     `HttpProblemFilter` (sin tocar) lo mapea correctamente.
   - **Verify**: `pnpm --filter @dsm/api test -- --testPathPattern=reports-errors`
 
-- [ ] T1.3 `date-range.ts` — `parseReportsRange` (AC-4, AC-9, función pura)
+- [x] T1.3 `date-range.ts` — `parseReportsRange` (AC-4, AC-9, función pura)
   - **Pattern**: TS plano sin DI, `now` inyectado como parámetro (nunca
     `new Date()` interno) para que el test controle el reloj — `per
     design.md §D5`. Mismo cálculo de piso de retención que
