@@ -81,7 +81,7 @@ language: es
 
 ## Fase 2 — Mapeo de errores (`AppError.conflict.blockingOrders`)
 
-- [ ] **T2.1 — `AppError` gana `blockingOrders`; `mapProblemToAppError` lo propaga**
+- [x] **T2.1 — `AppError` gana `blockingOrders`; `mapProblemToAppError` lo propaga**
   - **Pattern**: `per design.md §D2` — extension member ad-hoc del 409,
     mismo criterio que `availableQuantity`/`maxItems` (US-007). `status` se
     tipa `string`, NO el enum generado (drift de contrato documentado en

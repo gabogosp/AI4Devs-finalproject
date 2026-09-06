@@ -39,6 +39,20 @@ export type AppError =
       problemType?: string;
       availableQuantity?: number;
       maxItems?: number;
+      /**
+       * US-020 AC-4/AC-9. `status` se tipa `string`, NO como el enum generado
+       * (`OrderHistorySummaryStatus`, que no declara `pending_payment` — ver
+       * `design.md` §Context de US-020 frontend-web, drift de contrato
+       * encontrado al planificar): el runtime puede devolver legítimamente un
+       * valor que el contrato publicado no admite, y la UI no puede reventar
+       * por eso ni mentir mostrando un estado que no es.
+       */
+      blockingOrders?: {
+        order_number: number;
+        status: string;
+        total_ars_cents: number;
+        created_at: string;
+      }[];
     }
   | { kind: 'unauthorized'; message: string }
   | { kind: 'forbidden'; message: string }
@@ -58,6 +72,18 @@ interface ProblemBody {
   available_quantity?: number;
   /** Extension member de `dsm:cart/too-many-items` (US-007). */
   max_items?: number;
+  /**
+   * Extension member de `dsm:account/active-orders` (US-020). No se valida
+   * con Zod (el 409 nunca pasa por `parseContract`, ver `design.md` §Context
+   * de US-020 frontend-web) — acceso opcional, mismo criterio que
+   * `available_quantity`/`max_items`.
+   */
+  blocking_orders?: {
+    order_number: number;
+    status: string;
+    total_ars_cents: number;
+    created_at: string;
+  }[];
 }
 
 /** Mapea el envelope RFC 7807 (`application/problem+json`) a un `AppError` tipado. */
@@ -87,6 +113,9 @@ export function mapProblemToAppError(
           ? { availableQuantity: p.available_quantity }
           : {}),
         ...(typeof p.max_items === 'number' ? { maxItems: p.max_items } : {}),
+        ...(Array.isArray(p.blocking_orders)
+          ? { blockingOrders: p.blocking_orders }
+          : {}),
       };
     case 401:
       return { kind: 'unauthorized', message };
