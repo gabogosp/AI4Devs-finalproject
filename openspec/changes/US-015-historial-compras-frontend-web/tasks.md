@@ -114,7 +114,7 @@
 
 ## Fase 4 — Detalle (`PurchaseDetail`)
 
-- [ ] T4.1 `PurchaseDetail` — composición de estados + 404 distinguido
+- [x] T4.1 `PurchaseDetail` — composición de estados + 404 distinguido
   - **Depends on**: T2.1.
   - **Pattern**: `per frontend-standards.md §11.4/§11.9` + foco gestionado al cargar (mismo
     patrón que `OrderDetail` admin, `headingRef.current?.focus()`). Snippet completo en
