@@ -130,7 +130,7 @@ language: es
     ningún promedio ni "0 reseñas".
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewsSummary`
 
-- [ ] **T-A6 — `ReviewGuestPrompt.tsx` + `.test.tsx` (AC-7)**
+- [x] **T-A6 — `ReviewGuestPrompt.tsx` + `.test.tsx` (AC-7)**
   - **Exit criterion**: el componente renderiza un texto explicando que se necesita una cuenta
     para reseñar, un link a `/crear-cuenta` y un link a `/ingresar?next=` con el pathname actual
     codificado (mismo patrón que `CustomerGuard.tsx`).
