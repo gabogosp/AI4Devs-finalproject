@@ -3,8 +3,9 @@
 > **Ticket**: US-020 — Borrado de cuenta y datos personales (Ley 25.326)
 > **Author**: qa-engineer agent (assisted by @gosp)
 > **Date**: 2026-09-06
-> **Status**: Planned, pre-implementation — ver §0 "Estado de bloqueo" (ningún test
-> case corrió todavía; el backend de esta US no existe en `main`)
+> **Status**: Planned, pre-implementation, reconciliado contra el `design.md` real
+> (2026-09-06) — ver §0 (ningún test case corrió todavía; el backend está pusheado
+> — PR #93, auto-merge — pero no mergeado a `main` de este worktree)
 > **Affected platform(s)**: backend (superficie única planeada por ahora — no hay
 > `US-020-...-frontend-web` en `openspec/changes/` ni en el índice)
 > **Service tier(s)**: 2 (`docs/services/dsm-ecommerce/runbook.md` frontmatter —
@@ -21,8 +22,10 @@
 > coincidiría con el nombre de ningún directorio embebido de código —
 > `check-pr-scope.sh` exige que el directorio del change coincida con la
 > rama/PR — mismo motivo exacto documentado por `US-016-panel-metricas-qa` y
-> `US-013-cancelacion-reembolso-qa`). **No consume ningún `proposal.md`/
-> `design.md` de backend como contexto** porque **no existe todavía** — ver §0.
+> `US-013-cancelacion-reembolso-qa`). **Se escribió originalmente sin
+> `design.md` de backend** (no existía en este worktree) y se reconcilió
+> después leyendo el real vía `git fetch` de la rama de 07, sin mergear a
+> `main` — ver §0 para el detalle de la reconciliación.
 
 ---
 
@@ -53,41 +56,58 @@ todavía — de ahí que las referencias a "el backend" en este plan citen
 exclusivamente la US y la nota de orientación de diseño recibida (ver
 referencias, §17), nunca un `design.md` que no existe acá.
 
-### Supuestos de diseño a reconciliar cuando el `design.md` real llegue
+### Supuestos de diseño — reconciliados contra el `design.md` real (2026-09-06)
 
-Este plan asume (nota de orientación del coordinador, **no verificado contra
-código real**) que el endpoint de borrado:
+**Actualización**: mientras este plan se escribía, 07 pusheó su rama
+`feat/US-020-borrado-cuenta-datos-personales-backend` (PR #93, sin mergear
+todavía). Se fetcheó (`git fetch origin feat/US-020-...-backend`) y se leyó
+`design.md` sin tocar el working tree — los 4 supuestos de orientación del
+coordinador se reconciliaron así:
 
-1. Vive en un `AccountModule` nuevo, reutiliza `CustomerGuard` + `CsrfGuard` —
-   el mismo doble-submit CSRF por cookie legible (`dsm_csrf`) que
-   `qa/support/customer-auth.ts` ya sabe satisfacer para `logout`/`refresh`.
-   **Si el `design.md` real usa un nombre de cookie o un guard distinto, los
-   escenarios de este plan no cambian de forma — sólo el helper que agrega el
-   header CSRF.**
-2. Sobrescribe `customers.name`/`email`/`phone` con un valor **único por
-   fila** (a diferencia del placeholder fijo de US-021, porque
-   `customers.email` sí tiene restricción de unicidad) y sella
-   `deleted_at`, en una única transacción con la revocación de tokens y la
-   anonimización de órdenes. **Si el `design.md` real cambia el mecanismo de
-   unicidad (UUID vs timestamp vs hash), AC-6/SC-020-A3 no cambia — sigue
-   siendo "dos borrados simultáneos, cero colisión", verificable sin conocer
-   el mecanismo interno.**
-3. Agrega el valor de enum `account_deletion` a la misma columna
-   `orders.anonymization_reason` que US-021 ya usa (`retention_policy`,
-   `requested`), ensanchando el `CHECK` de 2 a 3 valores. **Si el nombre
-   exacto del enum difiere, SC-020-H3 lo reconcilia sustituyendo el string
-   literal, sin rediseñar el escenario.**
-4. Revoca `refresh_tokens` y `password_reset_tokens` pendientes reusando los
-   repositorios de US-014 — el mismo mecanismo que ya prueba
-   `qa/support/customer-auth.ts` (`logout`, `pedirReset`,
-   `tokenDeResetDesde`). **Este punto es el de mayor confianza de los
-   cuatro**: US-014 ya está archivado y esos helpers ya corren contra la API
-   real hoy.
+1. `AccountModule` nuevo — **confirmado exacto**: importa `AuthModule` +
+   `CheckoutModule` + `CartModule` de forma acíclica (mismo patrón que
+   `OrdersModule`). Guards: `CustomerGuard` + `CsrfGuard`, mismo orden que
+   `logout`. El endpoint real es `DELETE /v1/me` (204, sin body) — ver
+   OQ-QA-020-2 (Resolved, §14).
+2. Valor único por fila — **confirmado, más preciso de lo asumido**:
+   determinístico por `customerId`
+   (`cuenta-borrada+{customerId}@anonimizado.dsm.invalid`, TLD `.invalid`),
+   no aleatorio ni basado en timestamp — ver OQ-QA-020-1 (Resolved, §14).
+   `name`→`'Cuenta eliminada'`, `phone`→`'+00 000-0000'` (mismo placeholder
+   que US-021). `password_hash` NO se toca (decisión explícita, queda
+   huérfano e inalcanzable una vez que el email real desaparece).
+3. Enum `account_deletion` — **confirmado exacto**, tercer valor de
+   `orders.anonymization_reason` (migración aditiva, mismo `CHECK` de
+   consistencia cruzada de US-021 sin cambios).
+4. Revocación vía repos de US-014 — **confirmado exacto**:
+   `RefreshTokensRepository.revokeAllForCustomer` /
+   `PasswordResetTokensRepository.deleteAllForCustomer`, ambos YA EXISTÍAN
+   desde US-014, este change sólo les agrega un parámetro `tx` opcional
+   aditivo (mismo idioma que `StockRepository`/`PaymentsRepository`). Sin
+   sorpresas — era, como se anticipó, el punto de mayor confianza.
 
-Ninguno de estos cuatro supuestos cambia el **comportamiento observable** que
-los AC fijan — cambiarían, a lo sumo, el nombre de un campo interno o un
-helper de siembra. Se declaran acá para que quien ejecute este plan cuando el
-`design.md` real exista sepa exactamente qué reconciliar primero.
+**Hallazgos adicionales del `design.md` real, no anticipados por la nota de
+orientación** (no cambian ningún AC, pero sí afinan 2 test cases):
+
+- **Dos eventos de observabilidad**, no uno: `account.deleted` (éxito,
+  `anonymized_orders` como entero) Y `account.deletion_blocked` (en el 409 de
+  AC-4/AC-9) — ambos verificados sin PII por el propio dev (`T5.9`). QA-020-ACC-8
+  (§5.8, AC-14) debe ejercitar **ambos** caminos (éxito Y bloqueo), no sólo el
+  éxito — ver ajuste en §5.8.
+- **Sin `Idempotency-Key`** (mismo argumento que US-021: el `WHERE deleted_at
+  IS NULL` de `CustomersRepository.anonymize` ya resuelve AC-15
+  estructuralmente) — QA-020-ACC-9 (§5.9) no necesita verificar ningún header
+  de idempotencia, sólo el efecto único.
+- **Delta cruzado sobre la capacidad `ordenes`** (no `retencion-datos-
+  personales`): `AdminOrderDetail.anonymization_reason` en
+  `openspec/specs/ordenes/contracts/openapi.yaml` necesita el tercer valor
+  del enum — es un ítem de `/archive-change`, fuera de alcance de este plan,
+  pero se anota en §15 (Dependencias) para que no se pierda.
+
+No hace falta reconciliar nada más: el resto del `design.md` (guards,
+throttler, threat model, trade-offs de aislamiento transaccional) confirma —
+no contradice — cada supuesto de comportamiento observable que los 15 AC ya
+fijaban.
 
 ---
 
@@ -642,7 +662,12 @@ backend) **+ 3 charters manuales documentados, sin fecha de ejecución**.
   (`sha256`/`md5` del valor original, calculado por el test y buscado
   también). El mismo log SÍ debe contener evidencia de que un borrado
   ocurrió (un `customer_id` interno o un evento nombrado), para no convertir
-  "sin PII" en "sin observabilidad".
+  "sin PII" en "sin observabilidad". **Ejercita los DOS eventos reales**
+  (`design.md` confirmado, §0): un caso dispara `account.deleted` (éxito,
+  con `anonymized_orders` como entero en el payload — nunca un dato de la
+  orden en sí) y otro dispara `account.deletion_blocked` (rechazo por
+  órdenes en curso, AC-4) — ambos se verifican sin PII, no sólo el camino
+  feliz.
 - Verify: `pnpm --filter @dsm/qa test:acceptance -- --tags "@borrado-cuenta and @us-020-ac14"` (exit 0)
 - **Estado**: no corrido — `blocked_by` backend inexistente.
 - **Mismo patrón que**: la disciplina de log-grep ya aplicada por US-021/
@@ -833,22 +858,30 @@ sin ninguna medición.
   name: Charter_LaCarreraRealDeUnaOrdenQueCambiaDeEstadoDuranteLaVentanaDeLaTransaccionDeBorrado
 ```
 
-- **Misión**: el día que el `design.md` real exista y se conozca el mecanismo
-  exacto de bloqueo por transacción, intentar reproducir la carrera real de
-  AC-9 con dos procesos verdaderamente concurrentes (no `Promise.all` desde
-  un solo test) — idealmente inyectando una demora artificial en el
-  checkout/confirmación de pago (vía un breakpoint o un delay de desarrollo)
-  para ensanchar la ventana de la carrera y hacerla observable de forma
-  confiable.
-- **Áreas**: si la transacción de borrado usa un nivel de aislamiento que
-  permita a una orden nueva "colarse" entre la lectura de "sin órdenes en
-  curso" y el `COMMIT` final.
-- **Riesgos**: sin este charter, la única evidencia de que la carrera está
-  cerrada es el análisis del código (dev-owned) — QA-020-ACC-3 (N-1a/N-1b) la
-  aproxima por orden de operaciones, no por concurrencia real.
-- **Justificación manual**: requiere control fino de timing que un test
-  automatizado normal no tiene sin herramientas de inyección de latencia que
-  este entorno no tiene todavía.
+- **Misión — re-escopada tras OQ-QA-020-3 (Resolved, §14)**: el `design.md`
+  real (`AccountDeletionService.deleteAccount`) confirma que
+  `listBlockingForCustomer` corre como **primera lectura dentro de la misma
+  `$transaction`** que el resto del borrado — el escenario "ideal" que esta
+  pregunta contemplaba. El propio documento declara la ventana residual
+  (microsegundos dentro de esa transacción) como **aceptada y no medida con
+  evidencia real** (sin `SERIALIZABLE`/`SELECT FOR UPDATE`, mismo criterio que
+  `cancel-order.service.ts`) — no hay fault-injection en este repo para
+  ensanchar esa ventana, y forzarla no es un objetivo de este change. Este
+  charter se reduce a una **revisión de código en el PR**: confirmar que
+  `listBlockingForCustomer` es efectivamente la primera operación dentro del
+  callback de `$transaction` (no una lectura previa fuera de ella) — es una
+  verificación de 5 minutos, no una sesión de exploración con timing real.
+- **Áreas**: el único punto que sigue siendo responsabilidad de QA es
+  confirmar que ningún PR futuro mueva esa lectura fuera de la transacción
+  sin que nadie lo note — candidato a un comentario de "no mover" en el PR,
+  no a un test.
+- **Riesgos**: si algún día ese guard se saca de la transacción (p. ej. por
+  una refactorización que lo cachea desde la pantalla), la ventana de carrera
+  vuelve a ser de segundos/minutos — este charter es la única red que lo
+  detectaría, dado que QA-020-ACC-3 (N-1a/N-1b) prueba el comportamiento
+  observable, no la ubicación del código que lo garantiza.
+- **Justificación manual**: es una verificación puntual de código en el
+  momento del PR, no una aserción automatizable en runtime.
 
 ```yaml
 - id: TC-020-E3
@@ -957,20 +990,35 @@ usan orden de operaciones explícito, nunca un `sleep`).
 
 ## 14. Open questions
 
-- **OQ-QA-020-1**: ¿El mecanismo de unicidad del valor de reemplazo de
-  `email` va a ser determinístico y visible externamente (p. ej.
-  `deleted-{uuid}@...`) o completamente opaco? Afecta si TC-020-E1 puede
-  siquiera "mirar la forma" del valor, o si sólo puede verificar unicidad por
-  comparación, nunca por inspección.
-- **OQ-QA-020-2**: ¿El endpoint de borrado responde `200` con body o `204`
-  sin body? Afecta el exit criterion exacto de H-1/QA-020-ACC-1 — se
-  reconcilia al primer intento de ejecución, sin bloquear la planificación.
-- **OQ-QA-020-3**: cuando exista `design.md` real, ¿el guard de "órdenes en
-  curso" corre dentro de la misma transacción SQL que el resto del borrado, o
-  como un chequeo previo separado? Determina si TC-020-E2 (la carrera real)
-  es siquiera físicamente posible de estrechar/ensanchar por inyección de
-  latencia, o si el diseño ya la hace imposible por construcción (ideal,
-  pero a confirmar).
+- **OQ-QA-020-1** `[Resolved 2026-09-06 — contra `design.md` real de
+  `US-020-borrado-cuenta-datos-personales-backend` (rama de 07, fetcheada,
+  no mergeada todavía)]`: determinístico y visible externamente —
+  `cuenta-borrada+{customerId}@anonimizado.dsm.invalid` (TLD `.invalid`,
+  mismo criterio que US-021). TC-020-E1 puede verificar tanto la forma
+  (`^cuenta-borrada\+.+@anonimizado\.dsm\.invalid$`) como la unicidad — el
+  `customerId` embebido es un UUID interno opaco, no dato personal.
+- **OQ-QA-020-2** `[Resolved 2026-09-06]`: `DELETE /v1/me`, `204` sin body
+  (`clearSessionCookies` limpia las cookies de sesión en la misma respuesta).
+  El 409 de bloqueo por órdenes en curso (`dsm:account/active-orders`) lleva
+  `extensions.blocking_orders` con la MISMA forma que `OrderHistorySummaryDto`
+  de `GET /v1/me/orders` (US-015) — reusado tal cual, sin un DTO paralelo.
+  QA-020-ACC-1/ACC-2 (§5.1/§5.2) se reconcilian con estos valores exactos al
+  ejecutar — no cambia ningún Gherkin, sólo la aserción de status/shape.
+- **OQ-QA-020-3** `[Resolved 2026-09-06]`: el guard de "órdenes en curso"
+  (`OrdersRepository.listBlockingForCustomer`) corre **dentro** de la misma
+  transacción SQL, como primera lectura — el diseño real confirma
+  exactamente el escenario "ideal" que esta pregunta contemplaba. Consecuencia
+  directa para TC-020-E2 (§9.6): la ventana de carrera verdadera queda
+  acotada a la duración de una transacción (milisegundos, presupuesto
+  p95<500ms), y el propio `design.md` la documenta como **residual aceptado,
+  no verificado con evidencia real** (sin `SERIALIZABLE`/`SELECT FOR UPDATE`,
+  mismo criterio que `cancel-order.service.ts`) — TC-020-E2 se re-escopa de
+  "intentar forzar la carrera real por inyección de latencia" (no viable sin
+  herramientas de fault-injection que este repo no tiene) a "confirmar por
+  lectura de código en la revisión de PR que el guard es la primera operación
+  dentro de `$transaction`" — un charter de revisión, no de ejecución. La
+  carrera SIMULADA por orden de operaciones (N-1a/N-1b, §5.3) sigue siendo la
+  cobertura automatizada real de AC-9 y no cambia.
 
 ---
 
@@ -978,8 +1026,9 @@ usan orden de operaciones explícito, nunca un `sleep`).
 
 | Dependencia | Estado | Efecto |
 |---|---|---|
-| `US-020-borrado-cuenta-datos-personales-backend` | **No existe en este worktree** — en planificación/construcción en otro worktree, otra rama | Bloquea el 100% de la ejecución de este plan |
+| `US-020-borrado-cuenta-datos-personales-backend` | **Pusheado, sin mergear** (07, `origin/feat/US-020-...-backend`, PR #93 con auto-merge) — `design.md` ya leído y reconciliado (§0), pero el código no está en `main` de este worktree | Bloquea el 100% de la ejecución de este plan hasta que #93 mergee |
 | `US-020-borrado-cuenta-datos-personales-frontend-web` | No planificado | Bloquea AC-7 y accesibilidad — diferido a un futuro plan de QA de frontend (§1.2) |
+| Delta cruzado sobre `openspec/specs/ordenes/contracts/openapi.yaml` (`AdminOrderDetail.anonymization_reason` necesita el 3er valor `account_deletion`) | Declarado en el `design.md` real del backend, a aplicar por su propio `/archive-change` | No bloquea este plan de QA — anotado acá para que no se pierda al archivar |
 | `US-014-registro-login-backend` | Archivado | Resuelto — origen de `customer-auth.ts` (las tres puertas de AC-10 ya corren contra este mecanismo hoy, para otros propósitos) |
 | `US-015-historial-compras-backend` | Backend mergeado (PR #70) | Resuelto — origen de `orders.customer_id`, sin el cual AC-3/AC-4/AC-8/AC-9/AC-12 no tendrían sobre qué operar |
 | `US-021-retencion-datos-ordenes-backend` | Archivado | Resuelto — origen del mecanismo de anonimización de órdenes que AC-3/AC-8 reusan, y del vocabulario (`anonymization_reason`, `anonymized_at`) que este plan hereda sin reinventar |
