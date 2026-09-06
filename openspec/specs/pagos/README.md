@@ -165,6 +165,40 @@ simulado + jobs admin):
 | `K6_VUS` (QA-010-F2) es una env var reservada por k6 que pisa `options.scenarios` en silencio — afecta también a los scripts ya archivados de US-023 (`confirm-payment.js`/`auth-login.js`), sin que nadie lo supiera hasta ahora. | El script nuevo de este change usa `SIMULATE_PAYMENT_VUS` para evitarlo; los scripts viejos no se tocaron. | Pase de saneamiento de los scripts k6 existentes — owner QA. |
 | Charter exploratorio (QA-010-EXP-1) escrito pero no ejecutado. | Sin hallazgos todavía de esa vía. | Ejecución humana — owner QA. |
 
+### QA de US-013 (cancelación de orden + reembolso + reintegro de stock)
+
+Suite QA-owned (`US-013-cancelacion-reembolso-qa`), Modo A sibling — 13/13
+test cases automatizados verdes + 2 charters documentados:
+
+- **Aceptación BDD** (`cancelacion-ordenes.feature`): 13/13 escenarios,
+  71/71 steps — incluye 3 cross-feature (reintegro exacto contra el
+  decremento real de checkout/confirmación, exclusión del panel de
+  métricas tras cancelar, listado/detalle post-cancelación).
+- **Contract testing**: 6/6 casos (`cancel-order.contract.ts`) contra el
+  contrato OpenAPI vivo de esta capacidad.
+- **E2E cross-stack (Playwright)**: 6/6 — confirmación de dos pasos real,
+  botón oculto por estado terminal, mensaje según `refund.status`, 409 real
+  con diálogo abierto, historial sin recargar, acceso denegado end-to-end.
+- **Accesibilidad L3**: 2/2 (diálogo cerrado + diálogo real abierto), 0
+  violaciones WCAG AA.
+- **Performance (k6)**: `POST /admin/orders/{id}/cancel` (camino sin
+  llamada externa) — budget `p95 < 200ms`; medido **p95 15.31ms**, 100%
+  checks.
+- **Exploratorio**: 2 charters documentados (uso con dos pestañas/conectividad
+  intermitente; recuperación real de un reembolso MercadoPago el día que
+  exista sandbox).
+- **Defecto real encontrado y resuelto**: `QA-013-E2E-3` encontró que el
+  mensaje de éxito de cancelar nunca se veía en pantalla (ver
+  `decisions.md` D24) — corregido en `PR #72` (mergeado antes de este
+  archive) y re-verificado independientemente contra el fix.
+
+**Hallazgo declarado (no un gap nuevo)**: `QA-013-F1` — AC-3 (reembolso
+real MercadoPago) no tiene ningún camino de API real en este entorno que
+produzca una orden con pago `provider='mercadopago' approved` — mismo
+límite estructural que `QA-010-F1` arriba, sin cuenta sandbox. Cobertura
+100% dev-owned (`cancel-order.service.spec.ts`,
+`e2e-payments-cancel-order.spec.ts`, cliente mockeado por DI).
+
 ## Contratos
 
 El contrato vivo de la superficie REST está en [`contracts/openapi.yaml`](contracts/openapi.yaml)
@@ -199,6 +233,7 @@ quien toque cualquiera de los dos controllers.
 | [`US-010-orden-webhook-stock-qa`](../../changes/archive/US-010-orden-webhook-stock-qa/) | QA | Suite L1/L3: 15 aceptación BDD, 13 contract, 1 k6, 2 E2E de navegador, 3 charters. Continúa el contrato de comportamiento que US-023 QA (embebida en su propio backend) construyó para el camino manual |
 | [`US-013-cancelacion-reembolso-backend`](../../changes/archive/US-013-cancelacion-reembolso-backend/) | BE | `POST /admin/orders/{id}/cancel` — cero migración, reusa `refund_pending`/`retry-refunds` de US-010 tal cual |
 | [`US-013-cancelacion-reembolso-frontend-web`](../../changes/archive/US-013-cancelacion-reembolso-frontend-web/) | FE | Acción "Cancelar orden" en `OrderDetail.tsx`, reusa `ConfirmDialog`. Defecto real encontrado por QA (mensaje de éxito nunca se veía) corregido en `PR #72` antes de este archive |
+| [`US-013-cancelacion-reembolso-qa`](../../changes/archive/US-013-cancelacion-reembolso-qa/) | QA | Suite cross-stack Modo A: 13/13 automatizados (4 aceptación + 3 cross-feature + 1 contract + 6 E2E + 1 a11y + 1 k6) + 2 charters. Encontró y verificó el fix del defecto real de `PR #72` |
 
 Con esto, `disciplines: [BE, QA]` de US-010 queda completo — ambas disciplinas
 archivadas. Sin disciplina FE propia — la UI de confirmación manual (si existe)
@@ -206,9 +241,8 @@ vive dentro de `US-012-panel-ordenes-dueno-frontend-web`
 (`PendingPaymentsPanel.tsx`, componente separado del listado de
 fulfillment), no como un change propio de esta capacidad.
 
-QA de US-013 (suite cross-stack) se archiva en un PR separado inmediatamente
-después de este — ver el índice (`docs/_index/openspec-changes.yaml`) para
-su estado más reciente si esta tabla no se actualizó todavía.
+Con `US-013-cancelacion-reembolso-{backend,frontend-web,qa}` archivadas, las
+3 disciplinas de US-013 quedan completas.
 
 ## Estado de la provisión
 

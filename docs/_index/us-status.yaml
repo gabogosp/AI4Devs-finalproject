@@ -350,7 +350,7 @@
   blocked_by: [US-010]
 - id: US-013
   slug: cancelacion-reembolso
-  status: In Progress
+  status: Done
   priority: Medium
   prd-capacity: 11
   disciplines: [BE, FE, QA]
@@ -401,6 +401,13 @@
   # Documenta el defecto real que encontró QA-013-E2E-3 (mensaje de éxito nunca se
   # veía) y su resolución vía PR #72 (ya mergeado, previo a este archive). Sólo falta
   # QA (#73, ya mergeada a main) para que la US pase a `Done`.
+  #
+  # NOTA (2026-09-06, /archive-change US-013-cancelacion-reembolso-qa): PR #73
+  # mergeado a main. Archivado a openspec/changes/archive/. Última disciplina de las
+  # 3 (BE #66/FE #67/QA #73, todas `archived`) — US pasa a `Done`. QA encontró y
+  # verificó el fix de un defecto real (mensaje de éxito de cancelar nunca se veía,
+  # PR #72) antes de este cierre.
+  done-at: 2026-09-06
 - id: US-014
   slug: registro-login
   status: In Progress
