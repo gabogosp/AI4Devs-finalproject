@@ -60,11 +60,20 @@ jobs:
         run: pnpm --filter @dsm/db migrate:deploy
 
       - name: Build + arranque de la API
+        # `qa/scripts/api-up.sh` (no un `node dist/main.js` crudo) — arranca la
+        # API con los mismos valores que corrige RUN-MVP.md §"Correr la suite
+        # de QA": sin `CORS_ALLOWED_ORIGINS` la PRIMERA escritura del carrito
+        # pasa y la SEGUNDA muere en 403 (falla como si el producto estuviera
+        # roto, no como un problema de entorno); sin `AUTH_COOKIE_SECURE=false`
+        # una cookie `Secure` no vuelve por http. Roto desde 2026-09-02 (el
+        # `node` directo no seteaba ninguna de las dos) — 5+ corridas nightly
+        # fallando sin que las suites E2E/BDD/a11y llegaran a ejecutar un solo
+        # escenario.
+        env:
+          QA_API_PORT: '3000'
         run: |
           pnpm --filter @dsm/api build
-          # `nest start` busca dist/main; el build de nest queda anidado en
-          # dist/apps/api/src/main.js → se arranca el entry real directamente.
-          (node apps/api/dist/apps/api/src/main.js &)
+          bash qa/scripts/api-up.sh &
           npx wait-on -t 120000 http://localhost:3000/health
 
       # El fixture de auth es la base de todas las suites: si el login real no
