@@ -20,6 +20,7 @@ function storefrontProduct(over: Partial<StorefrontProduct> = {}): StorefrontPro
     currency: 'ARS',
     image_url: null,
     in_stock: true,
+    low_stock: false,
     category: { name: 'Refrigeración', slug: 'refrigeracion' },
     ...over,
   };

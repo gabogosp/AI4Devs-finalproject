@@ -6,6 +6,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { SkipThrottle } from '@nestjs/throttler';
 import { StorefrontService } from './storefront.service';
 import { StorefrontProductDto } from './dto/storefront-product.dto';
@@ -31,6 +32,7 @@ export class StorefrontProductsController {
   constructor(
     private readonly storefront: StorefrontService,
     private readonly events: CatalogEventsService,
+    private readonly config: ConfigService,
   ) {}
 
   @Get(':slug')
@@ -44,6 +46,9 @@ export class StorefrontProductsController {
     // dimensión de la métrica `pdp_viewed_total` (cardinalidad §3.3). Un 404
     // lanza en la línea anterior, así que no se emite.
     this.events.emit('product.viewed', product.id, null, traceparent);
-    return StorefrontProductDto.from(product);
+    return StorefrontProductDto.from(
+      product,
+      this.config.getOrThrow<number>('STOREFRONT_LOW_STOCK_THRESHOLD'),
+    );
   }
 }

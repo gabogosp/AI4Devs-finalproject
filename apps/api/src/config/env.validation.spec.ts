@@ -746,3 +746,21 @@ describe('Borrado de cuenta (US-020 T0.2) — defaults y fail-fast', () => {
     ).toThrow(/fail-fast/);
   });
 });
+
+describe('Indicador de pocas unidades en la ficha pública (C2b) — defaults y fail-fast', () => {
+  const base = {
+    DATABASE_URL: 'postgresql://x',
+    JWT_SECRET: 'test-secret',
+  };
+
+  it('sin la variable, aplica el default literal (5)', () => {
+    const env = validateEnv({ ...base });
+    expect(env.STOREFRONT_LOW_STOCK_THRESHOLD).toBe(5);
+  });
+
+  it('STOREFRONT_LOW_STOCK_THRESHOLD=abc hace fallar el arranque, no cae al default', () => {
+    expect(() =>
+      validateEnv({ ...base, STOREFRONT_LOW_STOCK_THRESHOLD: 'abc' }),
+    ).toThrow(/fail-fast/);
+  });
+});

@@ -28,5 +28,7 @@ export interface StorefrontProduct {
   image_url: string | null;
   /** Derivado de stock mayor a 0 (AC-3/AC-4); sin exponer el nivel. */
   in_stock: boolean;
+  /** Indicador aproximado de "pocas unidades" (C2b, decisión del PO) — `0 < stock <= STOREFRONT_LOW_STOCK_THRESHOLD`. Booleano a propósito, nunca el número real: mismo threat-model que `in_stock`, no filtrar el inventario exacto al público. */
+  low_stock: boolean;
   category: StorefrontProductCategory;
 }
