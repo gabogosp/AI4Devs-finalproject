@@ -1926,7 +1926,7 @@
   us-id: US-016
   discipline: backend
   variant: null
-  status: draft
+  status: in review   # /commit 2026-09-05 — 23/23 tasks + 9/9 verificación suite-level, PR #55 abierto
   parent-us: docs/user-stories/US-016-panel-metricas.md
   linear-task-id: null
   audit-baseline: null
@@ -1974,5 +1974,11 @@
   # nuevo, cero feature flag, cero dependencia externa nueva (design.md
   # §Deployment considerations).
   estimate-hours: 8.0
-  assignee: sin-asignar  # planificado, 0 tasks cerradas: nadie lo ejecuta todavia
+  assignee: claude-code
   branch: feat/US-016-panel-metricas-dueno-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/55
+  pr-opened-at: 2026-09-05
+  created: 2026-09-05
+  completed-at: null
+  archived-at: null
+  archive-path: null
