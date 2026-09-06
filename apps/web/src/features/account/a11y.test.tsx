@@ -112,6 +112,27 @@ describe('Accesibilidad de las pantallas de cuenta (T3.4)', () => {
     expect(screen.getByRole('button', { name: /ingresar/i })).toHaveFocus();
   });
 
+  it('la sección "Eliminar mi cuenta" (US-020), con el diálogo cerrado y abierto, no tiene violaciones', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));
+
+    const { container } = envolver(<AccountPanel />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /^eliminar mi cuenta$/i })).toBeInTheDocument(),
+    );
+
+    expect(await auditar(container)).toHaveNoViolations();
+
+    await userEvent.click(screen.getByRole('button', { name: /^eliminar mi cuenta$/i }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // El `title`/`description` de ESTE uso del `ConfirmDialog` son nuevos y
+    // pueden introducir un `aria-labelledby` roto si `titleId` no se genera
+    // bien — el `Field`/`Input` compartido ya se prueba en otros
+    // consumidores, pero la instancia completa acá no.
+    expect(await auditar(container)).toHaveNoViolations();
+  });
+
   it('el error es role=alert y la confirmación role=status', async () => {
     server.use(
       http.post(

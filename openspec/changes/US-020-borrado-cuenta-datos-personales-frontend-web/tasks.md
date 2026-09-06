@@ -280,7 +280,7 @@ language: es
     `order_number`/importe de los pedidos bloqueantes.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/account.events.test.tsx`
 
-- [ ] **T6.3 — `a11y.test.tsx` (existente) — `AccountPanel` con "Eliminar mi cuenta" visible, sin violaciones serious/critical**
+- [x] **T6.3 — `a11y.test.tsx` (existente) — `AccountPanel` con "Eliminar mi cuenta" visible, sin violaciones serious/critical**
   - **Pattern**: nuevo `it` en el `describe` existente, mismo helper
     `auditar` (axe con `region` deshabilitada) que los casos ya presentes.
   - **Exit criterion**: `AccountPanel` autenticado, con la sección
