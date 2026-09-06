@@ -2394,3 +2394,58 @@
   completed-at: null
   archived-at: null
   archive-path: null
+
+- name: US-013-cancelacion-reembolso-qa
+  us-id: US-013
+  discipline: qa
+  variant: null
+  status: draft
+  parent-us: docs/user-stories/US-013-cancelacion-reembolso.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # MODO A — sibling propio (no embebido), mismo motivo documentado por
+  # US-016-panel-metricas-qa: check-pr-scope.sh exige que el directorio
+  # coincida con la rama/PR, y la rama de esta disciplina es
+  # feat/US-013-cancelacion-reembolso-qa, que no coincide con ninguno de los
+  # dos directorios de código (-backend/-frontend-web). Único artefacto:
+  # qa-plan.md (sin proposal/tasks/design propios, Modo A no los requiere).
+  #
+  # ESTADO DE BLOQUEO: backend mergeado a main (e296d3f, PR #66) — la capa de
+  # aceptación API-level (4 test cases), contract testing (1) y carga (1)
+  # corren HOY. Frontend-web con PR #67 abierto, no mergeado todavía — la
+  # capa E2E de navegador (6 test cases) y accesibilidad L3 (1) quedan
+  # blocked_by ese merge. 15 test cases totales, 7 ejecutables hoy.
+  #
+  # HALLAZGO QA-013-F1 (declarado, no un gap nuevo): AC-3 (reembolso real
+  # MercadoPago) no tiene NINGÚN camino de API real en este entorno que
+  # produzca una orden con pago provider='mercadopago' approved — a
+  # diferencia del hallazgo gemelo QA-010-F1 (que sí tenía un punto de
+  # partida y sólo bloqueaba el desenlace), acá falta el punto de partida
+  # mismo. Cobertura 100% dev-owned (cancel-order.service.spec.ts,
+  # e2e-payments-cancel-order.spec.ts, MercadoPagoClient mockeado por DI de
+  # NestJS) — ninguna aceptación/E2E de este plan intenta producirlo
+  # black-box. 2 charters exploratorios documentan el gap y la recuperación
+  # pendiente el día que exista cuenta sandbox.
+  #
+  # SIEMBRA: ningún mecanismo nuevo — reusa qa/support/seed-metricas.ts
+  # (crearOrdenActiva/crearOrdenPendiente/simularPagoAutomatico/
+  # confirmarPagoManual/catalogoParaMetricas) sin extensión; la transición a
+  # "cancelled" es siempre la acción bajo prueba (POST real), nunca un
+  # bridge — a diferencia de seed-ordenes.ts (US-012), este plan no necesita
+  # ningún @dsm/db nuevo.
+  #
+  # 2 open questions no bloqueantes (aprovisionar sandbox de MercadoPago;
+  # validar el copy de refund_pending contra un reembolso real).
+  estimate-hours: 4.0   # AI-asistido, 15 test cases (9 escenarios Gherkin +
+  # 1 contrato + 1 k6 + 2 charters), 7 ejecutables hoy / 8 blocked_by PR #67.
+  # US §7 presupuesta QA-US-013 en 4-6h tradicional — este plan queda en el
+  # piso del rango por reutilización total de seed-metricas.ts (sin seeding
+  # nuevo) y por declarar AC-3 bloqueado en vez de intentar cubrirlo.
+  assignee: sin-asignar
+  branch: null
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null
