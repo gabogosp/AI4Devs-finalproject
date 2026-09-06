@@ -176,7 +176,7 @@ language: es
     personal.
   - **Verify**: `pnpm --filter @dsm/web vitest run src/features/account/AccountDeletedNotice.test.tsx`
 
-- [ ] **T4.3 — `MiCuentaScreen` (componente nuevo) — levanta el estado por encima del guard**
+- [x] **T4.3 — `MiCuentaScreen` (componente nuevo) — levanta el estado por encima del guard**
   - **Pattern**: `per design.md §D3` — el componente EXACTO citado ahí
     (`useState<boolean>` + `if (deleted) return <AccountDeletedNotice />`).
   - **Exit criterion**: con `deleted=false` (inicial), renderiza
