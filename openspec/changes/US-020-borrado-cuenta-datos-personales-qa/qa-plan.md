@@ -24,6 +24,34 @@
 > para los 3 charters (TC-020-E1 pendiente de ejecución real —sondeo de ráfaga—,
 > TC-020-E2 revisión de código ejecutada y confirmada, TC-020-E3 bloqueado por
 > ausencia de frontend).
+>
+> **Re-verificación independiente (2026-09-06, misma sesión, worktree/DB propios)**:
+> se reprodujo la suite completa de forma aislada y se encontraron y corrigieron
+> 2 problemas reales antes de confiar el resultado — ninguno es un defecto de
+> `AccountDeletionService`/`DELETE /v1/me`:
+> 1. **`qa/scripts/api-up.sh` no elevaba `ACCOUNT_DELETION_RATE_LIMIT_MAX`**
+>    (mismo patrón que ya cubre `PAYMENTS_SIMULATE_RATE_LIMIT_MAX`/
+>    `ORDER_RETENTION_SWEEP_RATE_LIMIT_MAX`/etc.) — con el presupuesto real de
+>    producción (5/hora), re-correr la suite 26-escenarios más de una vez
+>    contra la misma instancia agota el contador en memoria y empieza a
+>    devolver 429 donde el escenario espera 204/409. Agregado al script.
+> 2. **Bug real en `borrado-cuenta.steps.ts`**: N-6/N-6b marcaban la posición
+>    del log con `marcaDeLog()` (default `/tmp/api.log`, convención de
+>    `customer-auth.ts`) pero leían con `leerLogApi()` (default
+>    `/tmp/dsm-qa-api-us010.log`, convención de `api-log.ts`) — **dos archivos
+>    distintos**. Aislado y reproducido al 100% (`--name "N-6"` sin el resto de
+>    la suite alrededor, así se corrigió: la carrera con LOG_LEVEL/timing no
+>    era la causa real, aunque parecía serlo — dos hipótesis de timing
+>    descartadas por evidencia antes de encontrar la causa real). Corregido
+>    pasando `API_LOG_FILE` (de `api-log.ts`) explícito a `marcaDeLog()` en
+>    ambos puntos, alineando marcador y lector al mismo archivo.
+>
+> Con los dos fixes: **26/26 en 4 corridas consecutivas** contra la misma
+> instancia (antes: fallaba de forma intermitente/determinista según cuál de
+> los dos bugs se disparara), y **k6 re-confirmado**: p95 = 15.37ms (10/10
+> checks, 0% `http_req_failed`) — coincide con la medición original de la
+> ejecución (15.52ms), confirmando que esa parte ya estaba genuinamente
+> correcta.
 > **Affected platform(s)**: backend (superficie única planeada por ahora — no hay
 > `US-020-...-frontend-web` en `openspec/changes/` ni en el índice)
 > **Service tier(s)**: 2 (`docs/services/dsm-ecommerce/runbook.md` frontmatter —

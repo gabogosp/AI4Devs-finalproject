@@ -27,7 +27,7 @@ import {
 import { avanzarEstado } from '../../support/seed-metricas';
 import { cancelarOrden } from '../../support/cancelar-orden';
 import { QA_API_BASE_URL, QA_WEB_BASE_URL } from '../../support/qa-env';
-import { leerLogApi } from '../../support/api-log';
+import { API_LOG_FILE, leerLogApi } from '../../support/api-log';
 import { Invitado } from '../../support/cart-client';
 import { buildCheckoutBody } from '../../support/builders';
 import type { CatalogWorld } from './world';
@@ -930,7 +930,16 @@ Given('un cliente con nombre, email y teléfono reales y conocidos', async funct
   e.email = `qa-us020-log-${sufijo}@example.test`;
   e.phone = '+54 9 351 555 9876';
   e.cliente = await registrarConTelefono(e.nombre, e.email, e.phone, PASSWORD_VALIDA);
-  e.marca = marcaDeLog();
+  // `marcaDeLog()` por defecto marca `/tmp/api.log` (convención de
+  // `customer-auth.ts`, usada para `tokenDeResetDesde` más abajo en este
+  // mismo archivo), pero estas dos aserciones leen con `leerLogApi()`
+  // (`api-log.ts`, `/tmp/dsm-qa-api-us010.log` por defecto) — DOS archivos
+  // distintos. Sin este `API_LOG_FILE` explícito, la marca queda tomada
+  // sobre un archivo y la lectura sobre otro: el offset no significa nada
+  // en el archivo que realmente se lee, y "no encontré el evento" no
+  // distingue de "estoy mirando el archivo equivocado" (bug real,
+  // encontrado en una corrida real — N-6 fallaba 100% al aislarlo).
+  e.marca = marcaDeLog(API_LOG_FILE);
 });
 
 // "Cuando borra su cuenta" ya está definido arriba (H-2) — mismo texto exacto,
@@ -953,13 +962,30 @@ Then(
   },
 );
 
-Then('el registro operativo permite saber que hubo un borrado y cuándo, sin identificar a la persona', function (
-  this: CatalogWorld,
-) {
-  const e = est(this);
-  const log = leerLogApi().slice(e.marca ?? 0);
-  assert.ok(/account\.deleted/.test(log), 'el log no registra evidencia del evento account.deleted');
-});
+Then(
+  'el registro operativo permite saber que hubo un borrado y cuándo, sin identificar a la persona',
+  PASO,
+  async function (this: CatalogWorld) {
+    const e = est(this);
+    // Mismo criterio que esperarAviso (api-log.ts): pino/sonic-boom es un
+    // transporte asíncrono — el paso anterior ya esperó 300ms para SU propia
+    // lectura, pero esta es una lectura independiente y el evento
+    // `account.deleted` puede llegar a disco en un instante ligeramente
+    // distinto del resto de las líneas ya escaneadas. Espera activa acotada
+    // en vez de asumir que el flush anterior alcanza para esta aserción
+    // también (encontrado flaky en una corrida real — 1/2 sin este ajuste).
+    const limite = Date.now() + 3_000;
+    let encontrado = false;
+    while (Date.now() < limite) {
+      if (/account\.deleted/.test(leerLogApi().slice(e.marca ?? 0))) {
+        encontrado = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    assert.ok(encontrado, 'el log no registra evidencia del evento account.deleted');
+  },
+);
 
 Given('un cliente con nombre, email y teléfono reales y conocidos, con una orden en curso', PASO, async function (
   this: CatalogWorld,
@@ -972,7 +998,16 @@ Given('un cliente con nombre, email y teléfono reales y conocidos, con una orde
   e.cliente = await registrarConTelefono(e.nombre, e.email, e.phone, PASSWORD_VALIDA);
   const slug = await sembrarProductoPublicado();
   await ordenPendienteParaSesion(e.cliente, slug);
-  e.marca = marcaDeLog();
+  // `marcaDeLog()` por defecto marca `/tmp/api.log` (convención de
+  // `customer-auth.ts`, usada para `tokenDeResetDesde` más abajo en este
+  // mismo archivo), pero estas dos aserciones leen con `leerLogApi()`
+  // (`api-log.ts`, `/tmp/dsm-qa-api-us010.log` por defecto) — DOS archivos
+  // distintos. Sin este `API_LOG_FILE` explícito, la marca queda tomada
+  // sobre un archivo y la lectura sobre otro: el offset no significa nada
+  // en el archivo que realmente se lee, y "no encontré el evento" no
+  // distingue de "estoy mirando el archivo equivocado" (bug real,
+  // encontrado en una corrida real — N-6 fallaba 100% al aislarlo).
+  e.marca = marcaDeLog(API_LOG_FILE);
 });
 
 When('intenta borrar su cuenta y es rechazado por esa orden', async function (this: CatalogWorld) {
