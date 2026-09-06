@@ -178,7 +178,7 @@
 
 ## Phase 8 — SummaryCards (AC-3, AC-4, AC-5, AC-6, AC-8, AC-9)
 
-- [ ] T8.1 `src/features/metrics/SummaryCards.tsx` — `'use client'`; 4
+- [x] T8.1 `src/features/metrics/SummaryCards.tsx` — `'use client'`; 4
       tarjetas (órdenes totales, monto facturado ARS, + desglose por los 4
       estados activos `new/preparing/ready/delivered`); caption informativo
       fijo ("Sólo se cuentan órdenes confirmadas por pago aprobado" — AC-8,
