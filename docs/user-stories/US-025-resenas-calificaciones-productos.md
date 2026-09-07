@@ -9,7 +9,7 @@ prd-capacity: null   # no nace del PRD §2.1: hallazgo de la prueba visual del d
 # calificaciones es la parte que genuinamente nunca estuvo en el PRD ni en el roadmap
 # §2.2. Mismo patrón que US-009/US-022/US-024 (`prd-capacity: null`).
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: Medium
 estimate-tshirt: L
 story_points_traditional: 13
@@ -17,9 +17,10 @@ story_points_ai_assisted: 6
 estimation_basis: "Disciplina dominante BE: schema nuevo (reviews) + regla de elegibilidad por compra entregada (join contra orders/order_items, no un simple 'está logueado') + agregado de rating promedio con caché/recalculo + endpoint de moderación admin (Cohn 2005 §10, 10 SP). FE: form de reseña + estrellas + lista paginada + estado de moderación (Cohn 2005 §8, 6 SP). Se toma el dominante × 0.6 (feature nueva de scope grande, no acotada como US-024) = 6, mismo criterio de agregado que otras US de este proyecto."
 language: es
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-07
 ready-at: 2026-09-06
 in-progress-at: 2026-09-06
+done-at: 2026-09-07
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
 linear-issue-id: null
