@@ -257,7 +257,7 @@ arranque la Fase B.
     de `events.ts` confirma que ninguno de los 3 acepta una propiedad `comment`/`authorName`.
   - **Verify**: `pnpm --filter @dsm/web test -- events`
 
-- [ ] **T-B6 — `api-stub.mjs`: superficie de reviews para el E2E dev-owned**
+- [x] **T-B6 — `api-stub.mjs`: superficie de reviews para el E2E dev-owned**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend, T-B0
   - **Pattern**: `per apps/web/e2e/support/api-stub.mjs` líneas ~624 (`/v1/me` DELETE) — mismo
     criterio de cookies+CSRF real, header de fuerza para simular 403/422 sin sembrar datos

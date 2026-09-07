@@ -264,6 +264,16 @@ let ordenSecuencia = 1000;
 const BUYER_PHONE_RE = /^\+?[0-9 ()-]{8,20}$/;
 
 /**
+ * Reseñas propias (US-025 T-B6/T-B7), por `customerId:productId` — mismo
+ * criterio que `sessions`: sólo lo que la topología de `/v1/me/reviews/*`
+ * necesita afirmar (design.md §D6), no una reproducción de la regla de
+ * elegibilidad real (`hasDeliveredOrderWithProduct`, propiedad del backend
+ * archivado) — los 403/422 de este spec salen por header de fuerza, nunca
+ * por sembrar una orden `delivered` real.
+ */
+let reviews = new Map();
+
+/**
  * Arma el sobre del carrito con la MISMA semántica que el backend: el total suma
  * sólo las líneas comprables (una línea no comprable en el total es un número que
  * el checkout desmiente) y `has_blocking_issues` es la señal que apaga el CTA.
@@ -466,6 +476,12 @@ const server = createServer(async (req, res) => {
       sessions = new Map();
       cuentasBorradas = new Set();
       ultimoResetToken = new Map();
+    }
+    // `reviews` es su propio alcance (US-025 T-B6), mismo criterio que
+    // `checkout`/`auth`: opt-in para no interferir con specs de otra
+    // superficie corriendo en paralelo.
+    if (scope === 'reviews') {
+      reviews = new Map();
     }
     // El log NO se limpia acá a propósito: es diagnóstico append-only, no
     // estado del fixture. Si el reset lo borrara, un spec corriendo en paralelo
@@ -709,6 +725,81 @@ const server = createServer(async (req, res) => {
     customer.name = nombre;
     customer.avatar_url = avatarUrl;
     return json(res, 200, vistaPublica(customer));
+  }
+
+  // --- Reseñas y calificaciones de productos (US-025 T-B6/T-B7) ---
+  //
+  // Mismo criterio que el borrado de cuenta de arriba: cookies+CSRF REALES
+  // (double-submit), y headers de fuerza (`x-force-not-eligible`,
+  // `x-force-invalid-rating`) para simular el 403 (AC-6) y el 422 (AC-9) sin
+  // tener que sembrar una orden `delivered` real — la regla de elegibilidad
+  // en sí es responsabilidad del backend archivado
+  // (`hasDeliveredOrderWithProduct`), no de este stub de topología.
+  //
+  // Métodos reales del contrato publicado (`apps/api/docs/api/openapi.yaml`):
+  // `GET`/`PUT` en `/me/reviews/{slug}` (`getOwnReview`/`upsertOwnReview`) —
+  // el path param es el `slug` del producto, no un UUID (PR #135 — el
+  // contrato original exigía UUID, imposible de obtener desde la ficha
+  // pública que sólo conoce el `slug`; resuelto server-side).
+  if (path.startsWith('/v1/me/reviews/')) {
+    const slug = path.slice('/v1/me/reviews/'.length);
+    const cookies = leerCookies(req);
+    const sesion = sessions.get(cookies.dsm_access);
+    if (!sesion) {
+      return problem(res, 401, 'dsm:auth/unauthenticated', 'Unauthorized', {});
+    }
+
+    if (req.method === 'GET') {
+      const existente = reviews.get(`${sesion.customerId}:${slug}`);
+      return json(res, 200, { eligible: true, review: existente ?? null });
+    }
+
+    if (req.method === 'PUT') {
+      const csrfHeader = req.headers['x-csrf-token'];
+      if (!req.headers.origin || csrfHeader !== sesion.csrf) {
+        return problem(res, 403, 'dsm:auth/csrf-failed', 'Forbidden', {});
+      }
+      // AC-6: header de fuerza — el cliente no compró el producto entregado.
+      if (req.headers['x-force-not-eligible'] === '1') {
+        return problem(res, 403, 'dsm:reviews/not-eligible', 'Forbidden', {
+          detail: 'No compraste este producto en una orden entregada.',
+        });
+      }
+      // AC-9: header de fuerza — rating fuera de 1-5 (el stub no repite la
+      // validación real del DTO, la simula determinísticamente).
+      if (req.headers['x-force-invalid-rating'] === '1') {
+        return problem(res, 422, 'dsm:reviews/invalid-rating', 'Unprocessable Entity', {
+          detail: 'La calificación tiene que estar entre 1 y 5.',
+        });
+      }
+      const body = await readBody(req);
+      const key = `${sesion.customerId}:${slug}`;
+      const previa = reviews.get(key);
+      const review = {
+        id: previa?.id ?? nuevoUuid(),
+        rating: body.rating,
+        comment: body.comment ?? null,
+        hidden: previa?.hidden ?? false,
+        created_at: previa?.created_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      reviews.set(key, review);
+      return json(res, previa ? 200 : 201, review);
+    }
+
+    return notFound(res);
+  }
+
+  // GET público de reseñas de un producto (AC-3/AC-4) — sin sesión, siempre
+  // excluye ocultas (design.md §D5/§D8, no hay ninguna reseña oculta que
+  // este stub necesite modelar: la topología del rewrite no depende de eso).
+  if (req.method === 'GET' && path.startsWith('/v1/products/') && path.endsWith('/reviews')) {
+    return json(res, 200, {
+      average: null,
+      count: 0,
+      data: [],
+      pagination: { limit: 20, offset: 0, total: 0 },
+    });
   }
 
   // --- Superficie pública de categorías (US-002) ---
