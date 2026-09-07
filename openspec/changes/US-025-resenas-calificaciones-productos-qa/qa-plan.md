@@ -168,18 +168,41 @@ que exige una orden ligada a un cliente logueado. Se construyó
 
 ## 5. E2E Playwright (cross-stack)
 
-- [ ] **QA-025-E2E-1**: Spec Playwright — dejar y editar una reseña desde la ficha
+- [x] **QA-025-E2E-1**: Spec Playwright — dejar y editar una reseña desde la ficha
   - Exit criterion: `qa/e2e/resenas.spec.ts` — con una orden `delivered`
     sembrada, navega a la ficha, deja una reseña, la edita, verifica que el
     promedio se actualiza.
   - Verify: `pnpm --filter @dsm/qa exec playwright test resenas.spec.ts --reporter=list` (exit 0, cuando FE-US-025 exista)
-  - **Blocked-by**: FE-US-025.
+  - **Nota de ejecución (2026-09-07)**: verde, 3 corridas limpias en proceso
+    fresco (stack aislado propio). Encontró un defecto real de backend
+    (`StorefrontCacheInterceptor` a nivel de clase cacheaba
+    `GET /products/:slug/reviews` con el mismo TTL que el precio — el
+    promedio no se refetcheaba tras dejar una reseña, violando AC-3 en la
+    práctica). No se debilitó el assert; se reportó y BE lo corrigió (PR
+    #139, `@StorefrontCache({maxAge:0, swr:0})` sólo en esa ruta) antes de
+    cerrar esta task.
 
-- [ ] **QA-025-E2E-2**: Spec Playwright — sin control de reseña si no es elegible
+- [x] **QA-025-E2E-2**: Spec Playwright — sin control de reseña si no es elegible
   - Exit criterion: con un cliente sin compra `delivered` de ese producto,
     la ficha no muestra el control de reseñar.
   - Verify: incluido en el mismo spec de arriba, corrida separada.
-  - **Blocked-by**: FE-US-025.
+  - **Nota de ejecución (2026-09-07)**: verde — 2 escenarios separados
+    (E2E-2a: cliente logueado que nunca compró; E2E-2b: invitado sin
+    sesión), ambos sin el `radiogroup` de calificación visible.
+
+- [x] **QA-025-E2E-3 (agregado tras el cierre de US-022/TC-731)**: moderación
+  por UI — el dueño oculta una reseña desde `/admin/productos/{id}` y deja
+  de verse en la ficha pública.
+  - Exit criterion: `qa/e2e/resenas.spec.ts` — login admin real (form de
+    `/admin/acceso`, bootstrap token), oculta la reseña desde
+    `ProductReviewsModeration`, y una **navegación nueva** a la ficha
+    pública (no el estado optimista del propio panel admin) confirma que
+    ya no aparece.
+  - Verify: incluido en `resenas.spec.ts`, mismo comando que QA-025-E2E-1.
+  - **Nota de ejecución (2026-09-07)**: verde, 3 corridas limpias. Mismo
+    defecto de caché que QA-025-E2E-1 lo bloqueaba (la ficha pública no
+    reflejaba el ocultamiento hasta que expiraba el caché) — resuelto por
+    el mismo fix (PR #139).
 
 - [ ] **QA-025-A11Y-1**: axe-core sobre el control de estrellas + lista de reseñas
   - Exit criterion: `qa/e2e/resenas-a11y.spec.ts` corre axe sobre la sección

@@ -1,8 +1,9 @@
 # Tasks — US-025 QA: reseñas y calificaciones de productos
 
-> Este change **planifica**, no ejecuta. La única task es escribir el plan;
-> la ejecución real es `/develop-qa US-025`, bloqueada hasta que exista al
-> menos el endpoint de reseñas (BE-US-025).
+> Nació como planificación pura (Modo B, antes de BE/FE) y se ejecutó en 3
+> fases a medida que BE/FE aterrizaron: T-QA1 (escribir el plan), T-QA2
+> (aceptación BDD, 9/9), T-QA3 (E2E Playwright, 4/4 — incluye un defecto
+> real de backend encontrado y corregido en el camino).
 
 ## Traceability matrix
 
@@ -62,9 +63,51 @@ Los 9 AC de US-025 quedan cubiertos, uno a uno, en `qa-plan.md` §3.
     por defecto, obligatorio en prod) — documentado para la próxima corrida.
     Postgres/Redis/API propios (puertos 55700/56700/45509).
 
+## Fase 3 — E2E Playwright (FE ya mergeado)
+
+- [x] T-QA3 Scaffoldear y correr `qa/e2e/resenas.spec.ts` (navegador real,
+  sin stubs, mismo patrón que `cuenta-compras-cross-stack.spec.ts`) contra
+  el FE+BE reales: QA-025-E2E-1 (dejar/editar reseña, ver promedio), E2E-2a/b
+  (sin control si no elegible — logueado sin compra, e invitado), y E2E-3
+  (moderación por UI, agregado tras el cierre de US-022/TC-731).
+  - **Exit criterion**: los 4 escenarios terminan en verde, en stack aislado
+    propio (Postgres/Redis/API/web), navegador real de punta a punta.
+  - **Verify**: `env QA_API_BASE_URL=... QA_WEB_BASE_URL=... npx playwright test resenas.spec.ts --config=e2e/playwright.config.ts --reporter=list` (exit 0, "4 passed")
+  - **Nota de ejecución (2026-09-07)**: primera corrida — 2/4 verdes
+    (E2E-2a/2b), 2 rojos (E2E-1, E2E-3 moderación) por un **defecto real de
+    backend**: `StorefrontCacheInterceptor` (US-002/US-003 AC-9, pensado
+    para el precio) está aplicado a nivel de CLASE en `StorefrontController`
+    — `GET /products/:slug/reviews` heredaba el mismo `Cache-Control:
+    public, max-age=60, stale-while-revalidate=30`. Confirmado con logs de
+    red: el navegador servía la respuesta cacheada (mismo `{average:0,
+    count:0}`) incluso después de un PUT/PATCH exitoso — `loadPublic()` del
+    FE disparaba el refetch pero nunca llegaba a la red. No se debilitó el
+    assert; se reportó tal cual (root cause + evidencia) y se asignó a otra
+    sesión (BE). **Fix real (PR #139)**: `@StorefrontCache({maxAge:0,
+    swr:0})` sólo en la ruta de reviews, precio/stock intactos. Tras el fix:
+    **4/4 verdes, 3 corridas limpias en proceso fresco** (una corrida
+    repetida en el MISMO proceso largo mostró fallas intermitentes de
+    registro — ver nota de riesgo abajo, no bloqueante). Un ajuste de test
+    (no de producto): `getByText('Anduvo bien...')` matcheaba también el
+    `<textarea>` con el mismo valor tipeado (violación de "strict mode" de
+    Playwright) — se acotó a `page.locator('li', {hasText: ...})`.
+
+## Nota de riesgo (no bloqueante, no investigado a fondo)
+
+Al re-correr la suite VARIAS veces seguidas contra el MISMO proceso de API
+ya arrancado (sin reiniciarlo), el registro de cuenta (`POST /v1/auth/register`
+vía UI) empezó a fallar intermitentemente (el redirect a `/mi-cuenta` nunca
+llegaba) — sin ningún error visible en el log de la API. 3 corridas en
+proceso FRESCO (reinicio completo, patrón realista de CI) fueron limpias
+las 3. Podría ser contención de recursos de esta máquina (mismo mecanismo
+que el hallazgo de baja confianza de `e2e-auth-csrf.spec.ts` en la
+verificación de `main`, PR #135) o un throttler acumulando estado entre
+corridas repetidas del mismo proceso — no se investigó cuál. Documentado
+para que quede en el radar, no bloquea el cierre de esta task.
+
 ## Próximo paso
 
-E2E Playwright + a11y + el escenario de moderación a nivel UI (`qa-plan.md`
-§5, agregado por pedido de la coordinadora) quedan **bloqueados** hasta que
-`FE-US-025` (Fase B, moderación) exista. Avisar a la coordinadora cuando ese
-change abra su PR.
+`/commit` de este change — 3/3 fases cerradas (T-QA1 planificación, T-QA2
+aceptación BDD, T-QA3 E2E). a11y (`qa-plan.md` QA-025-A11Y-1) queda fuera
+de esta iteración — no fue pedida por la coordinadora, se puede retomar
+como follow-up si se prioriza.
