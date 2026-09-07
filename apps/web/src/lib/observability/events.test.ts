@@ -110,4 +110,39 @@ describe('observability — eventos de negocio', () => {
       }
     });
   });
+
+  describe('eventos de reseñas (US-025 T-B5)', () => {
+    const EVENTOS_DE_RESENAS = [
+      'review_shown',
+      'review_submitted',
+      'review_submit_failed',
+    ] as const;
+
+    it('ninguno lleva operator_id: los emite un cliente/visitante, no el dueño', () => {
+      const sink = vi.fn();
+      setEventSink(sink);
+
+      for (const evento of EVENTOS_DE_RESENAS) track(evento);
+
+      for (const [, props] of sink.mock.calls) {
+        expect(props).not.toHaveProperty('operator_id');
+      }
+      expect(sink).toHaveBeenCalledTimes(EVENTOS_DE_RESENAS.length);
+    });
+
+    it('el tipo de props rechaza comment/authorName en compilación (observability-standards §9)', () => {
+      // @ts-expect-error — el comentario es texto libre del cliente, nunca telemetría.
+      track('review_submitted', { comment: 'Excelente producto' });
+      // @ts-expect-error — el nombre del autor es PII, nunca telemetría.
+      track('review_shown', { authorName: 'Ana Gómez' });
+
+      // Sin este assert el test sería sólo una comprobación de tipos (útil,
+      // pero silenciosa) — confirma además que la llamada emite igual, sin
+      // las props prohibidas colándose por el spread.
+      const sink = vi.fn();
+      setEventSink(sink);
+      track('review_submitted');
+      expect(sink).toHaveBeenCalledWith('review_submitted', {});
+    });
+  });
 });

@@ -247,7 +247,7 @@ arranque la Fase B.
     (el container es la única hoja `'use client'`, mismo patrón que `ProductPurchase.tsx`).
   - **Verify**: `pnpm --filter @dsm/web test -- ProductDetail`
 
-- [ ] **T-B5 — Eventos de telemetría**
+- [x] **T-B5 — Eventos de telemetría**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend
   - **Pattern**: `per events.ts` — nuevos `BusinessEvent`: `review_shown`, `review_submitted`,
     `review_submit_failed`; los tres agregados a `PUBLIC_EVENTS` (superficie de cliente, no de

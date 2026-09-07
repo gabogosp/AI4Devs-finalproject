@@ -132,13 +132,46 @@ export type BusinessEvent =
   // `name`/`avatar_url`, sólo el nombre del evento.
   | 'profile_edit_attempted'
   | 'profile_edit_succeeded'
-  | 'profile_edit_failed';
+  | 'profile_edit_failed'
+  // Reseñas y calificaciones de productos (US-025). Superficie de cliente
+  // (comprador o visitante viendo la ficha), no de operador — van en
+  // `PUBLIC_EVENTS`, mismo criterio que `pdp_shown`/`order_history_*`.
+  // Ninguno de los tres lleva `comment` ni `authorName`: el comentario es
+  // texto libre del cliente y el nombre es PII (`observability-standards.md`
+  // §9) — el tipo de `track()` lo rechaza en compilación, no sólo por
+  // convención (ver `ReviewEventProps` abajo).
+  | 'review_shown'
+  | 'review_submitted'
+  | 'review_submit_failed';
 
 export interface EventProps {
   operator_id?: string;
   correlation_id?: string;
   [key: string]: unknown;
 }
+
+/**
+ * Props permitidas para los eventos de reseñas (US-025 T-B5): un `Omit` no
+ * alcanza por sí solo porque el índice `[key: string]: unknown` de
+ * `EventProps` sigue aceptando cualquier clave extra — `comment`/
+ * `authorName` se fijan explícitamente en `never` para que asignar
+ * cualquiera de las dos sea un error de compilación, no una convención que
+ * alguien puede romper sin que nada lo note.
+ */
+type ReviewEventProps = Omit<EventProps, 'comment' | 'authorName'> & {
+  comment?: never;
+  authorName?: never;
+};
+
+/**
+ * Los tres eventos de reseñas, como tipo aparte (no sólo un `Extract` en el
+ * overload): `Exclude<BusinessEvent, ReviewEvent>` en el overload general de
+ * abajo es lo que impide que la sobrecarga permisiva "atrape" estos tres
+ * nombres cuando la específica rechaza `comment`/`authorName` — sin esa
+ * exclusión, TypeScript prueba la sobrecarga general como alternativa válida
+ * y el error de tipo desaparece en silencio.
+ */
+type ReviewEvent = 'review_shown' | 'review_submitted' | 'review_submit_failed';
 
 type Sink = (event: BusinessEvent, props: EventProps) => void;
 
@@ -197,8 +230,15 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'profile_edit_attempted',
   'profile_edit_succeeded',
   'profile_edit_failed',
+  // Los emite el cliente (o un visitante) leyendo/dejando reseñas de un
+  // producto — no el dueño. Mismo criterio que los de auth/historial.
+  'review_shown',
+  'review_submitted',
+  'review_submit_failed',
 ]);
 
+export function track(event: ReviewEvent, props?: ReviewEventProps): void;
+export function track(event: Exclude<BusinessEvent, ReviewEvent>, props?: EventProps): void;
 export function track(event: BusinessEvent, props: EventProps = {}): void {
   const base: EventProps = PUBLIC_EVENTS.has(event) ? {} : { operator_id: 'admin' };
   sink(event, { ...base, ...props });
