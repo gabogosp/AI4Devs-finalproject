@@ -288,7 +288,7 @@ arranque la Fase B.
 
 ### Vista admin de moderación (AC-8, confirmada en alcance — `design.md` §D8)
 
-- [ ] **T-B9 — `adminReviewsService.ts` (repositorio, superficie admin)**
+- [x] **T-B9 — `adminReviewsService.ts` (repositorio, superficie admin)**
   - **Pattern**: `per productsService.ts` — llama las operaciones generadas directamente (sin
     marca `session`, el token admin viaja por `Authorization: Bearer` desde
     `getAuthToken()`/`adminSession`, mismo mecanismo que `updateProduct`); `parseContract` sobre
