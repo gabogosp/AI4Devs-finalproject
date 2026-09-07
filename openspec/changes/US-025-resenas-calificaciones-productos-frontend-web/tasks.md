@@ -261,7 +261,7 @@ arranque la Fase B.
     nunca con `fetch` real.
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewsDataContainer`
 
-- [ ] **T-B4 — Componer en `ProductDetail.tsx`**
+- [x] **T-B4 — Componer en `ProductDetail.tsx`**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend, T-B3
   - **Exit criterion**: `ReviewsDataContainer` se renderiza debajo del bloque de descripción,
     recibiendo `productSlug={product.slug}`; `ProductDetail.tsx` sigue siendo Server Component
