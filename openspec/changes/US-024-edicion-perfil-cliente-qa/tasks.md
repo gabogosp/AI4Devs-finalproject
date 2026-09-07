@@ -48,7 +48,32 @@ Los 7 AC de US-024 quedan cubiertos, uno a uno, en `qa-plan.md` §3.
     (§5 de `qa-plan.md`) siguen `Blocked-by: FE-US-024` — sin cambios, el FE
     todavía no aterrizó.
 
+## Fase 3 — E2E Playwright + a11y (FE ya mergeado, PR #133)
+
+- [x] T-QA3 Escribir y correr `qa/e2e/perfil.spec.ts` (QA-024-E2E-1) y
+  `qa/e2e/perfil-a11y.spec.ts` (QA-024-A11Y-1) contra el FE real.
+  - **Exit criterion**: `perfil.spec.ts` cubre AC-1 (nombre + reflejo en
+    buyer_name del próximo checkout), AC-2/AC-3 (avatar set/quitar), AC-5
+    (URL inválida); `perfil-a11y.spec.ts` cubre 0 violaciones WCAG AA en 3
+    estados del form (sin avatar, con avatar, con error), navegación sólo
+    con teclado, y nombre accesible del placeholder de avatar.
+  - **Verify**: `pnpm --filter @dsm/qa exec playwright test -c e2e/playwright.config.ts perfil.spec.ts` (3/3) + `pnpm --filter @dsm/qa exec playwright test -c e2e/playwright.a11y.config.ts perfil-a11y.spec.ts` (5/5), Postgres/API/web aislados propios (puertos 5443/3891/3892).
+  - **Nota de ejecución (2026-09-07)**: 8/8 verdes. Dos hallazgos reales
+    corregidos en el camino (no ambigüedad de locator, defectos de verdad):
+    1. `POST /auth/register` tiene un `@Throttle` literal de 5/hora que
+       `AUTH_RATE_LIMIT_MAX` de `api-up.sh` no levanta (no lee env) — fix:
+       `X-Forwarded-For` único por página vía `page.setExtraHTTPHeaders`,
+       mismo criterio que `customer-auth.ts` ya usa para `APIRequestContext`.
+    2. **Bug de contraste real en `avatarColor()`** (`apps/web/src/lib/format/avatar.ts`,
+       US-024 FE): `lightness: 55%` daba hasta 1.54:1 de contraste contra el
+       texto blanco de las iniciales en el peor hue (amarillo ~60°) — muy
+       por debajo del 3:1/4.5:1 de WCAG AA. Corregido a `lightness: 25%`
+       (peor caso verificado en los 360 hues: 5.76:1). Test de regresión
+       agregado en `avatar.test.ts` (recorre los 360 hues con la fórmula de
+       contraste real de WCAG, no un caso puntual).
+
 ## Próximo paso
 
-E2E Playwright + a11y (`qa-plan.md` §5) quedan **bloqueados** hasta que
-`FE-US-024` exista. Avisar a la coordinadora cuando ese change abra su PR.
+Los 7 AC de US-024 quedan verificados en las 3 capas (BDD acceptance, E2E,
+a11y). Avisar a la coordinadora para el archive de esta QA change → US-024
+pasa a `Done`.

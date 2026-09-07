@@ -133,20 +133,26 @@ para afirmar el comportamiento real (más estricto, mismo AC cumplido). Ver
 
 ## 5. E2E Playwright (cross-stack)
 
-- [ ] **QA-024-E2E-1**: Spec Playwright — editar nombre y avatar desde "Mi cuenta"
+- [x] **QA-024-E2E-1**: Spec Playwright — editar nombre y avatar desde "Mi cuenta"
   - Exit criterion: `qa/e2e/perfil.spec.ts` navega a `/mi-cuenta`, edita el
     nombre, pega una URL de avatar válida, guarda, y verifica ambos cambios
     reflejados sin recargar.
   - Verify: `pnpm --filter @dsm/qa exec playwright test perfil.spec.ts --reporter=list` (exit 0, cuando FE-US-024 exista)
-  - **Blocked-by**: FE-US-024.
+  - **Hecho (2026-09-07)**: FE-US-024 aterrizó (PR #133). 3/3 verdes contra
+    Postgres/API/web aislados. Cubre AC-1 (nombre + prefill en buyer_name del
+    próximo checkout), AC-2/AC-3 (avatar set/quitar), AC-5 (URL inválida).
 
-- [ ] **QA-024-A11Y-1**: axe-core sobre el form de edición de perfil
+- [x] **QA-024-A11Y-1**: axe-core sobre el form de edición de perfil
   - Exit criterion: `qa/e2e/perfil-a11y.spec.ts` corre axe (`wcag2a`+`wcag2aa`)
     sobre `/mi-cuenta` en modo edición; 0 violaciones. El placeholder de
     avatar (iniciales) tiene `alt`/`aria-label` describiendo que es un
     avatar por defecto, no una foto real.
   - Verify: `pnpm --filter @dsm/qa test:a11y -- --grep "perfil"` (exit 0, cuando FE-US-024 exista)
-  - **Blocked-by**: FE-US-024.
+  - **Hecho (2026-09-07)**: 5/5 verdes. El placeholder confirmado con
+    `role="img"` + `aria-label="Avatar de {nombre}"` (`Avatar.tsx`). Hallazgo
+    real: `avatarColor()` daba hasta 1.54:1 de contraste en el peor hue
+    (muy por debajo de AA) — corregido a `lightness: 25%` (peor caso 5.76:1
+    en los 360 hues), con test de regresión agregado en `avatar.test.ts`.
 
 ---
 
