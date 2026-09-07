@@ -111,5 +111,34 @@ describe('Storefront caché acotada (e2e-storefront-cache, AC-9)', () => {
       expect(res.status).toBe(422);
       expect(res.headers['cache-control'] ?? '').not.toContain('max-age');
     });
+
+    /**
+     * US-025 — hallazgo real de e9 en el E2E: `GET /products/:slug/reviews`
+     * heredaba el default de 60s del controller (pensado para precio/stock,
+     * US-003 AC-9), así que una reseña recién dejada o recién moderada no se
+     * veía en la próxima lectura hasta que expiraba el caché — viola AC-3/AC-8.
+     * `@StorefrontCache({ maxAge: 0, swr: 0 })` en esa ruta puntual lo corrige
+     * sin tocar el TTL del resto del controller (verificado dos filas abajo).
+     */
+    it('las reseñas públicas NO llevan el TTL de 60s de precio/stock — siempre revalida', async () => {
+      const res = await request(app.getHttpServer()).get(
+        '/v1/products/heladera-cache/reviews',
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe(
+        'public, max-age=0, stale-while-revalidate=0',
+      );
+    });
+
+    it('el override de reseñas no afecta el TTL de la ficha del mismo producto', async () => {
+      const res = await request(app.getHttpServer()).get(
+        '/v1/products/heladera-cache',
+      );
+
+      expect(res.headers['cache-control']).toBe(
+        'public, max-age=60, stale-while-revalidate=30',
+      );
+    });
   });
 });

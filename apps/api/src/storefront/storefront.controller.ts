@@ -12,7 +12,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { StorefrontService } from './storefront.service';
 import { StorefrontProductDto } from './dto/storefront-product.dto';
 import { StorefrontThrottlerGuard } from './storefront-throttler.guard';
-import { StorefrontCacheInterceptor } from './storefront-cache.interceptor';
+import { StorefrontCache, StorefrontCacheInterceptor } from './storefront-cache.interceptor';
 import { CatalogEventsService } from '../observability/catalog-events.service';
 import { ReviewsService } from '../reviews/reviews.service';
 import {
@@ -61,10 +61,19 @@ export class StorefrontProductsController {
   }
 
   /**
-   * Reseñas públicas del producto (US-025 AC-3/AC-4) — mismo throttler/caché
-   * de clase que el resto de la ficha, sin guard/interceptor propio.
+   * Reseñas públicas del producto (US-025 AC-3/AC-4) — mismo throttler/guard
+   * de clase que el resto de la ficha, pero SIN el caché de 60s de
+   * precio/stock (`STOREFRONT_CACHE_DEFAULT`, US-003 AC-9): ese TTL está
+   * pensado para datos que cambian poco (precio, stock), pero acá una
+   * reseña o una moderación recién escritas tienen que verse en la
+   * PRÓXIMA lectura — un cliente que deja su primera reseña no puede ver
+   * el promedio viejo hasta que expire el caché (AC-3). `@StorefrontCache`
+   * ya existe para esto (US-002 D5, "se declara en la ruta, no en el
+   * interceptor") — no hace falta tocar el interceptor ni el resto del
+   * controller.
    */
   @Get(':slug/reviews')
+  @StorefrontCache({ maxAge: 0, swr: 0 })
   async getReviews(
     @Param('slug') slug: string,
     @Query() query: ListReviewsQueryDto,
