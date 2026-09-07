@@ -887,11 +887,11 @@
   blocked_by: [US-008, US-012]    # US-008: orden en `pending_payment` (satisfecho). US-012: el panel donde vive la acción — Fase 12 (FE) construida vía PR #31, cubre AC-2 de esta US (satisfecho).
 - id: US-024
   slug: edicion-perfil-cliente
-  status: QA   # 2026-09-06: BE (#128) y FE (#133) archivados. QA sigue in-progress
-  # (openspec/changes/US-024-edicion-perfil-cliente-qa/): aceptación BDD contra
-  # BE real ya verde (7/7), el E2E de UI queda para la sesión 07 (earmarcado).
-  # US pasa a Done recién cuando ese qa change archive.
+  status: Done   # 2026-09-07: BE (#128), FE (#133) y QA (#136) archivados — las tres
+  # disciplinas cerradas. Los 7 AC verificados en 3 capas (BDD acceptance,
+  # E2E Playwright, a11y axe-core).
   in-progress-at: 2026-09-06
+  done-at: 2026-09-07
   # 2026-09-06: US nueva, nacida de un hallazgo de la prueba visual del
   # dueño (no del PRD — prd-capacity: null, mismo patrón que US-009/US-022). Enriquecida
   # directamente a Ready en la misma sesión (decisiones de producto confirmadas con el
