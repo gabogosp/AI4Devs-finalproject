@@ -981,8 +981,11 @@ export const UpdateProfileResponse = zod.object({
  * `eligible` refleja si el cliente tiene una orden `delivered` con este producto (AC-6) — el FE lo usa para decidir si mostrar el control de reseña. `review` es la reseña propia si existe, SIN IMPORTAR si está oculta por moderación (AC-8 — transparencia hacia el autor); `null` si todavía no reseñó. Requiere sesión (AC-7).
  * @summary Elegibilidad y reseña propia de un producto (US-025 AC-6, AC-7, AC-8)
  */
+export const getOwnReviewPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
 export const GetOwnReviewParams = zod.object({
-  "productId": zod.string().uuid()
+  "slug": zod.string().regex(getOwnReviewPathSlugRegExp)
 })
 
 export const getOwnReviewResponseReviewOneRatingMax = 5;
@@ -1006,8 +1009,11 @@ export const GetOwnReviewResponse = zod.object({
  * Upsert idempotente: crea si no existe, actualiza la MISMA reseña si ya existe (AC-5 — una reseña por cliente por producto). `comment` es opcional (AC-2). Se rechaza con 403 si el cliente no tiene una orden `delivered` con este producto (AC-6, verificado SIEMPRE server-side, sin importar lo que envíe el cliente) y con 422 si `rating` está fuera de 1-5 (AC-9).
  * @summary Dejar o editar la propia reseña de un producto (US-025 AC-1, AC-2, AC-5)
  */
+export const upsertOwnReviewPathSlugRegExp = new RegExp('^[a-z0-9]+(-[a-z0-9]+)*$');
+
+
 export const UpsertOwnReviewParams = zod.object({
-  "productId": zod.string().uuid()
+  "slug": zod.string().regex(upsertOwnReviewPathSlugRegExp)
 })
 
 export const UpsertOwnReviewHeader = zod.object({
@@ -1040,7 +1046,7 @@ export const UpsertOwnReviewResponse = zod.object({
 
 
 /**
- * Soft-flag de moderación — nunca borra la fila ni edita el contenido. `hidden: true` la excluye del agregado y de la lista pública; el autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como oculta (transparencia, no censura invisible).
+ * Soft-flag de moderación — nunca borra la fila ni edita el contenido. `hidden: true` la excluye del agregado y de la lista pública; el autor la sigue viendo en `GET /me/reviews/{slug}`, marcada como oculta (transparencia, no censura invisible).
  * @summary Ocultar/mostrar una reseña (US-025 AC-8)
  */
 export const ModerateReviewParams = zod.object({

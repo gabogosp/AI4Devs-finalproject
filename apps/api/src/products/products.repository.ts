@@ -190,6 +190,21 @@ export class ProductsRepository {
   }
 
   /**
+   * Resuelve `slug → id`, SIN filtrar por estado (US-025 fix, misma razón
+   * que `findManyBySlugs` del carrito): un cliente puede reseñar un producto
+   * que compró y que después el dueño archivó/despublicó — filtrar por
+   * `published` haría que una reseña legítima ya escrita deje de poder
+   * reeditarse, y que AC-1 (reseñar tras `delivered`) falle para productos
+   * discontinuados sin ninguna razón de negocio.
+   */
+  findIdBySlug(slug: string): Promise<{ id: string } | null> {
+    return this.prisma.product.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+  }
+
+  /**
    * Lectura de las líneas del carrito (US-007 T2.2): trae los productos de un
    * conjunto de slugs **sin filtrar por estado**, a propósito.
    *

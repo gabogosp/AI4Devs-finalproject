@@ -15,35 +15,41 @@ export interface OwnReviewResponse {
  * identidad sale EXCLUSIVAMENTE de `req.customerId` (sesión), nunca de un
  * parámetro del request — no hay forma de reseñar "en nombre de" otro
  * cliente.
+ *
+ * El path usa `:slug`, no un UUID (fix post-mortem, ver `reviews.service.ts`):
+ * la ficha del producto (FE) sólo conoce el slug — `StorefrontProductDto`
+ * nunca expone `id` — así que un contrato basado en UUID era irresoluble
+ * desde el único caller real. Mismo identificador público que
+ * `GET /v1/products/:slug` y `GET /v1/products/:slug/reviews`.
  */
 @Controller('v1/me/reviews')
 @UseGuards(CustomerGuard)
 export class CustomerReviewsController {
   constructor(private readonly reviews: ReviewsService) {}
 
-  @Get(':productId')
+  @Get(':slug')
   async getOwn(
     @Req() req: RequestConCliente,
-    @Param('productId') productId: string,
+    @Param('slug') slug: string,
   ): Promise<OwnReviewResponse> {
-    const { eligible, review } = await this.reviews.getOwn(req.customerId!, productId);
+    const { eligible, review } = await this.reviews.getOwn(req.customerId!, slug);
     return { eligible, review: review ? ReviewResponseDto.from(review) : null };
   }
 
   /**
    * `PUT`, no `POST`/`PATCH` (design.md D2): upsert idempotente sobre el
-   * recurso identificado por `:productId` — AC-5 exige que reeditar
-   * actualice la MISMA reseña, nunca cree una segunda.
+   * recurso identificado por `:slug` — AC-5 exige que reeditar actualice la
+   * MISMA reseña, nunca cree una segunda.
    */
-  @Put(':productId')
+  @Put(':slug')
   @HttpCode(200)
   @UseGuards(CsrfGuard)
   async upsertOwn(
     @Req() req: RequestConCliente,
-    @Param('productId') productId: string,
+    @Param('slug') slug: string,
     @Body() dto: UpsertReviewDto,
   ): Promise<ReviewResponseDto> {
-    const review = await this.reviews.upsertOwn(req.customerId!, productId, {
+    const review = await this.reviews.upsertOwn(req.customerId!, slug, {
       rating: dto.rating,
       comment: dto.comment,
     });

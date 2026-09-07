@@ -5,7 +5,7 @@ patch:
   description: |
     Soft-flag de moderación — nunca borra la fila ni edita el contenido.
     `hidden: true` la excluye del agregado y de la lista pública; el
-    autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como
+    autor la sigue viendo en `GET /me/reviews/{slug}`, marcada como
     oculta (transparencia, no censura invisible).
   security:
     - adminBearer: []

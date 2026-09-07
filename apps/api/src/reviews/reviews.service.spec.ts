@@ -20,6 +20,8 @@ describe('ReviewsService (integration)', () => {
   let clienteElegible = '';
   let clienteNoElegible = '';
   let productoPublicado = '';
+  /** `getOwn`/`upsertOwn` toman el slug (fix post-mortem), no el id. */
+  const productoPublicadoSlug = 'taladro-x-svc';
 
   beforeAll(async () => {
     await prisma.$connect();
@@ -95,31 +97,35 @@ describe('ReviewsService (integration)', () => {
 
   describe('getOwn', () => {
     it('elegible sin reseña todavía: eligible true, review null', async () => {
-      const resultado = await service.getOwn(clienteElegible, productoPublicado);
+      const resultado = await service.getOwn(clienteElegible, productoPublicadoSlug);
       expect(resultado).toEqual({ eligible: true, review: null });
     });
 
     it('no elegible: eligible false', async () => {
-      const resultado = await service.getOwn(clienteNoElegible, productoPublicado);
+      const resultado = await service.getOwn(clienteNoElegible, productoPublicadoSlug);
       expect(resultado.eligible).toBe(false);
       expect(resultado.review).toBeNull();
     });
 
     it('AC-8: reseña oculta sigue devolviéndose al autor con hidden true', async () => {
-      const creada = await service.upsertOwn(clienteElegible, productoPublicado, {
+      const creada = await service.upsertOwn(clienteElegible, productoPublicadoSlug, {
         rating: 5,
         comment: null,
       });
       await reviews.setHidden(creada.id, true);
 
-      const propia = await service.getOwn(clienteElegible, productoPublicado);
+      const propia = await service.getOwn(clienteElegible, productoPublicadoSlug);
       expect(propia.review?.hidden_at).not.toBeNull();
+    });
+
+    it('slug inexistente: NotFoundError', async () => {
+      await expect(service.getOwn(clienteElegible, 'no-existe')).rejects.toThrow(NotFoundError);
     });
   });
 
   describe('upsertOwn', () => {
     it('elegible: crea la reseña', async () => {
-      const creada = await service.upsertOwn(clienteElegible, productoPublicado, {
+      const creada = await service.upsertOwn(clienteElegible, productoPublicadoSlug, {
         rating: 4,
         comment: 'Anduvo bien',
       });
@@ -130,7 +136,7 @@ describe('ReviewsService (integration)', () => {
       const antes = await prisma.review.count();
 
       await expect(
-        service.upsertOwn(clienteNoElegible, productoPublicado, { rating: 5, comment: null }),
+        service.upsertOwn(clienteNoElegible, productoPublicadoSlug, { rating: 5, comment: null }),
       ).rejects.toThrow(ReviewNotEligibleError);
 
       expect(await prisma.review.count()).toBe(antes);

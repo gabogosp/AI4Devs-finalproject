@@ -19,7 +19,7 @@ export class ListReviewsQueryDto {
 }
 
 /**
- * Entrada de `PUT /v1/me/reviews/:productId` (US-025 AC-1/AC-2/AC-9).
+ * Entrada de `PUT /v1/me/reviews/:slug` (US-025 AC-1/AC-2/AC-9).
  * `comment` es opcional (AC-2 — sólo calificar es válido); cuando está
  * ausente en el body, `class-transformer` lo deja `undefined` y Prisma lo
  * guarda como `null` (mismo shape que "sin comentario").
@@ -42,7 +42,7 @@ export class ModerateReviewDto {
   hidden!: boolean;
 }
 
-/** Reseña propia del cliente (`GET /v1/me/reviews/:productId`) — incluye `hidden` (AC-8). */
+/** Reseña propia del cliente (`GET /v1/me/reviews/:slug`) — incluye `hidden` (AC-8). */
 export class ReviewResponseDto {
   id!: string;
   rating!: number;
