@@ -299,7 +299,7 @@ arranque la Fase B.
     ambos devuelven tipos de `@/api/generated/model`.
   - **Verify**: `pnpm --filter @dsm/web test -- adminReviewsService`
 
-- [ ] **T-B10 — Extender `ReviewListItem`/`ReviewsList` con acción admin opcional + `ProductReviewsModeration.tsx`**
+- [x] **T-B10 — Extender `ReviewListItem`/`ReviewsList` con acción admin opcional + `ProductReviewsModeration.tsx`**
   - **Pattern**: `per design.md §D8` — prop opcional `onToggleHidden?(reviewId, hidden)` en
     `ReviewListItemProps`/`ReviewsListProps` (cuando está presente, renderiza un botón
     "Ocultar"/"Mostrar de nuevo" por fila; ausente en la superficie pública, que nunca la pasa);
