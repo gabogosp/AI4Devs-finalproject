@@ -83,3 +83,29 @@ copias).
   pedido de un cliente logueado depende de que el FE de checkout pre-llene
   ese campo con el nombre actual — pieza 100% frontend, sin contraparte en
   el backend de esta capacidad (US-024 backend proposal.md, tabla de ACs).
+
+### Desde US-024 frontend-web
+
+- **`CheckoutForm.tsx` pre-llena `buyer.name` desde la sesión con `react-hook-form`
+  `values` (no `defaultValues`) + `resetOptions: { keepDirtyValues: true }`** —
+  cierra el hueco de la decisión de arriba. `values` sincroniza cuando
+  `customer.name` cambia (la sesión resuelve async: `unknown` →
+  `authenticating` → `authenticated`), y `keepDirtyValues` evita pisar el
+  campo si la persona ya empezó a tipear antes de que la sesión resolviera.
+  El campo sigue editable — un cliente logueado puede comprar para un
+  tercero — y para invitados `values` es `undefined` (comportamiento idéntico
+  al anterior, sin regresión).
+- **`SessionProvider` gana `updateCustomer(patch)`** — estado local optimista
+  aplicado DESPUÉS de que `accountService.updateProfile()` confirma (no antes:
+  no es optimistic UI, no hay nada que revertir). Sin esto, AC-1 ("se refleja
+  de inmediato") sólo se cumpliría re-montando la sesión o releyendo
+  `GET /auth/me`. `AccountMenu.tsx` se beneficia sin tocarse.
+- **Placeholder de avatar (iniciales + color determinístico por `id`) es
+  100% frontend, sin librería nueva** — hash simple (`hash*31 + charCode`,
+  `hue = hash % 360`) en `lib/format/avatar.ts`. `<Avatar>` degrada al
+  placeholder tanto si `avatar_url` es `null` como si la imagen falla al
+  cargar (`onError`, nunca el ícono roto nativo del navegador).
+- **AC-7 (identidad sólo desde la sesión) reforzado del lado del cliente**:
+  `accountService.updateProfile(input)` nunca acepta ni envía `id`/
+  `customer_id` — verificación complementaria a la garantía real, que es
+  server-side (`req.customer.id`, backend R-19/N-13 arriba).

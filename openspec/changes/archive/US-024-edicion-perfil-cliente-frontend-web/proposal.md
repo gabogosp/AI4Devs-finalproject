@@ -1,3 +1,16 @@
+---
+tracker-id: null
+tracker-source: null
+parent-us: US-024
+discipline: frontend-web
+variant: null
+language: es
+archived: true
+archived_at: 2026-09-06
+merged_commit: 055e6d0f93baf4f6a56cf8a33aa910c860929bb8
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/133
+---
+
 # Proposal — Edición de perfil del cliente (nombre + avatar por URL)
 
 > **Ticket**: US-024 — Edición de perfil del cliente
