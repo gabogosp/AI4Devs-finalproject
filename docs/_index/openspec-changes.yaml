@@ -2960,9 +2960,9 @@
   us-id: US-024
   discipline: qa
   variant: null
-  status: in-progress   # /develop-qa 2026-09-06: T-QA2 cerrada — 7/7 escenarios de
-  # aceptación BDD verdes contra BE-US-024 real (ya mergeado), 3 corridas limpias.
-  # E2E Playwright/a11y (§5) siguen Blocked-by: FE-US-024. Ver tasks.md.
+  status: archived   # /archive-change 2026-09-07 — PR #136 mergeado (85eedcf), cierra
+  # T-QA3 (E2E Playwright + a11y, 8/8 verdes). Con T-QA1/T-QA2 ya cerradas, los 7 AC
+  # de US-024 quedan verificados en las 3 capas.
   # /plan-qa --standalone 2026-09-06: qa-plan.md escrito ANTES de BE/FE
   # (ninguno planificado todavía) — Modo B, pedido explícito de la coordinadora para
   # paralelizar trabajo que no depende del build. 7/7 AC de la US cubiertos (1
@@ -2977,12 +2977,12 @@
   # ejecución, que es /develop-qa una vez BE/FE existan.
   assignee: claude-code
   branch: feat/US-024-025-qa-plans
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/136
+  pr-opened-at: 2026-09-07
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-07T13:01:56Z
+  archived-at: 2026-09-07
+  archive-path: openspec/changes/archive/US-024-edicion-perfil-cliente-qa
 
 - name: US-025-resenas-calificaciones-productos-qa
   us-id: US-025

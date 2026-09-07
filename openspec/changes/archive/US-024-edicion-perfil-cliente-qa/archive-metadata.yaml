@@ -1,0 +1,16 @@
+archived: true
+archived_at: 2026-09-07
+merged_commit: 85eedcf71e27fe9071194f8c4f44c09296551851
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/136
+notes: >
+  Mode B standalone, escrito ANTES de BE/FE (2026-09-06) para paralelizar
+  trabajo que no dependía del código — 7/7 AC cubiertos en Gherkin desde el
+  primer commit. Se ejecutó en 3 fases sucesivas a medida que cada
+  dependencia aterrizaba: Fase 1 (T-QA1, el plan en sí), Fase 2 (T-QA2,
+  aceptación BDD contra PATCH /v1/me una vez el backend real de esta US
+  mergeó, PR #128), Fase 3 (T-QA3, E2E Playwright + a11y contra el frontend
+  real una vez aterrizó, PR #133 — este archive cierra PR #136). No declara
+  delta de capability propio: openspec/specs/cuentas/ (CAP-6) ya recibió el
+  delta real del contrato en el archive del backend
+  (US-024-edicion-perfil-cliente-backend, PR #129). Este archive sólo cierra
+  la disciplina QA — con BE+FE+QA las tres archivadas, US-024 pasa a Done.
