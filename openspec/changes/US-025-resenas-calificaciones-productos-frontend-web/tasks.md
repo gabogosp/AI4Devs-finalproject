@@ -250,7 +250,7 @@ arranque la Fase B.
 > este container — T-B3 y T-B4 quedan sin ejecutar hasta que se resuelva. El resto de Fase B
 > (T-B5, T-B6/T-B7/T-B8, T-B9/T-B10/T-B11) no depende de este gap y se ejecutó igual.
 
-- [ ] **T-B3 — `ReviewsDataContainer.tsx` + tests de integración con MSW**
+- [x] **T-B3 — `ReviewsDataContainer.tsx` + tests de integración con MSW**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend, T-B0, T-B2
   - **Pattern**: `per msw-setup` skill + `PurchaseHistoryList.tsx` — fetch al montar,
     `AsyncState`, `useSession()` para distinguir `guest` de autenticado, la resolución de T-B0
