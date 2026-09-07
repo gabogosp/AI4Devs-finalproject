@@ -219,7 +219,7 @@ arranque la Fase B.
     ya no existe.
   - **Verify**: `pnpm --filter @dsm/web codegen && git status --porcelain apps/web/src/api/generated/` vacío `&& ! test -f apps/web/src/features/reviews/types.provisional.ts`
 
-- [ ] **T-B2 — `reviewsService.ts` (repository pattern)**
+- [x] **T-B2 — `reviewsService.ts` (repository pattern)**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend
   - **Pattern**: `per accountService.ts`/`orderHistoryService.ts` — `session: 'customer'` en las
     llamadas de `/v1/me/reviews/:productId`; `parseContract` sobre cada respuesta; ningún
