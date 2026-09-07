@@ -314,7 +314,7 @@ arranque la Fase B.
     reseña deja de ser visible/editable desde esta pantalla después de recargar.
   - **Verify**: `pnpm --filter @dsm/web test -- ReviewsList && pnpm --filter @dsm/web test -- ReviewListItem && pnpm --filter @dsm/web test -- ProductReviewsModeration`
 
-- [ ] **T-B11 — Componer `ProductReviewsModeration` en `/admin/productos/{id}`**
+- [x] **T-B11 — Componer `ProductReviewsModeration` en `/admin/productos/{id}`**
   - **Blocked-by**: T-B9, T-B10
   - **Exit criterion**: `apps/web/src/features/products/ProductEdit.tsx` renderiza
     `ProductReviewsModeration` debajo del formulario de edición existente una vez que el
