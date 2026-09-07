@@ -270,7 +270,7 @@ arranque la Fase B.
     vacía).
   - **Verify**: `grep -q "'/v1/me/reviews/'" apps/web/e2e/support/api-stub.mjs && grep -q "endsWith('/reviews')" apps/web/e2e/support/api-stub.mjs` (estructural — T-B7 es quien prueba que el stub responde correctamente en runtime)
 
-- [ ] **T-B7 — `reviews-topology.spec.ts` (E2E dev-owned, `design.md` §D6)**
+- [x] **T-B7 — `reviews-topology.spec.ts` (E2E dev-owned, `design.md` §D6)**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend, T-B6
   - **Pattern**: `per account-deletion-topology.spec.ts` — `page.evaluate(() => fetch(...))`,
     asserts sobre `response.status()`, nunca sobre el DOM (F59).
