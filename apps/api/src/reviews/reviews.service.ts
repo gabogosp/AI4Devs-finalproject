@@ -14,6 +14,14 @@ const PRODUCTO_NO_ENCONTRADO = 'Producto no encontrado';
  * cliente) — la elegibilidad sale de `OrdersRepository.
  * hasDeliveredOrderWithProduct`, único punto de acceso a `orders`/
  * `order_items` (§5).
+ *
+ * `getOwn`/`upsertOwn` reciben el **slug** del producto, no su UUID (fix
+ * post-mortem del contrato original): la única superficie pública que
+ * conoce la ficha es el slug — `StorefrontProductDto` excluye `id` a
+ * propósito (US-002/US-003, threat model de `catalogo`), así que un
+ * contrato basado en UUID nunca era resoluble desde el FE. Se resuelve acá,
+ * una sola vez, contra `products.slug` — el resto del use-case y el
+ * repositorio de reviews (`product_id`, la FK real) no cambian.
  */
 @Injectable()
 export class ReviewsService {
@@ -23,10 +31,19 @@ export class ReviewsService {
     private readonly products: ProductsRepository,
   ) {}
 
+  private async resolveProductId(slug: string): Promise<string> {
+    const producto = await this.products.findIdBySlug(slug);
+    if (!producto) {
+      throw new NotFoundError(PRODUCTO_NO_ENCONTRADO);
+    }
+    return producto.id;
+  }
+
   async getOwn(
     customerId: string,
-    productId: string,
+    slug: string,
   ): Promise<{ eligible: boolean; review: Review | null }> {
+    const productId = await this.resolveProductId(slug);
     const [eligible, review] = await Promise.all([
       this.orders.hasDeliveredOrderWithProduct(customerId, productId),
       this.reviews.findOwn(customerId, productId),
@@ -36,9 +53,10 @@ export class ReviewsService {
 
   async upsertOwn(
     customerId: string,
-    productId: string,
+    slug: string,
     data: { rating: number; comment: string | null | undefined },
   ): Promise<Review> {
+    const productId = await this.resolveProductId(slug);
     const elegible = await this.orders.hasDeliveredOrderWithProduct(customerId, productId);
     if (!elegible) {
       throw new ReviewNotEligibleError();

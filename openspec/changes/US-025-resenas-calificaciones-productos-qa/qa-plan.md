@@ -152,7 +152,7 @@ que exige una orden ligada a un cliente logueado. Se construyó
 ## 4. Contract testing
 
 - [ ] **QA-025-CT-1**: Supertest contract test para los endpoints de reviews
-  - Exit criterion: un spec valida que `POST/PATCH /v1/me/reviews/:productId`
+  - Exit criterion: un spec valida que `POST/PATCH /v1/me/reviews/:slug`
     (200/201, 403, 422) y `GET /v1/products/:slug/reviews` (200) matcheen el
     schema declarado en OpenAPI.
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=reviews` (exit 0, cuando BE-US-025 publique el endpoint)
@@ -228,7 +228,7 @@ que exige una orden ligada a un cliente logueado. Se construyó
 Agregar a `qa/exploratory/charters.md`:
 
 1. **Charter: Doble reseña concurrente del mismo cliente** — dos requests
-   simultáneos de `POST /v1/me/reviews/:productId` del mismo cliente sobre
+   simultáneos de `POST /v1/me/reviews/:slug` del mismo cliente sobre
    el mismo producto; verificar que el `@@unique([customer_id, product_id])`
    deja una sola fila (upsert, no dos filas ni un 500).
 2. **Charter: Reseña tras cancelar/reembolsar la orden que la habilitó** —

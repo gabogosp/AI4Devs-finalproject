@@ -16,20 +16,20 @@ import type { CatalogWorld } from './world';
  * directo de `orders.status`.
  */
 
-async function productoPublicado(): Promise<{ token: string; productId: string; slug: string }> {
+async function productoPublicado(): Promise<{ token: string; slug: string }> {
   const { token, productos } = await catalogoParaCheckout(1);
   const p = productos[0]!;
-  return { token, productId: p.id, slug: p.slug };
+  return { token, slug: p.slug };
 }
 
 Given(
   'un cliente con una orden delivered de un producto publicado',
   async function (this: CatalogWorld) {
-    const { token, productId, slug } = await productoPublicado();
+    const { token, slug } = await productoPublicado();
     const sesion = await nuevaCuenta('-resenas');
     await compraEntregada(sesion, slug, token);
     this.state.sesion = sesion;
-    this.state.productId = productId;
+    this.state.slug = slug;
     this.state.adminToken = token;
   },
 );
@@ -37,11 +37,11 @@ Given(
 Given(
   'un producto con reseñas de {int}, {int} y {int} estrellas de clientes distintos',
   async function (this: CatalogWorld, r1: number, r2: number, r3: number) {
-    const { token, productId, slug } = await productoPublicado();
+    const { token, slug } = await productoPublicado();
     for (const [i, rating] of [r1, r2, r3].entries()) {
       const sesion = await nuevaCuenta(`-resenas-h3-${i}`);
       await compraEntregada(sesion, slug, token);
-      const res = await dejarReseña(sesion.ctx, productId, { rating });
+      const res = await dejarReseña(sesion.ctx, slug, { rating });
       assert.equal(res.status, 200, `seed de reseña falló: ${JSON.stringify(res.body)}`);
     }
     this.state.slug = slug;
@@ -56,25 +56,23 @@ Given('un producto publicado sin ninguna reseña', async function (this: Catalog
 Given(
   'un cliente que ya dejó una reseña de {int} estrellas de un producto',
   async function (this: CatalogWorld, rating: number) {
-    const { token, productId, slug } = await productoPublicado();
+    const { token, slug } = await productoPublicado();
     const sesion = await nuevaCuenta('-resenas-h5');
     await compraEntregada(sesion, slug, token);
-    const res = await dejarReseña(sesion.ctx, productId, { rating });
+    const res = await dejarReseña(sesion.ctx, slug, { rating });
     assert.equal(res.status, 200, `seed de reseña previa falló: ${JSON.stringify(res.body)}`);
     this.state.sesion = sesion;
-    this.state.productId = productId;
     this.state.slug = slug;
   },
 );
 
 Given('una reseña visible de un producto', async function (this: CatalogWorld) {
-  const { token, productId, slug } = await productoPublicado();
+  const { token, slug } = await productoPublicado();
   const sesion = await nuevaCuenta('-resenas-h6');
   await compraEntregada(sesion, slug, token);
-  const res = await dejarReseña(sesion.ctx, productId, { rating: 2, comment: 'Ofensivo (seed)' });
+  const res = await dejarReseña(sesion.ctx, slug, { rating: 2, comment: 'Ofensivo (seed)' });
   assert.equal(res.status, 200);
   this.state.sesion = sesion;
-  this.state.productId = productId;
   this.state.slug = slug;
   this.state.reviewId = (res.body as { id: string }).id;
   this.state.adminToken = token;
@@ -83,22 +81,22 @@ Given('una reseña visible de un producto', async function (this: CatalogWorld) 
 Given(
   'un cliente autenticado que nunca compró un producto publicado',
   async function (this: CatalogWorld) {
-    const { productId } = await productoPublicado();
+    const { slug } = await productoPublicado();
     this.state.sesion = await nuevaCuenta('-resenas-n1');
-    this.state.productId = productId;
+    this.state.slug = slug;
   },
 );
 
 Given('una persona sin sesión iniciada', async function (this: CatalogWorld) {
-  const { productId } = await productoPublicado();
-  this.state.productId = productId;
+  const { slug } = await productoPublicado();
+  this.state.slug = slug;
 });
 
 When(
   'deja una reseña de {int} estrellas con comentario {string}',
   async function (this: CatalogWorld, rating: number, comment: string) {
     const { ctx } = this.state.sesion as Sesion;
-    this.state.respuesta = await dejarReseña(ctx, this.state.productId as string, {
+    this.state.respuesta = await dejarReseña(ctx, this.state.slug as string, {
       rating,
       comment,
     });
@@ -109,7 +107,7 @@ When(
   'deja una reseña de {int} estrellas sin comentario',
   async function (this: CatalogWorld, rating: number) {
     const { ctx } = this.state.sesion as Sesion;
-    this.state.respuesta = await dejarReseña(ctx, this.state.productId as string, { rating });
+    this.state.respuesta = await dejarReseña(ctx, this.state.slug as string, { rating });
   },
 );
 
@@ -123,7 +121,7 @@ When('cualquier persona consulta sus reseñas públicas', async function (this: 
 
 When('cambia su calificación a {int} estrellas del mismo producto', async function (this: CatalogWorld, rating: number) {
   const { ctx } = this.state.sesion as Sesion;
-  this.state.respuesta = await dejarReseña(ctx, this.state.productId as string, { rating });
+  this.state.respuesta = await dejarReseña(ctx, this.state.slug as string, { rating });
 });
 
 When('el dueño la oculta desde el endpoint de moderación', async function (this: CatalogWorld) {
@@ -136,20 +134,20 @@ When('el dueño la oculta desde el endpoint de moderación', async function (thi
 
 When('intenta dejar una reseña de ese producto', async function (this: CatalogWorld) {
   const { ctx } = this.state.sesion as Sesion;
-  this.state.respuesta = await dejarReseña(ctx, this.state.productId as string, { rating: 5 });
+  this.state.respuesta = await dejarReseña(ctx, this.state.slug as string, { rating: 5 });
 });
 
 When('intenta dejar una reseña de un producto publicado', async function (this: CatalogWorld) {
   this.state.respuesta = await dejarReseña(
     (this as CatalogWorld).anon,
-    this.state.productId as string,
+    this.state.slug as string,
     { rating: 5 },
   );
 });
 
 When('intenta dejar una reseña con {int} estrellas', async function (this: CatalogWorld, rating: number) {
   const { ctx } = this.state.sesion as Sesion;
-  this.state.respuesta = await dejarReseña(ctx, this.state.productId as string, { rating });
+  this.state.respuesta = await dejarReseña(ctx, this.state.slug as string, { rating });
 });
 
 Then(
@@ -213,7 +211,7 @@ Then('deja de contarse en el promedio público', async function (this: CatalogWo
 
 Then('el cliente autor, al consultar su propia reseña, la ve marcada como oculta', async function (this: CatalogWorld) {
   const { ctx } = this.state.sesion as Sesion;
-  const propia = await miReseña(ctx, this.state.productId as string);
+  const propia = await miReseña(ctx, this.state.slug as string);
   const body = propia.body as { review: { hidden: boolean } };
   assert.equal(body.review.hidden, true, 'el autor debía ver su reseña marcada oculta, no borrada en silencio');
 });

@@ -2120,21 +2120,21 @@ export type getOwnReviewResponseError = (getOwnReviewResponse401 | getOwnReviewR
 
 export type getOwnReviewResponse = (getOwnReviewResponseSuccess | getOwnReviewResponseError)
 
-export const getGetOwnReviewUrl = (productId: string,) => {
+export const getGetOwnReviewUrl = (slug: string,) => {
 
 
 
 
-  return `/v1/me/reviews/${productId}`
+  return `/v1/me/reviews/${slug}`
 }
 
 /**
  * `eligible` refleja si el cliente tiene una orden `delivered` con este producto (AC-6) — el FE lo usa para decidir si mostrar el control de reseña. `review` es la reseña propia si existe, SIN IMPORTAR si está oculta por moderación (AC-8 — transparencia hacia el autor); `null` si todavía no reseñó. Requiere sesión (AC-7).
  * @summary Elegibilidad y reseña propia de un producto (US-025 AC-6, AC-7, AC-8)
  */
-export const getOwnReview = async (productId: string, options?: Parameters<typeof customFetch>[1]): Promise<getOwnReviewResponse> => {
+export const getOwnReview = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<getOwnReviewResponse> => {
 
-  return customFetch<getOwnReviewResponse>(getGetOwnReviewUrl(productId),
+  return customFetch<getOwnReviewResponse>(getGetOwnReviewUrl(slug),
   {
     ...options,
     method: 'GET'
@@ -2179,22 +2179,22 @@ export type upsertOwnReviewResponseError = (upsertOwnReviewResponse401 | upsertO
 
 export type upsertOwnReviewResponse = (upsertOwnReviewResponseSuccess | upsertOwnReviewResponseError)
 
-export const getUpsertOwnReviewUrl = (productId: string,) => {
+export const getUpsertOwnReviewUrl = (slug: string,) => {
 
 
 
 
-  return `/v1/me/reviews/${productId}`
+  return `/v1/me/reviews/${slug}`
 }
 
 /**
  * Upsert idempotente: crea si no existe, actualiza la MISMA reseña si ya existe (AC-5 — una reseña por cliente por producto). `comment` es opcional (AC-2). Se rechaza con 403 si el cliente no tiene una orden `delivered` con este producto (AC-6, verificado SIEMPRE server-side, sin importar lo que envíe el cliente) y con 422 si `rating` está fuera de 1-5 (AC-9).
  * @summary Dejar o editar la propia reseña de un producto (US-025 AC-1, AC-2, AC-5)
  */
-export const upsertOwnReview = async (productId: string,
+export const upsertOwnReview = async (slug: string,
     upsertReviewRequest: UpsertReviewRequest, options?: Parameters<typeof customFetch>[1]): Promise<upsertOwnReviewResponse> => {
 
-  return customFetch<upsertOwnReviewResponse>(getUpsertOwnReviewUrl(productId),
+  return customFetch<upsertOwnReviewResponse>(getUpsertOwnReviewUrl(slug),
   {
     ...options,
     method: 'PUT',
@@ -2238,7 +2238,7 @@ export const getModerateReviewUrl = (id: string,) => {
 }
 
 /**
- * Soft-flag de moderación — nunca borra la fila ni edita el contenido. `hidden: true` la excluye del agregado y de la lista pública; el autor la sigue viendo en `GET /me/reviews/{productId}`, marcada como oculta (transparencia, no censura invisible).
+ * Soft-flag de moderación — nunca borra la fila ni edita el contenido. `hidden: true` la excluye del agregado y de la lista pública; el autor la sigue viendo en `GET /me/reviews/{slug}`, marcada como oculta (transparencia, no censura invisible).
  * @summary Ocultar/mostrar una reseña (US-025 AC-8)
  */
 export const moderateReview = async (id: string,
@@ -3527,7 +3527,7 @@ export const getUpdateProfileMockHandler = (overrideResponse?: Customer | ((info
 }
 
 export const getGetOwnReviewMockHandler = (overrideResponse?: OwnReviewResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<OwnReviewResponse> | OwnReviewResponse), options?: RequestHandlerOptions) => {
-  return http.get('*/me/reviews/:productId', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+  return http.get('*/me/reviews/:slug', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined
@@ -3539,7 +3539,7 @@ export const getGetOwnReviewMockHandler = (overrideResponse?: OwnReviewResponse 
 }
 
 export const getUpsertOwnReviewMockHandler = (overrideResponse?: Review | ((info: Parameters<Parameters<typeof http.put>[1]>[0]) => Promise<Review> | Review), options?: RequestHandlerOptions) => {
-  return http.put('*/me/reviews/:productId', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
+  return http.put('*/me/reviews/:slug', async (info: Parameters<Parameters<typeof http.put>[1]>[0]) => {
 
 
     return HttpResponse.json(overrideResponse !== undefined

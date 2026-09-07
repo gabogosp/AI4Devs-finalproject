@@ -24,11 +24,11 @@ Un módulo nuevo (`apps/api/src/reviews/`) con tres superficies sobre una
 tabla nueva (`reviews`):
 
 - **Dejar/editar la propia reseña** (AC-1/AC-2/AC-5): `PUT
-  /v1/me/reviews/{productId}` — upsert idempotente sobre
+  /v1/me/reviews/{slug}` — upsert idempotente sobre
   `@@unique([customer_id, product_id])`: reeditar actualiza la MISMA fila,
   nunca crea una segunda. `comment` es opcional (sólo calificar es válido).
 - **Elegibilidad + reseña propia en una llamada** (AC-6/AC-7/AC-8): `GET
-  /v1/me/reviews/{productId}` → `{eligible, review}`. `eligible` sale de
+  /v1/me/reviews/{slug}` → `{eligible, review}`. `eligible` sale de
   `OrdersRepository.hasDeliveredOrderWithProduct` (nuevo método, único
   punto de acceso a `orders`/`order_items`) — `true` sólo si el cliente
   tiene una orden PROPIA en estado `delivered` con ese producto. `review`
@@ -47,7 +47,7 @@ tabla nueva (`reviews`):
   `hidden_at` es un soft-flag, nunca borra la fila ni edita el contenido.
   Ocultar excluye la reseña del agregado y de la lista pública; el autor
   la sigue viendo marcada como oculta si vuelve a `GET
-  /me/reviews/{productId}` (transparencia, no censura invisible).
+  /me/reviews/{slug}` (transparencia, no censura invisible).
 - **`rating` validado en DTO (422) y en DB (`CHECK`)** — defensa en
   profundidad: `@IsInt() @Min(1) @Max(5)` en `UpsertReviewDto` + `CHECK
   (rating >= 1 AND rating <= 5)` en la migración (AC-9).

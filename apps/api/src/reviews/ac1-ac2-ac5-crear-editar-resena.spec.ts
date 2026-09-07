@@ -20,6 +20,8 @@ describe('AC-1/AC-2/AC-5 — crear y editar la propia reseña (ac1-ac2-ac5-crear
   let app: INestApplication;
   let prisma: PrismaService;
   let productoId = '';
+  /** `PUT /v1/me/reviews/:slug` toma el slug (fix post-mortem), no el id. */
+  const productoSlug = 'taladro-x-ac';
   let ip = '';
 
   const leerCsrf = (cookies: string[]): string =>
@@ -104,7 +106,7 @@ describe('AC-1/AC-2/AC-5 — crear y editar la propia reseña (ac1-ac2-ac5-crear
     const { cookies, csrf } = await registrarYComprar('ac1');
 
     const res = await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)
@@ -120,7 +122,7 @@ describe('AC-1/AC-2/AC-5 — crear y editar la propia reseña (ac1-ac2-ac5-crear
     const { cookies, csrf } = await registrarYComprar('ac2');
 
     const res = await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)
@@ -135,7 +137,7 @@ describe('AC-1/AC-2/AC-5 — crear y editar la propia reseña (ac1-ac2-ac5-crear
     const { cookies, csrf } = await registrarYComprar('ac5');
 
     const primera = await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)
@@ -143,7 +145,7 @@ describe('AC-1/AC-2/AC-5 — crear y editar la propia reseña (ac1-ac2-ac5-crear
       .expect(200);
 
     const segunda = await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)

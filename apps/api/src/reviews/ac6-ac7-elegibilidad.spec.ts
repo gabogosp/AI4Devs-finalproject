@@ -19,6 +19,8 @@ describe('AC-6/AC-7 — elegibilidad verificada server-side (ac6-ac7-elegibilida
   let app: INestApplication;
   let prisma: PrismaService;
   let productoId = '';
+  /** `GET/PUT /v1/me/reviews/:slug` toma el slug (fix post-mortem), no el id. */
+  const productoSlug = 'taladro-x-eleg';
   let ip = '';
 
   const leerCsrf = (cookies: string[]): string =>
@@ -73,11 +75,11 @@ describe('AC-6/AC-7 — elegibilidad verificada server-side (ac6-ac7-elegibilida
     ip = nuevaIpDeTest();
   });
 
-  it('AC-6: GET /v1/me/reviews/:productId dice eligible:false para quien nunca compró el producto', async () => {
+  it('AC-6: GET /v1/me/reviews/:slug dice eligible:false para quien nunca compró el producto', async () => {
     const { cookies } = await registrar('nunca-compro');
 
     const res = await request(app.getHttpServer())
-      .get(`/v1/me/reviews/${productoId}`)
+      .get(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .expect(200);
 
@@ -89,7 +91,7 @@ describe('AC-6/AC-7 — elegibilidad verificada server-side (ac6-ac7-elegibilida
     const { cookies, csrf } = await registrar('intenta-igual');
 
     await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)
@@ -129,7 +131,7 @@ describe('AC-6/AC-7 — elegibilidad verificada server-side (ac6-ac7-elegibilida
     });
 
     await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)
@@ -139,12 +141,12 @@ describe('AC-6/AC-7 — elegibilidad verificada server-side (ac6-ac7-elegibilida
 
   it('AC-7: sin sesión (invitado) — 401 en GET y en PUT', async () => {
     await request(app.getHttpServer())
-      .get(`/v1/me/reviews/${productoId}`)
+      .get(`/v1/me/reviews/${productoSlug}`)
       .set('X-Forwarded-For', ip)
       .expect(401);
 
     await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      .put(`/v1/me/reviews/${productoSlug}`)
       .set('X-Forwarded-For', ip)
       .set('Origin', ORIGEN)
       .send({ rating: 5 })

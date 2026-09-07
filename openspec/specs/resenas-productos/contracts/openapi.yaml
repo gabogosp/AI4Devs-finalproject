@@ -136,7 +136,7 @@ components:
       properties:
         hidden: { type: boolean }
 paths:
-  /me/reviews/{productId}:
+  /me/reviews/{slug}:
     $ref: ./openapi/paths/own-review.yaml
   /products/{slug}/reviews:
     $ref: ./openapi/paths/public-reviews.yaml

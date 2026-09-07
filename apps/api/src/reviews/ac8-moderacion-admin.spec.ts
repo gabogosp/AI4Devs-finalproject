@@ -117,7 +117,8 @@ describe('AC-8 — moderación del dueño (ac8-moderacion-admin)', () => {
       .expect(200);
 
     const propia = await request(app.getHttpServer())
-      .get(`/v1/me/reviews/${productoId}`)
+      // `GET /v1/me/reviews/:slug` toma el slug (fix post-mortem), no el id.
+      .get('/v1/me/reviews/taladro-x-mod')
       .set('Cookie', cookies)
       .expect(200);
 

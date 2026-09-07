@@ -95,7 +95,8 @@ describe('AC-9 — calificación fuera de rango rechazada (ac9-rating-fuera-de-r
     const csrf = leerCsrf(cookies);
 
     await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      // `PUT /v1/me/reviews/:slug` toma el slug (fix post-mortem), no el id.
+      .put('/v1/me/reviews/taladro-x-rating')
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)
@@ -115,7 +116,8 @@ describe('AC-9 — calificación fuera de rango rechazada (ac9-rating-fuera-de-r
     const csrf = leerCsrf(cookies);
 
     await request(app.getHttpServer())
-      .put(`/v1/me/reviews/${productoId}`)
+      // `PUT /v1/me/reviews/:slug` toma el slug (fix post-mortem), no el id.
+      .put('/v1/me/reviews/taladro-x-rating')
       .set('Cookie', cookies)
       .set('X-CSRF-Token', csrf)
       .set('Origin', ORIGEN)

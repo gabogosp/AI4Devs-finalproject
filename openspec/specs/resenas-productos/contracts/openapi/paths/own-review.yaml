@@ -11,10 +11,10 @@ get:
   security:
     - sessionCookie: []
   parameters:
-    - name: productId
+    - name: slug
       in: path
       required: true
-      schema: { type: string, format: uuid }
+      schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
   responses:
     '200':
       description: OK
@@ -37,10 +37,10 @@ put:
   security:
     - sessionCookie: []
   parameters:
-    - name: productId
+    - name: slug
       in: path
       required: true
-      schema: { type: string, format: uuid }
+      schema: { type: string, pattern: '^[a-z0-9]+(-[a-z0-9]+)*$' }
     - $ref: '../../openapi.yaml#/components/parameters/CsrfToken'
   requestBody:
     required: true
