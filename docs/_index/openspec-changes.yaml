@@ -2988,18 +2988,17 @@
   us-id: US-025
   discipline: qa
   variant: null
-  status: in-progress   # /develop-qa 2026-09-07: T-QA3 cerrada — E2E Playwright 4/4
-  # verdes (dejar/editar reseña + promedio, sin control si no elegible ×2, moderación
-  # por UI), 3 corridas limpias en proceso fresco. Encontró y desbloqueó un defecto
-  # real de backend en el camino: StorefrontCacheInterceptor a nivel de clase
-  # cacheaba GET /products/:slug/reviews con el TTL del precio (60s) — el promedio no
-  # se refetcheaba tras dejar/ocultar una reseña (violaba AC-3 en la práctica). No se
-  # debilitó el assert; se reportó y otra sesión lo corrigió (PR #139,
-  # @StorefrontCache({maxAge:0,swr:0}) sólo en esa ruta) antes de cerrar esta task.
-  # T-QA2 (9/9 BDD) y T-QA1 (plan) ya cerradas antes — ver tasks.md para el detalle
-  # completo de las 3 fases, incluida la nota de riesgo de flakiness intermitente en
-  # registro al re-correr repetido contra el mismo proceso (no reproducido en 3
-  # corridas frescas, no bloqueante).
+  status: archived   # /archive-change 2026-09-07: PR #140 mergeado 2026-09-07T14:42:15Z.
+  # T-QA3 cerrada — E2E Playwright 4/4 verdes (dejar/editar reseña + promedio, sin
+  # control si no elegible ×2, moderación por UI), 3 corridas limpias en proceso
+  # fresco. Encontró y desbloqueó un defecto real de backend en el camino:
+  # StorefrontCacheInterceptor a nivel de clase cacheaba GET /products/:slug/reviews
+  # con el TTL del precio (60s) — el promedio no se refetcheaba tras dejar/ocultar una
+  # reseña (violaba AC-3 en la práctica). No se debilitó el assert; se reportó y otra
+  # sesión lo corrigió (PR #139, @StorefrontCache({maxAge:0,swr:0}) sólo en esa ruta)
+  # antes de cerrar esta task. T-QA2 (9/9 BDD) y T-QA1 (plan) ya cerradas antes. Sin
+  # capacidades/contratos nuevos que sincronizar (el capability vivo ya lo creó el
+  # archive de BE-US-025; esta change sólo revalida/ejecuta QA).
   parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
   linear-task-id: null
   audit-baseline: null
@@ -3008,12 +3007,12 @@
   # incluida la investigación del defecto de caché).
   assignee: claude-code
   branch: test/US-025-resenas-e2e
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/140
+  pr-opened-at: 2026-09-07
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-07T14:42:15Z
+  archived-at: 2026-09-07
+  archive-path: openspec/changes/archive/US-025-resenas-calificaciones-productos-qa
 
 - name: US-024-edicion-perfil-cliente-backend
   us-id: US-024
