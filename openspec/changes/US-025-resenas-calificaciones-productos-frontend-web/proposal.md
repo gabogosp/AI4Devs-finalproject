@@ -81,14 +81,17 @@ motivo que US-020 §D8 — ver `design.md` §D6); agregar los eventos de telemet
   explícitamente fuera de v1 en la US §4.
 - **Notificar por email cuando una reseña se oculta** — US §4, mismo criterio que US-013/US-021.
 - **Reseñar sin cuenta / como invitado** — decisión explícita del dueño (US AC-7).
-- **Vista admin de moderación (el dueño ocultando una reseña desde un panel)** — **ambigua entre
-  fuentes, NO se asume incluida en este change.** La US §7 lista "vista admin de moderación
-  (reusa patrones de tabla del panel de órdenes, US-012)" bajo la fila de tasks de FE; pero
-  `qa-plan.md` sólo prueba AC-8 a nivel de API (acceptance BDD vía supertest contra
-  `PATCH /v1/admin/reviews/:id`) — no hay ningún spec Playwright de QA que ejercite una pantalla
-  de moderación. Dado el criterio explícito de esta planificación ("si es ambiguo, flaguear
-  como pregunta abierta, no asumir"), esta vista **no** se incluye en el alcance de este change.
-  Ver "Open questions" #1.
+- **Vista admin de moderación fuera del alcance de `/admin/productos/{id}`** — el dueño
+  confirmó directamente (2026-09-06, ver "Open questions" #1, resuelta) que la moderación (AC-8)
+  entra en el alcance de este mismo change. Lo que queda fuera es únicamente la forma de
+  "panel de reseñas" cross-producto tipo `/admin/resenas` que la US §7 sugería por analogía con
+  el panel de órdenes (US-012) — el contrato de backend (PR #130, archivado) **no publica**
+  ningún `GET /admin/reviews` (sólo `PATCH /admin/reviews/:id`, moderar por id ya conocido), así
+  que no hay forma de construir un listado cross-producto sin inventar un endpoint que no existe.
+  La moderación real se construye como sección nueva dentro de `/admin/productos/{id}` (extiende
+  la pantalla de edición de producto ya existente de US-012, reusando el listado público
+  por-producto `GET /products/:slug/reviews` + una acción de ocultar/mostrar por fila) — ver
+  "Affected components" Fase B y `design.md` §D8.
 - **Ningún llamado HTTP real en Fase A** — es la garantía estructural que hace que Fase A no
   viole `frontend-standards.md` §3 (ver `design.md` §D1).
 - **Ubicación exacta del resumen (estrellas+conteo) en la ficha más allá de una sección** —
@@ -136,24 +139,37 @@ motivo que US-020 §D8 — ver `design.md` §D6); agregar los eventos de telemet
   construida (mismo motivo que `account-deletion-topology.spec.ts`).
 - `apps/web/src/features/reviews/types.provisional.ts` — **borrado**, reemplazado por tipos
   derivados de `apps/web/src/api/generated/`.
+- `apps/web/src/features/reviews/adminReviewsService.ts` — **nuevo**. Repositorio para la
+  superficie admin (`moderateReview`), sesión `'admin'` (mismo criterio que el resto del panel).
+- `apps/web/src/features/reviews/ProductReviewsModeration.tsx` — **nuevo**. Sección que se monta
+  dentro de `/admin/productos/{id}`: lista las reseñas del producto (vía `GET
+  /products/:slug/reviews`, el mismo endpoint público — el admin no necesita datos que ese
+  endpoint no exponga, ya que `hidden_at` no-nulo simplemente no aparece ahí) + un toggle
+  ocultar/mostrar por fila que llama a `PATCH /admin/reviews/:id`.
+- `apps/web/app/(admin)/productos/[id]/page.tsx` (o el archivo equivalente de la pantalla de
+  edición de producto de US-012) — **modificado**: compone `ProductReviewsModeration` debajo del
+  formulario de edición existente.
 
 ## API consumption
 
-**No hay contrato publicado todavía.** Endpoints **declarados, no contratados** por la US §7
-(el equipo de backend define la forma exacta al planificar `US-025-resenas-calificaciones-productos-backend`):
+Contrato publicado (`US-025-resenas-calificaciones-productos-backend`, PR #130, archivado —
+verificado contra `apps/api/docs/api/openapi.yaml` en `origin/main` y regenerado vía
+`pnpm --filter @dsm/web codegen`, sin diff pendiente):
 
-- `POST/PATCH /v1/me/reviews/:productId` (upsert, AC-5) — superficie de sesión de cliente
-  (`session: 'customer'`, mismo criterio que `accountService`/`orderHistoryService`), viaja
-  bajo `/v1/me/*`.
-- `GET /v1/products/:slug/reviews` (público, AC-3/AC-4) — excluye reseñas con `hidden_at`
-  no-nulo, salvo — sin resolver todavía, ver "Open questions" #2 — la reseña propia del viewer
-  autenticado (AC-8, transparencia hacia el autor).
-- `PATCH /v1/admin/reviews/:id` (moderación) — **fuera de alcance de este change** (ver
-  "Out of scope"; superficie de panel admin, no de storefront).
-
-Fase B no puede fijar los nombres exactos de operationId/DTOs hasta que ese contrato exista —
-`design.md` documenta el contrato **esperado** con la forma mínima que la US ya fija, para que
-la tarea de wiring de Fase B sea mecánica una vez el codegen corra.
+- `POST/PUT /v1/me/reviews/:productId` (`upsertOwnReview`, upsert, AC-5) — superficie de sesión
+  de cliente (`session: 'customer'`), viaja bajo `/v1/me/*`.
+- `GET /v1/me/reviews/:productId` (`getOwnReview`) → `OwnReviewResponse{eligible: boolean,
+  review: Review | null}` — resuelve "Open questions" #2: la elegibilidad (AC-6) y la reseña
+  propia (para precargar `ReviewForm` en modo edición, AC-5) vienen de este endpoint dedicado,
+  no de un campo embebido en el GET público.
+- `GET /v1/products/:slug/reviews` (`getPublicReviews`, público, AC-3/AC-4) →
+  `PublicReviewsResponse{average: number|null, count, data: PublicReview[], pagination}` —
+  excluye siempre las reseñas ocultas; `average: null` cuando `count === 0` (AC-4).
+- `PATCH /v1/admin/reviews/:id` (`moderateReview`, AC-8) → `Review` — **sí está en alcance de
+  este change** (confirmado, "Open questions" #1). **No existe** ningún `GET /admin/reviews`
+  (listado cross-producto) en el contrato — moderar exige conocer el `id` de antemano, que
+  `ProductReviewsModeration` obtiene reusando el listado público por-producto (ver "Affected
+  components" Fase B, `design.md` §D8).
 
 ## Acceptance criteria
 
@@ -201,26 +217,23 @@ la tarea de wiring de Fase B sea mecánica una vez el codegen corra.
 
 ## Open questions
 
-1. **¿La "vista admin de moderación" (AC-8, ocultar una reseña) es alcance de este change de
-   frontend-web, o un follow-up separado?** La US §7 la lista bajo la fila de FE; el
-   `qa-plan.md` sólo la prueba a nivel de API. Este plan la deja **fuera de alcance** por
-   default (ver "Out of scope") — necesita confirmación de la coordinadora/PO antes de que
-   `/develop-frontend-web` la trate como incluida o como un change aparte
-   (posiblemente extendiendo el panel de órdenes de US-012).
-2. **¿Cómo sabe el FE si el viewer autenticado es elegible para reseñar y si ya tiene una
-   reseña propia (para decidir POST vs PATCH y mostrar su propio estado "oculta por
-   moderación")?** La US sólo declara `POST/PATCH /v1/me/reviews/:productId` (upsert) y
-   `GET /v1/products/:slug/reviews` (público) — ningún endpoint de "mi elegibilidad"/"mi reseña
-   para este producto" existe todavía. Esto lo debe resolver `US-025-resenas-calificaciones-productos-backend`
-   al diseñar el contrato (opción a: el GET público, cuando la sesión de cliente viaja, incluye
-   un campo `viewer` con la reseña propia y su elegibilidad; opción b: un endpoint dedicado). Se
-   marca acá para que el arquitecto de backend lo resuelva explícitamente — Fase B de este plan
-   no puede cerrar sus tasks de wiring exactas hasta que exista esa respuesta (ver `design.md`
-   §D5).
+1. **[Resolved: 2026-09-06]** ¿La "vista admin de moderación" (AC-8, ocultar una reseña) es
+   alcance de este change de frontend-web, o un follow-up separado? El coordinador relayó que el
+   dueño lo decidió así; se re-confirmó **directamente con el dueño** (no se tomó el relayo como
+   suficiente) — respuesta literal: "Sí, confirmado" a la pregunta explícita de si entra en el
+   alcance de esta misma US-025, no como follow-up aparte. Con el contrato de backend ya
+   archivado (PR #130) confirmando que no hay `GET /admin/reviews`, la forma concreta queda
+   fijada como sección nueva en `/admin/productos/{id}` — ver "Out of scope", "Affected
+   components" Fase B, y `design.md` §D8.
+2. **[Resolved: 2026-09-06 — contrato de backend publicado]** ¿Cómo sabe el FE si el viewer
+   autenticado es elegible para reseñar y si ya tiene una reseña propia? Resuelto por opción b:
+   `GET /v1/me/reviews/:productId` → `OwnReviewResponse{eligible, review}`, endpoint dedicado
+   (no un campo embebido en el GET público). Ver "API consumption" y `design.md` §D5.
 3. **¿Un resumen compacto (estrellas+conteo) cerca del título/precio, además de la sección
    completa?** No bloqueante — default: una sola `ReviewsSection` debajo de la descripción (ver
    "Out of scope"). Confirmar si el dueño quiere el resumen duplicado arriba (patrón Mercado
-   Libre) antes de Fase B T-B4.
+   Libre) antes de Fase B T-B4. **[Deferred: no bloquea Fase B — se construye el default y se
+   revisita si el dueño lo pide en la revisión visual]**
 
-Ninguna de las tres bloquea el arranque de la Fase A — todas son, por diseño, preguntas que
-sólo importan cuando Fase B empieza a wiring real.
+Las tres preguntas quedan resueltas o conscientemente diferidas — ninguna bloquea la ejecución
+de Fase B.

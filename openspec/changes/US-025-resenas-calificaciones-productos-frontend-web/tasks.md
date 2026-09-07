@@ -22,8 +22,9 @@ language: es
 > Fase B hasta que ese change exista y publique el contrato.
 >
 > **Estimación dual**: Fase A **~3 h AI-asistido** / **~5,5 h tradicional** (9 tasks,
-> presentacional puro, sin red). Fase B **~2,5 h AI-asistido** / **~4,5 h tradicional** (8
-> tasks) una vez desbloqueada — el estimado de la US (§7, `FE-US-025: 6h`) es la suma de ambas.
+> presentacional puro, sin red). Fase B **~2,5 h AI-asistido** / **~4,5 h tradicional** (8 tasks
+> de wiring) **+ ~1 h AI-asistido / ~2 h tradicional** (T-B9/T-B10/T-B11, vista de moderación —
+> agregada después de la planificación inicial, ver "Open questions" #1 de `proposal.md`).
 
 ## Traceability matrix (AC de la US → tasks)
 
@@ -36,7 +37,7 @@ language: es
 | AC-5 | Editar la propia reseña (upsert) | T-A3 (modo edición del formulario) | T-B3 (precarga + submit real) — depende de `design.md` §D5, T-B0 |
 | AC-6 | No comprado → no puede reseñar (UX; 403 es del backend) | T-A6 (estado `ineligible` = nada) | T-B3, T-B7 (topología del 403, superficie) |
 | AC-7 | Invitado no puede reseñar | T-A5 | T-B3 |
-| AC-8 | El dueño oculta una reseña (superficie del autor viendo su propio estado — **no** la acción de ocultar desde un panel admin, fuera de alcance) | T-A2 (badge "oculta por moderación") | T-B3 — depende de `design.md` §D5 |
+| AC-8 | El dueño oculta una reseña — superficie del autor viendo su propio estado, **y** la acción de ocultar desde `/admin/productos/{id}` (confirmada en alcance, `design.md` §D8) | T-A8 (badge "oculta por moderación" en `ReviewListItem`, ya cerrado) | T-B3 (superficie propia), T-B9/T-B10 (extienden `ReviewListItem`/`ReviewsList` con `onToggleHidden` opcional + servicio admin)/T-B11 (compone en `/admin/productos/{id}`) |
 | AC-9 | Calificación fuera de rango rechazada (UX cliente; 422 real es del backend) | T-A3 (rango 1-5 estructuralmente inalcanzable desde `StarRatingInput`; slot de `fieldError`) | T-B3 (mapeo del 422 real) |
 
 ---
@@ -189,13 +190,17 @@ arranque la Fase B.
 
 ---
 
-## Fase B — Bloqueada por backend (`Blocked-by: US-025-resenas-calificaciones-productos-backend`)
+## Fase B — Desbloqueada (`US-025-resenas-calificaciones-productos-backend` archivado, PR #130)
 
-> Ninguna task de esta fase es ejecutable hasta que `US-025-resenas-calificaciones-productos-backend`
-> exista, publique el contrato en `apps/api/docs/api/openapi.yaml`, y el orquestador corra el
-> codegen (`apps/web/src/api/generated/` gana los artefactos de reviews). `/develop-frontend-web`
-> se detiene después de T-A11 y reporta el bloqueo si se le pide continuar sin que esa
-> condición se cumpla.
+> El bloqueo original (`Blocked-by: US-025-resenas-calificaciones-productos-backend`) se levantó
+> el 2026-09-06: el change de backend se archivó (PR #130 mergeado, contrato publicado en
+> `apps/api/docs/api/openapi.yaml`, codegen ya corrido y sin diff pendiente — ver `design.md`
+> §D5). Las anotaciones `Blocked-by` de cada task se conservan como registro histórico de la
+> dependencia, no como bloqueo activo.
+>
+> **T-B9/T-B10/T-B11 son nuevas** (no estaban en el plan original): la vista admin de moderación
+> (AC-8), confirmada en el alcance de este change por el dueño después de la planificación
+> inicial — ver `proposal.md` "Open questions" #1 y `design.md` §D8.
 
 - [ ] **T-B0 — Leer el `design.md` de `US-025-resenas-calificaciones-productos-backend` y resolver `design.md` §D5 de este change**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend
@@ -281,11 +286,49 @@ arranque la Fase B.
     preexistente cubrió el nuevo prefijo sin modificación, confirmado por T-B7 pasando en verde.
   - **Verify**: `git diff --stat apps/web/next.config.mjs` vacío `&& pnpm --filter @dsm/web test:e2e -- reviews-topology` en verde
 
+### Vista admin de moderación (AC-8, confirmada en alcance — `design.md` §D8)
+
+- [ ] **T-B9 — `adminReviewsService.ts` (repositorio, superficie admin)**
+  - **Pattern**: `per productsService.ts` — llama las operaciones generadas directamente (sin
+    marca `session`, el token admin viaja por `Authorization: Bearer` desde
+    `getAuthToken()`/`adminSession`, mismo mecanismo que `updateProduct`); `parseContract` sobre
+    cada respuesta.
+  - **Exit criterion**: `adminReviewsService` expone `listForProduct(slug)` (delega en
+    `getPublicReviews(slug)` — mismo endpoint que el storefront, `design.md` §D8 explica por
+    qué no hay uno dedicado) y `setHidden(reviewId, hidden)` (delega en `moderateReview`);
+    ambos devuelven tipos de `@/api/generated/model`.
+  - **Verify**: `pnpm --filter @dsm/web test -- adminReviewsService`
+
+- [ ] **T-B10 — Extender `ReviewListItem`/`ReviewsList` con acción admin opcional + `ProductReviewsModeration.tsx`**
+  - **Pattern**: `per design.md §D8` — prop opcional `onToggleHidden?(reviewId, hidden)` en
+    `ReviewListItemProps`/`ReviewsListProps` (cuando está presente, renderiza un botón
+    "Ocultar"/"Mostrar de nuevo" por fila; ausente en la superficie pública, que nunca la pasa);
+    `ProductReviewsModeration` mantiene el estado de reseñas ocultas **de forma optimista en
+    memoria** (no refetch tras ocultar) — ver la limitación documentada en `design.md` §D8.
+  - **Exit criterion**: (a) `ReviewListItem` sin `onToggleHidden` no renderiza ningún botón de
+    moderación (no regresión en la superficie pública/storefront); (b) con `onToggleHidden`
+    presente, cada fila muestra el botón correspondiente a su estado `hidden` actual; (c)
+    `ProductReviewsModeration` carga las reseñas del producto al montar (`AsyncState`), y al
+    confirmar ocultar/mostrar actualiza esa reseña en el estado local sin sacarla de la lista ni
+    volver a pedir la lista al backend; (d) el copy de la UI indica explícitamente que la
+    reseña deja de ser visible/editable desde esta pantalla después de recargar.
+  - **Verify**: `pnpm --filter @dsm/web test -- ReviewsList && pnpm --filter @dsm/web test -- ReviewListItem && pnpm --filter @dsm/web test -- ProductReviewsModeration`
+
+- [ ] **T-B11 — Componer `ProductReviewsModeration` en `/admin/productos/{id}`**
+  - **Blocked-by**: T-B9, T-B10
+  - **Exit criterion**: `apps/web/src/features/products/ProductEdit.tsx` renderiza
+    `ProductReviewsModeration` debajo del formulario de edición existente una vez que el
+    producto cargó (usa `product.slug`, ya disponible en el estado de `ProductEdit`, ninguna
+    prop nueva en la ruta `app/(admin)/admin/productos/[id]/page.tsx`).
+  - **Verify**: `pnpm --filter @dsm/web test -- ProductEdit`
+
 ## Verification (nivel de suite)
 
 - [ ] Fase A completa: `pnpm --filter @dsm/web test -- reviews` (todos los `*.test.tsx` bajo
       `src/features/reviews/` en verde, sin red)
 - [ ] Fase A: lint/type-check limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
-- [ ] Fase B (cuando desbloqueada): `pnpm --filter @dsm/web test -- reviews` (incluye
-      `reviewsService`/`ReviewsDataContainer`) + `pnpm --filter @dsm/web test:e2e -- reviews-topology`
+- [ ] Fase B: `pnpm --filter @dsm/web test -- reviews` (incluye
+      `reviewsService`/`ReviewsDataContainer`/`adminReviewsService`) +
+      `pnpm --filter @dsm/web test:e2e -- reviews-topology`
+- [ ] Fase B: `pnpm --filter @dsm/web test -- ProductEdit` (moderación compuesta, T-B11)
 - [ ] Fase B: `pnpm --filter @dsm/web codegen` sin diff (gate `frontend-codegen-fresh`)

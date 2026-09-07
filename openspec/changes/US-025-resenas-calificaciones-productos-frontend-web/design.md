@@ -45,12 +45,11 @@ sí, con una frontera estructural explícita (§D1).
 
 ## Non-goals
 
-- Diseñar el schema, el endpoint de elegibilidad o la regla `@@unique` del backend — eso es
-  `US-025-resenas-calificaciones-productos-backend`.
-- Construir la vista admin de moderación — ver `proposal.md` "Out of scope" y "Open questions" #1.
-- Resolver definitivamente la forma exacta del contrato (`operationId`, nombres de campos) —
-  Fase B documenta la forma **esperada** mínima (§D5) pero la fuente de verdad es el `openapi.yaml`
-  que el backend publique.
+- Diseñar el schema, el endpoint de elegibilidad o la regla `@@unique` del backend — eso ya lo
+  resolvió `US-025-resenas-calificaciones-productos-backend` (archivado, PR #130).
+- Construir un panel de moderación cross-producto (tipo `/admin/resenas`, listado de todas las
+  reseñas de todos los productos) — el contrato no publica ningún `GET /admin/reviews`; ver §D8.
+  La moderación por-producto SÍ es un goal de este change (Fase B).
 
 ## Approach
 
@@ -162,21 +161,23 @@ El comentario es texto libre del cliente — se renderiza siempre como texto pla
 producto en `ProductDetail.tsx` y el charter de XSS que `qa-plan.md` §8 ya declaró
 explícitamente para esta misma US.
 
-### D5 — Lo que Fase B necesita del backend y todavía no está resuelto
+### D5 — [Resuelto] Lo que Fase B necesita del backend
 
-Dos preguntas de contrato quedan explícitamente abiertas para
-`US-025-resenas-calificaciones-productos-backend` (ver `proposal.md` "Open questions" #2):
+`US-025-resenas-calificaciones-productos-backend` archivó (PR #130) con la respuesta: **opción
+b, endpoint dedicado**. `GET /v1/me/reviews/:productId` → `OwnReviewResponse{eligible: boolean,
+review: Review | null}` resuelve las dos preguntas que estaban abiertas de una sola vez:
 
-1. Cómo sabe el FE si el viewer autenticado es elegible (¿el `GET` público devuelve un campo
-   `viewer` cuando viaja la cookie de sesión, o hay un endpoint dedicado?).
-2. Cómo sabe el FE si el viewer ya tiene una reseña propia de ese producto, para precargar
-   `ReviewForm` en modo edición (AC-5) y decidir si el próximo submit es lógicamente un create o
-   un update (el backend hace upsert de todos modos, así que esto es sólo para la UX de
-   "mostrale que ya reseñaste esto con 3 estrellas", no una decisión de la que dependa la
-   corrección del guardado).
+1. Elegibilidad (AC-6): el campo `eligible` — `true` si el cliente tiene una orden `delivered`
+   con este producto. El GET público (`getPublicReviews`) NO lleva ningún campo `viewer` — la
+   elegibilidad nunca viaja ahí.
+2. Reseña propia para precargar `ReviewForm` en modo edición (AC-5): el campo `review` — no
+   `null` si el cliente ya reseñó, **sin importar si está oculta** (`Review.hidden`, AC-8 —
+   transparencia hacia el autor, el propio autor siempre ve su reseña real).
 
-Fase B (T-B0) empieza leyendo el `design.md` real de `US-025-resenas-calificaciones-productos-backend`
-antes de fijar la forma de `ReviewsDataContainer` — este plan no inventa esa forma ahora.
+`ReviewsDataContainer` (T-B3) llama `getOwnReview(productId)` una vez al montar (junto con
+`getPublicReviews(slug)`) para derivar el `ViewerReviewState` completo: sin sesión → `guest`;
+con sesión y `eligible === false` y `review === null` → `ineligible`; `review !== null` →
+`eligible-editing` (con `initialValue` desde `review`); si no, `eligible-new`.
 
 ### D6 — Fase B: E2E dev-owned de topología de `/v1/me/reviews/:productId`
 
@@ -199,13 +200,61 @@ sin depender de que QA lo encuentre primero.
 ### D7 — SEO / JSON-LD `aggregateRating`: diferido, no descartado
 
 `ProductJsonLd.tsx` ya emite el schema.org `Product` de la ficha. Agregar `aggregateRating`
-(promedio+conteo) mejoraría el rich snippet en buscadores, pero depende de si el backend
-embebe el agregado en la respuesta del producto o si sólo vive en el `GET .../reviews` separado
-— decisión de contrato no tomada todavía (§D5). AC-3 sólo exige que la persona **vea** el
-promedio en la ficha, no que estructuralmente esté en el JSON-LD — así que esto se difiere
-como mejora de SEO, no como parte de esta US. Si se confirma en Fase B que el agregado viaja
-embebido, es una extensión de bajo costo de `ReviewsDataContainer` → `ProductJsonLd`, no un
-rediseño.
+(promedio+conteo) mejoraría el rich snippet en buscadores. Confirmado (§D5): el agregado
+**no** viaja embebido en la respuesta del producto — sólo existe en `PublicReviewsResponse`
+(`GET /products/:slug/reviews`), que se resuelve del lado cliente (`ReviewsDataContainer`, un
+componente `'use client'`), mientras que `ProductJsonLd` se emite server-side desde
+`ProductDetail.tsx` (Server Component). Conectar ambos requeriría levantar el fetch de reviews
+al servidor sólo para el JSON-LD — costo real, beneficio de SEO no pedido por ningún AC. Se
+difiere como mejora de SEO fuera de esta US, no como parte de Fase B.
+
+### D8 — Vista admin de moderación (AC-8): por qué vive en `/admin/productos/{id}`, no en un panel propio
+
+El dueño confirmó que la moderación entra en el alcance de este change ("Open questions" #1,
+resuelta). La US §7 sugería, por analogía con el panel de órdenes (US-012), un panel dedicado de
+reseñas con su propia tabla — pero el contrato de backend archivado (PR #130) sólo publica
+`PATCH /v1/admin/reviews/:id` (moderar por id ya conocido); **no existe** ningún `GET
+/admin/reviews` que liste reseñas cross-producto. Sin un endpoint de listado, un panel
+`/admin/resenas` con su propia tabla no tiene de dónde traer las filas — sería o bien
+inventar un endpoint que el backend nunca declaró (fuera de alcance de un change de FE:
+`frontend-standards.md` §3 prohíbe inventar contrato), o paginar sobre TODOS los productos
+llamando `GET /products/:slug/reviews` por cada uno para armar un listado global (N+1 llamadas,
+sin paginación real del lado servidor — mala UX y mal patrón, ninguno de los dos aceptable).
+
+La alternativa que el contrato sí soporta directamente: moderar reseñas **por producto**, desde
+la pantalla de edición de ese producto (`/admin/productos/{id}`, ya existe desde US-012). Ahí el
+`slug` del producto ya está disponible sin ningún parámetro adicional, `GET
+/products/:slug/reviews` trae exactamente las reseñas de ESE producto (paginación real, la que
+el contrato ya expone), y `PATCH /admin/reviews/:id` oculta/muestra por fila. Es la única forma
+de construir la moderación sin inventar contrato — y es, además, un flujo de trabajo razonable
+para el dueño: la ocasión típica de moderar una reseña ofensiva es mientras se está revisando
+ESE producto puntual, no navegando un panel global. Si más adelante el volumen de reseñas
+justifica un panel cross-producto, es un CR de backend (nuevo `GET /admin/reviews` con
+paginación/filtros) seguido de un CR de FE — no algo que este change deba resolver por
+adelantado.
+
+`ProductReviewsModeration.tsx` (nuevo, T-B9) reusa `ReviewListItem`/`ReviewsList` de Fase A para
+el renderizado (mismo componente que la ficha pública, con una prop adicional
+`onToggleHidden?(reviewId, hidden)` que sólo la superficie admin pasa) — no se duplica el
+markup de "cómo se ve una reseña" entre storefront y admin.
+
+**Limitación real encontrada y documentada, no silenciada**: `GET /products/:slug/reviews`
+filtra `hidden_at: null` **siempre**, sin excepción para admin (verificado directo en
+`apps/api/src/reviews/reviews.repository.ts` línea 56 — `where: { product_id, hidden_at: null }`
+es incondicional, sin variante admin). Como éste es el único endpoint de listado que existe (no
+hay `GET /admin/reviews` — ver arriba), una vez que el dueño oculta una reseña, esa reseña
+**desaparece de toda superficie que el FE puede alcanzar** — no hay forma de volver a listarla
+para deshacer el ocultamiento, aunque `PATCH /admin/reviews/:id` sí soporta `hidden: false`
+técnicamente. Mitigación de este change (sin tocar backend, que está fuera de alcance): el
+estado `hidden` se actualiza **de forma optimista en el estado local de React** de
+`ProductReviewsModeration` en vez de sacar la fila de la lista o refetchear — así la reseña
+recién ocultada sigue visible y accionable (con un botón "Mostrar de nuevo") **durante esa
+misma sesión de la pantalla**, pero un refresh de página o volver a entrar a
+`/admin/productos/{id}` ya no la va a mostrar (queda oculta para siempre desde la perspectiva
+del FE, hasta que exista un endpoint de backend que la traiga). Esto se declara explícitamente
+como limitación conocida, no una feature de undo real — si el negocio necesita revertir
+ocultamientos de forma confiable más allá de la sesión activa, es un CR de backend (endpoint
+admin que incluya `hidden_at` no-nulo), no algo que este change de FE pueda resolver.
 
 ## Component breakdown
 
@@ -221,6 +270,8 @@ rediseño.
 | `ReviewsSection` | A | `viewerState`, `summary`, `reviews: AsyncState<...>`, `onSubmitReview` | compone los anteriores |
 | `reviewsService` | B | — (repositorio) | n/a |
 | `ReviewsDataContainer` | B | `productSlug: string` | monta `ReviewsSection` con datos reales |
+| `adminReviewsService` | B | — (repositorio, sesión admin) | n/a |
+| `ProductReviewsModeration` | B | `productSlug: string` | reusa `ReviewsList`/`ReviewListItem` + `onToggleHidden` por fila |
 
 ## State diagram
 
@@ -274,7 +325,8 @@ stateDiagram-v2
 | El contrato real de backend cambia la forma que `types.provisional.ts` asumió (p.ej. `author_name` no viene embebido, requiere un segundo lookup) | media | bajo — Fase A no depende de la forma real | El archivo se borra por completo en T-B1; nada de Fase A importa DTOs, así que no hay refactor en cascada, sólo re-tipado de `ReviewsDataContainer` |
 | Alguien composita `ReviewsSection` en `ProductDetail.tsx` antes de que Fase B exista, usando datos falsos "temporales" | baja | alto (dato falso en producción) | Task T-A8 deja explícito que Fase A **no** toca `ProductDetail.tsx`/`ProductPage.tsx` — el `Verify` de T-A8 es un `git diff --stat` vacío sobre esos archivos |
 | El rewrite `/v1/me/:path*` deja de cubrir el nuevo path por un cambio futuro no relacionado | baja | alto (mismo bug que PR #89) | `reviews-topology.spec.ts` (T-B6) corre contra la app construida en cada CI, no sólo una vez |
-| La vista admin de moderación se construye dos veces (una vez acá "por si acaso", otra vez cuando se confirme el alcance) | media (si no se resuelve la Open question #1 antes de Fase B) | medio (trabajo duplicado) | Este change no la construye; la Open question #1 se resuelve antes de planificar esa pieza, en este change o en uno aparte |
+| Se construye un panel `/admin/resenas` cross-producto que el contrato no puede alimentar de verdad | baja (decisión ya tomada) | alto (feature inutilizable sin `GET /admin/reviews`, retrabajo completo) | §D8 fija la forma como extensión de `/admin/productos/{id}`, no panel propio — la restricción del contrato archivado (sólo `PATCH /admin/reviews/:id`, sin listado) es la razón, no una preferencia de diseño reversible |
+| El dueño oculta una reseña por error y espera poder deshacerlo después de recargar la página | media | bajo-medio (frustración del dueño, no pérdida de datos — la fila sigue en DB, sólo inalcanzable por FE) | §D8 documenta la limitación real del contrato (el listado público excluye `hidden_at` incondicionalmente, sin variante admin) + mitiga con estado optimista intra-sesión; el copy de la UI debe dejar claro que ocultar es una acción de la que no hay vuelta atrás desde la pantalla una vez recargada |
 
 ## References
 
