@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SessionProvider } from '@/features/account/SessionProvider';
 import type { CheckoutCreated } from './checkoutService';
 import { CheckoutBlocked } from './CheckoutBlocked';
 import { CheckoutConfirmation } from './CheckoutConfirmation';
@@ -35,13 +36,13 @@ describe('a11y — checkout (WCAG 2.1 AA)', () => {
   });
 
   it('CheckoutForm sin errores: axe sin violaciones', async () => {
-    const { container } = render(<CheckoutForm onSuccess={vi.fn()} />);
+    const { container } = render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
 
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it('CheckoutForm con errores visibles: axe sin violaciones', async () => {
-    const { container } = render(<CheckoutForm onSuccess={vi.fn()} />);
+    const { container } = render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
@@ -58,7 +59,7 @@ describe('a11y — checkout (WCAG 2.1 AA)', () => {
   });
 
   it('los tres campos del comprador tienen nombre accesible por su <label>, sin aria-label redundante', () => {
-    render(<CheckoutForm onSuccess={vi.fn()} />);
+    render(<SessionProvider><CheckoutForm onSuccess={vi.fn()} /></SessionProvider>);
 
     for (const nombre of [/nombre/i, /email/i, /teléfono/i]) {
       const input = screen.getByLabelText(nombre);

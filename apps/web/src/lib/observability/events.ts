@@ -126,7 +126,13 @@ export type BusinessEvent =
   | 'account_delete_attempted'
   | 'account_delete_succeeded'
   | 'account_delete_blocked'
-  | 'account_delete_failed';
+  | 'account_delete_failed'
+  // Edición de perfil (US-024 AC-1/AC-2/AC-3). Superficie de cliente, no de
+  // operador — mismo criterio que `account_delete_*`. Sin PII: nunca llevan
+  // `name`/`avatar_url`, sólo el nombre del evento.
+  | 'profile_edit_attempted'
+  | 'profile_edit_succeeded'
+  | 'profile_edit_failed';
 
 export interface EventProps {
   operator_id?: string;
@@ -186,6 +192,11 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'account_delete_succeeded',
   'account_delete_blocked',
   'account_delete_failed',
+  // Los emite el cliente autenticado editando su propio perfil — no el
+  // dueño. Mismo criterio que los de borrado de cuenta.
+  'profile_edit_attempted',
+  'profile_edit_succeeded',
+  'profile_edit_failed',
 ]);
 
 export function track(event: BusinessEvent, props: EventProps = {}): void {

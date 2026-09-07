@@ -19,15 +19,21 @@ const customer = {
 
 /** Espía del estado: renderiza el `kind` para poder assertear sobre él. */
 function Sonda() {
-  const { state, logout, accountDeleted } = useSession();
+  const { state, logout, accountDeleted, updateCustomer } = useSession();
   return (
     <div>
       <span data-testid="kind">{state.kind}</span>
       {state.kind === 'authenticated' && (
-        <span data-testid="nombre">{state.customer.name}</span>
+        <>
+          <span data-testid="nombre">{state.customer.name}</span>
+          <span data-testid="email">{state.customer.email}</span>
+        </>
       )}
       <button onClick={() => void logout()}>salir</button>
       <button onClick={() => accountDeleted()}>borrar cuenta</button>
+      <button onClick={() => updateCustomer({ name: 'Nombre Nuevo' })}>
+        actualizar nombre
+      </button>
     </div>
   );
 }
@@ -138,6 +144,35 @@ describe('SessionProvider (T1.2)', () => {
       expect(screen.getByTestId('kind')).toHaveTextContent('anonymous'),
     );
     expect(window.localStorage.getItem(SESSION_HINT_KEY)).toBeNull();
+  });
+
+  it('updateCustomer (US-024) actualiza el campo pisado, SIN tocar los demás', async () => {
+    window.localStorage.setItem(SESSION_HINT_KEY, '1');
+    server.use(http.get(`${SITE}/v1/auth/me`, () => HttpResponse.json(customer)));
+    montar();
+    await waitFor(() =>
+      expect(screen.getByTestId('kind')).toHaveTextContent('authenticated'),
+    );
+
+    // Sin request de red: es estado local sobre una respuesta ya confirmada,
+    // no una nueva llamada a GET /auth/me (`onUnhandledRequest: 'error'`
+    // reventaría el test si lo fuera).
+    await userEvent.click(screen.getByRole('button', { name: 'actualizar nombre' }));
+
+    expect(screen.getByTestId('nombre')).toHaveTextContent('Nombre Nuevo');
+    expect(screen.getByTestId('email')).toHaveTextContent('ana@example.com');
+  });
+
+  it('updateCustomer es no-op fuera de authenticated (nada que actualizar)', async () => {
+    // Sin marca de sesión: queda `anonymous` de entrada.
+    montar();
+    await waitFor(() =>
+      expect(screen.getByTestId('kind')).toHaveTextContent('anonymous'),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'actualizar nombre' }));
+
+    expect(screen.getByTestId('kind')).toHaveTextContent('anonymous');
   });
 
   it('si el logout del backend falla, la sesión local se cierra igual', async () => {

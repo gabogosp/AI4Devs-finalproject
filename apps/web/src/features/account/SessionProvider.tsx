@@ -25,6 +25,14 @@ interface SessionContextValue {
    * del lado del servidor en la misma respuesta (design.md §D4).
    */
   accountDeleted: () => void;
+  /**
+   * US-024 AC-1: refleja un cambio de perfil (nombre/avatar) de inmediato en
+   * toda la UI de sesión (`AccountMenu` incluido) sin releer `GET /auth/me`.
+   * Estado local OPTIMISTA SOBRE LA RESPUESTA YA CONFIRMADA — se llama
+   * DESPUÉS de que `accountService.updateProfile()` resuelve con éxito,
+   * nunca antes. No-op fuera de `authenticated` (nada que actualizar).
+   */
+  updateCustomer: (patch: Partial<Customer>) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -70,6 +78,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const accountDeleted = useCallback(() => {
     setSessionHint(false);
     setState({ kind: 'anonymous' });
+  }, []);
+
+  const updateCustomer = useCallback((patch: Partial<Customer>) => {
+    setState((s) =>
+      s.kind === 'authenticated' ? { ...s, customer: { ...s.customer, ...patch } } : s,
+    );
   }, []);
 
   useEffect(() => {
@@ -119,8 +133,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ state, onAuthenticated, logout, accountDeleted }),
-    [state, onAuthenticated, logout, accountDeleted],
+    () => ({ state, onAuthenticated, logout, accountDeleted, updateCustomer }),
+    [state, onAuthenticated, logout, accountDeleted, updateCustomer],
   );
 
   return (

@@ -8,6 +8,7 @@ import {
   refreshSession,
   registerCustomer,
   requestPasswordReset,
+  updateProfile as updateProfileRequest,
 } from '@/api/generated/endpoints';
 import {
   ConfirmPasswordResetBody,
@@ -16,6 +17,7 @@ import {
   RefreshSessionResponse,
   RegisterCustomerResponse,
   RequestPasswordResetBody,
+  UpdateProfileResponse,
 } from '@/api/generated/zod';
 import type {
   Customer,
@@ -23,12 +25,20 @@ import type {
   RegisterRequest,
   ResetConfirm,
   ResetRequest,
+  UpdateProfileRequest,
 } from '@/api/generated/model';
 
 /**
  * Tipos DERIVADOS DEL CONTRATO (`frontend-standards` §3.1/§3.2). Nunca a mano.
  */
-export type { Customer, LoginRequest, RegisterRequest, ResetConfirm, ResetRequest };
+export type {
+  Customer,
+  LoginRequest,
+  RegisterRequest,
+  ResetConfirm,
+  ResetRequest,
+  UpdateProfileRequest,
+};
 
 /**
  * Capa de servicio de la cuenta del cliente (US-014). Lo único escrito a mano:
@@ -110,5 +120,17 @@ export const accountService = {
    */
   async deleteAccount(): Promise<void> {
     await deleteAccountRequest(conSesion);
+  },
+
+  /**
+   * US-024 AC-1/AC-2/AC-3/AC-7: siempre los dos campos juntos (formulario
+   * completo, no un patch parcial — mismo criterio que el contrato real).
+   * Nunca acepta ni serializa un identificador del cliente: la identidad
+   * sale de la cookie de sesión, no de un parámetro (AC-7 — verificado
+   * también por el grep de T1.3 sobre este archivo).
+   */
+  async updateProfile(input: UpdateProfileRequest): Promise<Customer> {
+    const res = await updateProfileRequest(input, conSesion);
+    return parseContract(UpdateProfileResponse, res.data);
   },
 };

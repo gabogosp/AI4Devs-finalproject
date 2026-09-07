@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { Avatar } from '@/components/ui/Avatar';
 import { DeleteAccountSection } from './DeleteAccountSection';
+import { ProfileForm } from './ProfileForm';
 import { useSession } from './SessionProvider';
 
 /**
@@ -33,11 +35,19 @@ export function AccountPanel({
 
   return (
     <div className="flex flex-col gap-6">
+      <Avatar
+        name={customer.name}
+        customerId={customer.id}
+        avatarUrl={customer.avatar_url}
+        size="lg"
+      />
+
+      <ProfileForm customer={customer} />
+
+      {/* Email de sólo lectura (AC-6): ningún control de edición acá — no
+          es un campo del `dl` de ProfileForm porque no se edita desde esta
+          pantalla en absoluto. */}
       <dl className="flex flex-col gap-3">
-        <div>
-          <dt className="text-xs uppercase text-muted">Nombre</dt>
-          <dd className="text-sm text-fg">{customer.name}</dd>
-        </div>
         <div>
           <dt className="text-xs uppercase text-muted">Email</dt>
           <dd className="text-sm text-fg">{customer.email}</dd>

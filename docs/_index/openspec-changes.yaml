@@ -3080,3 +3080,45 @@
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-025-resenas-calificaciones-productos-backend
   created: 2026-09-06
+
+- name: US-024-edicion-perfil-cliente-frontend-web
+  us-id: US-024
+  discipline: frontend-web
+  variant: null
+  status: Draft
+  # Plan escrito 2026-09-06 (/plan-frontend-web-ticket). BLOQUEADO en Fase 0
+  # de su tasks.md: `US-024-edicion-perfil-cliente-backend` (sesión 07, en
+  # paralelo) todavía no publica `PATCH /me` ni `avatar_url` en `Customer`
+  # dentro de este worktree — reconciliación explícita antes de Fase 1.
+  # Formulario nombre+avatar en AccountPanel.tsx reusando el patrón de
+  # validación de URL de ProductForm.tsx (endurecido a esquema http/https
+  # únicamente, AC-5) + placeholder de iniciales/color determinístico (sin
+  # librería nueva) + SessionProvider.updateCustomer para reflejar el nombre
+  # de inmediato en toda la UI de sesión (header incluido). Sin change -qa
+  # propio (US §7): 5 fases de tasks.md cubren unit/componente/a11y/E2E.
+  # 8,3 h AI-asistido (estimación honesta desde 24 tasks en 5 fases; la US §7
+  # presupuesta FE-US-024 en 4h asumiendo el contrato ya construido — el
+  # exceso es la reconciliación de contrato cross-sesión (Fase 0) + el wiring
+  # de estado global (SessionProvider.updateCustomer, no pedido explícito por
+  # la US pero necesario para AC-1 "de inmediato") + la cobertura completa
+  # L1-L3 que absorbe QA.
+  # AGREGADO 2026-09-06 (post-plan, confirmado con 07): AC-1 exige también
+  # que el nombre editado aparezca en `buyer_name` del próximo checkout
+  # logueado — el backend NUNCA lo deriva de `Customer.name` (sale siempre
+  # de `body.buyer.name`). `CheckoutForm.tsx` no tenía ninguna noción de
+  # sesión; T2.5/T2.6/T3.8 agregan la precarga (`react-hook-form` `values` +
+  # `keepDirtyValues`, sin pisar una edición manual) — +3 tasks, +1h sobre
+  # la estimación original del plan. Contrato del backend ya en main (#128),
+  # reconciliado y sin cambios respecto de lo asumido en design.md.
+  parent-us: docs/user-stories/US-024-edicion-perfil-cliente.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 8.3
+  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
+  branch: null
+  pr-url: null
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null

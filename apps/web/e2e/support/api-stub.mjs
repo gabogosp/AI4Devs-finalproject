@@ -230,6 +230,8 @@ const vistaPublica = (c) => ({
   email: c.email,
   name: c.name,
   phone: c.phone ?? null,
+  // US-024: aditivo en el contrato real (Customer.avatar_url) — sin esto acá,
+  // la validación Zod del cliente lo rechaza igual que si faltara `phone`.
   avatar_url: c.avatar_url ?? null,
   created_at: c.created_at ?? '2026-01-01T00:00:00Z',
 });
@@ -667,6 +669,46 @@ const server = createServer(async (req, res) => {
     ]);
     res.statusCode = 204;
     return res.end();
+  }
+
+  // --- Edición de perfil (US-024) ---
+  //
+  // Mismo criterio CSRF/sesión que el borrado de arriba. El contrato real
+  // exige `name`/`avatar_url` SIEMPRE los dos juntos (formulario completo);
+  // el stub reproduce esa validación de forma para que T4.1 (topología) no
+  // dependa de la API real — sólo del rewrite same-origin.
+  if (path === '/v1/me' && req.method === 'PATCH') {
+    const cookies = leerCookies(req);
+    const sesion = sessions.get(cookies.dsm_access);
+    if (!sesion) return problem(res, 401, 'dsm:auth/unauthenticated', 'Unauthorized', {});
+    const csrfHeader = req.headers['x-csrf-token'];
+    if (!req.headers.origin || csrfHeader !== sesion.csrf) {
+      return problem(res, 403, 'dsm:auth/csrf-failed', 'Forbidden', {});
+    }
+    const body = await readBody(req);
+    const nombre = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!nombre) {
+      return problem(res, 422, 'dsm:catalog/validation', 'Unprocessable Entity', {
+        errors: [{ field: 'name', message: 'El nombre es requerido' }],
+      });
+    }
+    let avatarUrl = null;
+    if (body.avatar_url !== null && body.avatar_url !== undefined) {
+      try {
+        if (!['http:', 'https:'].includes(new URL(body.avatar_url).protocol)) {
+          throw new Error('esquema inválido');
+        }
+        avatarUrl = body.avatar_url;
+      } catch {
+        return problem(res, 422, 'dsm:catalog/validation', 'Unprocessable Entity', {
+          errors: [{ field: 'avatar_url', message: 'La URL debe empezar con http:// o https://' }],
+        });
+      }
+    }
+    const customer = [...customers.values()].find((c) => c.id === sesion.customerId);
+    customer.name = nombre;
+    customer.avatar_url = avatarUrl;
+    return json(res, 200, vistaPublica(customer));
   }
 
   // --- Superficie pública de categorías (US-002) ---
