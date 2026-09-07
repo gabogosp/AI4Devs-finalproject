@@ -6,6 +6,10 @@ discipline: frontend-web
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-07
+merged_commit: 6b81dc3b18d2af06dd35a66028488c66e5a37e1d
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/138
 ---
 
 # Proposal — US-025 Reseñas y calificaciones de productos (frontend web)
