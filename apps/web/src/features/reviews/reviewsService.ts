@@ -51,8 +51,8 @@ export const reviewsService = {
    * está oculta — AC-8, transparencia hacia el autor) — la fuente que
    * `ReviewsDataContainer` (T-B3) usa para derivar `ViewerReviewState`.
    */
-  async getOwn(productId: string, signal?: AbortSignal): Promise<OwnReviewResponse> {
-    const res = await getOwnReview(productId, { ...conSesion, signal });
+  async getOwn(slug: string, signal?: AbortSignal): Promise<OwnReviewResponse> {
+    const res = await getOwnReview(slug, { ...conSesion, signal });
     return parseContract(GetOwnReviewResponse, res.data);
   },
 
@@ -61,8 +61,8 @@ export const reviewsService = {
    * misma reseña si ya existe. 403 (AC-6) y 422 (AC-9) llegan como
    * `AppErrorException`, que el llamador (`ReviewsDataContainer`) traduce.
    */
-  async upsert(productId: string, input: UpsertReviewInput): Promise<Review> {
-    const res = await upsertOwnReview(productId, input, conSesion);
+  async upsert(slug: string, input: UpsertReviewInput): Promise<Review> {
+    const res = await upsertOwnReview(slug, input, conSesion);
     return parseContract(UpsertOwnReviewResponse, res.data);
   },
 };
