@@ -229,6 +229,27 @@ arranque la Fase B.
     `types.provisional.ts` (borrado en T-B1).
   - **Verify**: `pnpm --filter @dsm/web test -- reviewsService`
 
+> **BLOQUEADO (2026-09-06, ejecución de `/develop-frontend-web`) — gap de diseño real, no
+> adivinado**: `getOwnReview`/`upsertOwnReview` exigen un `productId` **uuid** en la URL
+> (`apps/api/docs/api/openapi.yaml`, `parameters: productId: { type: string, format: uuid }`),
+> pero el Component breakdown de este mismo `design.md` fija el ÚNICO prop de
+> `ReviewsDataContainer` como `productSlug: string` (mismo dato que recibiría de
+> `ProductDetail.tsx`, T-B4) — y `StorefrontProduct` (`GET /products/{slug}`, la única fuente
+> pública que la PDP tiene) declara explícitamente "sin id/stock/status/timestamps"
+> (`openapi.yaml` línea 2311): el `slug` es la ÚNICA identidad pública del producto en todo el
+> resto del storefront (carrito, checkout, GET público de reseñas por slug) — la elección del
+> backend archivado de tipar `/me/reviews/:productId` por UUID rompe ese patrón establecido, y
+> ni este `design.md` ni el `design.md` del backend archivado
+> (`openspec/changes/archive/US-025-resenas-calificaciones-productos-backend/design.md`)
+> resuelven cómo el FE obtiene ese UUID a partir del `slug` que es lo único que tiene en la PDP.
+> No hay ningún otro endpoint público (ni en `PublicReview`, ni en `PublicReviewsResponse`) que
+> exponga el `product_id`. Pasar el `slug` donde el contrato espera un uuid pasaría el
+> type-check local (el parámetro es `string`) pero fallaría contra el backend real — no es una
+> solución, es esconder el gap. Requiere una decisión de arquitectura (¿el backend acepta slug
+> en ese endpoint? ¿la PDP gana un `productId` opaco nuevo? ¿otro mecanismo?) antes de escribir
+> este container — T-B3 y T-B4 quedan sin ejecutar hasta que se resuelva. El resto de Fase B
+> (T-B5, T-B6/T-B7/T-B8, T-B9/T-B10/T-B11) no depende de este gap y se ejecutó igual.
+
 - [ ] **T-B3 — `ReviewsDataContainer.tsx` + tests de integración con MSW**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend, T-B0, T-B2
   - **Pattern**: `per msw-setup` skill + `PurchaseHistoryList.tsx` — fetch al montar,
