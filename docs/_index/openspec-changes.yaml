@@ -3126,3 +3126,36 @@
   completed-at: 2026-09-06
   archived-at: 2026-09-06
   archive-path: openspec/changes/archive/US-024-edicion-perfil-cliente-frontend-web
+
+- name: US-025-resenas-calificaciones-productos-frontend-web
+  us-id: US-025
+  discipline: frontend-web
+  variant: null
+  status: In Review   # /commit 2026-09-07 — PR #138 abierto. Fase A (9 tasks) + Fase B
+  # (12 tasks, incluida la vista admin de moderación T-B9/T-B10/T-B11) cerradas, 12/12 en
+  # tasks.md. Durante Fase B se encontró un defecto real de backend (`/me/reviews/{productId}`
+  # exigía UUID que ninguna superficie pública de producto expone — `StorefrontProduct`
+  # declara "sin id/stock/status/timestamps") — escalado al usuario, quien decidió resolverlo
+  # en backend en vez de parchearlo desde FE; resuelto por PR #135 (`/me/reviews/{slug}`).
+  # Vista admin de moderación (AC-8): confirmada en el alcance de esta misma change por el
+  # dueño (2026-09-06) — el contrato NO trae un endpoint de listado admin (sólo
+  # PATCH /v1/admin/reviews/:id), así que la pantalla se construye como sección nueva en
+  # /admin/productos/{id} (reusa el listado público por producto + acción de ocultar/mostrar
+  # por fila), no como sección top-level de "Reseñas" — decisión forzada por el contrato
+  # existente, documentada en design.md §D8 (incluye la limitación real de que una reseña
+  # oculta desaparece de toda superficie alcanzable por FE, mitigada con estado optimista
+  # intra-sesión, no persistente).
+  parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  estimate-hours: 7   # Fase A ~3h AI + Fase B ~2,5h AI + moderación admin T-B9-11 ~1h AI —
+  # ver tasks.md para el desglose completo (tradicional en la misma nota).
+  assignee: claude-code
+  branch: feat/US-025-resenas-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/138
+  pr-opened-at: 2026-09-07
+  created: 2026-09-06
+  completed-at: null
+  archived-at: null
+  archive-path: null

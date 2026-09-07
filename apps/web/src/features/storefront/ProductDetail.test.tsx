@@ -10,6 +10,17 @@ vi.mock('@/features/cart/AddToCartButton', () => ({
   AddToCartButton: () => null,
 }));
 
+// US-025 T-B4: `ReviewsDataContainer` consume `useSession()` (del
+// `SessionProvider` del layout) y hace red — se stubea acá por el mismo
+// motivo que `AddToCartButton`: este archivo prueba el resto de la ficha en
+// aislamiento, no el wiring de reseñas (eso lo cubre
+// `ReviewsDataContainer.test.tsx`, T-B3).
+vi.mock('@/features/reviews/ReviewsDataContainer', () => ({
+  ReviewsDataContainer: ({ productSlug }: { productSlug: string }) => (
+    <div data-testid="reviews-data-container-stub">{productSlug}</div>
+  ),
+}));
+
 function storefrontProduct(over: Partial<StorefrontProduct> = {}): StorefrontProduct {
   return {
     slug: 'heladera-exhibidora',
@@ -100,5 +111,25 @@ describe('ProductDetail', () => {
     render(<ProductDetail product={storefrontProduct({ low_stock: true })} />);
 
     expect(screen.getByText('Quedan pocas unidades')).toBeInTheDocument();
+  });
+
+  it('compone ReviewsDataContainer con el slug del producto, debajo de la descripción (T-B4)', () => {
+    render(
+      <ProductDetail
+        product={storefrontProduct({
+          description: 'Heladera de 400 litros',
+          slug: 'heladera-exhibidora',
+        })}
+      />,
+    );
+
+    const description = screen.getByText('Heladera de 400 litros');
+    const reviews = screen.getByTestId('reviews-data-container-stub');
+    expect(reviews).toHaveTextContent('heladera-exhibidora');
+    expect(
+      Boolean(
+        description.compareDocumentPosition(reviews) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    ).toBe(true);
   });
 });

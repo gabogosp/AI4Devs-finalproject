@@ -1,4 +1,5 @@
 import { formatArs } from '@/lib/format/currency';
+import { ReviewsDataContainer } from '@/features/reviews/ReviewsDataContainer';
 import { Breadcrumb } from './Breadcrumb';
 import { ProductJsonLd } from './ProductJsonLd';
 import { ProductImage } from './ProductImage';
@@ -16,7 +17,7 @@ import type { StorefrontProduct } from './storefrontService';
  */
 export function ProductDetail({ product }: { product: StorefrontProduct }) {
   return (
-    <article className="mx-auto flex max-w-5xl flex-col gap-6 p-4 lg:flex-row lg:gap-10 lg:p-8">
+    <article className="mx-auto flex max-w-5xl flex-col gap-10 p-4 lg:p-8">
       <ProductJsonLd product={product} />
       <ProductViewTracker
         slug={product.slug}
@@ -24,60 +25,69 @@ export function ProductDetail({ product }: { product: StorefrontProduct }) {
         inStock={product.in_stock}
       />
 
-      <div className="w-full lg:w-1/2">
-        <ProductImage
-          src={product.image_url}
-          name={product.name}
-          categoryName={product.category.name}
-        />
-      </div>
-
-      <div className="flex w-full flex-col gap-5 lg:w-1/2">
-        {/* La categoría deja de ser texto muerto: es el camino de vuelta al
-            rubro (AC-2), y cierra el `Deferred: US-002` que dejó US-003. */}
-        <Breadcrumb
-          items={[
-            { name: 'Inicio', href: '/' },
-            {
-              name: product.category.name,
-              href: `/categorias/${product.category.slug}`,
-            },
-            { name: product.name },
-          ]}
-        />
-
-        <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
-          {product.name}
-        </h1>
-
-        <div>
-          <p className="text-3xl font-bold text-foreground">
-            {formatArs(product.price_ars_cents)}
-          </p>
-          <p className="text-xs text-muted">IVA incluido</p>
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
+        <div className="w-full lg:w-1/2">
+          <ProductImage
+            src={product.image_url}
+            name={product.name}
+            categoryName={product.category.name}
+          />
         </div>
 
-        <ProductPurchase
-          inStock={product.in_stock}
-          lowStock={product.low_stock}
-          productName={product.name}
-          productSlug={product.slug}
-        />
+        <div className="flex w-full flex-col gap-5 lg:w-1/2">
+          {/* La categoría deja de ser texto muerto: es el camino de vuelta al
+              rubro (AC-2), y cierra el `Deferred: US-002` que dejó US-003. */}
+          <Breadcrumb
+            items={[
+              { name: 'Inicio', href: '/' },
+              {
+                name: product.category.name,
+                href: `/categorias/${product.category.slug}`,
+              },
+              { name: product.name },
+            ]}
+          />
 
-        {product.description && (
-          <div className="flex flex-col gap-2">
-            <h2 className="text-base font-semibold text-foreground">
-              Descripción
-            </h2>
-            {/* Texto plano: la descripción la escribe el dueño (o la genera la
-                IA en US-005) y nunca se interpreta como HTML. Los saltos de
-                línea se respetan con whitespace-pre-line. */}
-            <p className="whitespace-pre-line text-foreground">
-              {product.description}
+          <h1 className="text-2xl font-bold text-foreground lg:text-3xl">
+            {product.name}
+          </h1>
+
+          <div>
+            <p className="text-3xl font-bold text-foreground">
+              {formatArs(product.price_ars_cents)}
             </p>
+            <p className="text-xs text-muted">IVA incluido</p>
           </div>
-        )}
+
+          <ProductPurchase
+            inStock={product.in_stock}
+            lowStock={product.low_stock}
+            productName={product.name}
+            productSlug={product.slug}
+          />
+
+          {product.description && (
+            <div className="flex flex-col gap-2">
+              <h2 className="text-base font-semibold text-foreground">
+                Descripción
+              </h2>
+              {/* Texto plano: la descripción la escribe el dueño (o la genera la
+                  IA en US-005) y nunca se interpreta como HTML. Los saltos de
+                  línea se respetan con whitespace-pre-line. */}
+              <p className="whitespace-pre-line text-foreground">
+                {product.description}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Reseñas y calificaciones (US-025, T-B4, `design.md` §Component
+          breakdown) — debajo del bloque de descripción, a todo el ancho de
+          la ficha (no encajonada en la columna de info). Única hoja
+          `'use client'` de esta ficha, mismo criterio que `ProductPurchase`:
+          `ProductDetail` sigue siendo Server Component. */}
+      <ReviewsDataContainer productSlug={product.slug} />
     </article>
   );
 }

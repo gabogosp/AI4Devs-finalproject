@@ -10,6 +10,7 @@ import {
   categoriesService,
   type Category,
 } from '@/features/categories/categoriesService';
+import { ProductReviewsModeration } from '@/features/reviews/ProductReviewsModeration';
 
 /** Contenedor de edición (AC-3): precarga el producto + categorías. */
 export function ProductEdit({ id }: { id: string }) {
@@ -52,6 +53,10 @@ export function ProductEdit({ id }: { id: string }) {
       <h1 className="text-2xl font-bold">Editar producto</h1>
       <ProductActions product={state.data} />
       <ProductForm categories={categories} initial={state.data} />
+      {/* US-025 AC-8, T-B11: moderación por-producto, extiende esta pantalla
+          en vez de un panel `/admin/resenas` propio (design.md §D8 — el
+          contrato no publica un listado cross-producto). */}
+      <ProductReviewsModeration productSlug={state.data.slug} />
     </section>
   );
 }
