@@ -3131,31 +3131,30 @@
   us-id: US-025
   discipline: frontend-web
   variant: null
-  status: Draft   # /plan-frontend-web-ticket 2026-09-06: plan en dos fases explícitas. Fase A
-  # (9 tasks, componentes presentacionales — StarRatingInput/ReviewForm/ReviewsList/
-  # ReviewsSummary/ReviewGuestPrompt/ReviewsSection — tipados contra interfaces provisionales
-  # marcadas @provisional, cero llamadas HTTP) es ejecutable y cerrable YA, sin depender de
-  # ningún backend. Fase B (8 tasks) quedó Blocked-by:
-  # US-025-resenas-calificaciones-productos-backend — ahora archivado (PR #130) — así que
-  # Fase B queda desbloqueada: wiring real al cliente generado, reviewsService.ts,
-  # composición en ProductDetail.tsx, y el E2E dev-owned de topología de
-  # /v1/me/reviews/:productId (design.md §D6, mismo motivo que US-020 §D8). Vista admin de
-  # moderación (AC-8): confirmada en el alcance de esta misma change por el dueño
-  # (2026-09-06) — el contrato de backend NO trae un endpoint de listado admin (sólo
-  # PATCH /v1/admin/reviews/:id), así que la pantalla de moderación se construye como
-  # sección nueva en /admin/productos/{id} (reusa el listado público por producto +
-  # acción de ocultar/mostrar por fila), no como sección top-level de "Reseñas" — decisión
-  # forzada por el contrato existente, documentada en design.md.
+  status: In Review   # /commit 2026-09-07 — PR #138 abierto. Fase A (9 tasks) + Fase B
+  # (12 tasks, incluida la vista admin de moderación T-B9/T-B10/T-B11) cerradas, 12/12 en
+  # tasks.md. Durante Fase B se encontró un defecto real de backend (`/me/reviews/{productId}`
+  # exigía UUID que ninguna superficie pública de producto expone — `StorefrontProduct`
+  # declara "sin id/stock/status/timestamps") — escalado al usuario, quien decidió resolverlo
+  # en backend en vez de parchearlo desde FE; resuelto por PR #135 (`/me/reviews/{slug}`).
+  # Vista admin de moderación (AC-8): confirmada en el alcance de esta misma change por el
+  # dueño (2026-09-06) — el contrato NO trae un endpoint de listado admin (sólo
+  # PATCH /v1/admin/reviews/:id), así que la pantalla se construye como sección nueva en
+  # /admin/productos/{id} (reusa el listado público por producto + acción de ocultar/mostrar
+  # por fila), no como sección top-level de "Reseñas" — decisión forzada por el contrato
+  # existente, documentada en design.md §D8 (incluye la limitación real de que una reseña
+  # oculta desaparece de toda superficie alcanzable por FE, mitigada con estado optimista
+  # intra-sesión, no persistente).
   parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  estimate-hours: 6   # Fase A ~3h AI / ~5,5h tradicional + Fase B ~2,5h AI / ~4,5h tradicional
-  # (una vez desbloqueada) — suma al FE-US-025 de la US §7 (6h).
+  estimate-hours: 7   # Fase A ~3h AI + Fase B ~2,5h AI + moderación admin T-B9-11 ~1h AI —
+  # ver tasks.md para el desglose completo (tradicional en la misma nota).
   assignee: claude-code
-  branch: null
-  pr-url: null
-  pr-opened-at: null
+  branch: feat/US-025-resenas-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/138
+  pr-opened-at: 2026-09-07
   created: 2026-09-06
   completed-at: null
   archived-at: null
