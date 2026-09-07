@@ -944,17 +944,18 @@
   blocked_by: [US-008, US-013, US-014]   # necesita checkout + estado delivered + cuentas (las 3 Done)
 - id: US-026
   slug: productos-destacados-home
-  status: Backlog   # skeleton creado 2026-09-07 (hallazgo de la prueba visual del dueño):
-  # el home es landing de categorías por diseño (US-002 AC-1); el dueño pidió agregar
-  # productos destacados debajo de los rubros (patrón Mercado Libre) "para luego refinar/
-  # enriquecer". Falta /enrich-user-story US-026 — decisión de producto clave: qué es un
-  # "destacado" (novedades / más vendidos / curado manual / mejor calificados), que define
-  # si es FE-only o BE+FE+admin. Ver §10 de la US.
+  status: Ready   # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
+  # — el home muestra AMBOS (a) Novedades + (b) Más vendidos, no uno solo. Se descartaron
+  # (c) curado manual y (d) mejor calificados para esta iteración. 8 AC en Gherkin, DoR
+  # completo. "Más vendidos" suma BE real (agregado sobre order_items, distinto — y
+  # public-safe, sin revenue — del reporte admin de US-016). Lección aplicada de US-025
+  # (PR #139): NFR explícito de que la caché de las 2 rutas nuevas debe declararse
+  # per-handler, nunca heredar el TTL de otra ruta por accidente.
   priority: Medium
   prd-capacity: null
-  disciplines: [FE]   # tentativo — el enrich confirma si suma BE
+  disciplines: [BE, FE, QA]
   parent-prd: docs/product/prd.md
   linear-issue-id: null
   created: 2026-09-07
-  ready-at: null
+  ready-at: 2026-09-07
   blocked_by: []
