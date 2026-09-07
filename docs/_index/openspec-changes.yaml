@@ -3085,7 +3085,10 @@
   us-id: US-024
   discipline: frontend-web
   variant: null
-  status: Draft
+  status: archived   # /archive-change 2026-09-06 — PR #133 mergeado (055e6d0). Agrega
+  # "Desde US-024 frontend-web" a openspec/specs/cuentas/decisions.md (checkout
+  # buyer.name prefill, SessionProvider.updateCustomer, placeholder de avatar
+  # sin librería nueva) — sin tocar contracts/openapi.yaml (lo posee el backend).
   # Plan escrito 2026-09-06 (/plan-frontend-web-ticket). BLOQUEADO en Fase 0
   # de su tasks.md: `US-024-edicion-perfil-cliente-backend` (sesión 07, en
   # paralelo) todavía no publica `PATCH /me` ni `avatar_url` en `Customer`
@@ -3115,10 +3118,11 @@
   audit-baseline: null
   audit-derived: false
   estimate-hours: 8.3
-  assignee: sin-asignar  # planificado; nadie lo ejecuta todavía
-  branch: null
-  pr-url: null
+  assignee: claude-code
+  branch: feat/US-024-edicion-perfil-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/133
+  pr-opened-at: 2026-09-06
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-06
+  archived-at: 2026-09-06
+  archive-path: openspec/changes/archive/US-024-edicion-perfil-cliente-frontend-web
