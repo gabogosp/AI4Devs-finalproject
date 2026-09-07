@@ -280,7 +280,7 @@ arranque la Fase B.
     sesión, responde 401; con el header de fuerza del stub, responde 403 (AC-6) y 422 (AC-9).
   - **Verify**: `pnpm --filter @dsm/web test:e2e -- reviews-topology`
 
-- [ ] **T-B8 — Confirmar que ninguna entrada nueva de `next.config.mjs` hizo falta**
+- [x] **T-B8 — Confirmar que ninguna entrada nueva de `next.config.mjs` hizo falta**
   - **Blocked-by**: T-B7 (el spec de topología es la prueba real; esta task documenta el resultado)
   - **Exit criterion**: `next.config.mjs` no cambió en este change — el rewrite `/v1/me/:path*`
     preexistente cubrió el nuevo prefijo sin modificación, confirmado por T-B7 pasando en verde.
