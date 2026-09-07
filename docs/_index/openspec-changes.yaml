@@ -2988,23 +2988,26 @@
   us-id: US-025
   discipline: qa
   variant: null
-  status: in-progress   # /develop-qa 2026-09-06: T-QA2 cerrada — 9/9 escenarios de
-  # aceptación BDD verdes contra BE-US-025 real (ya mergeado), 3 corridas limpias.
-  # AC-8 (moderación) sólo verificado a nivel API; el escenario de UI queda para
-  # cuando el FE de moderación (Fase B) aterrice. crearOrdenEnEstado original
-  # resultó ser siempre de invitado (customer_id null) — se construyó
-  # compraEntregada (seed-resenas.ts) para elegibilidad real. Ver tasks.md/design.md.
-  # /plan-qa --standalone 2026-09-06: mismo criterio que
-  # US-024-edicion-perfil-cliente-qa (change hermano paralelo). 9/9 AC cubiertos.
-  # Blocked-by: BE-US-025/FE-US-025 explícito en qa-plan.md §12.
+  status: in-progress   # /develop-qa 2026-09-07: T-QA3 cerrada — E2E Playwright 4/4
+  # verdes (dejar/editar reseña + promedio, sin control si no elegible ×2, moderación
+  # por UI), 3 corridas limpias en proceso fresco. Encontró y desbloqueó un defecto
+  # real de backend en el camino: StorefrontCacheInterceptor a nivel de clase
+  # cacheaba GET /products/:slug/reviews con el TTL del precio (60s) — el promedio no
+  # se refetcheaba tras dejar/ocultar una reseña (violaba AC-3 en la práctica). No se
+  # debilitó el assert; se reportó y otra sesión lo corrigió (PR #139,
+  # @StorefrontCache({maxAge:0,swr:0}) sólo en esa ruta) antes de cerrar esta task.
+  # T-QA2 (9/9 BDD) y T-QA1 (plan) ya cerradas antes — ver tasks.md para el detalle
+  # completo de las 3 fases, incluida la nota de riesgo de flakiness intermitente en
+  # registro al re-correr repetido contra el mismo proceso (no reproducido en 3
+  # corridas frescas, no bloqueante).
   parent-us: docs/user-stories/US-025-resenas-calificaciones-productos.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  estimate-hours: 1.5   # 9 AC (más que US-024) + smoke de carga opcional (D-QA3) — sólo
-  # escribir el plan, no ejecutarlo.
+  estimate-hours: 3   # 1.5h planificación (9 AC) + ~1.5h ejecución (BDD + E2E,
+  # incluida la investigación del defecto de caché).
   assignee: claude-code
-  branch: feat/US-024-025-qa-plans
+  branch: test/US-025-resenas-e2e
   pr-url: null
   pr-opened-at: null
   created: 2026-09-06
