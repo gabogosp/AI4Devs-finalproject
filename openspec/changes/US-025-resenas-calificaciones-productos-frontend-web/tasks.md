@@ -345,11 +345,11 @@ arranque la Fase B.
 
 ## Verification (nivel de suite)
 
-- [ ] Fase A completa: `pnpm --filter @dsm/web test -- reviews` (todos los `*.test.tsx` bajo
+- [x] Fase A completa: `pnpm --filter @dsm/web test -- reviews` (todos los `*.test.tsx` bajo
       `src/features/reviews/` en verde, sin red)
-- [ ] Fase A: lint/type-check limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
-- [ ] Fase B: `pnpm --filter @dsm/web test -- reviews` (incluye
+- [x] Fase A: lint/type-check limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
+- [x] Fase B: `pnpm --filter @dsm/web test -- reviews` (incluye
       `reviewsService`/`ReviewsDataContainer`/`adminReviewsService`) +
       `pnpm --filter @dsm/web test:e2e -- reviews-topology`
-- [ ] Fase B: `pnpm --filter @dsm/web test -- ProductEdit` (moderación compuesta, T-B11)
-- [ ] Fase B: `pnpm --filter @dsm/web codegen` sin diff (gate `frontend-codegen-fresh`)
+- [x] Fase B: `pnpm --filter @dsm/web test -- ProductEdit` (moderación compuesta, T-B11)
+- [x] Fase B: `pnpm --filter @dsm/web codegen` sin diff (gate `frontend-codegen-fresh`)
