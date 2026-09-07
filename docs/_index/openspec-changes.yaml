@@ -3134,9 +3134,11 @@
   us-id: US-025
   discipline: frontend-web
   variant: null
-  status: In Review   # /commit 2026-09-07 — PR #138 abierto. Fase A (9 tasks) + Fase B
-  # (12 tasks, incluida la vista admin de moderación T-B9/T-B10/T-B11) cerradas, 12/12 en
-  # tasks.md. Durante Fase B se encontró un defecto real de backend (`/me/reviews/{productId}`
+  status: archived   # /archive-change 2026-09-07 — PR #138 mergeado (6b81dc3). Extiende
+  # openspec/specs/resenas-productos/ (CAP-14) con la sección frontend-web. Fase A
+  # (9 tasks) + Fase B (12 tasks, incluida la vista admin de moderación
+  # T-B9/T-B10/T-B11) cerradas, 12/12 en tasks.md. Durante Fase B se encontró un
+  # defecto real de backend (`/me/reviews/{productId}`
   # exigía UUID que ninguna superficie pública de producto expone — `StorefrontProduct`
   # declara "sin id/stock/status/timestamps") — escalado al usuario, quien decidió resolverlo
   # en backend en vez de parchearlo desde FE; resuelto por PR #135 (`/me/reviews/{slug}`).
@@ -3159,6 +3161,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/138
   pr-opened-at: 2026-09-07
   created: 2026-09-06
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-07T13:19:15Z
+  archived-at: 2026-09-07
+  archive-path: openspec/changes/archive/US-025-resenas-calificaciones-productos-frontend-web

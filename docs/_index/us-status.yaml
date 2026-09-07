@@ -916,10 +916,12 @@
   status: In Progress   # 2026-09-06: BE cerrado (9/9 tasks, PR #130 abierto contra
   # main), openspec/changes/US-025-resenas-calificaciones-productos-backend/. FE/QA
   # (standalone qa-plan ya existente) todavía pendientes.
-  # 2026-09-07: FE en In Review (PR #138, 12/12 tasks — Fase A+B + vista admin de
-  # moderación T-B9/T-B10/T-B11, confirmada en alcance por el dueño). US permanece
-  # In Progress a nivel agregado porque QA (openspec/changes/US-025-resenas-calificaciones-productos-qa/)
-  # sigue in-progress — avanza a Done recién cuando BE+FE+QA estén los tres resueltos.
+  # 2026-09-07: FE archivado (/archive-change, PR #138 mergeado — Fase A+B + vista
+  # admin de moderación T-B9/T-B10/T-B11, confirmada en alcance por el dueño; extiende
+  # openspec/specs/resenas-productos/, CAP-14). US permanece In Progress a nivel
+  # agregado porque QA (openspec/changes/US-025-resenas-calificaciones-productos-qa/,
+  # E2E 4/4 ya verde vía PR #140) todavía no corrió su propio /archive-change — avanza
+  # a Done recién cuando BE+FE+QA estén los tres archivados.
   in-progress-at: 2026-09-06
   # US nueva, nacida de un hallazgo de la prueba visual del
   # dueño ("copiar de Mercado Libre" — descripción + reseñas + estrellas; la descripción ya
