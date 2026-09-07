@@ -11,7 +11,7 @@ interface AxeViolation {
 
 import type { AsyncState } from '@/lib/async';
 import { ReviewsSection } from './ReviewsSection';
-import type { ReviewViewModel, ViewerReviewState } from './types.provisional';
+import type { ReviewViewModel, ViewerReviewState } from './types';
 
 expect.extend(toHaveNoViolations);
 

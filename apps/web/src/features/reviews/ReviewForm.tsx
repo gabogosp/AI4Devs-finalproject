@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import type { AsyncState } from '@/lib/async';
 import { Button } from '@/components/ui/Button';
 import { StarRatingInput } from './StarRatingInput';
-import type { ReviewFormFieldError, ReviewFormInput } from './types.provisional';
+import type { ReviewFormFieldError, ReviewFormInput } from './types';
 
 export interface ReviewFormProps {
   initialValue?: ReviewFormInput;

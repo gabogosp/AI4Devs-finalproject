@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { AsyncState } from '@/lib/async';
 import { ReviewsSection } from './ReviewsSection';
-import type { ReviewViewModel, ViewerReviewState } from './types.provisional';
+import type { ReviewViewModel, ViewerReviewState } from './types';
 
 const SUMMARY = { average: 4.2, count: 5 };
 

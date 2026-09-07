@@ -1,6 +1,6 @@
 import { formatDateTime } from '@/lib/format/datetime';
 import { StarRatingDisplay } from './StarRatingDisplay';
-import type { ReviewViewModel } from './types.provisional';
+import type { ReviewViewModel } from './types';
 
 export interface ReviewListItemProps {
   review: ReviewViewModel;

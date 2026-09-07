@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ReviewsList } from './ReviewsList';
 import { ReviewListItem } from './ReviewListItem';
-import type { ReviewViewModel } from './types.provisional';
+import type { ReviewViewModel } from './types';
 
 function review(overrides: Partial<ReviewViewModel> = {}): ReviewViewModel {
   return {

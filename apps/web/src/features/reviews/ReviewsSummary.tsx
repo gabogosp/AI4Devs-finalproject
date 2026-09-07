@@ -1,4 +1,4 @@
-import type { ReviewsSummaryViewModel } from './types.provisional';
+import type { ReviewsSummaryViewModel } from './types';
 import { StarRatingDisplay } from './StarRatingDisplay';
 
 export interface ReviewsSummaryProps {

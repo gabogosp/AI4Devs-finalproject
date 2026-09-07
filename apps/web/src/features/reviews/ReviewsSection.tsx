@@ -9,7 +9,7 @@ import type {
   ReviewViewModel,
   ReviewsSummaryViewModel,
   ViewerReviewState,
-} from './types.provisional';
+} from './types';
 
 export interface ReviewsSectionProps {
   viewerState: ViewerReviewState;

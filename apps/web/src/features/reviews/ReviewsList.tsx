@@ -1,5 +1,5 @@
 import { ReviewListItem } from './ReviewListItem';
-import type { ReviewViewModel } from './types.provisional';
+import type { ReviewViewModel } from './types';
 
 export interface ReviewsListProps {
   reviews: ReviewViewModel[];

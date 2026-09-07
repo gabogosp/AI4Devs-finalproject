@@ -210,7 +210,7 @@ arranque la Fase B.
     T-B3 sin esto resuelto.
   - **Verify**: `design.md` §D5 de este change ya no dice "todavía no está resuelto" (revisión manual antes de continuar)
 
-- [ ] **T-B1 — Verificar frescura del codegen y borrar `types.provisional.ts`**
+- [x] **T-B1 — Verificar frescura del codegen y borrar `types.provisional.ts`**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend
   - **Pattern**: `per openapi-client-codegen` skill — verificación de frescura, no regeneración
     manual; el orquestador ya corrió el codegen antes de esta task.
