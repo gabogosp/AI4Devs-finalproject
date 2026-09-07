@@ -202,7 +202,7 @@ arranque la Fase B.
 > (AC-8), confirmada en el alcance de este change por el dueño después de la planificación
 > inicial — ver `proposal.md` "Open questions" #1 y `design.md` §D8.
 
-- [ ] **T-B0 — Leer el `design.md` de `US-025-resenas-calificaciones-productos-backend` y resolver `design.md` §D5 de este change**
+- [x] **T-B0 — Leer el `design.md` de `US-025-resenas-calificaciones-productos-backend` y resolver `design.md` §D5 de este change**
   - **Blocked-by**: US-025-resenas-calificaciones-productos-backend
   - **Exit criterion**: la forma exacta en que el FE conoce (a) elegibilidad del viewer y (b) su
     reseña propia existente queda documentada como una actualización de `design.md` §D5 de
