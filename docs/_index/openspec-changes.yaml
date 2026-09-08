@@ -3226,15 +3226,13 @@
   us-id: US-026
   discipline: frontend-web
   variant: null
-  status: draft   # /plan-frontend-web-ticket 2026-09-07 — plan en dos fases (mismo patrón que
-  # US-024/US-025): backend todavía no planificado (US-026-productos-destacados-home-backend no
-  # existe). Fase A (7 tasks: ProductCard.categoryName opcional, HomeFeaturedSection presentacional
-  # tipado contra el DTO StorefrontProductListItem ya generado — sin types.provisional.ts, ver
-  # design.md §D1 — tracker de telemetría) cerrable ahora, sin ninguna llamada HTTP. Fase B
-  # (6 tasks: homeFeaturedService.ts + composición en app/(storefront)/page.tsx, sin container de
-  # cliente porque ninguna de las 2 secciones depende de sesión) queda Blocked-by el change de
-  # backend. NFR de caché explícita por ruta (US §9, lección de US-025 PR #139) resuelto del lado
-  # FE en design.md §D5 con una smoke test dedicada (T-B3).
+  status: In Review   # /commit 2026-09-08 — PR #149 abierto. Fase A (7 tasks) + Fase B (6 tasks)
+  # cerradas, 13/13 en tasks.md. Backend mergeó (PR #146) con exactamente la forma que Fase A
+  # había apostado (design.md §D1): HighlightedProductsResponse{data}, StorefrontProductListItem
+  # reusado tal cual, sin auth, Cache-Control 60s/30s per-handler. ProductCard.categoryName
+  # opcional (widening compatible), HomeFeaturedSection presentacional + homeFeaturedService.ts
+  # (caché explícita por método, mitad FE de la lección de US-025 PR #139) + composición en
+  # app/(storefront)/page.tsx.
   parent-us: docs/user-stories/US-026-productos-destacados-home.md
   linear-task-id: null
   audit-baseline: null
@@ -3242,9 +3240,9 @@
   estimate-hours: 3.5   # Fase A ~2h AI-asistido + Fase B ~1,5h AI-asistido — ver tasks.md para
   # el desglose completo (tradicional en la misma nota).
   assignee: claude-code
-  branch: null   # /develop-frontend-web crea la rama al arrancar — no se registra en plan-time
-  # (index-conventions.md §84 — evita el defecto F42/F45 de una rama nominal antes de existir).
-  pr-url: null
+  branch: feat/US-026-destacados-home-frontend-web
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/149
+  pr-opened-at: 2026-09-08
   created: 2026-09-07
   completed-at: null
   archived-at: null
