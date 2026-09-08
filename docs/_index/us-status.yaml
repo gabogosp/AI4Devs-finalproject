@@ -944,10 +944,7 @@
   blocked_by: [US-008, US-013, US-014]   # necesita checkout + estado delivered + cuentas (las 3 Done)
 - id: US-026
   slug: productos-destacados-home
-  status: In Progress   # /archive-change 2026-09-07: BE archivado (PR #146) — GET
-  # /products/novedades + GET /products/mas-vendidos. FE (a7) y QA (qa-plan #145 ya
-  # abierto, e9) siguen pendientes de archivar antes de que la US pase a Done/QA.
-  # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
+  status: In Progress   # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
   # — el home muestra AMBOS (a) Novedades + (b) Más vendidos, no uno solo. Se descartaron
   # (c) curado manual y (d) mejor calificados para esta iteración. 8 AC en Gherkin, DoR
   # completo. "Más vendidos" suma BE real (agregado sobre order_items, distinto — y
@@ -959,8 +956,22 @@
   # BE/FE (openspec/changes/US-026-productos-destacados-home-qa/, status: draft en
   # openspec-changes.yaml). 8/8 AC cubiertos, incluidos 2 test-cases dedicados a la
   # frontera con el reporte admin de US-016 (shape público) y a la lección de caché de
-  # US-025 (Cache-Control per-handler). No cambia el status de la US — sigue `Ready`
-  # hasta que algún discipline change abra.
+  # US-025 (Cache-Control per-handler).
+  #
+  # /plan-frontend-web-ticket 2026-09-07 — primera planificación de disciplina de
+  # implementación (frontend-web-developer). Plan en dos fases (mismo patrón que
+  # US-024/US-025): Fase A cerrable ahora sin red, Fase B Blocked-by
+  # US-026-productos-destacados-home-backend.
+  #
+  # 2026-09-08: backend mergeado (PR #146) — GET /v1/products/novedades +
+  # GET /v1/products/mas-vendidos, envelope {data: [...]} sobre StorefrontProductListItem
+  # ya generado (tal como Fase A había apostado, design.md §D1), sin auth, Cache-Control
+  # 60s/30s per-handler (NFR cumplido del lado BE), [] es 200 válido. Fase B de FE
+  # desbloqueada.
+  #
+  # /archive-change 2026-09-07: BE archivado (PR #146). FE en In Review (PR #149,
+  # 13/13 tasks — Fase A+B) y QA (qa-plan #145/#148) siguen pendientes de archivar
+  # antes de que la US pase a Done.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]
@@ -968,5 +979,6 @@
   linear-issue-id: null
   created: 2026-09-07
   ready-at: 2026-09-07
-  in-progress-at: 2026-09-07
+  in-progress-at: 2026-09-07   # primera planificación de disciplina (/plan-frontend-web-ticket,
+  # frontend-web-developer) — mismo criterio que US-024/US-025.
   blocked_by: []

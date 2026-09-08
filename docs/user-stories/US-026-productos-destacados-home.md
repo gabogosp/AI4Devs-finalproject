@@ -18,7 +18,9 @@ language: es
 created: 2026-09-07
 updated: 2026-09-07
 ready-at: 2026-09-07
-in-progress-at: 2026-09-07
+in-progress-at: 2026-09-07   # /plan-frontend-web-ticket US-026 — primera planificación de
+# disciplina (openspec/changes/US-026-productos-destacados-home-frontend-web/, plan en dos
+# fases: Fase A + Fase B, esta última desbloqueada y cerrada tras PR #146 (backend)).
 done-at: null
 authored-by: Gabriel Suarez
 disciplines: [BE, FE, QA]
@@ -133,7 +135,7 @@ Entonces se muestra igual que en el listado por categoría (US-002/US-003): marc
 | Disciplina | Task id | Estimado (h) | Owner | Estado |
 |---|---|---|---|---|
 | BE | BE-US-026 | 5h | claude-code | Todo |
-| FE | FE-US-026 | 4h | claude-code | Todo |
+| FE | FE-US-026 | 4h | claude-code | Planificado (`openspec/changes/US-026-productos-destacados-home-frontend-web/`, Fase A lista para ejecutar, Fase B Blocked-by BE) |
 | QA | QA-US-026 | 2h | claude-code | Todo |
 
 > BE: `GET /v1/products/novedades` (query simple: `status: 'published'`,
