@@ -71,7 +71,7 @@ language: es
 
 ### Telemetría (sin HTTP — no toca ningún contrato)
 
-- [ ] **T-A3 — `home_featured_shown` en `events.ts` + `PUBLIC_EVENTS`**
+- [x] **T-A3 — `home_featured_shown` en `events.ts` + `PUBLIC_EVENTS`**
   - **Pattern**: `per events.ts` líneas ~10-14 (`category_shown`) — nuevo `BusinessEvent`
     `home_featured_shown`, agregado a `PUBLIC_EVENTS` (superficie de visitante anónimo, no de
     operador, mismo criterio que `pdp_shown`/`category_shown`). Props: `section: 'novedades' |

@@ -145,4 +145,24 @@ describe('observability — eventos de negocio', () => {
       expect(sink).toHaveBeenCalledWith('review_submitted', {});
     });
   });
+
+  describe('home_featured_shown (US-026 T-A3)', () => {
+    it('está en la superficie pública: no lleva operator_id', () => {
+      const sink = vi.fn();
+      setEventSink(sink);
+
+      track('home_featured_shown', {
+        section: 'novedades',
+        item_count: 8,
+        screen_name: 'home',
+      });
+
+      expect(sink).toHaveBeenCalledWith(
+        'home_featured_shown',
+        expect.objectContaining({ section: 'novedades', item_count: 8, screen_name: 'home' }),
+      );
+      const [, props] = sink.mock.calls[0];
+      expect(props).not.toHaveProperty('operator_id');
+    });
+  });
 });

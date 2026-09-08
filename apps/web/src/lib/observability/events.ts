@@ -142,7 +142,14 @@ export type BusinessEvent =
   // convención (ver `ReviewEventProps` abajo).
   | 'review_shown'
   | 'review_submitted'
-  | 'review_submit_failed';
+  | 'review_submit_failed'
+  // Destacados del home (US-026): "Novedades"/"Más vendidos". Superficie de
+  // visitante anónimo (no de operador), mismo criterio que
+  // `pdp_shown`/`category_shown` — el home se cachea por tag, así que el
+  // backend sólo ve los re-fetches post-invalidación y su métrica de vistas
+  // subcuenta. Sin PII y sin datos de producto individual: sólo agregados
+  // (`section`, `item_count`) — nunca el slug de cada item destacado.
+  | 'home_featured_shown';
 
 export interface EventProps {
   operator_id?: string;
@@ -235,6 +242,9 @@ const PUBLIC_EVENTS: ReadonlySet<BusinessEvent> = new Set<BusinessEvent>([
   'review_shown',
   'review_submitted',
   'review_submit_failed',
+  // Lo emite quien visita el home, que es un visitante anónimo — no el dueño.
+  // Mismo criterio que `pdp_shown`/`category_shown`.
+  'home_featured_shown',
 ]);
 
 export function track(event: ReviewEvent, props?: ReviewEventProps): void;
