@@ -130,7 +130,7 @@ arranque la Fase B.
 
 ## Fase B — Bloqueada (`Blocked-by: US-026-productos-destacados-home-backend`, todavía no planificado)
 
-- [ ] **T-B0 — Leer el `design.md` de `US-026-productos-destacados-home-backend` y resolver la
+- [x] **T-B0 — Leer el `design.md` de `US-026-productos-destacados-home-backend` y resolver la
       forma exacta de la respuesta**
   - **Blocked-by**: US-026-productos-destacados-home-backend
   - **Exit criterion**: queda documentado (actualización de este `design.md` §D1) si cada

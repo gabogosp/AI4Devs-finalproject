@@ -87,6 +87,32 @@ verificables por grep/test que en US-025 D1:
 superficie (DTOs de red, cliente HTTP) es exactamente la que §3 gobierna, y Fase A se detiene
 explícitamente antes de esa línea.
 
+**T-B0 — resuelto** (`US-026-productos-destacados-home-backend`, PR #146, mergeado): el contrato
+backend ya está vivo y generado. Hechos confirmados (no una apuesta — verificables por lectura
+directa del código generado):
+
+- Ambos endpoints — `GET /v1/products/novedades` (operación generada `storefrontGetNewArrivals`)
+  y `GET /v1/products/mas-vendidos` (`storefrontGetBestSellers`), ambos en
+  `@/api/generated/endpoints` — responden un **envelope** `HighlightedProductsResponse { data:
+  StorefrontProductListItem[] }` (`apps/web/src/api/generated/model/highlightedProductsResponse.ts`),
+  **no** un array plano y **sin** objeto `pagination` (no es un listado navegable, tope fijo de
+  8 vía `@maxItems`). Fase B unwrappea `.data` dentro de `homeFeaturedService` — los callers
+  (`HomeFeaturedSection` de Fase A) siguen recibiendo `StorefrontProductListItem[]` plano, sin
+  ningún cambio en su prop `items`.
+- El shape reusa `StorefrontProductListItem` **tal cual** — la apuesta de Fase A (arriba) se
+  confirmó: no hizo falta re-tipar nada.
+- Los schemas Zod generados para validar en el borde son `StorefrontGetNewArrivalsResponse` y
+  `StorefrontGetBestSellersResponse` (`@/api/generated/zod`).
+- Ambas rutas son **públicas** (sin auth) — ningún marcador `session` en la llamada, mismo
+  criterio que `storefrontGetProduct`.
+- Ambas llevan `Cache-Control: public, max-age=60, stale-while-revalidate=30` estampado
+  server-side por handler (`@StorefrontCache({ maxAge: 60, swr: 30 })`, confirmado en
+  `apps/api/src/storefront/storefront.controller.ts` y en la descripción de cada operación en el
+  OpenAPI) — la mitad backend de la garantía de D5 queda efectivamente cumplida, no sólo
+  documentada como pendiente.
+- `data: []` es una respuesta 200 válida en ambos casos, no un error: catálogo sin productos
+  publicados (AC-4) y sin ventas confirmadas (AC-5) devuelven envelope vacío, nunca 404/5xx.
+
 ### D2 — `HomeFeaturedSection`: la ausencia de datos es responsabilidad del propio componente
 
 AC-4 y AC-5 son casos independientes de "esta sección no tiene datos → no se muestra, ni
@@ -140,15 +166,13 @@ cambia. Tags separados por sección (`home:novedades`, `home:mas-vendidos`) — 
 porque son dos fuentes de datos independientes (AC-4/AC-5 lo confirman: pueden faltar por
 separado) y una futura invalidación on-demand de una no debe pisar la otra.
 
-**NFR no completamente verificable desde FE** (documentado, no silenciado): la garantía real de
-que el backend declara `@StorefrontCache` **por handler** (y no hereda el TTL de otra ruta de la
-misma clase, el bug real de US-025 PR #139) es una responsabilidad de
-`US-026-productos-destacados-home-backend` — el FE no puede verificar desde este repo qué
-decorator lleva un handler del otro servicio. La mitigación de este change es la smoke de T-B3:
-confirma que **el propio FE** nunca omite `next.revalidate`/`next.tags` en la llamada (su mitad
-de la garantía), y `design.md` deja constancia explícita de que la mitad de backend queda
-pendiente de verificación cuando `US-026-productos-destacados-home-backend` se planifique — para
-que no se "olvide" como pasó una vez con reseñas.
+**Actualización T-B0**: la mitad backend de esta garantía ya no está pendiente — PR #146
+(mergeado) confirma `@StorefrontCache({ maxAge: 60, swr: 30 })` declarado explícitamente por
+handler en `apps/api/src/storefront/storefront.controller.ts` para ambas rutas nuevas (no un TTL
+heredado de otra ruta, el bug real de US-025 PR #139), verificado además por
+`apps/api/src/e2e-storefront-cache.spec.ts` del lado backend. La smoke de T-B3 sigue siendo la
+mitad FE de la garantía (que el propio `homeFeaturedService` nunca omita `next.revalidate`/
+`next.tags` en la llamada) — las dos mitades quedan cerradas.
 
 ### D6 — Sin gap de topología (a diferencia de US-025 D6)
 
@@ -212,7 +236,7 @@ en la puerta de entrada del sitio).
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| El backend real no reusa `StorefrontProductListItem` tal cual (p.ej. agrega `id` o cambia el envelope) | media | bajo — Fase A no depende de la forma real (D1) | Re-tipar el import de `HomeFeaturedSection`/`homeFeaturedService` en Fase B; el JSX y los tests de Fase A no cambian |
+| ~~El backend real no reusa `StorefrontProductListItem` tal cual~~ — **resuelto** (T-B0, PR #146): reusa el tipo tal cual, envuelto en `HighlightedProductsResponse.data` | — | — | Sin acción — Fase B unwrappea `.data` en `homeFeaturedService`, el JSX/tests de Fase A no cambiaron |
 | Alguien compone `HomeFeaturedSection` en `page.tsx` con datos falsos "temporales" antes de que Fase B exista | baja | alto (dato falso en producción) | T-A5 deja explícito que Fase A no toca `apps/web/app/` — `Verify` con `git diff --stat` vacío |
 | El backend hereda el TTL de otra ruta por accidente (bug real de US-025 PR #139), del lado backend | media (mismo patrón que ya ocurrió una vez) | medio (sección desactualizada por horas, silencioso) | D5 documenta explícitamente que sólo la mitad FE es verificable desde este change; queda registrado para que `US-026-productos-destacados-home-backend` no lo repita |
 | Un carrusel termina siendo pedido más adelante | baja | bajo (cambio aislado a un componente) | D3 confina la decisión a `HomeFeaturedSection`; ningún otro archivo asume grilla estática |
