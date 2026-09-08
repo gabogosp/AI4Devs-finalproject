@@ -139,7 +139,7 @@ arranque la Fase B.
   - **Verify**: `design.md` §D1 de este change ya no dice "no está confirmado" (revisión manual
     antes de continuar)
 
-- [ ] **T-B1 — Verificar frescura del codegen**
+- [x] **T-B1 — Verificar frescura del codegen**
   - **Blocked-by**: US-026-productos-destacados-home-backend
   - **Pattern**: `per openapi-client-codegen` skill — verificación de frescura, no regeneración
     manual; el orquestador ya corrió el codegen antes de esta task.
