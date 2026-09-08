@@ -951,6 +951,13 @@
   # public-safe, sin revenue — del reporte admin de US-016). Lección aplicada de US-025
   # (PR #139): NFR explícito de que la caché de las 2 rutas nuevas debe declararse
   # per-handler, nunca heredar el TTL de otra ruta por accidente.
+  #
+  # NOTA (2026-09-07, /plan-qa --standalone): qa-plan escrito en paralelo, ANTES de
+  # BE/FE (openspec/changes/US-026-productos-destacados-home-qa/, status: draft en
+  # openspec-changes.yaml). 8/8 AC cubiertos, incluidos 2 test-cases dedicados a la
+  # frontera con el reporte admin de US-016 (shape público) y a la lección de caché de
+  # US-025 (Cache-Control per-handler). No cambia el status de la US — sigue `Ready`
+  # hasta que algún discipline change abra.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]
