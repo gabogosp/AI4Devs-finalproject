@@ -944,7 +944,10 @@
   blocked_by: [US-008, US-013, US-014]   # necesita checkout + estado delivered + cuentas (las 3 Done)
 - id: US-026
   slug: productos-destacados-home
-  status: In Progress   # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
+  status: Done   # /archive-change 2026-09-08: las 3 disciplinas archivadas — BE (PR #146),
+  # FE (PR #149), QA (PR #152, E2E 2/2 verde contra el home real construido, 3 corridas
+  # limpias). US-026 cierra el release en curso.
+  # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
   # — el home muestra AMBOS (a) Novedades + (b) Más vendidos, no uno solo. Se descartaron
   # (c) curado manual y (d) mejor calificados para esta iteración. 8 AC en Gherkin, DoR
   # completo. "Más vendidos" suma BE real (agregado sobre order_items, distinto — y
@@ -970,8 +973,8 @@
   # desbloqueada.
   #
   # /archive-change 2026-09-08: BE (PR #146) y FE (PR #149, 13/13 tasks — Fase A+B)
-  # archivados. QA (qa-plan #145/#148, E2E corriendo en paralelo) sigue pendiente de
-  # archivar antes de que la US pase a Done.
+  # archivados. QA (PR #148 BDD+contract, PR #152 E2E) archivada — las 3 disciplinas
+  # cerradas, US-026 pasa a Done.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]
@@ -981,4 +984,5 @@
   ready-at: 2026-09-07
   in-progress-at: 2026-09-07   # primera planificación de disciplina (/plan-frontend-web-ticket,
   # frontend-web-developer) — mismo criterio que US-024/US-025.
+  done-at: 2026-09-08
   blocked_by: []

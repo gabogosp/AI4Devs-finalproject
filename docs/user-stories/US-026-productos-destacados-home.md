@@ -8,7 +8,7 @@ prd-capacity: null   # no nace del PRD §2.1: hallazgo de la prueba visual del d
 # muestre productos destacados debajo de los rubros (patrón Mercado Libre). Mismo criterio
 # `prd-capacity: null` que US-024/US-025 (features nacidas de la prueba visual, no del PRD).
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: Medium
 estimate-tshirt: M
 story_points_traditional: 8

@@ -100,6 +100,7 @@ archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/)
 | [`US-002-…-qa`](../../changes/archive/US-002-storefront-navegacion-categorias-qa/) | QA | Regresión completa del browse por categorías |
 | [`US-026-…-backend`](../../changes/archive/US-026-productos-destacados-home-backend/) | BE | `GET /products/novedades` + `GET /products/mas-vendidos`, query propio de ranking (nunca `ReportsRepository.topProducts`), `@StorefrontCache` explícito por handler |
 | [`US-026-…-frontend-web`](../../changes/archive/US-026-productos-destacados-home-frontend-web/) | FE | `HomeFeaturedSection` (reusa `ProductCard`), `homeFeaturedService.ts` con caché explícita por método, composición en el home |
+| [`US-026-…-qa`](../../changes/archive/US-026-productos-destacados-home-qa/) | QA | 8/8 AC en BDD + 2 test-cases de contrato (shape público, Cache-Control) + 2/2 E2E Playwright contra el home real construido; hallazgo de metodología: el home es ISR, el E2E poll-ea la regeneración en background en vez de asumir un fetch SSR por request |
 
 ## Estado de la provisión
 

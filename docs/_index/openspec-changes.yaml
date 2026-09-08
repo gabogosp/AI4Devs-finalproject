@@ -3200,15 +3200,16 @@
   us-id: US-026
   discipline: qa
   variant: null
-  status: in-progress   # /develop-qa 2026-09-08: T-QA3 cerrada — QA-026-E2E-1/2
-  # verdes (2/2), 3 corridas limpias en proceso/DB/web fresca, contra el home real
-  # construido (FE PR #149, mergeado). Hallazgo de metodología: el home es ISR
-  # (next build lo prerenderea ○ Static, revalidate 60s heredado del maxAge:60 del
-  # BE) — el spec poll-ea re-navegando hasta que la regeneración en background
-  # incorpora el dato sembrado, en vez de asumir un fetch SSR por request.
-  # T-QA2 (2026-09-07): 10/10 escenarios BDD+contract verdes contra BE-US-026 real
-  # (PR #146). /plan-qa --standalone 2026-09-07: qa-plan.md escrito ANTES de BE/FE
-  # — Modo B, mismo patrón que US-024/US-025-qa.
+  status: archived   # /archive-change 2026-09-08 — PR #152 mergeado (d555eeb). Extiende
+  # openspec/specs/catalogo/ (README.md) con la fila QA. T-QA3 (2026-09-08):
+  # QA-026-E2E-1/2 verdes (2/2), 3 corridas limpias en proceso/DB/web fresca, contra
+  # el home real construido (FE PR #149, mergeado). Hallazgo de metodología: el home
+  # es ISR (next build lo prerenderea ○ Static, revalidate 60s heredado del
+  # maxAge:60 del BE) — el spec poll-ea re-navegando hasta que la regeneración en
+  # background incorpora el dato sembrado, en vez de asumir un fetch SSR por
+  # request. T-QA2 (2026-09-07): 10/10 escenarios BDD+contract verdes contra
+  # BE-US-026 real (PR #146). /plan-qa --standalone 2026-09-07: qa-plan.md escrito
+  # ANTES de BE/FE — Modo B, mismo patrón que US-024/US-025-qa.
   parent-us: docs/user-stories/US-026-productos-destacados-home.md
   linear-task-id: null
   audit-baseline: null
@@ -3217,12 +3218,12 @@
   # ejecución (BDD + contract, sin sorpresas — el BE aplicó bien la lección de caché).
   assignee: claude-code
   branch: docs/plan-qa-US-026-productos-destacados
-  pr-url: null
-  pr-opened-at: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/152
+  pr-opened-at: 2026-09-08
   created: 2026-09-07
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-08T21:30:56Z
+  archived-at: 2026-09-08
+  archive-path: openspec/changes/archive/US-026-productos-destacados-home-qa
 
 - name: US-026-productos-destacados-home-frontend-web
   us-id: US-026
