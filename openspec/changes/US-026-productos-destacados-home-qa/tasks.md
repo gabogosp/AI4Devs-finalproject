@@ -36,8 +36,31 @@ Los 8 AC de US-026 quedan cubiertos, uno a uno, en `qa-plan.md` §3.
     por cliente). Todo test-case que necesita los 2 endpoints reales queda
     `Blocked-by: BE-US-026/FE-US-026` en §4/§5.
 
+## Fase 2 — Ejecutar la aceptación BDD + contract (BE ya mergeado)
+
+- [x] T-QA2 Scaffoldear y correr `qa/acceptance/features/destacados.feature`
+  + `qa/acceptance/steps/destacados.steps.ts` + `qa/support/destacados.ts`
+  contra el BE real (`GET /v1/products/novedades` + `.../mas-vendidos`,
+  PR #146, mergeado a main).
+  - **Exit criterion**: los 8 escenarios de AC (SC-026-*) + los 2 de
+    contrato (QA-026-CT-1/CT-2) terminan en verde, en Postgres/API
+    aislados propios de esta sesión.
+  - **Verify**: `env NODE_OPTIONS="--import tsx" npx cucumber-js --config acceptance/cucumber.mjs --tags "@destacados"` (exit 0, "10 scenarios (10 passed)")
+  - **Nota de ejecución (2026-09-07)**: 10/10 verdes, 3 corridas limpias en
+    proceso/DB fresca (Postgres/Redis/API propios, puertos
+    56100/57100/46209). Corrección real de metodología (no de producto):
+    `this.state` de Cucumber se resetea por escenario — la continuidad
+    narrativa entre SC-026-N2/E1 usa un acumulador de módulo, no World
+    (documentado en `qa-plan.md`). Ambos test-cases de contrato
+    (QA-026-CT-1 shape público, QA-026-CT-2 Cache-Control) confirmados
+    contra el código real: `StorefrontProductListItemDto` exacto (sin
+    id/status/revenue_ars_cents), `Cache-Control: public, max-age=60,
+    stale-while-revalidate=30` declarado per-handler en ambas rutas — la
+    lección de US-025 (PR #139) se aplicó correctamente en BE-US-026. E2E
+    Playwright (§5 de `qa-plan.md`) sigue `Blocked-by: FE-US-026` — sin
+    cambios, el FE todavía no aterrizó.
+
 ## Próximo paso
 
-`/develop-qa US-026` — **bloqueado** hasta que `BE-US-026` (al menos
-`GET /v1/products/novedades` + `GET /v1/products/mas-vendidos`) exista.
-Avisar a la coordinadora cuando ese change abra su PR.
+E2E Playwright (`qa-plan.md` §5) queda **bloqueado** hasta que
+`FE-US-026` exista. Avisar a la coordinadora cuando ese change abra su PR.
