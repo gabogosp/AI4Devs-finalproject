@@ -43,7 +43,7 @@ language: es
 
 ### Pre-requisitos
 
-- [ ] **T-A0 — `apps/web` limpio antes de empezar**
+- [x] **T-A0 — `apps/web` limpio antes de empezar**
   - **Exit criterion**: no hay cambios sin commitear bajo
     `apps/web/src/features/storefront/HomeFeatured*` (los archivos todavía no existen, así que
     esto se cumple trivialmente salvo que otra sesión ya haya empezado a escribir ahí).
@@ -51,7 +51,7 @@ language: es
 
 ### `ProductCard.categoryName` opcional
 
-- [ ] **T-A1 — Relajar `ProductCard.categoryName` a opcional**
+- [x] **T-A1 — Relajar `ProductCard.categoryName` a opcional**
   - **Pattern**: `per design.md §Approach` — widening compatible hacia atrás: cambiar la firma
     de `categoryName: string` a `categoryName?: string` en `ProductCard.tsx`; `ProductImage.tsx`
     ya acepta `categoryName?: string` (US-004), así que no hace falta tocarlo. Actualizar el
@@ -62,7 +62,7 @@ language: es
     cambios.
   - **Verify**: `pnpm --filter @dsm/web test -- ProductCard`
 
-- [ ] **T-A2 — Extender `ProductCard.test.tsx` con el caso sin `categoryName`**
+- [x] **T-A2 — Extender `ProductCard.test.tsx` con el caso sin `categoryName`**
   - **Exit criterion**: un nuevo test renderiza `<ProductCard item={item()} />` (sin
     `categoryName`) y verifica que la imagen usa el `alt` de sólo-nombre (mismo comportamiento ya
     cubierto por `ProductImage.test.tsx` para `categoryName={undefined}`, pero verificado acá en
