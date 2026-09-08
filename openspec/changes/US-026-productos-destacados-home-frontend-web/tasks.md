@@ -207,8 +207,8 @@ arranque la Fase B.
 
 ## Verification (nivel de suite)
 
-- [ ] Fase A completa: `pnpm --filter @dsm/web test -- HomeFeatured` (todos los `*.test.tsx`
+- [x] Fase A completa: `pnpm --filter @dsm/web test -- HomeFeatured` (todos los `*.test.tsx`
       nuevos en verde, sin red) + `pnpm --filter @dsm/web test -- ProductCard`
-- [ ] Fase A: lint/type-check limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
+- [x] Fase A: lint/type-check limpios: `pnpm --filter @dsm/web lint && pnpm --filter @dsm/web typecheck`
 - [ ] Fase B: `pnpm --filter @dsm/web test -- homeFeaturedService` + `pnpm --filter @dsm/web test -- StorefrontHome`
 - [ ] Fase B: `pnpm --filter @dsm/web codegen` sin diff (gate `frontend-codegen-fresh`)
