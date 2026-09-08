@@ -171,18 +171,37 @@ suficiente para lo que hacía falta verificar. Ver `tasks.md` T-QA2.
 
 ## 5. E2E Playwright (cross-stack)
 
-- [ ] **QA-026-E2E-1**: El home real muestra ambas secciones
+- [x] **QA-026-E2E-1**: El home real muestra ambas secciones
   - Exit criterion: `qa/e2e/destacados.spec.ts` — con productos + una
     venta confirmada sembrados, navega a `/`, ve "Novedades" y "Más
     vendidos" con al menos 1 card cada una, cada card linkea a su ficha.
   - Verify: `pnpm --filter @dsm/qa exec playwright test destacados.spec.ts --reporter=list` (exit 0, cuando FE-US-026 exista)
-  - **Blocked-by**: FE-US-026.
+  - **Nota de ejecución (2026-09-08)**: hecho, 3 corridas limpias en
+    proceso/DB fresca. Hallazgo de metodología real (no de producto): el
+    home (`app/(storefront)/page.tsx`) es ISR (`next build` lo prerenderea
+    `○ Static`, `revalidate: 60` — hereda el `maxAge:60` del BE, D-QA3), no
+    un fetch SSR por request. Una navegación inmediata después de sembrar
+    puede caer dentro de la ventana "fresh" del cache de Next y servir HTML
+    viejo (`x-nextjs-cache: HIT`) — no es un bug, es el trade-off de
+    `maxAge:60,swr:30` decidido en el diseño. El test poll-ea re-navegando
+    (`expect(...).toPass`) hasta que la regeneración en background
+    incorpora el producto sembrado, con `test.setTimeout(150_000)` para no
+    chocar con el timeout default de 30s. Efecto colateral separado
+    encontrado en la puesta a punto del entorno (no en el test en sí): un
+    `next build` reejecutado sin borrar `.next/` reusa el fetch-cache en
+    disco de una corrida anterior aunque la DB se haya vaciado — hace falta
+    `rm -rf .next` antes de cada build para una baseline ISR realmente
+    limpia.
 
-- [ ] **QA-026-E2E-2**: Catálogo vacío no rompe el home
+- [x] **QA-026-E2E-2**: Catálogo vacío no rompe el home
   - Exit criterion: sin productos publicados, el home carga igual (hero +
     rubros intactos), sin ninguna sección de destacados ni error visible.
   - Verify: incluido en el mismo spec, corrida separada.
-  - **Blocked-by**: FE-US-026.
+  - **Nota de ejecución (2026-09-08)**: hecho, 3 corridas limpias. Depende
+    de la misma baseline ISR limpia (`rm -rf .next` pre-build) que
+    QA-026-E2E-1 — con cache viejo reusado, el home podía mostrar
+    "Novedades" pobladas por datos de una corrida previa aunque la DB del
+    momento estuviera vacía.
 
 ---
 
