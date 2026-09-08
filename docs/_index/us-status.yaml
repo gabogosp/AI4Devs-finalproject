@@ -969,9 +969,9 @@
   # 60s/30s per-handler (NFR cumplido del lado BE), [] es 200 válido. Fase B de FE
   # desbloqueada.
   #
-  # /archive-change 2026-09-07: BE archivado (PR #146). FE en In Review (PR #149,
-  # 13/13 tasks — Fase A+B) y QA (qa-plan #145/#148) siguen pendientes de archivar
-  # antes de que la US pase a Done.
+  # /archive-change 2026-09-08: BE (PR #146) y FE (PR #149, 13/13 tasks — Fase A+B)
+  # archivados. QA (qa-plan #145/#148, E2E corriendo en paralelo) sigue pendiente de
+  # archivar antes de que la US pase a Done.
   priority: Medium
   prd-capacity: null
   disciplines: [BE, FE, QA]

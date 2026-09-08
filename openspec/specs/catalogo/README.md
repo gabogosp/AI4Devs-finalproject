@@ -35,6 +35,14 @@ El **storefront público** (US-002 + US-003), sin autenticación, cacheado sólo
   ninguna página con sesión o personalización se cachea (ver `cuentas/` para esa regla).
 - Caché por endpoint (60-300s según volatilidad), invalidada por tag grueso `catalog`
   desde cualquier mutación admin (alta/edición de producto o categoría, import masivo).
+- **Productos destacados en el home** (US-026): dos secciones nuevas debajo de la grilla
+  de rubros — "Novedades" (`GET /v1/products/novedades`, últimos publicados) y "Más
+  vendidos" (`GET /v1/products/mas-vendidos`, ranking real sobre órdenes confirmadas,
+  sin ventana de tiempo). Ambas públicas, shape `StorefrontProductListItem` reusado tal
+  cual (nunca `id`/`revenue_ars_cents`), `Cache-Control` explícito por handler
+  (`max-age=60, stale-while-revalidate=30`, lección de US-025/PR #139). El FE reusa
+  `ProductCard` sin componente nuevo (su prop `categoryName` pasa a opcional) y no
+  renderiza ninguna sección sin datos — ni el título, para no dejar un hueco vacío.
 
 ## Qué NO está vivo todavía
 
@@ -70,6 +78,8 @@ archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/)
 | `/categories` | GET | AC-1 (US-002, público) |
 | `/categories/{slug}` | GET | AC-2, AC-9 (US-002, público) |
 | `/categories/{slug}/products` | GET | AC-3, AC-6 (US-002, público) |
+| `/products/novedades` | GET | AC-1, AC-3, AC-4 (US-026, público) |
+| `/products/mas-vendidos` | GET | AC-2, AC-5, AC-6, AC-7 (US-026, público) |
 
 ## Changes que formaron esta capacidad
 
@@ -88,6 +98,8 @@ archivo por endpoint bajo [`contracts/openapi/paths/`](contracts/openapi/paths/)
 | [`US-002-…-backend`](../../changes/archive/US-002-storefront-navegacion-categorias-backend/) | BE | 3 endpoints públicos de navegación (árbol/detalle/listado por categoría), caché por endpoint (D5), evento `category.viewed` |
 | [`US-002-…-frontend-web`](../../changes/archive/US-002-storefront-navegacion-categorias-frontend-web/) | FE | `CategoryNav`, home con grilla de rubros, páginas de categoría SSR paginadas y linkeables, sitemap, tag de cache `catalog` |
 | [`US-002-…-qa`](../../changes/archive/US-002-storefront-navegacion-categorias-qa/) | QA | Regresión completa del browse por categorías |
+| [`US-026-…-backend`](../../changes/archive/US-026-productos-destacados-home-backend/) | BE | `GET /products/novedades` + `GET /products/mas-vendidos`, query propio de ranking (nunca `ReportsRepository.topProducts`), `@StorefrontCache` explícito por handler |
+| [`US-026-…-frontend-web`](../../changes/archive/US-026-productos-destacados-home-frontend-web/) | FE | `HomeFeaturedSection` (reusa `ProductCard`), `homeFeaturedService.ts` con caché explícita por método, composición en el home |
 
 ## Estado de la provisión
 

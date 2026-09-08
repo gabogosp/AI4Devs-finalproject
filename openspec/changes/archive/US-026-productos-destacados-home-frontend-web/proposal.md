@@ -6,6 +6,10 @@ discipline: frontend-web
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-08
+merged_commit: 8ad7aa0d0c2c877c0d5bccdf49ec97111798452c
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/149
 ---
 
 # Proposal — US-026 Productos destacados en el home (frontend web)

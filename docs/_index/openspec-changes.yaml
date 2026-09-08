@@ -3226,12 +3226,14 @@
   us-id: US-026
   discipline: frontend-web
   variant: null
-  status: In Review   # /commit 2026-09-08 — PR #149 abierto. Fase A (7 tasks) + Fase B (6 tasks)
-  # cerradas, 13/13 en tasks.md. Backend mergeó (PR #146) con exactamente la forma que Fase A
-  # había apostado (design.md §D1): HighlightedProductsResponse{data}, StorefrontProductListItem
-  # reusado tal cual, sin auth, Cache-Control 60s/30s per-handler. ProductCard.categoryName
-  # opcional (widening compatible), HomeFeaturedSection presentacional + homeFeaturedService.ts
-  # (caché explícita por método, mitad FE de la lección de US-025 PR #139) + composición en
+  status: archived   # /archive-change 2026-09-08 — PR #149 mergeado (8ad7aa0). Extiende
+  # openspec/specs/catalogo/ (CAP-1) con la sección frontend-web (README.md, decisions.md).
+  # Fase A (7 tasks) + Fase B (6 tasks) cerradas, 13/13 en tasks.md. Backend mergeó (PR #146)
+  # con exactamente la forma que Fase A había apostado (design.md §D1):
+  # HighlightedProductsResponse{data}, StorefrontProductListItem reusado tal cual, sin auth,
+  # Cache-Control 60s/30s per-handler. ProductCard.categoryName opcional (widening
+  # compatible), HomeFeaturedSection presentacional + homeFeaturedService.ts (caché
+  # explícita por método, mitad FE de la lección de US-025 PR #139) + composición en
   # app/(storefront)/page.tsx.
   parent-us: docs/user-stories/US-026-productos-destacados-home.md
   linear-task-id: null
@@ -3244,6 +3246,6 @@
   pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/149
   pr-opened-at: 2026-09-08
   created: 2026-09-07
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-08T21:05:38Z
+  archived-at: 2026-09-08
+  archive-path: openspec/changes/archive/US-026-productos-destacados-home-frontend-web
