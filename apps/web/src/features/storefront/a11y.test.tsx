@@ -1,6 +1,7 @@
 import { describe, expect, it, vi} from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
+import { SessionProvider } from '@/features/account/SessionProvider';
 import { ProductDetail } from './ProductDetail';
 import type { StorefrontProduct } from './storefrontService';
 
@@ -10,6 +11,22 @@ import type { StorefrontProduct } from './storefrontService';
 vi.mock('@/features/cart/AddToCartButton', () => ({
   AddToCartButton: () => null,
 }));
+
+/**
+ * US-025 agregó `ReviewsDataContainer` a `ProductDetail`, que consume
+ * `useSession()` — sin este wrapper el render tira `useSession debe usarse
+ * dentro de <SessionProvider>` (regresión real, no una falla de este archivo:
+ * pasó desapercibida porque `build` no es gate requerido en CI). Sin hint de
+ * sesión en `localStorage`, `SessionProvider` resuelve a `anonymous` de forma
+ * síncrona en su efecto — no hace falta mockear ningún endpoint de auth.
+ */
+function renderProductDetail(product: StorefrontProduct) {
+  return render(
+    <SessionProvider>
+      <ProductDetail product={product} />
+    </SessionProvider>,
+  );
+}
 
 expect.extend(toHaveNoViolations);
 
@@ -42,13 +59,13 @@ const STATES: Array<[string, StorefrontProduct]> = [
 
 describe('a11y — ficha de producto', () => {
   it.each(STATES)('%s: axe no encuentra violaciones', async (_name, product) => {
-    const { container } = render(<ProductDetail product={product} />);
+    const { container } = renderProductDetail(product);
 
     expect(await axe(container)).toHaveNoViolations();
   });
 
   it.each(STATES)('%s: el nombre es el único h1', (_name, product) => {
-    render(<ProductDetail product={product} />);
+    renderProductDetail(product);
 
     const h1s = screen.getAllByRole('heading', { level: 1 });
     expect(h1s).toHaveLength(1);
@@ -56,7 +73,7 @@ describe('a11y — ficha de producto', () => {
   });
 
   it('la imagen lleva alt descriptivo, no genérico', () => {
-    render(<ProductDetail product={storefrontProduct()} />);
+    renderProductDetail(storefrontProduct());
 
     const alt = screen.getByRole('img').getAttribute('alt') ?? '';
     expect(alt).toContain('Heladera exhibidora');
@@ -64,7 +81,7 @@ describe('a11y — ficha de producto', () => {
   });
 
   it('sin imagen: el placeholder sigue teniendo nombre accesible', () => {
-    render(<ProductDetail product={storefrontProduct({ image_url: null })} />);
+    renderProductDetail(storefrontProduct({ image_url: null }));
 
     expect(
       screen.getByRole('img', { name: /Heladera exhibidora/ }),
@@ -72,13 +89,13 @@ describe('a11y — ficha de producto', () => {
   });
 
   it('sin stock: el estado se comunica con texto, no sólo con color', () => {
-    render(<ProductDetail product={storefrontProduct({ in_stock: false })} />);
+    renderProductDetail(storefrontProduct({ in_stock: false }));
 
     expect(screen.getByText('Sin stock')).toBeInTheDocument();
   });
 
   it('sin stock: el enlace de WhatsApp tiene nombre accesible propio', () => {
-    render(<ProductDetail product={storefrontProduct({ in_stock: false })} />);
+    renderProductDetail(storefrontProduct({ in_stock: false }));
 
     // Un enlace que fuera sólo ícono quedaría sin nombre y axe lo marcaría,
     // pero el assert explícito documenta la intención del §7.14.
