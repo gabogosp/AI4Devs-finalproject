@@ -87,3 +87,13 @@ del propio `PATCH` que lo setea, lo devuelven nunca. La curación es invisible p
 cualquier cliente API, incluida una futura UI de curación diferida. Requiere tocar
 `apps/api/src/products/dto/product.dto.ts` — fuera de alcance de un change QA-only;
 queda como recomendación para un change de backend futuro que toque esta capacidad.
+
+## Decisiones de implementación tomadas durante la construcción — US-026 (backend)
+
+| Decisión | Motivo |
+|---|---|
+| `mostSold` vive en `OrdersRepository`, no en `ProductsRepository`. | Mismo criterio que `hasDeliveredOrderWithProduct` (US-025): el query lee `orders`/`order_items`, tablas de propiedad exclusiva de `OrdersRepository` (§5) — que el resultado final sean "productos" no cambia qué repositorio posee las tablas de origen. |
+| Query nuevo para "más vendidos"; NUNCA se reusa `ReportsRepository.topProducts` (US-016, admin-only). | `topProducts` agrega `revenue_ars_cents` y no filtra `products.status` — reusarlo tal cual en una superficie pública violaría AC-7 (despublicados no deben aparecer) y filtraría revenue del negocio a cualquier visitante anónimo. |
+| `GET /products/novedades` y `GET /products/mas-vendidos` se registran ANTES de `GET /products/{slug}` en el controller. | Con igual especificidad de ruta (un segmento estático vs. uno dinámico), Express/Nest resuelven por orden de registro, no por especificidad automática — si se registraran después, ambas rutas intentarían resolverse como un slug y devolverían 404. Verificado con un producto real slugueado `novedades-de-la-semana`. |
+| Respuesta `{data: [...]}` sin objeto `pagination`. | Ambas rutas son un top-N fijo (siempre `LIMIT 8`, sin offset/página siguiente) — un objeto de paginación sería un campo muerto que ningún consumidor usaría. |
+| `@StorefrontCache` explícito (`maxAge:60, swr:30`) en cada ruta nueva, aunque coincide con el default de clase del interceptor. | Lección de US-025/PR #139: una ruta nueva sin su propio decorator hereda el default en silencio — declararlo explícito hace la decisión visible y evita que un cambio futuro del default afecte esta ruta sin que alguien lo decida a propósito. |

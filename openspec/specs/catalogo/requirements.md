@@ -135,3 +135,28 @@ consumen.
 | D-9 | `generateSitemaps` particionado. | Disparador: > 50.000 URLs (design.md D5). |
 | D-10 | `placeholder="blur"` en imágenes remotas de producto. | Requiere loader propio (design.md D9). |
 | D-11 | Número real de WhatsApp en el footer/contacto. | `OQ-FE-3` (PO/cliente). |
+
+## Desde US-026 — Productos destacados en el home, backend (archivada 2026-09-07)
+
+### Funcionales
+
+| # | Requisito | Origen |
+|---|---|---|
+| R-29 | `GET /products/novedades` devuelve hasta 8 productos publicados, ordenados por `created_at` desc (más nuevo primero), tie-break determinista por id. | AC-1, AC-3 |
+| R-30 | `GET /products/mas-vendidos` devuelve hasta 8 productos ordenados por cantidad total vendida sobre órdenes NO `pending_payment`/`cancelled` (ranking histórico completo, sin ventana de tiempo), tie-break determinista por id. | AC-2, AC-6 |
+| R-31 | Un producto sin stock que califica para cualquiera de las dos secciones se muestra igual que en el listado por categoría — marcado `in_stock: false`, nunca oculto. | AC-8 |
+
+### Negative-space (lo que NO debe pasar)
+
+| # | Requisito |
+|---|---|
+| N-14 | Sin productos publicados, `/products/novedades` responde `200` con `data: []` — nunca `404` ni una sección vacía con título sin contenido en el FE. |
+| N-15 | Sin ninguna orden confirmada, `/products/mas-vendidos` responde `200` con `data: []`. |
+| N-16 | Un producto que fue `published` y tuvo ventas pero pasó a `draft`/`archived` NO aparece en ninguna de las dos secciones, aunque su historial de ventas siga existiendo. |
+| N-17 | Ninguna de las dos rutas expone `id` interno, `revenue_ars_cents` ni `sku` — el shape público es siempre `StorefrontProductListItem`, nunca el shape admin-only de `ReportsRepository.topProducts` (decisión D2). |
+
+### No funcionales
+
+| # | Requisito | Verificación |
+|---|---|---|
+| NFR-12 | `Cache-Control` explícito por ruta (`max-age=60, stale-while-revalidate=30`) declarado en cada handler nuevo — nunca heredado en silencio del default de clase del interceptor. | Suite dev-owned; lección aplicada de US-025/PR #139 (reseñas heredaron el TTL de precio/stock por accidente). |

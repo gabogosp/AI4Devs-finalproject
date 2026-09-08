@@ -3164,6 +3164,38 @@
   archived-at: 2026-09-07
   archive-path: openspec/changes/archive/US-025-resenas-calificaciones-productos-frontend-web
 
+- name: US-026-productos-destacados-home-backend
+  us-id: US-026
+  discipline: backend
+  variant: null
+  status: archived   # /archive-change 2026-09-07 — PR #146 mergeado (d069a03). Suma
+  # "Novedades"/"Más vendidos" al contrato vivo openspec/specs/catalogo/ (CAP-1): 2
+  # paths nuevos (storefront-products-novedades.yaml, storefront-products-mas-vendidos.yaml)
+  # + schema HighlightedProductsResponse.
+  parent-us: docs/user-stories/US-026-productos-destacados-home.md
+  linear-task-id: null
+  audit-baseline: null
+  audit-derived: false
+  # GET /v1/products/novedades (últimos publicados, hasta 8, tie-break por id) + GET
+  # /v1/products/mas-vendidos (ranking real de ventas — OrdersRepository.mostSold,
+  # agregado GLOBAL sobre order_items de órdenes confirmadas, público-safe, NUNCA
+  # reusa ReportsRepository.topProducts de US-016). Cache-Control explícito por ruta
+  # (60s/30s) declarado en cada handler nuevo, no heredado del default de clase
+  # (lección de US-025/PR #139). Rutas estáticas registradas antes de :slug para no
+  # colisionar con la resolución de slug dinámico (verificado con un producto real
+  # slugueado "novedades-de-la-semana"). Codegen de @dsm/web regenerado en el mismo
+  # PR (gate frontend-codegen-fresh) — mismo criterio que evitó la carrera de merge
+  # de US-024/US-025.
+  estimate-hours: 5   # US §7 presupuesta BE-US-026 en 5h.
+  assignee: claude-code
+  branch: feat/US-026-destacados-home-backend
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/146
+  pr-opened-at: 2026-09-07
+  completed-at: 2026-09-08T00:44:26Z
+  archived-at: 2026-09-07
+  archive-path: openspec/changes/archive/US-026-productos-destacados-home-backend
+  created: 2026-09-07
+
 - name: US-026-productos-destacados-home-qa
   us-id: US-026
   discipline: qa

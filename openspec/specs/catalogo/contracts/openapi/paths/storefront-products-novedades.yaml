@@ -1,0 +1,30 @@
+get:
+  operationId: storefrontGetNewArrivals
+  tags:
+  - storefront-products
+  summary: 'Sección "Novedades" del home: últimos publicados (US-026 AC-1, AC-3, AC-4)'
+  description: |
+    Lectura PÚBLICA (sin auth). Hasta 8 productos publicados, ordenados por
+    fecha de alta (más nuevo primero, tie-break determinista por id).
+
+    Registrada ANTES de `/products/{slug}` en el controller: con igual
+    especificidad de ruta que un segmento dinámico, Express/Nest resuelven por
+    orden de registro, no por especificidad automática (decisión D3).
+
+    Sin publicados → `data: []`, 200 (AC-4) — el FE decide no renderizar la
+    sección, la API no la oculta.
+  security: []
+  responses:
+    '200':
+      description: Hasta 8 productos publicados más recientes (puede ser vacía).
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+            example: 'public, max-age=60, stale-while-revalidate=30'
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/HighlightedProductsResponse'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

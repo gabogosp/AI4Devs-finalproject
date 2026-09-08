@@ -1,0 +1,31 @@
+get:
+  operationId: storefrontGetBestSellers
+  tags:
+  - storefront-products
+  summary: 'Sección "Más vendidos" del home: ranking real de ventas (US-026 AC-2, AC-5, AC-6, AC-7)'
+  description: |
+    Lectura PÚBLICA (sin auth). Hasta 8 productos, ordenados por cantidad
+    total vendida sobre órdenes NO `pending_payment`/`cancelled` (tie-break
+    determinista por id). Ranking histórico completo, sin ventana de tiempo.
+
+    Excluye productos despublicados aunque tengan historial de ventas (AC-7).
+    Query propia en `OrdersRepository.mostSold` — NUNCA reusa
+    `ReportsRepository.topProducts` (admin-only: incluye `revenue_ars_cents`,
+    no filtra por `status`; decisión D2).
+
+    Sin ventas confirmadas → `data: []`, 200 (AC-5).
+  security: []
+  responses:
+    '200':
+      description: Hasta 8 productos más vendidos (puede ser vacía).
+      headers:
+        Cache-Control:
+          schema:
+            type: string
+            example: 'public, max-age=60, stale-while-revalidate=30'
+      content:
+        application/json:
+          schema:
+            $ref: '../../openapi.yaml#/components/schemas/HighlightedProductsResponse'
+    '429':
+      $ref: '../../openapi.yaml#/components/responses/RateLimited'

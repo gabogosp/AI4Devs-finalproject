@@ -5,6 +5,10 @@ parent-us: US-026
 discipline: backend
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-07
+merged_commit: d069a03c4b5ac1dc73ff1673db3251a948f916c8
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/146
 ---
 
 # US-026 Backend — Productos destacados en el home
