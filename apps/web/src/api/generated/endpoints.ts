@@ -38,6 +38,7 @@ import type {
   GetAdminReportsTopProductsParams,
   GetImportParams,
   GetPublicReviewsParams,
+  HighlightedProductsResponse,
   ImportCreated,
   ImportJob,
   ImportRateLimitedResponse,
@@ -1098,6 +1099,94 @@ export const updateAdminOrderStatus = async (id: string,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(updateAdminOrderStatus)
+  }
+);}
+
+
+
+export type storefrontGetNewArrivalsResponse200 = {
+  data: HighlightedProductsResponse
+  status: 200
+}
+
+export type storefrontGetNewArrivalsResponse429 = {
+  data: ProblemResponse
+  status: 429
+}
+
+export type storefrontGetNewArrivalsResponseSuccess = (storefrontGetNewArrivalsResponse200) & {
+  headers: Headers;
+};
+export type storefrontGetNewArrivalsResponseError = (storefrontGetNewArrivalsResponse429) & {
+  headers: Headers;
+};
+
+export type storefrontGetNewArrivalsResponse = (storefrontGetNewArrivalsResponseSuccess | storefrontGetNewArrivalsResponseError)
+
+export const getStorefrontGetNewArrivalsUrl = () => {
+
+
+
+
+  return `/v1/products/novedades`
+}
+
+/**
+ * Ruta PÚBLICA `GET /v1/products/novedades` SIN auth. Hasta 8 productos publicados, ordenados por fecha de alta (más nuevo primero, tie-break determinista por id). Registrada ANTES de `/products/{slug}` en el controller (misma especificidad de ruta que un segmento dinámico — Express/Nest resuelven por orden de registro, no por especificidad automática). Sin publicados → `data: []`, 200 (AC-4; el FE decide no renderizar la sección, la sección no deja de existir en la API).
+ * @summary Sección "Novedades" del home: últimos publicados (US-026 AC-1, AC-3, AC-4)
+ */
+export const storefrontGetNewArrivals = async ( options?: Parameters<typeof customFetch>[1]): Promise<storefrontGetNewArrivalsResponse> => {
+
+  return customFetch<storefrontGetNewArrivalsResponse>(getStorefrontGetNewArrivalsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type storefrontGetBestSellersResponse200 = {
+  data: HighlightedProductsResponse
+  status: 200
+}
+
+export type storefrontGetBestSellersResponse429 = {
+  data: ProblemResponse
+  status: 429
+}
+
+export type storefrontGetBestSellersResponseSuccess = (storefrontGetBestSellersResponse200) & {
+  headers: Headers;
+};
+export type storefrontGetBestSellersResponseError = (storefrontGetBestSellersResponse429) & {
+  headers: Headers;
+};
+
+export type storefrontGetBestSellersResponse = (storefrontGetBestSellersResponseSuccess | storefrontGetBestSellersResponseError)
+
+export const getStorefrontGetBestSellersUrl = () => {
+
+
+
+
+  return `/v1/products/mas-vendidos`
+}
+
+/**
+ * Ruta PÚBLICA `GET /v1/products/mas-vendidos` SIN auth. Hasta 8 productos, ordenados por cantidad total vendida sobre órdenes NO `pending_payment`/`cancelled` (tie-break determinista por id). Ranking histórico completo, sin ventana de tiempo. Excluye productos despublicados aunque tengan historial de ventas (AC-7). Query propia — NUNCA reusa `ReportsRepository.topProducts` (admin-only, incluye `revenue_ars_cents`, no filtra por `status`). Sin ventas confirmadas → `data: []`, 200 (AC-5).
+ * @summary Sección "Más vendidos" del home: ranking real de ventas (US-026 AC-2, AC-5, AC-6, AC-7)
+ */
+export const storefrontGetBestSellers = async ( options?: Parameters<typeof customFetch>[1]): Promise<storefrontGetBestSellersResponse> => {
+
+  return customFetch<storefrontGetBestSellersResponse>(getStorefrontGetBestSellersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
   }
 );}
 
@@ -3037,6 +3126,10 @@ export const getGetAdminOrderResponseMock = (): AdminOrderDetail => ({...{id: fa
 
 export const getUpdateAdminOrderStatusResponseMock = (): AdminOrderDetail => ({...{id: faker.string.uuid(), order_number: faker.number.int(), buyer_name: faker.string.alpha({length: {min: 10, max: 20}}), total_ars_cents: faker.number.int(), status: faker.helpers.arrayElement(['new','preparing','ready','delivered','cancelled'] as const), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'},...{buyer_email: faker.string.alpha({length: {min: 10, max: 20}}), buyer_phone: faker.string.alpha({length: {min: 10, max: 20}}), fulfillment: faker.helpers.arrayElement(['pickup'] as const), items: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({product_name: faker.string.alpha({length: {min: 10, max: 20}}), product_sku: faker.string.alpha({length: {min: 10, max: 20}}), quantity: faker.number.int(), unit_price_ars_cents: faker.number.int(), subtotal_ars_cents: faker.number.int()})), status_history: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({from_status: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), to_status: faker.string.alpha({length: {min: 10, max: 20}}), changed_by: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), changed_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), anonymized_at: faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + 'Z', null]), anonymization_reason: faker.helpers.arrayElement([faker.helpers.arrayElement(['retention_policy','requested','account_deletion'] as const), null])},})
 
+export const getStorefrontGetNewArrivalsResponseMock = (overrideResponse: Partial<Extract<HighlightedProductsResponse, object>> = {}): HighlightedProductsResponse => ({data: Array.from({ length: faker.number.int({min: 1, max: 8}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean()})), ...overrideResponse})
+
+export const getStorefrontGetBestSellersResponseMock = (overrideResponse: Partial<Extract<HighlightedProductsResponse, object>> = {}): HighlightedProductsResponse => ({data: Array.from({ length: faker.number.int({min: 1, max: 8}) }, (_, i) => i + 1).map(() => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean()})), ...overrideResponse})
+
 export const getStorefrontGetProductResponseMock = (overrideResponse: Partial<Extract<StorefrontProduct, object>> = {}): StorefrontProduct => ({slug: faker.string.alpha({length: {min: 10, max: 20}}), sku: faker.string.alpha({length: {min: 10, max: 20}}), name: faker.string.alpha({length: {min: 10, max: 20}}), description: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), price_ars_cents: faker.number.int(), currency: faker.helpers.arrayElement(['ARS'] as const), image_url: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), in_stock: faker.datatype.boolean(), low_stock: faker.datatype.boolean(), category: {name: faker.string.alpha({length: {min: 10, max: 20}}), slug: faker.string.alpha({length: {min: 10, max: 20}})}, ...overrideResponse})
 
 export const getGetPublicReviewsResponseMock = (overrideResponse: Partial<Extract<PublicReviewsResponse, object>> = {}): PublicReviewsResponse => ({average: faker.helpers.arrayElement([faker.number.float({fractionDigits: 2}), null]), count: faker.number.int(), data: Array.from({ length: faker.number.int({min: 1, max: 10}) }, (_, i) => i + 1).map(() => ({id: faker.string.uuid(), customer_name: faker.string.alpha({length: {min: 10, max: 20}}), rating: faker.number.int({min: 1, max: 5}), comment: faker.helpers.arrayElement([faker.string.alpha({length: {min: 10, max: 20}}), null]), created_at: faker.date.past().toISOString().slice(0, 19) + 'Z'})), pagination: {limit: faker.number.int(), offset: faker.number.int(), total: faker.number.int()}, ...overrideResponse})
@@ -3307,6 +3400,30 @@ export const getUpdateAdminOrderStatusMockHandler = (overrideResponse?: AdminOrd
     return HttpResponse.json(overrideResponse !== undefined
     ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
     : getUpdateAdminOrderStatusResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getStorefrontGetNewArrivalsMockHandler = (overrideResponse?: HighlightedProductsResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HighlightedProductsResponse> | HighlightedProductsResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/products/novedades', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStorefrontGetNewArrivalsResponseMock(),
+      { status: 200
+      })
+  }, options)
+}
+
+export const getStorefrontGetBestSellersMockHandler = (overrideResponse?: HighlightedProductsResponse | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<HighlightedProductsResponse> | HighlightedProductsResponse), options?: RequestHandlerOptions) => {
+  return http.get('*/products/mas-vendidos', async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+
+
+    return HttpResponse.json(overrideResponse !== undefined
+    ? (typeof overrideResponse === "function" ? await overrideResponse(info) : overrideResponse)
+    : getStorefrontGetBestSellersResponseMock(),
       { status: 200
       })
   }, options)
@@ -3728,6 +3845,8 @@ export const getDSMAPIDeAdministraciónDelCatálogoUS001Mock = () => [
   getListAdminOrdersMockHandler(),
   getGetAdminOrderMockHandler(),
   getUpdateAdminOrderStatusMockHandler(),
+  getStorefrontGetNewArrivalsMockHandler(),
+  getStorefrontGetBestSellersMockHandler(),
   getStorefrontGetProductMockHandler(),
   getGetPublicReviewsMockHandler(),
   getStorefrontListCategoriesMockHandler(),
