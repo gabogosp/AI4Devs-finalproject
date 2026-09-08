@@ -1,3 +1,17 @@
+---
+tracker-id: null
+tracker-source: null
+parent-us: US-026
+discipline: qa
+variant: null
+language: es
+audit-derived: false
+archived: true
+archived_at: 2026-09-08
+merged_commit: d555eeba732e406a6161bbebf4a1d25c4bfb00fa
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/152
+---
+
 # Proposal — US-026 QA: productos destacados en el home
 
 ## Qué
