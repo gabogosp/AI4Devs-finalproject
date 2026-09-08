@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Order, OrderItem, Prisma } from '@dsm/db';
+import { Order, OrderItem, Prisma, Product } from '@dsm/db';
 import { PrismaService } from '../prisma/prisma.service';
 import { ValidationError } from '../common/errors/domain-errors';
 import { isPrismaError, PRISMA_FK_VIOLATION } from '../common/prisma-errors';
@@ -451,6 +451,31 @@ export class OrdersRepository {
       select: { id: true },
     });
     return item !== null;
+  }
+
+  /**
+   * Ranking público-safe de "más vendidos" (US-026 AC-2/AC-5/AC-6/AC-7,
+   * design.md D2). Distinto de `ReportsRepository.topProducts` (US-016,
+   * admin-only): NUNCA proyecta `revenue_ars_cents`/`sku`, y filtra
+   * `products.status='published'` — un producto despublicado no aparece
+   * aunque tenga historial de ventas. Mismo set de estados "confirmados"
+   * que `topProducts` (excluye `pending_payment`/`cancelled`). Tie-break
+   * por `p.id` (AC-6) — mismo idioma que `ProductsRepository.
+   * findRecentlyPublished`/`findPublishedByCategoryIds`.
+   */
+  mostSold(
+    limit: number,
+  ): Promise<Pick<Product, 'id' | 'slug' | 'name' | 'price_ars_cents' | 'image_url' | 'stock'>[]> {
+    return this.prisma.$queryRaw`
+      SELECT p.id, p.slug, p.name, p.price_ars_cents, p.image_url, p.stock
+        FROM order_items oi
+        JOIN orders o ON o.id = oi.order_id
+        JOIN products p ON p.id = oi.product_id
+       WHERE o.status IN ('new','preparing','ready','delivered')
+         AND p.status = 'published'
+       GROUP BY p.id, p.slug, p.name, p.price_ars_cents, p.image_url, p.stock
+       ORDER BY sum(oi.quantity) DESC, p.id ASC
+       LIMIT ${limit}`;
   }
 
   private translate(error: unknown): unknown {

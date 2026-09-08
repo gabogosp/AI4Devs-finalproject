@@ -2,7 +2,11 @@ import { Category, Product } from '@dsm/db';
 import { StorefrontService } from './storefront.service';
 import { ProductsRepository } from '../products/products.repository';
 import { CategoriesRepository } from '../categories/categories.repository';
+import { OrdersRepository } from '../checkout/orders.repository';
 import { NotFoundError } from '../common/errors/domain-errors';
+
+const ordersMock = () =>
+  ({ mostSold: jest.fn().mockResolvedValue([]) }) as unknown as OrdersRepository;
 
 /** Unit del use-case público con repositorio mockeado (US-003 AC-7/AC-8). */
 describe('StorefrontService.getPublishedProduct', () => {
@@ -49,7 +53,7 @@ describe('StorefrontService.getPublishedProduct', () => {
       findRoots: jest.fn().mockResolvedValue([]),
       findBySlugWithFamily: jest.fn().mockResolvedValue(null),
     } as unknown as CategoriesRepository;
-    return { service: new StorefrontService(repo, categories), repo, categories };
+    return { service: new StorefrontService(repo, categories, ordersMock()), repo, categories };
   };
 
   it('repo devuelve el producto → lo retorna', async () => {
@@ -103,7 +107,7 @@ describe('StorefrontService — categorías', () => {
       findRoots: jest.fn().mockResolvedValue([]),
       findBySlugWithFamily: jest.fn().mockResolvedValue(familia),
     } as unknown as CategoriesRepository;
-    return { service: new StorefrontService(repo, categories), repo, categories };
+    return { service: new StorefrontService(repo, categories, ordersMock()), repo, categories };
   };
 
   const rubroConDosHijos = {
@@ -186,5 +190,31 @@ describe('StorefrontService — categorías', () => {
       limit: 20,
       offset: 0,
     });
+  });
+});
+
+/** Unit de las secciones del home (US-026 AC-1, AC-2). */
+describe('StorefrontService — destacados del home', () => {
+  const makeService = () => {
+    const repo = {
+      findRecentlyPublished: jest.fn().mockResolvedValue([]),
+    } as unknown as ProductsRepository;
+    const categories = {} as unknown as CategoriesRepository;
+    const orders = {
+      mostSold: jest.fn().mockResolvedValue([]),
+    } as unknown as OrdersRepository;
+    return { service: new StorefrontService(repo, categories, orders), repo, orders };
+  };
+
+  it('getNewArrivals delega en findRecentlyPublished con limit=8', async () => {
+    const { service, repo } = makeService();
+    await service.getNewArrivals();
+    expect(repo.findRecentlyPublished).toHaveBeenCalledWith(8);
+  });
+
+  it('getBestSellers delega en mostSold con limit=8', async () => {
+    const { service, orders } = makeService();
+    await service.getBestSellers();
+    expect(orders.mostSold).toHaveBeenCalledWith(8);
   });
 });

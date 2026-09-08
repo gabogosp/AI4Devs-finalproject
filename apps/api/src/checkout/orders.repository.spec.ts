@@ -1100,4 +1100,90 @@ describe('OrdersRepository (integration)', () => {
       expect(await repo.hasDeliveredOrderWithProduct(cliente.id, productoA)).toBe(false);
     });
   });
+
+  /** T2 (US-026) — ranking público-safe de "más vendidos" (AC-2, AC-5, AC-6, AC-7). */
+  describe('mostSold (US-026 T2)', () => {
+    async function crearOrdenConLinea(
+      sufijo: string,
+      status: string,
+      lineas: Array<{ productId: string; quantity: number }>,
+    ) {
+      const orden = await repo.createPendingOrder({
+        ...ordenBase(sufijo),
+        totalArsCents: 100_000,
+        lines: lineas.map((l, i) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          unitPriceArsCents: 100_000,
+          productName: 'Producto',
+          productSku: `MS-${sufijo}-${i}`,
+        })),
+      });
+      if (status !== 'pending_payment') {
+        await prisma.order.update({ where: { id: orden.id }, data: { status } });
+      }
+      return orden;
+    }
+
+    it('ranking por cantidad vendida (no por revenue), órdenes confirmadas', async () => {
+      // A: 5 unidades (delivered), B: 2 unidades (preparing).
+      await crearOrdenConLinea('ms-1', 'delivered', [{ productId: productoA, quantity: 5 }]);
+      await crearOrdenConLinea('ms-2', 'preparing', [{ productId: productoB, quantity: 2 }]);
+
+      const ranking = await repo.mostSold(8);
+
+      expect(ranking.map((r) => r.id)).toEqual([productoA, productoB]);
+    });
+
+    it('excluye pending_payment y cancelled (AC-5-like)', async () => {
+      await crearOrdenConLinea('ms-3', 'pending_payment', [{ productId: productoA, quantity: 9 }]);
+      await crearOrdenConLinea('ms-4', 'cancelled', [{ productId: productoB, quantity: 9 }]);
+      await crearOrdenConLinea('ms-5', 'delivered', [{ productId: productoC, quantity: 1 }]);
+
+      const ranking = await repo.mostSold(8);
+
+      expect(ranking.map((r) => r.id)).toEqual([productoC]);
+    });
+
+    it('sin ninguna orden confirmada: [] (AC-5)', async () => {
+      await crearOrdenConLinea('ms-6', 'pending_payment', [{ productId: productoA, quantity: 3 }]);
+
+      expect(await repo.mostSold(8)).toEqual([]);
+    });
+
+    it('un producto despublicado no aparece aunque tenga ventas (AC-7)', async () => {
+      await crearOrdenConLinea('ms-7', 'delivered', [{ productId: productoB, quantity: 4 }]);
+      await prisma.product.update({ where: { id: productoB }, data: { status: 'archived' } });
+
+      const ranking = await repo.mostSold(8);
+      expect(ranking.map((r) => r.id)).not.toContain(productoB);
+    });
+
+    it('empate de cantidad vendida: tie-break determinista por id (AC-6)', async () => {
+      await crearOrdenConLinea('ms-8', 'delivered', [{ productId: productoA, quantity: 3 }]);
+      await crearOrdenConLinea('ms-9', 'delivered', [{ productId: productoB, quantity: 3 }]);
+      const ordenEsperado = [productoA, productoB].sort();
+
+      const ranking = await repo.mostSold(8);
+      expect(ranking.map((r) => r.id)).toEqual(ordenEsperado);
+    });
+
+    it('nunca expone revenue_ars_cents ni sku', async () => {
+      await crearOrdenConLinea('ms-10', 'delivered', [{ productId: productoA, quantity: 1 }]);
+
+      const ranking = await repo.mostSold(8);
+      expect(ranking[0]).not.toHaveProperty('revenue_ars_cents');
+      expect(ranking[0]).not.toHaveProperty('sku');
+    });
+
+    it('respeta el limit', async () => {
+      await crearOrdenConLinea('ms-11', 'delivered', [
+        { productId: productoA, quantity: 3 },
+        { productId: productoB, quantity: 2 },
+        { productId: productoC, quantity: 1 },
+      ]);
+
+      expect(await repo.mostSold(2)).toHaveLength(2);
+    });
+  });
 });

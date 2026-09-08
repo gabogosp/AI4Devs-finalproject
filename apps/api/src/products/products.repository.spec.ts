@@ -416,4 +416,57 @@ describe('ProductsRepository (products.repository, integration)', () => {
       fieldErrors: [{ field: 'slug', message: 'URL de producto duplicada' }],
     });
   });
+
+  describe('findRecentlyPublished (US-026 AC-1, AC-3, AC-4)', () => {
+    async function crearPublicadoConFecha(sku: string, createdAt: Date) {
+      const p = await repo.create({ ...base(sku), status: 'published' });
+      await prisma.product.update({ where: { id: p.id }, data: { created_at: createdAt } });
+      return p;
+    }
+
+    it('el más nuevo primero, tie-break por id (AC-1, AC-6-like)', async () => {
+      const base1 = new Date('2026-01-01T00:00:00Z');
+      const p1 = await crearPublicadoConFecha('NEW-001', base1);
+      const p2 = await crearPublicadoConFecha('NEW-002', new Date('2026-02-01T00:00:00Z'));
+      const p3 = await crearPublicadoConFecha('NEW-003', new Date('2026-03-01T00:00:00Z'));
+
+      const data = await repo.findRecentlyPublished(8);
+
+      expect(data.map((p) => p.id)).toEqual([p3.id, p2.id, p1.id]);
+    });
+
+    it('respeta el limit (AC-3: menos de 8 disponibles, sin relleno)', async () => {
+      await crearPublicadoConFecha('LIM-001', new Date('2026-01-01T00:00:00Z'));
+      await crearPublicadoConFecha('LIM-002', new Date('2026-01-02T00:00:00Z'));
+      await crearPublicadoConFecha('LIM-003', new Date('2026-01-03T00:00:00Z'));
+
+      expect(await repo.findRecentlyPublished(2)).toHaveLength(2);
+      expect(await repo.findRecentlyPublished(8)).toHaveLength(3);
+    });
+
+    it('excluye draft y archived (AC-7-like)', async () => {
+      await repo.create({ ...base('DRAFT-N'), status: 'draft' });
+      await repo.create({ ...base('ARCH-N'), status: 'archived' });
+      await crearPublicadoConFecha('PUB-N', new Date('2026-01-01T00:00:00Z'));
+
+      const data = await repo.findRecentlyPublished(8);
+      expect(data).toHaveLength(1);
+      expect(data[0].sku).toBe('PUB-N');
+    });
+
+    it('sin productos publicados: [] (AC-4)', async () => {
+      await repo.create({ ...base('SOLO-DRAFT'), status: 'draft' });
+      expect(await repo.findRecentlyPublished(8)).toEqual([]);
+    });
+
+    it('empate de created_at: tie-break determinista por id', async () => {
+      const misma = new Date('2026-01-01T00:00:00Z');
+      const a = await crearPublicadoConFecha('TIE-A', misma);
+      const b = await crearPublicadoConFecha('TIE-B', misma);
+      const ordenEsperado = [a.id, b.id].sort();
+
+      const data = await repo.findRecentlyPublished(8);
+      expect(data.map((p) => p.id)).toEqual(ordenEsperado);
+    });
+  });
 });
