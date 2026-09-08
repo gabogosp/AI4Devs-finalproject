@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { categoriesStorefrontService } from '@/features/storefront/categoriesStorefrontService';
+import { homeFeaturedService } from '@/features/storefront/homeFeaturedService';
+import { HomeFeaturedSection } from '@/features/storefront/HomeFeaturedSection';
 
 /**
  * Home pública del storefront (US-002 AC-1).
@@ -18,6 +20,11 @@ export default async function StorefrontHome() {
   // Si el árbol cae, la home se sirve igual con el claim: perder los rubros no
   // justifica un 500 en la puerta de entrada del sitio (resilience #10).
   const rubros = await categoriesStorefrontService.getTree().catch(() => []);
+  // Mismo criterio de degradación server-side para las dos secciones nuevas
+  // (US-026 `design.md` §Approach/T-B4): un fallo de red en cualquiera de los
+  // dos fetches no rompe el render del resto de la página.
+  const novedades = await homeFeaturedService.getNovedades().catch(() => []);
+  const masVendidos = await homeFeaturedService.getMasVendidos().catch(() => []);
 
   return (
     <div className="flex flex-col">
@@ -78,6 +85,9 @@ export default async function StorefrontHome() {
             </section>
           </>
         )}
+
+        <HomeFeaturedSection id="novedades" title="Novedades" items={novedades} />
+        <HomeFeaturedSection id="mas-vendidos" title="Más vendidos" items={masVendidos} />
       </div>
     </div>
   );

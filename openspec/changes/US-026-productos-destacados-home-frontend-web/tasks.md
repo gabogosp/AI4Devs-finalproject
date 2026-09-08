@@ -176,7 +176,7 @@ arranque la Fase B.
     `US-026-productos-destacados-home-backend`).
   - **Verify**: `pnpm --filter @dsm/web test -- homeFeaturedService`
 
-- [ ] **T-B4 — Componer las dos secciones en `app/(storefront)/page.tsx`**
+- [x] **T-B4 — Componer las dos secciones en `app/(storefront)/page.tsx`**
   - **Blocked-by**: T-B2
   - **Pattern**: `per` el `await categoriesStorefrontService.getTree().catch(() => [])` ya
     existente en el mismo archivo — mismo mecanismo de degradación server-side, sin
