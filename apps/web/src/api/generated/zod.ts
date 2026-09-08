@@ -458,6 +458,46 @@ export const UpdateAdminOrderStatusResponse = zod.object({
 
 
 /**
+ * Ruta PÚBLICA `GET /v1/products/novedades` SIN auth. Hasta 8 productos publicados, ordenados por fecha de alta (más nuevo primero, tie-break determinista por id). Registrada ANTES de `/products/{slug}` en el controller (misma especificidad de ruta que un segmento dinámico — Express/Nest resuelven por orden de registro, no por especificidad automática). Sin publicados → `data: []`, 200 (AC-4; el FE decide no renderizar la sección, la sección no deja de existir en la API).
+ * @summary Sección "Novedades" del home: últimos publicados (US-026 AC-1, AC-3, AC-4)
+ */
+export const storefrontGetNewArrivalsResponseDataMax = 8;
+
+
+
+export const StorefrontGetNewArrivalsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "slug": zod.string().describe('Enlaza a la ficha `\/v1\/products\/{slug}`.'),
+  "name": zod.string(),
+  "price_ars_cents": zod.number().int(),
+  "currency": zod.enum(['ARS']),
+  "image_url": zod.string().nullable(),
+  "in_stock": zod.boolean()
+}).describe('Item de grilla (US-002): sin id, stock numérico, status ni timestamps.')).max(storefrontGetNewArrivalsResponseDataMax)
+}).describe('Secciones \"Novedades\" \/ \"Más vendidos\" del home (US-026 D4): tope fijo de 8, sin objeto de paginación (no es un listado navegable).')
+
+
+/**
+ * Ruta PÚBLICA `GET /v1/products/mas-vendidos` SIN auth. Hasta 8 productos, ordenados por cantidad total vendida sobre órdenes NO `pending_payment`/`cancelled` (tie-break determinista por id). Ranking histórico completo, sin ventana de tiempo. Excluye productos despublicados aunque tengan historial de ventas (AC-7). Query propia — NUNCA reusa `ReportsRepository.topProducts` (admin-only, incluye `revenue_ars_cents`, no filtra por `status`). Sin ventas confirmadas → `data: []`, 200 (AC-5).
+ * @summary Sección "Más vendidos" del home: ranking real de ventas (US-026 AC-2, AC-5, AC-6, AC-7)
+ */
+export const storefrontGetBestSellersResponseDataMax = 8;
+
+
+
+export const StorefrontGetBestSellersResponse = zod.object({
+  "data": zod.array(zod.object({
+  "slug": zod.string().describe('Enlaza a la ficha `\/v1\/products\/{slug}`.'),
+  "name": zod.string(),
+  "price_ars_cents": zod.number().int(),
+  "currency": zod.enum(['ARS']),
+  "image_url": zod.string().nullable(),
+  "in_stock": zod.boolean()
+}).describe('Item de grilla (US-002): sin id, stock numérico, status ni timestamps.')).max(storefrontGetBestSellersResponseDataMax)
+}).describe('Secciones \"Novedades\" \/ \"Más vendidos\" del home (US-026 D4): tope fijo de 8, sin objeto de paginación (no es un listado navegable).')
+
+
+/**
  * Ruta PÚBLICA `GET /v1/products/{slug}` SIN auth (la primera del servicio). Devuelve un producto sólo si está `published`; draft/archived/inexistente → 404 uniforme (AC-7/AC-8, sin enumeration leak). Identificador público: `slug` (URL amigable indexable, AC-1 — OQ-BE-1 resuelta en la Fase 10; el `slug` lo deriva el servidor del `name`, nunca se acepta del cliente). Rate-limit por IP (§7.3, 429 + `Retry-After`) y `Cache-Control` acotado (AC-9).
  * @summary Ficha pública de producto publicado (US-003 AC-1/AC-2)
  */

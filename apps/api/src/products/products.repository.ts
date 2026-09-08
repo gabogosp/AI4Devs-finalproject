@@ -263,6 +263,20 @@ export class ProductsRepository {
     return { data, total };
   }
 
+  /**
+   * "Novedades" del home (US-026 AC-1, AC-3, AC-4): los últimos publicados,
+   * más nuevo primero. Tie-break por `id` (mismo idioma que
+   * `findPublishedByCategoryIds`) — determinista ante un empate de
+   * `created_at`.
+   */
+  findRecentlyPublished(limit: number): Promise<Product[]> {
+    return this.prisma.product.findMany({
+      where: { status: 'published' },
+      orderBy: [{ created_at: 'desc' }, { id: 'asc' }],
+      take: limit,
+    });
+  }
+
   async update(id: string, data: UpdateProductData): Promise<Product> {
     try {
       return await this.prisma.product.update({ where: { id }, data });

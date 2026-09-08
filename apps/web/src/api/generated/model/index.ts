@@ -74,6 +74,7 @@ export * from './getAdminReportsSummaryParams';
 export * from './getAdminReportsTopProductsParams';
 export * from './getImportParams';
 export * from './getPublicReviewsParams';
+export * from './highlightedProductsResponse';
 export * from './importCreated';
 export * from './importCreatedStatus';
 export * from './importJob';

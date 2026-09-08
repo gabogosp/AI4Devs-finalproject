@@ -57,7 +57,9 @@ export class StorefrontProductListItemDto {
   image_url!: string | null;
   in_stock!: boolean;
 
-  static from(p: Product): StorefrontProductListItemDto {
+  static from(
+    p: Pick<Product, 'slug' | 'name' | 'price_ars_cents' | 'image_url' | 'stock'>,
+  ): StorefrontProductListItemDto {
     return {
       slug: p.slug,
       name: p.name,

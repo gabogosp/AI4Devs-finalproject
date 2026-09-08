@@ -140,5 +140,30 @@ describe('Storefront caché acotada (e2e-storefront-cache, AC-9)', () => {
         'public, max-age=60, stale-while-revalidate=30',
       );
     });
+
+    /**
+     * US-026 D5: aunque el TTL deseado (60s/30s) coincide con el default de
+     * clase, se declara `@StorefrontCache` explícito en cada ruta nueva — la
+     * misma lección de US-025/#139 (una ruta nueva sin su propio decorator
+     * hereda el default en silencio, y ese default puede cambiar sin que
+     * nadie note que esta ruta dependía de él).
+     */
+    it('"novedades" lleva su propio Cache-Control explícito de 60s/30s (D5)', async () => {
+      const res = await request(app.getHttpServer()).get('/v1/products/novedades');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe(
+        'public, max-age=60, stale-while-revalidate=30',
+      );
+    });
+
+    it('"mas-vendidos" lleva su propio Cache-Control explícito de 60s/30s (D5)', async () => {
+      const res = await request(app.getHttpServer()).get('/v1/products/mas-vendidos');
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe(
+        'public, max-age=60, stale-while-revalidate=30',
+      );
+    });
   });
 });

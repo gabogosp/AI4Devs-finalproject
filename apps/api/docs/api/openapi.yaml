@@ -509,6 +509,53 @@ paths:
         '404': { $ref: '#/components/responses/Problem' }
         '409': { $ref: '#/components/responses/Problem' }
         '422': { $ref: '#/components/responses/Problem' }
+  /products/novedades:
+    get:
+      operationId: storefrontGetNewArrivals
+      tags: [storefront-products]
+      summary: 'Sección "Novedades" del home: últimos publicados (US-026 AC-1, AC-3, AC-4)'
+      description: >-
+        Ruta PÚBLICA `GET /v1/products/novedades` SIN auth. Hasta 8 productos
+        publicados, ordenados por fecha de alta (más nuevo primero, tie-break
+        determinista por id). Registrada ANTES de `/products/{slug}` en el
+        controller (misma especificidad de ruta que un segmento dinámico —
+        Express/Nest resuelven por orden de registro, no por especificidad
+        automática). Sin publicados → `data: []`, 200 (AC-4; el FE decide no
+        renderizar la sección, la sección no deja de existir en la API).
+      security: []
+      responses:
+        '200':
+          description: Hasta 8 productos publicados más recientes (puede ser vacía)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30 (D5)'
+          content: { application/json: { schema: { $ref: '#/components/schemas/HighlightedProductsResponse' } } }
+        '429': { $ref: '#/components/responses/Problem' }
+  /products/mas-vendidos:
+    get:
+      operationId: storefrontGetBestSellers
+      tags: [storefront-products]
+      summary: 'Sección "Más vendidos" del home: ranking real de ventas (US-026 AC-2, AC-5, AC-6, AC-7)'
+      description: >-
+        Ruta PÚBLICA `GET /v1/products/mas-vendidos` SIN auth. Hasta 8
+        productos, ordenados por cantidad total vendida sobre órdenes NO
+        `pending_payment`/`cancelled` (tie-break determinista por id). Ranking
+        histórico completo, sin ventana de tiempo. Excluye productos
+        despublicados aunque tengan historial de ventas (AC-7). Query propia
+        — NUNCA reusa `ReportsRepository.topProducts` (admin-only, incluye
+        `revenue_ars_cents`, no filtra por `status`). Sin ventas confirmadas →
+        `data: []`, 200 (AC-5).
+      security: []
+      responses:
+        '200':
+          description: Hasta 8 productos más vendidos (puede ser vacía)
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: 'public, max-age=60, stale-while-revalidate=30 (D5)'
+          content: { application/json: { schema: { $ref: '#/components/schemas/HighlightedProductsResponse' } } }
+        '429': { $ref: '#/components/responses/Problem' }
   /products/{slug}:
     get:
       operationId: storefrontGetProduct
@@ -2290,6 +2337,17 @@ components:
         currency: { type: string, enum: [ARS] }
         image_url: { type: string, nullable: true }
         in_stock: { type: boolean }
+    HighlightedProductsResponse:
+      type: object
+      description: >-
+        Secciones "Novedades" / "Más vendidos" del home (US-026 D4): tope fijo
+        de 8, sin objeto de paginación (no es un listado navegable).
+      required: [data]
+      properties:
+        data:
+          type: array
+          maxItems: 8
+          items: { $ref: '#/components/schemas/StorefrontProductListItem' }
     StorefrontProductPage:
       type: object
       required: [data, pagination]
