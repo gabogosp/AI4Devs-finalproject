@@ -5,7 +5,8 @@ info:
   description: Contrato VIVO de la capacidad, acumulado por /archive-change. Superficie de administración
     entregada por US-001, más la ficha pública de producto de US-003 y la importación
     masiva de inventario de US-006. Las rutas de navegación por categorías se suman al
-    archivar US-002.
+    archivar US-002. Las secciones "Novedades"/"Más vendidos" del home se suman al
+    archivar US-026 (backend).
   contact:
     name: DSM
     url: https://example.com
@@ -174,6 +175,17 @@ components:
         currency: { type: string, enum: [ARS] }
         image_url: { type: string, nullable: true }
         in_stock: { type: boolean }
+    HighlightedProductsResponse:
+      type: object
+      description: >-
+        Secciones "Novedades" / "Más vendidos" del home (US-026 D4): tope fijo
+        de 8, sin objeto de paginación (no es un listado navegable).
+      required: [data]
+      properties:
+        data:
+          type: array
+          maxItems: 8
+          items: { $ref: '#/components/schemas/StorefrontProductListItem' }
     StorefrontProductPage:
       type: object
       required: [data, pagination]
@@ -562,6 +574,10 @@ paths:
     $ref: ./openapi/paths/admin-products.yaml
   /admin/products/{id}:
     $ref: ./openapi/paths/admin-products-id.yaml
+  /products/novedades:
+    $ref: ./openapi/paths/storefront-products-novedades.yaml
+  /products/mas-vendidos:
+    $ref: ./openapi/paths/storefront-products-mas-vendidos.yaml
   /products/{slug}:
     $ref: ./openapi/paths/storefront-products-slug.yaml
   /categories:

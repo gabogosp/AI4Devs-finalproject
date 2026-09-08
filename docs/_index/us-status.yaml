@@ -944,7 +944,10 @@
   blocked_by: [US-008, US-013, US-014]   # necesita checkout + estado delivered + cuentas (las 3 Done)
 - id: US-026
   slug: productos-destacados-home
-  status: Ready   # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
+  status: In Progress   # /archive-change 2026-09-07: BE archivado (PR #146) — GET
+  # /products/novedades + GET /products/mas-vendidos. FE (a7) y QA (qa-plan #145 ya
+  # abierto, e9) siguen pendientes de archivar antes de que la US pase a Done/QA.
+  # /enrich-user-story 2026-09-07: decisión del dueño (vía la coordinadora)
   # — el home muestra AMBOS (a) Novedades + (b) Más vendidos, no uno solo. Se descartaron
   # (c) curado manual y (d) mejor calificados para esta iteración. 8 AC en Gherkin, DoR
   # completo. "Más vendidos" suma BE real (agregado sobre order_items, distinto — y
@@ -965,4 +968,5 @@
   linear-issue-id: null
   created: 2026-09-07
   ready-at: 2026-09-07
+  in-progress-at: 2026-09-07
   blocked_by: []
