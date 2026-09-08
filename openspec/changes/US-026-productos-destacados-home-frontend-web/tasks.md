@@ -117,7 +117,7 @@ language: es
 
 ### Frontera estructural
 
-- [ ] **T-A7 — Fase A no toca `apps/web/app/`**
+- [x] **T-A7 — Fase A no toca `apps/web/app/`**
   - **Exit criterion**: ningún archivo bajo `apps/web/app/` cambió como parte de la Fase A — la
     composición real en el home es explícitamente Fase B (`design.md` tabla de Riesgos, fila 2).
   - **Verify**: `git diff --stat apps/web/app` vacío
