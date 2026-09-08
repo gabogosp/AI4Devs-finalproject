@@ -118,11 +118,26 @@ Característica: Productos destacados en el home (US-026)
 cuenta para "más vendidos", a diferencia de US-025-qa que exigía
 `delivered` específicamente, D-QA4).
 
+**Ejecutado (2026-09-07, `/develop-qa`)**: 8/8 escenarios verdes contra el
+BE real (ya mergeado, PR #146) + Postgres aislado propio, 3 corridas
+limpias en proceso/DB fresca. **Corrección real de metodología** (no de
+producto): `this.state` (el World de Cucumber) se resetea en CADA
+escenario, así que la continuidad narrativa entre SC-026-N2 y SC-026-E1
+(mismo catálogo acumulando de a poco, per el orden declarado arriba) usa un
+acumulador de **módulo** (`productosAcumulados`), no `this.state` — el
+primer intento con `this.state` fallaba porque el estado "recordado" de un
+escenario anterior nunca llegaba al siguiente. Los escenarios que necesitan
+un conteo EXACTO del catálogo (N1, E1) se reordenaron al PRINCIPIO del
+archivo (antes que cualquier otro cree productos/órdenes) — documentado en
+el propio `.feature`. `QA-026-CT-1`/`QA-026-CT-2` (ver §4) también viven en
+este mismo archivo, no en un contract-test separado — más simple y
+suficiente para lo que hacía falta verificar. Ver `tasks.md` T-QA2.
+
 ---
 
 ## 4. Contract testing (shape público + caché — D-QA2/D-QA3)
 
-- [ ] **QA-026-CT-1**: El shape público de ambos endpoints nunca expone `id`/`status`/`revenue_ars_cents`
+- [x] **QA-026-CT-1**: El shape público de ambos endpoints nunca expone `id`/`status`/`revenue_ars_cents`
   - Exit criterion: un spec valida que `GET /v1/products/novedades` y
     `GET /v1/products/mas-vendidos` devuelven exactamente el shape de
     `StorefrontProductListItemDto` (`slug`, `name`, `price_ars_cents`,
@@ -130,9 +145,14 @@ cuenta para "más vendidos", a diferencia de US-025-qa que exigía
     particular ni `id` ni `revenue_ars_cents` (D-QA2: la frontera con el
     reporte admin de US-016).
   - Verify: `pnpm --filter @dsm/qa test:contract -- --testPathPattern=destacados` (exit 0, cuando BE-US-026 exista)
-  - **Blocked-by**: BE-US-026.
+  - **Nota de ejecución (2026-09-07)**: verde. Implementado como escenario
+    Cucumber (`QA-026-CT-1` en `destacados.feature`), no como spec de
+    contract testing separado — verifica las claves de cada item de ambas
+    respuestas contra el shape real, confirmado además a mano con `curl`
+    contra el BE real: exactamente `slug/name/price_ars_cents/currency/
+    image_url/in_stock`, sin `id`/`status`/`revenue_ars_cents`.
 
-- [ ] **QA-026-CT-2**: `Cache-Control` declarado explícitamente por ruta (D-QA3)
+- [x] **QA-026-CT-2**: `Cache-Control` declarado explícitamente por ruta (D-QA3)
   - Exit criterion: ambas rutas responden con un `Cache-Control` propio
     (no `undefined`, no heredado sin querer de otra ruta) — mismo criterio
     de "declarado, no heredado" que el fix de US-025 (PR #139).
@@ -140,7 +160,12 @@ cuenta para "más vendidos", a diferencia de US-025-qa que exigía
     respuestas 200 y falla si está ausente o si coincide byte-a-byte con
     el de una ruta que NO debería compartir TTL (ej. `/me/reviews/:slug`,
     que es `no-store`).
-  - **Blocked-by**: BE-US-026.
+  - **Nota de ejecución (2026-09-07)**: verde. `QA-026-CT-2` en
+    `destacados.feature` confirma `Cache-Control: public, max-age=60,
+    stale-while-revalidate=30` en ambas rutas (declarado per-handler,
+    `@StorefrontCache({maxAge:60,swr:30})` — verificado leyendo el código
+    real, no asumido) — distinto y explícito, no heredado por accidente
+    como el hallazgo de US-025.
 
 ---
 

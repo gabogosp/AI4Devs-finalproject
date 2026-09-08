@@ -3168,21 +3168,19 @@
   us-id: US-026
   discipline: qa
   variant: null
-  status: draft   # /plan-qa --standalone 2026-09-07: qa-plan.md escrito ANTES de BE/FE
-  # (ninguno planificado todavía) — Modo B, mismo patrón que US-024/US-025-qa. 8/8 AC
-  # de la US cubiertos (1 escenario Gherkin c/u). Incluye 2 test-cases dedicados
-  # (D-QA2/D-QA3): shape público (nunca id/revenue_ars_cents, frontera con el reporte
-  # admin de US-016) y Cache-Control declarado per-handler (lección directa de US-025,
-  # PR #139). Elegibilidad de "más vendidos" reusa crearOrdenEnEstado tal cual (a
-  # diferencia de US-025-qa, no hace falta una compra logueada — es agregado global).
-  # Todo test-case que necesita código real queda Blocked-by: BE-US-026/FE-US-026
-  # explícito en qa-plan.md §4/§5 — nada se finge ejecutable.
+  status: in-progress   # /develop-qa 2026-09-07: T-QA2 cerrada — 10/10 escenarios
+  # verdes (8 AC + QA-026-CT-1 shape público + QA-026-CT-2 Cache-Control) contra
+  # BE-US-026 real (ya mergeado, PR #146), 3 corridas limpias en proceso/DB fresca.
+  # Confirmado: la lección de caché de US-025 (PR #139) se aplicó correctamente acá —
+  # ambas rutas declaran @StorefrontCache per-handler. E2E Playwright sigue
+  # Blocked-by: FE-US-026. /plan-qa --standalone 2026-09-07: qa-plan.md escrito ANTES
+  # de BE/FE — Modo B, mismo patrón que US-024/US-025-qa.
   parent-us: docs/user-stories/US-026-productos-destacados-home.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
-  estimate-hours: 1.5   # 8 AC + 2 test-cases de contrato dedicados — sólo escribir el
-  # plan, no ejecutarlo.
+  estimate-hours: 2.5   # 1.5h planificación (8 AC + 2 test-cases de contrato) + ~1h
+  # ejecución (BDD + contract, sin sorpresas — el BE aplicó bien la lección de caché).
   assignee: claude-code
   branch: docs/plan-qa-US-026-productos-destacados
   pr-url: null
