@@ -163,7 +163,7 @@ arranque la Fase B.
     propios — no un default compartido importado de otro service.
   - **Verify**: `pnpm --filter @dsm/web test -- homeFeaturedService`
 
-- [ ] **T-B3 — Smoke de caché explícita (NFR de la US §9, mitad FE — `design.md` §D5)**
+- [x] **T-B3 — Smoke de caché explícita (NFR de la US §9, mitad FE — `design.md` §D5)**
   - **Blocked-by**: T-B2
   - **Pattern**: mockear el módulo de operaciones generadas (`@/api/generated/endpoints`) con
     `vi.mock` y capturar los argumentos de la llamada, mismo mecanismo que cualquier test de
