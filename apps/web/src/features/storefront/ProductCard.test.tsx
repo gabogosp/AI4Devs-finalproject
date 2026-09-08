@@ -118,4 +118,19 @@ describe('ProductCard (AC-3, AC-5)', () => {
       screen.getByRole('img', { name: /Compresor 1HP — sin imagen disponible/ }),
     ).toBeInTheDocument();
   });
+
+  // US-026 T-A2: destacados del home no pertenecen a una sola categoría, así
+  // que `categoryName` queda sin pasar — mismo comportamiento que
+  // `ProductImage.test.tsx` ya cubre para `categoryName={undefined}`, pero
+  // verificado acá en el punto de integración real (la card, no la imagen
+  // suelta). Necesita `image_url` real: el placeholder de sin-imagen no
+  // interpola `categoryName` en su alt, así que con `image_url: null` este
+  // caso quedaría probando el mismo camino que el test de arriba.
+  it('sin categoryName: la imagen usa el alt de sólo-nombre (US-026)', () => {
+    renderCard(
+      <ProductCard item={item({ image_url: 'https://cdn.example.com/compresor.jpg' })} />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Compresor 1HP' })).toBeInTheDocument();
+  });
 });
