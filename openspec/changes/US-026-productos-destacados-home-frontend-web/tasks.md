@@ -147,7 +147,7 @@ arranque la Fase B.
     exporta los DTOs/Zod/MSW de las dos operaciones nuevas (`novedades`, `mas-vendidos`).
   - **Verify**: `pnpm --filter @dsm/web codegen && git status --porcelain apps/web/src/api/generated/` vacío
 
-- [ ] **T-B2 — `homeFeaturedService.ts` (repository pattern)**
+- [x] **T-B2 — `homeFeaturedService.ts` (repository pattern)**
   - **Blocked-by**: US-026-productos-destacados-home-backend, T-B0, T-B1
   - **Pattern**: `per categoriesStorefrontService.ts`/`storefrontService.ts` — llama las
     operaciones **generadas** directamente (sin marca `session`, es público, mismo criterio que
