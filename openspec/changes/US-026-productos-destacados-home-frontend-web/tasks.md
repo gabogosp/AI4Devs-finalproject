@@ -92,7 +92,7 @@ language: es
 
 ### Componente presentacional
 
-- [ ] **T-A5 — `HomeFeaturedSection.tsx` + `.test.tsx`**
+- [x] **T-A5 — `HomeFeaturedSection.tsx` + `.test.tsx`**
   - **Pattern**: `per design.md §D1/§D2/§D3/§D4` — tipa `items: StorefrontProductListItem[]`
     (importado de `@/api/generated/model`, el DTO ya existente — ningún tipo provisional nuevo,
     D1); devuelve `null` cuando `items.length === 0` (D2); reusa la grilla estática de
