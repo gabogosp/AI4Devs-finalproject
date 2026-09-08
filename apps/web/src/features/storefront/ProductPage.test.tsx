@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/server';
+import { SessionProvider } from '@/features/account/SessionProvider';
 import type { StorefrontProduct } from './storefrontService';
 
 /**
@@ -14,7 +15,12 @@ const notFoundSignal = new Error('NEXT_NOT_FOUND');
 const notFound = vi.fn(() => {
   throw notFoundSignal;
 });
-vi.mock('next/navigation', () => ({ notFound: () => notFound() }));
+vi.mock('next/navigation', () => ({
+  notFound: () => notFound(),
+  // US-025: `ReviewsDataContainer` (vía `ReviewGuestPrompt` en estado
+  // anonymous) llama `usePathname()` para armar el link "Ingresar?next=".
+  usePathname: () => '/productos/heladera-exhibidora',
+}));
 
 const { default: ProductPage } = await import(
   '../../../app/(storefront)/productos/[slug]/page'
@@ -56,7 +62,11 @@ describe('ProductPage (ruta SSR de la ficha)', () => {
     const ui = await ProductPage({
       params: Promise.resolve({ slug: 'heladera-exhibidora' }),
     });
-    render(ui);
+    // US-025 agregó `ReviewsDataContainer` a la ficha, que consume
+    // `useSession()` — sin este wrapper el render tira `useSession debe
+    // usarse dentro de <SessionProvider>`. Sin hint de sesión en
+    // `localStorage`, resuelve a `anonymous` de forma síncrona, sin red.
+    render(<SessionProvider>{ui}</SessionProvider>);
 
     expect(
       screen.getByRole('heading', { level: 1, name: 'Heladera exhibidora' }),
