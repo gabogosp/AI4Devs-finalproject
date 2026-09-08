@@ -24,7 +24,15 @@ export function ProductCard({
   categoryName,
 }: {
   item: StorefrontProductListItem;
-  categoryName: string;
+  /**
+   * Opcional desde US-026 (`design.md` T-A1): un producto destacado del home
+   * ("Novedades"/"Más vendidos") no pertenece a una sola categoría, así que no
+   * hay ningún `category.name` que pasarle. `ProductImage` ya acepta
+   * `categoryName?: string` desde US-004 — sin categoría, su `alt` cae al
+   * nombre del producto a secas. Aditivo: ningún call-site existente
+   * (`CategoryPage.tsx`, que sí pasa `category.name`) cambia.
+   */
+  categoryName?: string;
 }) {
   return (
     <article className="group flex h-full flex-col gap-3 rounded-lg border border-border bg-surface p-3 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md">
