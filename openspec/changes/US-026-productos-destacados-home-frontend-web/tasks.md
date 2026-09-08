@@ -191,7 +191,7 @@ arranque la Fase B.
     render del resto de la página (mismo criterio que `rubros`).
   - **Verify**: `pnpm --filter @dsm/web test -- StorefrontHome`
 
-- [ ] **T-B5 — Extender `StorefrontHome.test.tsx` con los 5 escenarios de composición (AC-1 a AC-5)**
+- [x] **T-B5 — Extender `StorefrontHome.test.tsx` con los 5 escenarios de composición (AC-1 a AC-5)**
   - **Blocked-by**: T-B4
   - **Pattern**: `per` el `vi.mock('@/features/storefront/categoriesStorefrontService', ...)` ya
     existente en el mismo archivo — mismo mecanismo (estado plano controlado por variable, no
