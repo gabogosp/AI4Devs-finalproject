@@ -110,7 +110,7 @@ language: es
     items no vacíos, `HomeFeaturedViewTracker` está presente.
   - **Verify**: `pnpm --filter @dsm/web test -- HomeFeaturedSection`
 
-- [ ] **T-A6 — `HomeFeaturedSection.a11y.test.tsx` — axe-core**
+- [x] **T-A6 — `HomeFeaturedSection.a11y.test.tsx` — axe-core**
   - **Exit criterion**: montado con 8 items (incluido uno sin stock), axe-core reporta 0
     violaciones `serious`/`critical`.
   - **Verify**: `pnpm --filter @dsm/web test -- HomeFeaturedSection.a11y`
