@@ -81,7 +81,7 @@ language: es
     test de `events.ts` confirma que está en el set público.
   - **Verify**: `pnpm --filter @dsm/web test -- events`
 
-- [ ] **T-A4 — `HomeFeaturedViewTracker.tsx` + `.test.tsx`**
+- [x] **T-A4 — `HomeFeaturedViewTracker.tsx` + `.test.tsx`**
   - **Pattern**: `per CategoryViewTracker.tsx` — Client Component leaf, `useRef` guard contra el
     doble-montaje de StrictMode, `useEffect` que llama `track('home_featured_shown', { section:
     sectionId, item_count: itemCount, screen_name: 'home' })` una sola vez por `sectionId`.
