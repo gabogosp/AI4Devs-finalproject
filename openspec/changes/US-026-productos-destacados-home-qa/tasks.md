@@ -60,7 +60,31 @@ Los 8 AC de US-026 quedan cubiertos, uno a uno, en `qa-plan.md` §3.
     Playwright (§5 de `qa-plan.md`) sigue `Blocked-by: FE-US-026` — sin
     cambios, el FE todavía no aterrizó.
 
+## Fase 3 — Ejecutar el E2E Playwright (FE ya mergeado, PR #149)
+
+- [x] T-QA3 Scaffoldear y correr `qa/e2e/destacados.spec.ts` contra el home
+  real construido (`next build && next start`, no dev server), FE de
+  `US-026-productos-destacados-home-frontend-web` (PR #149, mergeado a
+  main).
+  - **Exit criterion**: QA-026-E2E-1 (ambas secciones + link a ficha) y
+    QA-026-E2E-2 (catálogo vacío) terminan en verde, en Postgres/API/web
+    aislados propios de esta sesión, sobre el build de producción real.
+  - **Verify**: `QA_API_BASE_URL=... QA_WEB_BASE_URL=... JWT_SECRET=... DATABASE_URL=... npx playwright test destacados.spec.ts --config=e2e/playwright.config.ts --reporter=list` (exit 0, "2 passed")
+  - **Nota de ejecución (2026-09-08)**: 2/2 verdes, 3 corridas limpias en
+    proceso/DB fresca (Postgres propio, puerto 56200; API/web propios,
+    puertos 46309/46310). Hallazgo real de metodología (no de producto): el
+    home (`app/(storefront)/page.tsx`) es ISR (`○ Static`, `revalidate: 60`
+    — hereda el `maxAge:60` del BE), no un fetch SSR por request — una
+    navegación inmediata tras sembrar puede caer dentro de la ventana
+    "fresh" del cache de Next y servir HTML viejo. El spec poll-ea
+    re-navegando hasta que la regeneración en background incorpora el dato
+    sembrado (detalle en `qa-plan.md` §5). Efecto colateral de entorno
+    (no del spec): un `next build` reejecutado sin `rm -rf .next` reusa el
+    fetch-cache en disco de una corrida anterior aunque la DB se haya
+    vaciado — necesario para una baseline ISR limpia en cada corrida.
+
 ## Próximo paso
 
-E2E Playwright (`qa-plan.md` §5) queda **bloqueado** hasta que
-`FE-US-026` exista. Avisar a la coordinadora cuando ese change abra su PR.
+Los 3 aspectos QA de US-026 (qa-plan, BDD+contract, E2E) están cerrados.
+Avisar a la coordinadora — PR de esta fase, luego `/archive-change
+US-026-productos-destacados-home-qa` post-merge.

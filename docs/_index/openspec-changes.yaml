@@ -3200,13 +3200,15 @@
   us-id: US-026
   discipline: qa
   variant: null
-  status: in-progress   # /develop-qa 2026-09-07: T-QA2 cerrada — 10/10 escenarios
-  # verdes (8 AC + QA-026-CT-1 shape público + QA-026-CT-2 Cache-Control) contra
-  # BE-US-026 real (ya mergeado, PR #146), 3 corridas limpias en proceso/DB fresca.
-  # Confirmado: la lección de caché de US-025 (PR #139) se aplicó correctamente acá —
-  # ambas rutas declaran @StorefrontCache per-handler. E2E Playwright sigue
-  # Blocked-by: FE-US-026. /plan-qa --standalone 2026-09-07: qa-plan.md escrito ANTES
-  # de BE/FE — Modo B, mismo patrón que US-024/US-025-qa.
+  status: in-progress   # /develop-qa 2026-09-08: T-QA3 cerrada — QA-026-E2E-1/2
+  # verdes (2/2), 3 corridas limpias en proceso/DB/web fresca, contra el home real
+  # construido (FE PR #149, mergeado). Hallazgo de metodología: el home es ISR
+  # (next build lo prerenderea ○ Static, revalidate 60s heredado del maxAge:60 del
+  # BE) — el spec poll-ea re-navegando hasta que la regeneración en background
+  # incorpora el dato sembrado, en vez de asumir un fetch SSR por request.
+  # T-QA2 (2026-09-07): 10/10 escenarios BDD+contract verdes contra BE-US-026 real
+  # (PR #146). /plan-qa --standalone 2026-09-07: qa-plan.md escrito ANTES de BE/FE
+  # — Modo B, mismo patrón que US-024/US-025-qa.
   parent-us: docs/user-stories/US-026-productos-destacados-home.md
   linear-task-id: null
   audit-baseline: null
