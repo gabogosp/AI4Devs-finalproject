@@ -89,14 +89,22 @@
   us-id: US-019
   discipline: infrastructure
   variant: platform-cloud
-  status: in progress
+  status: in progress   # /develop-infrastructure 2026-09-08: Fase 1 (T1.1/T1.2/T1.4/T1.5) +
+  # Fase 3 (T3.1/T3.2) cerradas. Railway zesty-radiance linkeado (staging+production),
+  # servicios web+api creados (worker/Redis diferidos por ADR-0014 — sin BullMQ en runtime).
+  # Neon pgvector habilitado, 18 migraciones aplicadas a staging, paridad de catálogo
+  # confirmada (T3.2 exit 0). R2 bucket dsm-product-images creado. T2.1/T2.3 parciales:
+  # DATABASE_URL + NEXT_PUBLIC_SITE_URL/API_BASE_URL seteados; secretos sensibles
+  # (GEMINI/RESEND/SENTRY/WHATSAPP) y NEXT_PUBLIC_IMAGE_CDN_HOST (pendiente decisión
+  # r2.dev vs dominio custom) quedan para la coordinadora. Gates pendientes: Sentry
+  # (T4.2/T4.3), integración GitHub de Railway (T4.1).
   parent-us: docs/user-stories/US-019-provision-plataforma-cloud.md
   linear-task-id: null
   audit-baseline: null
   audit-derived: false
   estimate-hours: 8
-  assignee: f6678579
-  branch: null
+  assignee: claude-code
+  branch: infra/US-019-cloud-provision
   pr-url: null
   created: 2026-07-11
   completed-at: null
