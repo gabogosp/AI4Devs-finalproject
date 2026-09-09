@@ -7,6 +7,7 @@ import {
   OrderCancelledNoStockPayload,
   OrderConfirmedPayload,
   OrderReadyForPickupPayload,
+  OrderReceivedPayload,
   OwnerNewOrderPayload,
 } from './notification.port';
 import { backoffDelayMs, isTransientResendError } from './notification-backoff';
@@ -19,8 +20,12 @@ import {
   orderConfirmedText,
   orderReadyForPickupHtml,
   orderReadyForPickupText,
+  orderReceivedHtml,
+  orderReceivedText,
   ownerNewOrderHtml,
   ownerNewOrderText,
+  ownerOrderReceivedHtml,
+  ownerOrderReceivedText,
 } from './notification-templates';
 import { NotificationEventsService, NotificationType } from '../../observability/notification-events.service';
 
@@ -113,6 +118,30 @@ export class ResendNotificationAdapter implements NotificationPort {
       subject: `Tu orden #${payload.orderNumber} fue cancelada`,
       text: orderCancelledByOwnerText(payload),
       html: orderCancelledByOwnerHtml(payload),
+    });
+  }
+
+  /** Resumen de compra al crear la orden (checkout, `pending_payment`). */
+  async orderReceived(payload: OrderReceivedPayload): Promise<void> {
+    await this.enviarConReintentos({
+      type: 'order_received',
+      orderId: payload.orderId,
+      to: payload.buyerEmail,
+      subject: `Recibimos tu pedido #${payload.orderNumber}`,
+      text: orderReceivedText(payload),
+      html: orderReceivedHtml(payload),
+    });
+  }
+
+  /** Aviso al dueño de una orden nueva recibida, mismo momento que `orderReceived`. */
+  async ownerOrderReceived(payload: OwnerNewOrderPayload): Promise<void> {
+    await this.enviarConReintentos({
+      type: 'owner_order_received',
+      orderId: payload.orderId,
+      to: this.config.getOrThrow<string>('OWNER_NOTIFICATION_EMAIL'),
+      subject: `Nueva orden #${payload.orderNumber} recibida`,
+      text: ownerOrderReceivedText(payload),
+      html: ownerOrderReceivedHtml(payload),
     });
   }
 

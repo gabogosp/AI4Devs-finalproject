@@ -119,6 +119,58 @@ describe('CustomerAuthService (AC-1, AC-2, AC-6)', () => {
     });
   });
 
+  describe('register — email de bienvenida (best-effort, US-026-emails)', () => {
+    it('dispara WelcomeMailer.send con el email/nombre del cliente recién creado', async () => {
+      const welcomeMailer = { send: jest.fn().mockResolvedValue(undefined) };
+      const serviceConMailer = new CustomerAuthService(
+        customers,
+        hasher,
+        credentials,
+        sessions,
+        eventos,
+        welcomeMailer,
+      );
+
+      const { customer } = await serviceConMailer.register({
+        email: 'bienvenida@example.com',
+        name: 'Bienvenida Test',
+        password: PASSWORD,
+      });
+
+      expect(welcomeMailer.send).toHaveBeenCalledWith({
+        to: 'bienvenida@example.com',
+        name: 'Bienvenida Test',
+        customerId: customer.id,
+      });
+    });
+
+    it('un WelcomeMailer que rechaza NO revierte el alta ni afecta la sesión emitida', async () => {
+      const welcomeMailer = { send: jest.fn().mockRejectedValue(new Error('resend caído')) };
+      const serviceConMailer = new CustomerAuthService(
+        customers,
+        hasher,
+        credentials,
+        sessions,
+        eventos,
+        welcomeMailer,
+      );
+
+      await expect(
+        serviceConMailer.register({
+          email: 'bienvenida-falla@example.com',
+          name: 'Falla Mailer',
+          password: PASSWORD,
+        }),
+      ).resolves.toMatchObject({ customer: { email: 'bienvenida-falla@example.com' } });
+    });
+
+    it('sin WelcomeMailer inyectado (undefined), el registro funciona igual', async () => {
+      // `service` (top-level) se construye con 5 args, sin mailer — mismo
+      // criterio que `ConfirmOrderService` sin `NotificationPort`.
+      await expect(alta()).resolves.toMatchObject({ customer: { email: 'ana@example.com' } });
+    });
+  });
+
   describe('register — email ya registrado (AC-6)', () => {
     it('lanza RegistrationFailedError sin crear fila NI emitir sesión', async () => {
       await alta();

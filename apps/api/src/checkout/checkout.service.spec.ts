@@ -10,6 +10,7 @@ import { CartEmptyError, CartNotPurchasableError } from './checkout-errors';
 import { CheckoutService } from './checkout.service';
 import { OrderTokenService } from './order-token.service';
 import { OrdersRepository } from './orders.repository';
+import { LoggingNotificationAdapter } from '../orders/ports/logging-notification.adapter';
 
 /**
  * T2.3 — integration contra el Postgres real. `checkout.service.spec.ts`,
@@ -30,6 +31,7 @@ describe('CheckoutService (integration)', () => {
   }) as ConfigService;
   const cartToken = new CartTokenService(carts, config);
   const events = new CheckoutEventsService();
+  const notifications = new LoggingNotificationAdapter();
   const service = new CheckoutService(
     cartToken,
     products,
@@ -37,6 +39,7 @@ describe('CheckoutService (integration)', () => {
     orderToken,
     config,
     events,
+    notifications,
   );
 
   const fakeReq = (cookies: Record<string, string> = {}) =>
@@ -60,6 +63,7 @@ describe('CheckoutService (integration)', () => {
   afterAll(async () => {
     await prisma.$disconnect();
   });
+  afterEach(() => jest.restoreAllMocks());
   beforeEach(async () => {
     await prisma.$executeRawUnsafe(
       'TRUNCATE TABLE orders, order_items, carts, cart_items, products, categories RESTART IDENTITY CASCADE',
@@ -132,6 +136,40 @@ describe('CheckoutService (integration)', () => {
     });
     expect(enBase?.buyer_email).toBe('comprador@test.local');
     expect(enBase?.status).toBe('pending_payment');
+  });
+
+  it('al crear la orden dispara orderReceived (cliente) + ownerOrderReceived (dueño) — resumen de compra, US-026-emails', async () => {
+    const p1 = await productoDePrueba('c', { price_ars_cents: 100_000 });
+    const orderReceived = jest.spyOn(notifications, 'orderReceived');
+    const ownerOrderReceived = jest.spyOn(notifications, 'ownerOrderReceived');
+    const req = await carritoConLinea(p1.id, 2, 100_000);
+
+    const resultado = await service.createOrder(req, buyer());
+
+    expect(orderReceived).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderNumber: resultado.orderNumber,
+        buyerEmail: 'comprador@test.local',
+        items: [
+          expect.objectContaining({ productName: `Producto c`, quantity: 2, unitPriceArsCents: 100_000 }),
+        ],
+        totalArsCents: 200_000,
+      }),
+    );
+    expect(ownerOrderReceived).toHaveBeenCalledWith(
+      expect.objectContaining({ orderNumber: resultado.orderNumber, totalArsCents: 200_000 }),
+    );
+  });
+
+  it('un NotificationPort que rechaza NO revierte ni bloquea la creación de la orden (best-effort)', async () => {
+    const p1 = await productoDePrueba('d', { price_ars_cents: 100_000 });
+    jest.spyOn(notifications, 'orderReceived').mockRejectedValueOnce(new Error('resend caído'));
+    jest.spyOn(notifications, 'ownerOrderReceived').mockRejectedValueOnce(new Error('resend caído'));
+    const req = await carritoConLinea(p1.id, 1, 100_000);
+
+    await expect(service.createOrder(req, buyer())).resolves.toMatchObject({
+      status: 'pending_payment',
+    });
   });
 
   it('carrito sin cookie: CartEmptyError', async () => {

@@ -9,6 +9,7 @@ import { CheckoutEventsService } from '../observability/checkout-events.service'
 import { CheckoutService } from './checkout.service';
 import { OrderTokenService } from './order-token.service';
 import { OrdersRepository } from './orders.repository';
+import { LoggingNotificationAdapter } from '../orders/ports/logging-notification.adapter';
 
 /**
  * T5.3 — AC-8: el consentimiento es trazable (marca temporal + versión) y no
@@ -36,6 +37,7 @@ describe('AC-8: el consentimiento es trazable y no se puede eludir (ac8-consent-
     orderToken,
     config,
     new CheckoutEventsService(),
+    new LoggingNotificationAdapter(),
   );
 
   const fakeReq = (cookies: Record<string, string> = {}) =>

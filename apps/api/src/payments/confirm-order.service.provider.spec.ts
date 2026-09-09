@@ -82,6 +82,8 @@ describe('ConfirmOrderService.confirm — providers automáticos (US-010)', () =
       ownerNewOrder: jest.fn().mockResolvedValue(undefined),
       orderCancelledNoStock: jest.fn().mockResolvedValue(undefined),
       orderCancelledByOwner: jest.fn().mockResolvedValue(undefined),
+      orderReceived: jest.fn().mockResolvedValue(undefined),
+      ownerOrderReceived: jest.fn().mockResolvedValue(undefined),
     };
   }
 
