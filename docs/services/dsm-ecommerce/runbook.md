@@ -27,7 +27,7 @@ last-updated: 2026-08-30
 | **Dashboards** | Railway (logs + métricas) · Sentry (errores) — URLs `[pendiente: T4.2]` |
 | **Alertas** | Sentry → email/Slack, spike de errores `[pendiente: T4.3]` |
 | **Repo** | este monorepo (`apps/web`, `apps/api`, `apps/worker`, `packages/db`) |
-| **Config de deploy** | `apps/api/railway.json`, `apps/web/railway.json` (config-as-code; **sin Terraform** — Railway es PaaS) |
+| **Config de deploy** | Build/start/healthcheck seteados directo en Settings de cada servicio Railway (vía API GraphQL, `serviceInstanceUpdate`) — **no** vía `apps/api/railway.json`/`apps/web/railway.json`: Railway deprecó Config-as-Code para servicios creados después de 2026-08-28, así que esos dos archivos son sólo documentación de intención, ya no gobiernan el build real (hallazgo de US-019 T3.3). Sin Terraform — Railway es PaaS. |
 
 ## 2. Mapa del servicio
 
