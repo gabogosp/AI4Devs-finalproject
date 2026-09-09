@@ -100,13 +100,13 @@ Este change no re-declara los AC funcionales de US-005 (son responsabilidad de B
 archivado) — cubre únicamente la precondición de infraestructura que esos AC necesitan para
 poder ejercitarse en `staging`:
 
-- [ ] `GEMINI_API_KEY` está seteada en Railway, servicio `api`, entorno `staging`, con el valor
+- [x] `GEMINI_API_KEY` está seteada en Railway, servicio `api`, entorno `staging`, con el valor
       real (no el placeholder `replace-me` de `.env.example`).
-- [ ] `ENRICHMENT_ENABLED=true` está explícito en el mismo servicio/entorno.
-- [ ] El servicio `api` arranca en `staging` sin el mensaje de degradación
+- [x] `ENRICHMENT_ENABLED=true` está explícito en el mismo servicio/entorno.
+- [x] El servicio `api` arranca en `staging` sin el mensaje de degradación
       "GEMINI_API_KEY ausente" en sus logs, y `GET /v1/admin/enrichment/status` no reporta
       `disabled` por falta de clave.
-- [ ] Ningún secreto real queda comiteado en el repo (mismo gate que T2.1 de
+- [x] Ningún secreto real queda comiteado en el repo (mismo gate que T2.1 de
       `US-019-provision-plataforma-cloud-infrastructure`).
 
 ## Standards consulted

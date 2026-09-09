@@ -16,7 +16,7 @@ language: es
 
 ## Pre-requisitos (heredados de `US-019-provision-plataforma-cloud-infrastructure`)
 
-- [ ] **T0 — Confirmar que el servicio `api` existe en Railway, entorno `staging`**
+- [x] **T0 — Confirmar que el servicio `api` existe en Railway, entorno `staging`**
   - **Blocked-by**: US-019-provision-plataforma-cloud-infrastructure (T1.1 "crear el proyecto
     Railway", T1.2 "crear los servicios `web`/`api`/`worker`")
   - **Pattern**: `per US-019.../tasks.md` T1.1/T1.2 — mismo CLI, mismo criterio de
@@ -27,10 +27,13 @@ language: es
     '\bapi\b'` si el CLI no imprime una línea por servicio — ajustar al formato real de
     salida del CLI en el momento de ejecutar, documentado en el `Pattern` de T2.1 de
     `US-019...`)
+  - **Nota de ejecución (2026-09-09)**: `US-019` desplegó `web`+`api` a `staging` en su T3.3
+    (ambos `Online`, ver `openspec/changes/US-019-.../tasks.md`) — el servicio `api` existe y
+    está sirviendo tráfico real (`GET /health` → 200).
 
 ## Cargar el secreto (llena el slot que `US-019...` T2.1 ya reservó)
 
-- [ ] **T1 — Setear `GEMINI_API_KEY` real en el servicio `api`, entorno `staging`**
+- [x] **T1 — Setear `GEMINI_API_KEY` real en el servicio `api`, entorno `staging`**
   - **Blocked-by**: T0, US-019-provision-plataforma-cloud-infrastructure (T2.1 "cargar los
     secretos... slots")
   - **Pattern**: `per US-019.../tasks.md` T2.1 — `railway variables set` (o el dashboard),
@@ -45,8 +48,12 @@ language: es
     Railway enmascara el valor real en su salida — el chequeo es sobre la presencia de la
     variable con longitud > 0, no sobre su contenido literal, que nunca debe imprimirse en un
     log ni quedar en este repo).
+  - **Nota de ejecución (2026-09-08)**: `GEMINI_API_KEY` cargada directo por el usuario desde
+    el dashboard de Railway (no pasó por ninguna sesión) — confirmada presente vía
+    `railway variables --json` filtrando sólo nombres de variable, nunca el listado con
+    valores.
 
-- [ ] **T2 — Setear `ENRICHMENT_ENABLED=true` explícito en el mismo servicio/entorno**
+- [x] **T2 — Setear `ENRICHMENT_ENABLED=true` explícito en el mismo servicio/entorno**
   - **Blocked-by**: T0
   - **Pattern**: `per design.md §D2` — explícito aunque coincide con el default de código
     (`env.validation.ts`), mismo criterio que declarar `@StorefrontCache` explícito por
@@ -55,10 +62,14 @@ language: es
     entorno `staging`, con valor exactamente `true`.
   - **Verify**: `railway variables --service api --environment staging | grep
     'ENRICHMENT_ENABLED=true'`
+  - **Nota de ejecución (2026-09-09)**: no existía — seteada por esta sesión vía
+    `railway variables --set "ENRICHMENT_ENABLED=true"` (API, mismo mecanismo que el resto de
+    las variables de T3.3 de `US-019...`). Railway disparó un redeploy automático al cambiar
+    la variable; verificado `railway status` → `api: Online` tras el rebuild.
 
 ## Verificación operativa (el runner arrancó habilitado, no sólo "la variable existe")
 
-- [ ] **T3 — Confirmar que el runner no reporta `disabled` por falta de clave**
+- [x] **T3 — Confirmar que el runner no reporta `disabled` por falta de clave**
   - **Blocked-by**: T1, T2, y que el servicio `api` haya hecho al menos un deploy/restart
     después de T1/T2 (Railway no re-lee variables de un proceso ya corriendo — hace falta un
     redeploy, mismo criterio que "rotación = cambio de var + redeploy" de
@@ -81,8 +92,15 @@ language: es
     ```
     (host real y bootstrap token de `staging` se resuelven al ejecutar — no existen todavía
     porque el servicio no está desplegado; ver T0).
+  - **Nota de ejecución (2026-09-09)**: corrido contra `https://api-staging-778f.up.railway.app`
+    real. Respuesta: `{"runner_state":"idle","coverage":{"total":100,"enriched":0,
+    "embedded":0,"pending":100,...},"models":{"enrich":"gemini-1.5-flash","embed":
+    "text-embedding-004"},...}` — `runner_state` es `idle`, nunca `disabled`. `total: 100`
+    porque `US-019` sembró el catálogo demo (`seed-demo-rich`) en esta misma sesión; ninguno
+    enriquecido todavía (correcto — el runner no corrió ninguna corrida real, sólo se verificó
+    que arranca habilitado).
 
-- [ ] **T4 — Confirmar que ningún secreto real quedó comiteado (gate heredado)**
+- [x] **T4 — Confirmar que ningún secreto real quedó comiteado (gate heredado)**
   - **Pattern**: `per US-019.../tasks.md` T2.1 — mismo patrón de escaneo, extendido al
     prefijo de clave de Gemini (`AIza...`).
   - **Exit criterion**: ningún valor real de `GEMINI_API_KEY` aparece en el repositorio.
@@ -92,7 +110,7 @@ language: es
 
 ## Verification (nivel de suite)
 
-- [ ] Las 4 tasks anteriores cerradas `[x]`.
-- [ ] `GET /v1/admin/enrichment/status` (T3) confirma `runner_state != 'disabled'` en
+- [x] Las 4 tasks anteriores cerradas `[x]`.
+- [x] `GET /v1/admin/enrichment/status` (T3) confirma `runner_state != 'disabled'` en
       `staging` — evidencia de que la precondición de infraestructura para los AC-1 a AC-10
       de US-005 (ya implementados por BE) está satisfecha en ese entorno.
