@@ -103,6 +103,17 @@
   # queda en
   # `In Progress` (INFRA pendiente, nunca planificada). `blocked_by` sin tocar (propiedad de
   # otro agente).
+  #
+  # NOTA (2026-09-08, /plan-infrastructure-ticket): INFRA planificada
+  # (openspec/changes/US-005-enriquecimiento-ia-embeddings-infrastructure/, status: draft).
+  # Hallazgo real durante la planificación: ADR-0014 (Accepted 2026-08-22, no superado)
+  # decidió que el ejecutor de enriquecimiento corre in-process en apps/api, NO en un worker
+  # BullMQ separado — verificado contra el código (`git grep` de REDIS_URL/bullmq en runtime
+  # no devuelve nada). El alcance real de INFRA queda mucho más chico que el original de la
+  # US §7: sólo cargar GEMINI_API_KEY (+ ENRICHMENT_ENABLED explícito) en el servicio Railway
+  # `api` que crea US-019, sin worker ni Redis. Change entero Blocked-by
+  # US-019-provision-plataforma-cloud-infrastructure (sus T1.1/T1.2/T2.1, todavía sin
+  # cerrar) — no ejecutable todavía. `status` de la US SIGUE `In Progress`.
   blocked_by: [US-001, US-006]
 - id: US-006
   slug: import-masivo-inventario
