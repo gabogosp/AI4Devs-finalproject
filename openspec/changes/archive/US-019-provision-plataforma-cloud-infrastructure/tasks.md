@@ -121,17 +121,20 @@ language: es
 
 ## Fase 4: Autodeploy y observabilidad (cloud — gated)
 
-- [ ] T4.1 Conectar la integración GitHub de Railway con el mapeo rama → entorno
+- [ ] T4.1 Conectar la integración GitHub de Railway con el mapeo rama → entorno — **Deferred: confirmación directa del usuario**
   - **Exit criterion**: `main` está mapeado a production y `staging` a staging; el gate de CI (workflow `ci.yml` de `bootstrap-local`) es requisito antes del deploy.
   - **Verify**: chequeo humano — Railway → Settings → GitHub: `main`→production, `staging`→staging; GitHub → branch protection de `main` requiere el check `CI`. (La prueba extremo-a-extremo del autodeploy es de `/plan-deployment`.)
+  - **Nota de diferimiento (2026-09-09)**: conectar autodeploy a `production` es una acción difícil de revertir (cualquier push futuro a `main` dispara un deploy productivo sin intervención humana) — se venía gateando explícitamente hasta que el usuario confirmara en persona que terminó su prueba visual del deploy de staging (T3.3). Al cierre de esta sesión el usuario no había dado esa confirmación directa todavía (relayada por la coordinadora, no confirmada en primera persona) — la sesión que ejecutó T3.3 optó conscientemente por no avanzar esta pieza puntual sobre esa base, con acuerdo posterior de la coordinadora. Se retoma apenas el usuario confirme directamente.
 
-- [ ] T4.2 Crear los proyectos Sentry (web/api/worker) y wire de `SENTRY_DSN`
+- [ ] T4.2 Crear los proyectos Sentry (web/api/worker) y wire de `SENTRY_DSN` — **Deferred: cuenta Sentry sin crear**
   - **Exit criterion**: existen 3 proyectos Sentry; sus DSN están en Railway variables por servicio.
   - **Verify**: `railway variables --environment staging | grep -q SENTRY_DSN` (uno por servicio); chequeo humano: 3 proyectos visibles en Sentry.
+  - **Nota de diferimiento**: sin cuenta Sentry creada todavía (ver nota de la sección "Pre-requisitos" arriba, 2026-09-08). No bloquea el resto del stack — observabilidad hoy corre sólo por logs/métricas nativas de Railway.
 
-- [ ] T4.3 Configurar la alerta base de spike de errores (Sentry → email/Slack) con runbook
+- [ ] T4.3 Configurar la alerta base de spike de errores (Sentry → email/Slack) con runbook — **Deferred: bloqueado por T4.2**
   - **Exit criterion**: existe una regla de alerta de Sentry que notifica ante un pico de errores, apuntando al runbook.
   - **Verify**: chequeo humano — Sentry → Alerts: regla activa; su descripción/link referencia `docs/services/dsm-ecommerce/runbook.md`.
+  - **Nota de diferimiento**: no puede empezar sin los proyectos/DSN de T4.2.
 
 ## Verificación (suite-level)
 

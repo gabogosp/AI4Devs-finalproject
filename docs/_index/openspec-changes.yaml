@@ -89,15 +89,18 @@
   us-id: US-019
   discipline: infrastructure
   variant: platform-cloud
-  status: in progress   # /develop-infrastructure 2026-09-08: Fase 1 (T1.1/T1.2/T1.4/T1.5) +
-  # Fase 3 (T3.1/T3.2) cerradas. Railway zesty-radiance linkeado (staging+production),
-  # servicios web+api creados (worker/Redis diferidos por ADR-0014 — sin BullMQ en runtime).
-  # Neon pgvector habilitado, 18 migraciones aplicadas a staging, paridad de catálogo
-  # confirmada (T3.2 exit 0). R2 bucket dsm-product-images creado. T2.1/T2.3 parciales:
-  # DATABASE_URL + NEXT_PUBLIC_SITE_URL/API_BASE_URL seteados; secretos sensibles
-  # (GEMINI/RESEND/SENTRY/WHATSAPP) y NEXT_PUBLIC_IMAGE_CDN_HOST (pendiente decisión
-  # r2.dev vs dominio custom) quedan para la coordinadora. Gates pendientes: Sentry
-  # (T4.2/T4.3), integración GitHub de Railway (T4.1).
+  status: archived   # /archive-change 2026-09-09 — PR #157 mergeado (90e3d4e). T0-T3
+  # cerradas: Railway zesty-radiance (staging+production), servicios web+api creados
+  # (worker/Redis diferidos por ADR-0014), Neon pgvector + 18 migraciones + paridad de
+  # catálogo, bucket R2, secretos no-sensibles cargados, T3.3 — primer deploy real a
+  # staging (web+api Online, catálogo demo sembrado, causa raíz real diagnosticada:
+  # Config-as-Code deprecado por Railway para servicios nuevos, fix vía API GraphQL).
+  # 5 tasks quedan CONSCIENTEMENTE DIFERIDAS, no un drop silencioso (detalle completo en
+  # tasks.md y en el frontmatter `deferred_tasks` del proposal.md archivado): T1.3 (Redis,
+  # ADR-0014), T2.2 (dominio custom, /plan-deployment), T4.1 (autodeploy a producción —
+  # gateado a confirmación DIRECTA del usuario, difícil de revertir), T4.2/T4.3 (Sentry,
+  # sin cuenta creada). La US-level (`us-status.yaml`) permanece `In Progress` — no se
+  # fuerza `Done` mientras estos gates reales sigan abiertos.
   parent-us: docs/user-stories/US-019-provision-plataforma-cloud.md
   linear-task-id: null
   audit-baseline: null
@@ -105,11 +108,12 @@
   estimate-hours: 8
   assignee: claude-code
   branch: infra/US-019-cloud-provision
-  pr-url: null
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/157
+  pr-opened-at: 2026-09-09
   created: 2026-07-11
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-09T01:43:18Z
+  archived-at: 2026-09-09
+  archive-path: openspec/changes/archive/US-019-provision-plataforma-cloud-infrastructure
 
 - name: US-001-admin-catalogo-productos-backend
   us-id: US-001

@@ -5,6 +5,21 @@ parent-us: US-019
 discipline: infrastructure
 variant: null
 language: es
+archived: true
+archived_at: 2026-09-09
+merged_commit: 90e3d4ed5886421e4f6d23b1c871db4d4fb7b254
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/157
+deferred_tasks:
+  - id: T1.3
+    reason: "ADR-0014 — executor de enrich in-process, sin Redis/BullMQ en runtime. Se retoma si se cumple el criterio de migración del ADR."
+  - id: T2.2
+    reason: "Deferred: /plan-deployment — sin dominio custom todavía (decisión PO 2026-08-16)."
+  - id: T4.1
+    reason: "Conectar autodeploy a producción es difícil de revertir — gateado a confirmación directa del usuario tras su prueba visual de staging, todavía no dada en primera persona."
+  - id: T4.2
+    reason: "Cuenta Sentry sin crear."
+  - id: T4.3
+    reason: "Bloqueado por T4.2."
 ---
 
 # US-019 Platform cloud — provisioning Railway + Neon + Cloudflare R2, secretos, autodeploy y runbook
