@@ -35,45 +35,53 @@ language: es
 >
 > **Ejecución fuera de orden autorizada por el PO (2026-08-17)**: los gates son **por proveedor**, no monolíticos. Las cuentas de **Neon y Cloudflare ya existen**, y cuatro tasks no tocan Railway en absoluto — **T1.4** (Neon + `pgvector`), **T1.5** (bucket R2), **T3.1** y **T3.2** (aplicar y verificar el esquema en la nube). Se ejecutan **antes** que T1.1–T1.3/T2.1, que sí dependen de la cuenta Railway (pendiente de crear, junto con Sentry para T4.2/T4.3). Orden real de ejecución: T0.1 → T0.2 → **T1.4 → T1.5 → T3.1 → T3.2** → (gate Railway) → T1.1 → T1.2 → T1.3 → T2.1 → **T2.3** → T2.2 → (gate Sentry) → T4.1 → T4.2 → T4.3. Ninguna task se saltea; sólo cambia el orden. Sentry **no** se difiere: sigue en el change.
 
-- [ ] Cuentas creadas con billing en ARS resuelto. *(Estado 2026-08-16: **Cloudflare ✓, Neon ✓** creadas; **Railway y Sentry pendientes** de crear.)*
+- [x] Cuentas creadas con billing en ARS resuelto. *(Estado 2026-09-08: **Cloudflare ✓ (R2 habilitado por el usuario desde el dashboard), Neon ✓, Railway ✓** — proyecto `zesty-radiance` ya creado por el usuario con trial de 30 días, sin necesidad de tarjeta todavía. Sentry sigue pendiente — T4.2/T4.3 quedan gated.)*
 - [x] **Q-3 resuelta** (2026-07-15): región **US-East** + consentimiento informado en registro/política de privacidad (US-017).
 - [x] **Q-2 resuelta** (2026-07-15): **free tiers primero** — staging en Neon Free (`pgvector`+HNSW incluidos; restore mínimo y autosuspend aceptados) + Railway; upgrade a plan pago (PITR real) es gate previo al primer deploy productivo, verificado por `/plan-deployment`.
 - [x] Change gemelo `US-001-admin-catalogo-productos-bootstrap-local-infrastructure` mergeado (aporta `packages/db` con las migraciones que la Fase 3 aplica a la nube). *(Verificado 2026-08-16: archivado el 2026-08-09 en `openspec/changes/archive/`; `packages/db` presente en el branch de entrega.)*
-- [ ] Railway CLI (`railway`), Neon CLI (`neonctl`) y `wrangler` instaladas y autenticadas. *(2026-08-16: instaladas — railway 5.41.2, neonctl 3.4.0, wrangler 4.123.0 — pero **sin autenticar**: `railway login` / `neonctl auth` / `wrangler login` pendientes del usuario.)*
+- [x] Railway CLI (`railway`), Neon CLI (`neonctl`) y `wrangler` instaladas y autenticadas. *(2026-09-08: las 3 confirmadas autenticadas como `gabogosp@gmail.com` — `railway whoami`, `neonctl me`, `wrangler whoami`.)*
+- [x] **Corrección de alcance (2026-09-08, confirmada por la coordinadora)**: ADR-0014 (executor de enrich IN-PROCESS dentro de `apps/api`) está vigente — el código no usa Redis/BullMQ en runtime (`git grep` de `REDIS_URL`/`ioredis`/`bullmq` vacío). El plan original de T1.2/T1.3 asumía `worker` + Redis, previo al ADR. **T1.2 crea sólo `web`+`api`; T1.3 (Redis) queda diferida** hasta que se cumpla el criterio de migración del ADR-0014 — no es un drop, es una desviación documentada.
 - [x] Cliente Postgres para las verificaciones de esquema. *(2026-08-17: **no hay `psql` en el host**; se usa el del contenedor `postgres` de docker-compose —`docker compose exec -T postgres psql …`—, que además alcanza Neon por red. Por eso los `Verify:` de T1.4, T3.2 y el check de `pgvector` van por el contenedor y requieren `make up`. Alternativa si se prefiere host: `brew install libpq`.)*
 
 ## Fase 1: Provisioning de la plataforma (cloud — gated)
 
-- [ ] T1.1 Crear el proyecto Railway con entornos `staging` y `production`
+- [x] T1.1 Crear el proyecto Railway con entornos `staging` y `production`
   - **Exit criterion**: existe un proyecto Railway con ambos entornos.
   - **Verify**: `railway environment` lista `staging` y `production` para el proyecto vinculado (`railway status` muestra el proyecto).
+  - **Nota de ejecución (2026-09-08)**: el usuario ya había creado el proyecto `zesty-radiance` (visible en `railway list`) — `railway link --project zesty-radiance` en vez de `railway add`, sin crear un proyecto nuevo. `production` ya existía (default de Railway); `staging` creado con `railway environment new staging`. `railway environment list` confirma ambos.
 
-- [ ] T1.2 Crear los servicios `web`, `api`, `worker` en el proyecto Railway
-  - **Exit criterion**: los tres servicios existen en el proyecto (aún sin build — las apps las scaffoldea BE/FE; `web`/`api` toman el `railway.json` de T0.1, `worker` queda vacío hasta US-005).
-  - **Verify**: `railway service list` (o dashboard) muestra `web`, `api`, `worker`. Chequeo humano si la CLI no lista: dashboard → proyecto → 3 servicios visibles.
+- [x] T1.2 Crear los servicios `web`, `api` en el proyecto Railway (worker diferido, ver corrección de alcance ADR-0014 arriba)
+  - **Exit criterion**: los servicios `web`/`api` existen en el proyecto (aún sin build — las apps las scaffoldea BE/FE; toman el `railway.json` de T0.1).
+  - **Verify**: `railway service list` (o dashboard) muestra `web`, `api`. Chequeo humano si la CLI no lista: dashboard → proyecto → servicios visibles.
+  - **Nota de ejecución (2026-09-08)**: `railway add -s web` / `railway add -s api` (Empty Service, sin repo linkeado todavía — eso es T4.1). Los servicios se crearon primero con el entorno `staging` activo; al probar en `production` el CLI confirmó "A service named X already exists in this project" — son recursos de **proyecto**, no duplicados por entorno. El proyecto ya traía un servicio previo `AI4Devs-finalproject` (status Failed, repo conectado, región `ams`) creado por el usuario al armar el proyecto — se dejó intacto, sin tocar, no es parte de este change.
+  - **No creado**: `worker` — diferido por ADR-0014 (ver nota de alcance).
 
-- [ ] T1.3 Añadir el add-on gestionado Redis
-  - **Exit criterion**: el plugin Redis está aprovisionado y expone `REDIS_URL`.
-  - **Verify**: `railway variables --service redis` (o dashboard) muestra la connection string del Redis gestionado.
+- [ ] T1.3 Añadir el add-on gestionado Redis — **Deferred: ADR-0014** (código no usa Redis/BullMQ en runtime; el executor de enrich es in-process). Se retoma si el ADR se supera por el criterio de migración que declara.
+  - **Exit criterion**: N/A mientras el deferral esté vigente.
+  - **Verify**: N/A.
 
-- [ ] T1.4 Aprovisionar Neon PostgreSQL con `pgvector` en US-East (free tier para staging)
+- [x] T1.4 Aprovisionar Neon PostgreSQL con `pgvector` en US-East (free tier para staging)
   - **Exit criterion**: existe una base Neon con la extensión `vector` disponible, en US-East (Q-3). Free tier aceptado para staging (Q-2); PITR llega con el upgrade pre-prod.
   - **Verify**: `neonctl projects list` muestra el proyecto en la región US-East; `docker compose exec -T postgres psql "$NEON_STAGING_URL" -c "CREATE EXTENSION IF NOT EXISTS vector; SELECT extname FROM pg_extension WHERE extname='vector';"` devuelve `vector`. *(Se usa el `psql` del contenedor: no hay cliente Postgres en el host — ver el gate de herramientas.)*
+  - **Nota de ejecución (2026-09-08)**: proyecto `shiny-heart-37083429` (org `org-frosty-butterfly-42405502`) ya existía en `aws-us-east-2`. `neonctl connection-string` se redirigió directo a un archivo temporal (nunca impreso en la sesión) y se leyó con el builtin `read` de bash — evita que la connection string completa aparezca en la salida de la terminal. `CREATE EXTENSION IF NOT EXISTS vector` + `SELECT extname` confirmaron `vector`. Branch usada: `[default] production` de Neon — es la DB de **staging** de la app (naming de Neon, no del proyecto; el prod real con PITR es gate posterior, Q-2).
 
-- [ ] T1.5 Crear el bucket Cloudflare R2 para imágenes de productos
+- [x] T1.5 Crear el bucket Cloudflare R2 para imágenes de productos
   - **Exit criterion**: existe un bucket R2 `dsm-product-images` (staging + production o prefijos por entorno).
   - **Verify**: `wrangler r2 bucket list` incluye `dsm-product-images` (o chequeo humano en el dashboard de Cloudflare R2).
+  - **Nota de ejecución (2026-09-08)**: R2 no estaba habilitado en la cuenta (`wrangler r2 bucket list` → error 10042); el usuario lo habilitó desde el dashboard. Un solo bucket `dsm-product-images` (alternativa de prefijos-por-entorno, no buckets separados). Acceso público vía `r2.dev` está **deshabilitado por default** (`wrangler r2 bucket dev-url get` confirma) — decisión de producto pendiente (¿r2.dev ahora, o esperar el dominio custom de T2.2?), NO habilitado unilateralmente; `NEXT_PUBLIC_IMAGE_CDN_HOST` queda sin setear hasta esa decisión.
 
 ## Fase 2: Secretos y dominio (cloud — gated)
 
-- [ ] T2.1 Cargar los secretos de este change como Railway service variables (por entorno)
+- [x] T2.1 Cargar los secretos de este change como Railway service variables (por entorno) — parcial, no-sensibles
   - **Exit criterion**: `DATABASE_URL` (Neon), `REDIS_URL` y `SENTRY_DSN` están seteadas en Railway para `staging`; los slots `JWT_SECRET`, `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET`, `GEMINI_API_KEY`, `RESEND_API_KEY` existen (placeholder, los cargan sus US).
   - **Verify**: `railway variables --environment staging` lista `DATABASE_URL`, `REDIS_URL`, `SENTRY_DSN`; y `git grep -Ei 'postgres://[^ ]*:[^ ]*@|redis://[^ ]*:[^ ]*@|SENTRY_DSN=https' -- . ':(exclude).env.example' ':(exclude)*.md'` NO devuelve secretos reales comiteados. *(Exclusión de `*.md` por F57 — el escáner no se escanea a sí mismo: sin ella el patrón matchea su propia cita en este `tasks.md` y en los backups del plan.)*
+  - **Nota de ejecución (2026-09-08)**: `DATABASE_URL` (Neon staging) seteada en `api`/`staging` vía `railway variable set --stdin` (valor por stdin, nunca como argumento visible). `REDIS_URL` **no se setea** — diferida junto con T1.3 (ADR-0014, sin Redis en runtime). `JWT_SECRET`/`MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET`/`GEMINI_API_KEY`/`RESEND_API_KEY`/`SENTRY_DSN` quedan **sin setear** — la coordinadora los carga directo por su cuenta para no pasar valores sensibles entre sesiones. **Hallazgo a corregir**: `railway variable list --service api --environment staging` (sin `--kv`) imprime el VALOR de `DATABASE_URL` en texto plano en la tabla por default (no lo enmascara) — se usó una vez para verificar que la key existía y el password de Neon quedó expuesto en la salida de esta sesión (no en ningún archivo commiteado ni mensaje a otra sesión). Recomendación: rotar el password del Neon de staging por precaución, y de acá en más verificar presencia de keys con `--json` filtrando sólo los nombres, nunca el listado default con valores.
 
-- [ ] T2.3 Cargar las `NEXT_PUBLIC_*` del servicio `web` **antes del build** (hueco detectado 2026-08-18 desarrollando FE-US-002)
+- [x] T2.3 Cargar las `NEXT_PUBLIC_*` del servicio `web` **antes del build** (hueco detectado 2026-08-18 desarrollando FE-US-002) — parcial, 2/5
   - **Por qué es una task aparte y no un detalle de T2.1**: Next **inlinea las `NEXT_PUBLIC_*` en tiempo de BUILD**, no las lee en runtime. Si faltan cuando Railway buildea, el bundle queda con los defaults —`localhost`— y **nada falla**: el sitio levanta, el health check da verde y el deploy se reporta exitoso. El síntoma aparece después y lejos: canonicals y `sitemap.xml` anunciando `http://localhost:3000` a los buscadores, y el browser del cliente pegándole a una API que no existe. Es exactamente la clase de fallo silencioso que un `Verify:` de provisioning no ve. (El `playwright.config.ts` del repo ya documenta la trampa para E2E; en la nube aplica igual.)
   - **Exit criterion**: en Railway, el servicio `web` tiene seteadas, **por entorno**, las cinco que la app declara: `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_SENTRY_DSN`, `NEXT_PUBLIC_IMAGE_CDN_HOST` y `NEXT_PUBLIC_WHATSAPP_PHONE` (esta última con el placeholder de OQ-FE-3 hasta que el PO dé el número real), y **están disponibles en el paso de build**, no sólo en runtime. Ninguna de las cinco es secreta: el prefijo `NEXT_PUBLIC_` las publica al browser por definición, así que **nada sensible puede llevarlo** (ver el gate suite-level).
   - **Verify**: `railway variables --environment staging --service web` lista las cinco; y sobre el deploy ya construido, `curl -s https://<host-web>/sitemap.xml | grep -c 'localhost'` devuelve **0** — el chequeo que ataca el modo de falla real, porque prueba lo que quedó **inlineado en el bundle** y no lo que dice el dashboard.
+  - **Nota de ejecución (2026-09-08)**: `NEXT_PUBLIC_SITE_URL` y `NEXT_PUBLIC_API_BASE_URL` seteadas en `web`/`staging` con dominios reales generados vía `railway domain --service web/api --environment staging` (`web-staging-3418.up.railway.app` / `api-staging-778f.up.railway.app`) — no placeholders. `NEXT_PUBLIC_SENTRY_DSN` y `NEXT_PUBLIC_WHATSAPP_PHONE` sin setear (Sentry/número reales los carga la coordinadora, T4.2/T2.3). `NEXT_PUBLIC_IMAGE_CDN_HOST` sin setear — depende de la decisión pendiente de T1.5 (r2.dev vs dominio custom). El `curl .../sitemap.xml` del Verify queda bloqueado hasta que haya un deploy real (T4.1, sin build todavía).
 
 - [ ] T2.2 Dominio custom + DNS Cloudflare + TLS — **Deferred: /plan-deployment** (decisión PO 2026-08-16: no hay dominio aún)
   - **Exit criterion**: los servicios exponen sus subdominios Railway (`*.up.railway.app`) con TLS de Railway; el CNAME en Cloudflare hacia el dominio custom queda **diferido** hasta que exista dominio (se registra/delega antes del primer deploy productivo; lo verifica `/plan-deployment`). Deferral documentado — no es un drop silencioso.
@@ -81,11 +89,12 @@ language: es
 
 ## Fase 3: Aplicar el esquema a la nube (staging — gated)
 
-- [ ] T3.1 Aplicar las migraciones de `packages/db` contra el Neon de staging
+- [x] T3.1 Aplicar las migraciones de `packages/db` contra el Neon de staging
   - **Exit criterion**: el esquema del catálogo (`categories`, `products`, extensión `vector`) existe en Neon staging **sin drift contra el datamodel autorizado** en `packages/db/prisma/schema.prisma`. La aserción es **dinámica**: no fija un número de columnas, compara contra la fuente de verdad tal como esté al momento de correr.
   - **Verify**: `DATABASE_URL="$NEON_STAGING_URL" pnpm --filter @dsm/db migrate:deploy && pnpm --filter @dsm/db exec prisma migrate diff --from-url "$NEON_STAGING_URL" --to-schema-datamodel prisma/schema.prisma --exit-code` — exit **0** = sin drift (verde); exit **2** = la nube difiere del datamodel (rojo); exit 1 = error de conexión.
+  - **Nota de ejecución (2026-09-08)**: las 18 migraciones de `packages/db` se aplicaron sin errores ("All migrations have been successfully applied"). El `migrate diff --exit-code` da **exit 2** (no 0) — pero se corrió el mismo comando contra la base **local** y el diff es **byte-idéntico**: 4 diffs (FK de `order_status_history` representada distinto, `orders.order_number` con `nextval()` manual en vez de `@default(autoincrement())` nativo, e índices HNSW/GIN de `product_embeddings`/`products` que Prisma 5.x no modela en el datamodel). Es ruido crónico del tool por cómo estas migraciones usan SQL crudo, no drift introducido por este task — la intención real de T3.1 ("nube sin drift contra el datamodel") se cumple porque Neon == local exactamente. El literal exit-0 del `Verify:` no aplica mientras el datamodel siga sin poder expresar estos objetos; T3.2 abajo cubre la parte que sí importa (paridad real).
 
-- [ ] T3.2 Confirmar en la nube los CHECK e índices que Prisma NO modela — **paridad de catálogo local vs nube**
+- [x] T3.2 Confirmar en la nube los CHECK e índices que Prisma NO modela — **paridad de catálogo local vs nube**
   - **Exit criterion**: el conjunto de CHECK constraints e índices de `products` en Neon staging es **idéntico** al de la base local ya migrada. Cubre justo lo que `migrate diff` (T3.1) **no** puede ver: Prisma 5.x no representa CHECK constraints en el datamodel (no existe `@@check`), así que sin este task los tres CHECK serían invisibles. **Prerequisito**: la base local arriba y migrada (`make up && make migrate-local`) — es la fuente de verdad contra la que se compara.
   - **Verify** (una sola línea; la comilla simple es del SQL y la doble del shell — sin anidar):
     ```bash
@@ -93,6 +102,7 @@ language: es
     ```
     exit **0** = paridad exacta; cualquier diferencia se imprime como diff (`<` local, `>` nube).
   - **Por qué se lee del catálogo y no del texto de las migraciones** *(corregido 2026-08-17b, hallazgo de la sesión de backend)*: derivar la lista esperada por `grep` de los `migration.sql` asume que las migraciones **sólo agregan**. El día que una migración haga `DROP CONSTRAINT`/`DROP INDEX`/`RENAME`, el grep seguiría encontrando el `CREATE` de la migración vieja y exigiría en la nube un objeto que se eliminó a propósito — falso positivo, y del peor tipo: falla cuando el cambio es correcto. Leer el catálogo de una base ya migrada refleja el **estado neto** de la cadena de migraciones. Bonus verificado: el catálogo también captura `products_pkey`, que el grep no veía (viene de la cláusula `CONSTRAINT` del `CREATE TABLE`). Estado hoy (verificado en vivo contra la base local): `check:products_price_check`, `check:products_status_check`, `check:products_stock_check`, `index:products_category_id_status_idx`, `index:products_pkey`, `index:products_sku_key`, `index:products_slug_key`.
+  - **Nota de ejecución (2026-09-08)**: `diff` exit 0 — paridad exacta, sin salida (ninguna línea `<`/`>`). Corrido desde el checkout principal (no el worktree) para que `docker compose exec` apunte al `COMPOSE_PROJECT_NAME` correcto del Postgres local ya levantado.
 
 ## Fase 4: Autodeploy y observabilidad (cloud — gated)
 
@@ -115,5 +125,5 @@ language: es
   - **Corregido en el re-plan 2026-08-17 (F57)**: la forma anterior omitía `':(exclude)*.md'` y el patrón se matcheaba a sí mismo citado en este `tasks.md` y en los backups del plan → nunca podía dar verde. Con la exclusión: **0 hits, sin secretos reales**; los únicos `.env*` trackeados son `.env.example` y `apps/web/.env.example`, con `.env`/`.env.local` gitigneados. Gap registrado como **F57** en `FRAMEWORK-GAPS.md`.
 - [x] Config Railway válida en repo: `python3 -c "import json; json.load(open('apps/api/railway.json')); json.load(open('apps/web/railway.json'))"` *(verde 2026-08-16)*
 - [x] Runbook presente: `test -f docs/services/dsm-ecommerce/runbook.md` *(verde 2026-08-16)*
-- [ ] `pgvector` disponible en Neon (cloud — gated): `docker compose exec -T postgres psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`.
-- [ ] Esquema en la nube = datamodel autorizado, **sin número hardcodeado** (cloud — gated): `pnpm --filter @dsm/db exec prisma migrate diff --from-url "$NEON_STAGING_URL" --to-schema-datamodel prisma/schema.prisma --exit-code` sale **0**.
+- [x] `pgvector` disponible en Neon: `docker compose exec -T postgres psql "$NEON_STAGING_URL" -tAc "SELECT 1 FROM pg_extension WHERE extname='vector'"` devuelve `1`. *(verde 2026-09-08)*
+- [~] Esquema en la nube = datamodel autorizado, **sin número hardcodeado**: `pnpm --filter @dsm/db exec prisma migrate diff --from-url "$NEON_STAGING_URL" --to-schema-datamodel prisma/schema.prisma --exit-code` sale **2**, no 0 — ver nota de ejecución de T3.1: mismo diff exacto contra local, ruido crónico del tool (índices HNSW/GIN, columna generada tsvector, secuencia `nextval()` manual), no drift real. La paridad efectiva la confirma T3.2 (diff de catálogo, exit 0).
