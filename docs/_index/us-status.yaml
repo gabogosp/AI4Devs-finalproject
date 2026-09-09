@@ -691,7 +691,13 @@
   blocked_by: [US-001]
 - id: US-019
   slug: provision-plataforma-cloud
-  status: In Progress
+  status: In Progress   # /archive-change 2026-09-09 (PR #157): T0-T3 archivadas — Railway
+  # zesty-radiance con web+api Online en staging, catálogo demo sembrado, Neon+R2
+  # aprovisionados. Permanece In Progress a propósito: 5 tasks quedan conscientemente
+  # diferidas (no Done forzado) — T1.3 (Redis, ADR-0014), T2.2 (dominio custom), T4.1
+  # (autodeploy a producción, gateado a confirmación DIRECTA del usuario — acción difícil
+  # de revertir), T4.2/T4.3 (Sentry, sin cuenta creada). Avanza a Done cuando esos gates
+  # se resuelvan (ver `deferred_tasks` en el proposal.md archivado del change).
   priority: Medium
   disciplines: [INFRA]
   parent-prd: docs/product/prd.md
