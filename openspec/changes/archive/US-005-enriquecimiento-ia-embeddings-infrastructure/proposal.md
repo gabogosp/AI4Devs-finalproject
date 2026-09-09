@@ -6,6 +6,10 @@ discipline: infrastructure
 variant: null
 language: es
 audit-derived: false
+archived: true
+archived_at: 2026-09-09
+merged_commit: cd2da4ed7ecdc7f94cf1acf4fe7f0097bd2d9549
+pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/158
 ---
 
 # Proposal — US-005 Enriquecimiento IA + embeddings (infrastructure)

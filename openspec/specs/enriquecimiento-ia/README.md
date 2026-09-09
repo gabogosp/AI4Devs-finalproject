@@ -112,11 +112,11 @@ La curación (AC-7) vive en `/admin/products/{id}` (PATCH), contrato de la capac
 |---|---|---|
 | [`US-005-enriquecimiento-ia-embeddings-backend`](../../changes/archive/US-005-enriquecimiento-ia-embeddings-backend/) | BE | Pipeline in-process (ADR-0014), matriz de decisión, claim por lease, `product_embeddings` + HNSW, 2 endpoints admin, throttler dedicado, 9 eventos de observabilidad |
 | [`US-005-enriquecimiento-ia-embeddings-qa`](../../changes/archive/US-005-enriquecimiento-ia-embeddings-qa/) | QA | Suite L1: 16 aceptación BDD, 12 contract, 1 k6, 3 charters, fix de higiene de entorno compartido (`ENRICHMENT_ENABLED=false` default) |
+| [`US-005-enriquecimiento-ia-embeddings-infrastructure`](../../changes/archive/US-005-enriquecimiento-ia-embeddings-infrastructure/) | INFRA | `GEMINI_API_KEY` + `ENRICHMENT_ENABLED=true` cargadas en el servicio Railway `api` de `staging` (US-019); alcance mucho más chico que el original de la US §7 porque ADR-0014 (aceptado después de escrita la US) decidió ejecutor in-process, no un worker BullMQ — nada que deployar. `runner_state: "idle"` verificado en vivo contra staging. |
 
 Sin disciplina FE propia — el consumo del vector es de `busqueda` (US-004) y la curación es
-una costura de `catalogo` (US-001). US-005 declara también disciplina INFRA
-(`disciplines: [BE, QA, INFRA]` en `us-status.yaml`), todavía sin planificar — no bloquea
-esta capacidad, que ya tiene BE + QA resueltos.
+una costura de `catalogo` (US-001). Con BE + QA + INFRA archivados, US-005 queda completa a
+nivel disciplinar.
 
 ## Estado de la provisión
 
