@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { normalizeEmail } from '../auth/email/normalize-email';
@@ -11,7 +11,8 @@ import { CheckoutEventsService } from '../observability/checkout-events.service'
 import { CartEmptyError, CartNotPurchasableError } from './checkout-errors';
 import { buildOrderDraft } from './order-draft';
 import { OrderTokenService } from './order-token.service';
-import { OrdersRepository } from './orders.repository';
+import { OrdersRepository, OrderWithItems } from './orders.repository';
+import { NOTIFICATION_PORT, NotificationPort } from '../orders/ports/notification.port';
 
 export interface CreateOrderInput {
   buyerName: string;
@@ -50,6 +51,8 @@ function motivoDeBloqueo(availability: 'insufficient_stock' | 'unavailable'): st
  */
 @Injectable()
 export class CheckoutService {
+  private readonly logger = new Logger(CheckoutService.name);
+
   constructor(
     private readonly cartToken: CartTokenService,
     private readonly products: ProductsRepository,
@@ -57,6 +60,7 @@ export class CheckoutService {
     private readonly orderToken: OrderTokenService,
     private readonly config: ConfigService,
     private readonly events: CheckoutEventsService,
+    @Inject(NOTIFICATION_PORT) private readonly notifications: NotificationPort,
   ) {}
 
   private get maxQtyPerLine(): number {
@@ -142,6 +146,7 @@ export class CheckoutService {
     });
 
     this.events.emit('checkout.order_created', orden.id, trace);
+    this.notificarOrdenRecibida(orden);
 
     return {
       orderToken: token,
@@ -150,5 +155,56 @@ export class CheckoutService {
       totalArsCents: orden.total_ars_cents,
       itemsCount: orden.items.length,
     };
+  }
+
+  /**
+   * Resumen de compra al cliente + aviso al dueño, al crear la orden
+   * (`pending_payment`) — el punto de disparo real hoy: MercadoPago está
+   * diferido, así que `orderConfirmed`/`ownerNewOrder` (pago confirmado,
+   * `ConfirmOrderService`) nunca corren para la rama `manual`, que es la
+   * única que existe en producción (WhatsApp handoff).
+   *
+   * Best-effort, SIN `await` a propósito — a diferencia de
+   * `ConfirmOrderService.notificarConfirmacion` (que sí espera al puerto):
+   * acá hay una persona esperando la respuesta del checkout en el navegador,
+   * el path más sensible a latencia de todo el back — un Resend lento (hasta
+   * `RESEND_TIMEOUT_MS` × reintentos) no puede sumarse al tiempo de compra.
+   * Un webhook de pago no tiene ese apuro. `NotificationPort` ya no propaga
+   * (`ResendNotificationAdapter`/`LoggingNotificationAdapter`); el `catch` es
+   * defensa en profundidad.
+   */
+  private notificarOrdenRecibida(orden: OrderWithItems): void {
+    const items = orden.items.map((item) => ({
+      productName: item.product_name,
+      quantity: item.quantity,
+      unitPriceArsCents: item.unit_price_ars_cents,
+    }));
+
+    this.notifications
+      .orderReceived({
+        orderId: orden.id,
+        orderNumber: orden.order_number,
+        buyerName: orden.buyer_name,
+        buyerEmail: orden.buyer_email,
+        items,
+        totalArsCents: orden.total_ars_cents,
+      })
+      .catch((error) =>
+        this.logger.error(
+          `order_received.trigger_failed order_id=${orden.id}: ${(error as Error).message}`,
+        ),
+      );
+
+    this.notifications
+      .ownerOrderReceived({
+        orderId: orden.id,
+        orderNumber: orden.order_number,
+        totalArsCents: orden.total_ars_cents,
+      })
+      .catch((error) =>
+        this.logger.error(
+          `owner_order_received.trigger_failed order_id=${orden.id}: ${(error as Error).message}`,
+        ),
+      );
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ValidationError } from '../common/errors/domain-errors';
 import { CredentialsService } from './credentials.service';
 import {
@@ -10,6 +10,7 @@ import { PasswordHasher } from './password/password-hasher';
 import { validatePassword } from './password/password-policy';
 import { IssuedSession, SessionService } from './session.service';
 import { AuthEventsService } from '../observability/auth-events.service';
+import { WELCOME_MAILER, WelcomeMailer } from './mail/welcome-mailer';
 
 export interface RegisterInput {
   email: string;
@@ -26,12 +27,19 @@ export interface AuthResult {
 /** Casos de uso de registro y login (AC-1, AC-2, AC-6). */
 @Injectable()
 export class CustomerAuthService {
+  private readonly logger = new Logger(CustomerAuthService.name);
+
   constructor(
     private readonly customers: CustomersRepository,
     private readonly hasher: PasswordHasher,
     private readonly credentials: CredentialsService,
     private readonly sessions: SessionService,
     private readonly events: AuthEventsService,
+    // Opcional: `customer-auth.service.spec.ts` construye la clase con 5
+    // argumentos, sin DI — no debe romperse. Mismo criterio que
+    // `ConfirmOrderService`. Nest siempre lo provee en producción
+    // (`auth.module.ts`).
+    @Inject(WELCOME_MAILER) @Optional() private readonly welcomeMailer?: WelcomeMailer,
   ) {}
 
   /**
@@ -69,6 +77,17 @@ export class CustomerAuthService {
     });
 
     this.events.emit('auth.registered', customer.id);
+    // Best-effort, fuera del camino crítico del alta: un fallo del proveedor
+    // de email no puede convertir un 201 en 500 (AC-1, "alta + sesión en la
+    // misma operación"). El puerto ya no propaga (`WelcomeMailer.send`), pero
+    // el `catch` es defensa en profundidad si algún adapter futuro lo hiciera.
+    this.welcomeMailer
+      ?.send({ to: customer.email, name: customer.name, customerId: customer.id })
+      .catch((error) =>
+        this.logger.error(
+          `welcome.trigger_failed customer_id=${customer.id}: ${(error as Error).message}`,
+        ),
+      );
     return { customer, session };
   }
 

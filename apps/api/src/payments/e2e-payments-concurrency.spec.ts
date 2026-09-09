@@ -85,6 +85,8 @@ describe('e2e-payments-concurrency', () => {
       ownerNewOrder: async () => undefined,
       orderCancelledNoStock: async () => undefined,
       orderCancelledByOwner: async () => undefined,
+      orderReceived: async () => undefined,
+      ownerOrderReceived: async () => undefined,
     };
     const mercadoPago = { refund: async () => undefined } as unknown as MercadoPagoClient;
     const service = new ConfirmOrderService(

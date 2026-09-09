@@ -109,4 +109,41 @@ describe('LoggingNotificationAdapter — NotificationPort (T5.1)', () => {
     expect(lineaDeLog).not.toContain(CENTINELA_NOMBRE);
     expect(lineaDeLog).not.toContain(CENTINELA_EMAIL);
   });
+
+  it('orderReceived loguea order_id/order_number, sin PII', async () => {
+    const adapter = new LoggingNotificationAdapter();
+    const capturado: unknown[] = [];
+    jest
+      .spyOn(adapter['logger'], 'log')
+      .mockImplementation((linea: unknown) => void capturado.push(linea));
+
+    await adapter.orderReceived({
+      orderId: 'order-5',
+      orderNumber: 1005,
+      buyerName: CENTINELA_NOMBRE,
+      buyerEmail: CENTINELA_EMAIL,
+      items: [{ productName: 'Tornillo', quantity: 1, unitPriceArsCents: 500 }],
+      totalArsCents: 500,
+    });
+
+    const lineaDeLog = JSON.stringify(capturado[0]);
+    expect(lineaDeLog).toContain('order-5');
+    expect(lineaDeLog).toContain('1005');
+    expect(lineaDeLog).not.toContain(CENTINELA_NOMBRE);
+    expect(lineaDeLog).not.toContain(CENTINELA_EMAIL);
+  });
+
+  it('ownerOrderReceived loguea order_id/order_number', async () => {
+    const adapter = new LoggingNotificationAdapter();
+    const capturado: unknown[] = [];
+    jest
+      .spyOn(adapter['logger'], 'log')
+      .mockImplementation((linea: unknown) => void capturado.push(linea));
+
+    await adapter.ownerOrderReceived({ orderId: 'order-6', orderNumber: 1006, totalArsCents: 200_000 });
+
+    const lineaDeLog = JSON.stringify(capturado[0]);
+    expect(lineaDeLog).toContain('order-6');
+    expect(lineaDeLog).toContain('1006');
+  });
 });

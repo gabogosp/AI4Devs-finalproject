@@ -3,6 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ProductsModule } from '../products/products.module';
 import { CartModule } from '../cart/cart.module';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationsModule } from '../orders/ports/notifications.module';
 import { CheckoutController } from './checkout.controller';
 import { CheckoutService } from './checkout.service';
 import { OrdersRepository } from './orders.repository';
@@ -22,9 +23,15 @@ import { OrdersRetentionEventsService } from '../observability/orders-retention-
  * (T1.3) y `CartCsrfGuard` (T3.2) — nunca `prisma.cart`/`prisma.cartItem`
  * directo. Importa `ProductsModule` por la misma razón que el carrito:
  * `ProductsRepository` sigue siendo el único punto de ORM de `products` (§5).
+ *
+ * Importa `NotificationsModule` (no `OrdersModule` — sería un ciclo, ver
+ * `notifications.module.ts`) para inyectar `NOTIFICATION_PORT`: el resumen
+ * de compra al cliente + el aviso al dueño se disparan al crear la orden
+ * (`CheckoutService.createOrder`), el punto de disparo real hoy con
+ * MercadoPago diferido (US-026-emails).
  */
 @Module({
-  imports: [PrismaModule, ProductsModule, CartModule, AuthModule],
+  imports: [PrismaModule, ProductsModule, CartModule, AuthModule, NotificationsModule],
   controllers: [CheckoutController, OrdersRetentionController],
   providers: [
     CheckoutService,

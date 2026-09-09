@@ -3,6 +3,7 @@ import {
   OrderCancelledNoStockPayload,
   OrderConfirmedPayload,
   OrderReadyForPickupPayload,
+  OrderReceivedPayload,
   OwnerNewOrderPayload,
 } from './notification.port';
 
@@ -118,6 +119,69 @@ export function orderReadyForPickupHtml(payload: OrderReadyForPickupPayload): st
     '<p>Tu pedido está listo para retirar en el local (Córdoba y Pueyrredón).</p>',
     `<p><strong>Orden #${payload.orderNumber}</strong></p>`,
     '<p>Llevá tu DNI o el N° de orden.</p>',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// orderReceived — resumen de compra al crear la orden (recién creada, pago
+// aún sin coordinar — MercadoPago diferido, handoff por WhatsApp). Wording
+// distinto a orderConfirmed a propósito: acá el pago todavía NO está
+// confirmado.
+// ---------------------------------------------------------------------------
+
+export function orderReceivedText(payload: OrderReceivedPayload): string {
+  const lineasItems = payload.items.map(
+    (i) => `- ${i.productName} × ${i.quantity} — ${formatArs(i.unitPriceArsCents)}`,
+  );
+  return [
+    `Hola ${payload.buyerName},`,
+    '',
+    `¡Recibimos tu pedido #${payload.orderNumber}! Esto es lo que compraste:`,
+    '',
+    ...lineasItems,
+    '',
+    `Total: ${formatArs(payload.totalArsCents)}`,
+    '',
+    'Te contactamos por WhatsApp para coordinar el pago y el retiro/envío.',
+  ].join('\n');
+}
+
+export function orderReceivedHtml(payload: OrderReceivedPayload): string {
+  const filasItems = payload.items
+    .map(
+      (i) =>
+        `<li>${escapeHtml(i.productName)} × ${i.quantity} — ${formatArs(i.unitPriceArsCents)}</li>`,
+    )
+    .join('\n');
+  return [
+    `<p>Hola ${escapeHtml(payload.buyerName)},</p>`,
+    `<p>¡Recibimos tu pedido #${payload.orderNumber}! Esto es lo que compraste:</p>`,
+    `<ul>${filasItems}</ul>`,
+    `<p>Total: <strong>${formatArs(payload.totalArsCents)}</strong></p>`,
+    '<p>Te contactamos por WhatsApp para coordinar el pago y el retiro/envío.</p>',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// ownerOrderReceived — aviso al dueño al crear la orden (mismo momento que
+// orderReceived). Wording distinto a ownerNewOrder: acá la orden todavía NO
+// está confirmada, necesita coordinación por WhatsApp.
+// ---------------------------------------------------------------------------
+
+export function ownerOrderReceivedText(payload: OwnerNewOrderPayload): string {
+  return [
+    'Nueva orden recibida — coordiná el pago por WhatsApp.',
+    '',
+    `Orden #${payload.orderNumber}`,
+    `Total: ${formatArs(payload.totalArsCents)}`,
+  ].join('\n');
+}
+
+export function ownerOrderReceivedHtml(payload: OwnerNewOrderPayload): string {
+  return [
+    '<p>Nueva orden recibida — coordiná el pago por WhatsApp.</p>',
+    `<p><strong>Orden #${payload.orderNumber}</strong></p>`,
+    `<p>Total: <strong>${formatArs(payload.totalArsCents)}</strong></p>`,
   ].join('\n');
 }
 

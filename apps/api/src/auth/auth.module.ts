@@ -19,6 +19,7 @@ import { CustomerGuard } from './customer.guard';
 import { OptionalCustomerGuard } from './resolve-customer-session';
 import { CsrfGuard } from './csrf.guard';
 import { passwordResetMailerProvider } from './mail/password-reset-mailer.provider';
+import { welcomeMailerProvider } from './mail/welcome-mailer.provider';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthEventsService } from '../observability/auth-events.service';
 
@@ -164,6 +165,10 @@ import { AuthEventsService } from '../observability/auth-events.service';
     // El adapter de email se elige por entorno (T7.2): Resend con clave, log sin
     // ella. En producción, faltar la clave hace fallar el arranque (envSchema).
     passwordResetMailerProvider,
+    // Email de bienvenida al registrarse — mismo criterio de selección por
+    // entorno, pero best-effort (sin fail-fast de producción, ver
+    // welcome-mailer.provider.ts).
+    welcomeMailerProvider,
   ],
   exports: [
     AdminGuard,

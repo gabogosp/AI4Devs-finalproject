@@ -166,6 +166,34 @@ describe('ResendNotificationAdapter (US-011 T6.1)', () => {
     expect(send).toHaveBeenCalledTimes(1);
     expect(opciones[0]).toEqual({ idempotencyKey: 'order_cancelled_by_owner:order-3' });
   });
+
+  it('orderReceived envía al comprador con Idempotency-Key propia (resumen de compra al crear la orden)', async () => {
+    const { cliente, send, enviados, opciones } = resendFalso([{}]);
+    const events = new NotificationEventsService();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
+
+    await new ResendNotificationAdapter(cliente, CONFIG, events).orderReceived(PAYLOAD);
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(enviados[0].to).toBe(CENTINELA_EMAIL);
+    expect(opciones[0]).toEqual({ idempotencyKey: 'order_received:order-1' });
+  });
+
+  it('ownerOrderReceived envía al dueño con Idempotency-Key propia (mismo momento que orderReceived)', async () => {
+    const { cliente, send, enviados, opciones } = resendFalso([{}]);
+    const events = new NotificationEventsService();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
+
+    await new ResendNotificationAdapter(cliente, CONFIG, events).ownerOrderReceived({
+      orderId: 'order-2',
+      orderNumber: 1002,
+      totalArsCents: 50_000,
+    });
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(enviados[0].to).toBe('dueno@dsmferreteria.com.ar');
+    expect(opciones[0]).toEqual({ idempotencyKey: 'owner_order_received:order-2' });
+  });
 });
 
 describe('selección del adapter por entorno (US-011 T7.1)', () => {

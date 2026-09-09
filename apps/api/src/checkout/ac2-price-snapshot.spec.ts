@@ -9,6 +9,7 @@ import { CheckoutEventsService } from '../observability/checkout-events.service'
 import { CheckoutService } from './checkout.service';
 import { OrderTokenService } from './order-token.service';
 import { OrdersRepository } from './orders.repository';
+import { LoggingNotificationAdapter } from '../orders/ports/logging-notification.adapter';
 
 /**
  * T5.4 — AC-2: cambiar el precio del catálogo no altera una venta pasada. Es
@@ -36,6 +37,7 @@ describe('AC-2: cambiar el precio del catálogo no altera una venta pasada (ac2-
     orderToken,
     config,
     new CheckoutEventsService(),
+    new LoggingNotificationAdapter(),
   );
 
   const fakeReq = (cookies: Record<string, string> = {}) =>

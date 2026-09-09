@@ -5,6 +5,7 @@ import {
   OrderCancelledNoStockPayload,
   OrderConfirmedPayload,
   OrderReadyForPickupPayload,
+  OrderReceivedPayload,
   OwnerNewOrderPayload,
 } from './notification.port';
 
@@ -50,6 +51,18 @@ export class LoggingNotificationAdapter implements NotificationPort {
   async orderCancelledByOwner(payload: OrderCancelledByOwnerPayload): Promise<void> {
     this.logger.log(
       `order.cancelled_by_owner order_id=${payload.orderId} order_number=${payload.orderNumber}`,
+    );
+  }
+
+  async orderReceived(payload: OrderReceivedPayload): Promise<void> {
+    this.logger.log(
+      `order.received order_id=${payload.orderId} order_number=${payload.orderNumber}`,
+    );
+  }
+
+  async ownerOrderReceived(payload: OwnerNewOrderPayload): Promise<void> {
+    this.logger.log(
+      `order.owner_order_received order_id=${payload.orderId} order_number=${payload.orderNumber}`,
     );
   }
 }

@@ -11,6 +11,7 @@ import { CheckoutEventsService } from '../observability/checkout-events.service'
 import { CheckoutService } from './checkout.service';
 import { OrderTokenService } from './order-token.service';
 import { OrdersRepository } from './orders.repository';
+import { LoggingNotificationAdapter } from '../orders/ports/logging-notification.adapter';
 
 /**
  * T5.1 — AC-6: el checkout **lee** stock para validar y no lo escribe (ADR-0008).
@@ -37,6 +38,7 @@ describe('AC-6: el checkout no toca el stock (ac6-stock-untouched)', () => {
     orderToken,
     config,
     new CheckoutEventsService(),
+    new LoggingNotificationAdapter(),
   );
 
   const fakeReq = (cookies: Record<string, string> = {}) =>

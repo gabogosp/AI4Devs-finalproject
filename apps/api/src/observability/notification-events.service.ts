@@ -6,7 +6,9 @@ export type NotificationType =
   | 'owner_new_order'
   | 'order_ready_for_pickup'
   | 'order_cancelled_no_stock'
-  | 'order_cancelled_by_owner';
+  | 'order_cancelled_by_owner'
+  | 'order_received'
+  | 'owner_order_received';
 
 /**
  * Eventos de negocio del envío de notificaciones por email (US-011,
@@ -15,9 +17,12 @@ export type NotificationType =
  * sale por `GET /v1/admin/metrics` como
  * `dsm_notifications_events_total{event="..."}`.
  *
- * `type` es la única label además de `event` (cardinalidad acotada: 5
+ * `type` es la única label además de `event` (cardinalidad acotada: 7
  * valores — el 5°, `order_cancelled_by_owner`, lo agrega US-013 al ampliar
- * `NotificationPort` con un método más durante el rebase de este change).
+ * `NotificationPort` con un método más durante el rebase de este change; el
+ * 6° y 7°, `order_received`/`owner_order_received`, agregan el resumen de
+ * compra al cliente + el aviso al dueño en el momento real de disparo —
+ * checkout, no confirmación de pago — dado que MercadoPago está diferido).
  * `orderId`/`attempts` van al **log**, nunca a la métrica.
  *
  * Cero PII: ni `buyerName` ni `buyerEmail` llegan nunca a este servicio.
