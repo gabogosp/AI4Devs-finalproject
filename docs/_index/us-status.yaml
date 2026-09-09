@@ -72,7 +72,11 @@
   # /archive-change) y QA (US-004-busqueda-semantica-qa, PR #10 abierto, no mergeado todavía).
 - id: US-005
   slug: enriquecimiento-ia-embeddings
-  status: In Progress
+  status: Done   # /archive-change 2026-09-09 (PR #158): INFRA archivada — 4/4 tasks,
+  # GEMINI_API_KEY + ENRICHMENT_ENABLED=true en el servicio api de staging (ya Online por
+  # US-019 PR #157), runner_state:idle verificado en vivo. Con BE (2026-09-05) + QA
+  # (2026-09-06) + INFRA (2026-09-09) las tres disciplinas archivadas, US-005 pasa a Done.
+  done-at: 2026-09-09
   priority: High
   prd-capacity: 3
   disciplines: [BE, QA, INFRA]

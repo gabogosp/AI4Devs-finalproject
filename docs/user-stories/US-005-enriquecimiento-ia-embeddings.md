@@ -4,7 +4,7 @@ id: US-005
 slug: enriquecimiento-ia-embeddings
 parent-prd: docs/product/prd.md
 parent-e2e: docs/product/design-e2e.md
-status: In Progress
+status: Done
 priority: High
 estimate-tshirt: L
 story_points_traditional: 13
@@ -14,6 +14,7 @@ language: es
 created: 2026-06-15
 updated: 2026-08-22
 ready-at: 2026-06-15
+done-at: 2026-09-09
 authored-by: Gabriel Suarez
 disciplines: [BE, QA, INFRA]
 linear-issue-id: null

@@ -2422,18 +2422,19 @@
   us-id: US-005
   discipline: infrastructure
   variant: null
-  status: draft   # /plan-infrastructure-ticket 2026-09-08: hallazgo real durante la
-  # planificación — ADR-0014 (Accepted 2026-08-22, `Superseded by: —`) decidió que el
-  # ejecutor de enriquecimiento corre in-process en apps/api, NO en un worker BullMQ
-  # separado (verificado: `git grep` de REDIS_URL/ioredis/bullmq/@nestjs/bull sobre rutas de
-  # runtime en origin/main no devuelve nada). US-005 §7 y la línea 16 de
+  status: archived   # /archive-change 2026-09-09 — PR #158 mergeado (cd2da4e). Extiende
+  # openspec/specs/enriquecimiento-ia/ (CAP-3) con la sección INFRA. Hallazgo real durante
+  # la planificación (2026-09-08) — ADR-0014 (Accepted 2026-08-22, `Superseded by: —`)
+  # decidió que el ejecutor de enriquecimiento corre in-process en apps/api, NO en un
+  # worker BullMQ separado (verificado: `git grep` de REDIS_URL/ioredis/bullmq/@nestjs/bull
+  # sobre rutas de runtime en origin/main no devuelve nada). US-005 §7 y la línea 16 de
   # US-019-provision-plataforma-cloud-infrastructure/design.md quedaron stale frente a ese
   # ADR — ADR-0004 en cambio ya está al día (`Amended by: ADR-0014` explícito).
-  # Alcance real, mucho más chico que "deploy de worker": cargar el valor real de
-  # GEMINI_API_KEY (slot ya reservado por US-019 T2.1) + ENRICHMENT_ENABLED=true explícito
-  # en el servicio Railway `api`, sólo `staging`. Sin apps/worker, sin Redis, sin código
-  # nuevo. Change entero Blocked-by US-019-provision-plataforma-cloud-infrastructure
-  # (T1.1/T1.2/T2.1, sin cerrar) — no ejecutable todavía, sólo planificado.
+  # Alcance real, mucho más chico que "deploy de worker": GEMINI_API_KEY (cargada por el
+  # usuario) + ENRICHMENT_ENABLED=true (seteada por esta sesión vía la API de Railway) en
+  # el servicio `api` de `staging` (ya Online por PR #157). `GET /v1/admin/enrichment/
+  # status` verificado en vivo: `runner_state: "idle"`, nunca `disabled`. 4/4 tasks
+  # cerradas. Con BE+QA+INFRA archivados, US-005 pasa a Done.
   parent-us: docs/user-stories/US-005-enriquecimiento-ia-embeddings.md
   linear-task-id: null
   audit-baseline: null
@@ -2442,13 +2443,13 @@
   # verificación operativa) — nada comparable al 8-12h original de la US §7, que asumía
   # deploy de worker.
   assignee: claude-code
-  branch: null   # Blocked-by US-019 — no se registra rama nominal en plan-time
-  # (index-conventions.md §84).
-  pr-url: null
+  branch: feat/US-005-enriquecimiento-ia-infrastructure
+  pr-url: https://github.com/gabogosp/AI4Devs-finalproject/pull/158
+  pr-opened-at: 2026-09-09
   created: 2026-09-08
-  completed-at: null
-  archived-at: null
-  archive-path: null
+  completed-at: 2026-09-09T01:43:35Z
+  archived-at: 2026-09-09
+  archive-path: openspec/changes/archive/US-005-enriquecimiento-ia-embeddings-infrastructure
 
 - name: US-013-cancelacion-reembolso-backend
   us-id: US-013
