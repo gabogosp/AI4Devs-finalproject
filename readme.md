@@ -32,7 +32,12 @@ Tienda online para una ferretería real de un único local en CABA (esquina de A
 
 ### **0.4. URL del proyecto:**
 
-En desarrollo. El despliegue público (Railway) se entrega en la **Entrega 2** (primer MVP ejecutable). Esta entrega corresponde a la **documentación técnica**.
+**Staging live en Railway** (entorno `staging` del proyecto `zesty-radiance`):
+
+- Storefront: https://web-staging-3418.up.railway.app
+- API: https://api-staging-778f.up.railway.app (`/health` para el healthcheck)
+
+Detalle del despliegue (qué corre, qué queda diferido y por qué) en §2.4.
 
 ### 0.5. URL o archivo comprimido del repositorio
 
@@ -108,33 +113,46 @@ flowchart TD
 
 ### **1.4. Instrucciones de instalación:**
 
-> El código se entrega en la Entrega 2. Estas son las instrucciones de puesta en marcha local **previstas** según la arquitectura definida (todo containerizado, paridad local = producción).
+> Instrucciones **verificadas** contra el código real (`docs/RUN-MVP.md` tiene el detalle
+> completo, incluidas las variables que hacen falta y por qué). No hace falta Redis ni el
+> `worker`: el enriquecimiento IA corre in-process dentro de `apps/api` (ADR-0014).
 
-**Requisitos:** Node 20+, `pnpm`, Docker + Docker Compose, y claves de MercadoPago (sandbox), Google Gemini, Resend y Cloudflare R2.
+**Requisitos:** Node 20+ (corre en 23 con un warning de engine, no fatal), `pnpm`, Docker + Docker Compose.
 
 ```bash
-# 1. Clonar e instalar dependencias (monorepo)
-git clone <repo> dsm-ecommerce && cd dsm-ecommerce
+# 1. Dependencias
 pnpm install
 
-# 2. Variables de entorno
-cp .env.example .env   # completar MP_*, GEMINI_API_KEY, RESEND_API_KEY, R2_*, JWT_SECRET
+# 2. Postgres (con pgvector) — no hace falta Redis
+docker compose up -d postgres
 
-# 3. Servicios locales: PostgreSQL+pgvector y Redis
-docker compose up -d   # postgres (con extensión pgvector) + redis
+# 3. Variables de entorno (crear .env en la raíz — ver docs/RUN-MVP.md para el detalle completo)
+cat > .env <<'ENV'
+DATABASE_URL=postgresql://dsm:dsm@localhost:55432/dsm?schema=public
+JWT_SECRET=dev-secret-cambiar
+ADMIN_BOOTSTRAP_TOKEN=demo-admin-token
+CORS_ALLOWED_ORIGINS=http://localhost:3200
+AUTH_COOKIE_SECURE=false
+ENV
 
-# 4. Migraciones + datos de prueba (seed)
-pnpm db:migrate        # Prisma migrate (crea esquema + extensión pgvector + índice HNSW)
-pnpm db:seed           # categorías + productos de prueba + usuario admin
+# 4. Cliente Prisma + esquema + datos de demo
+pnpm --filter @dsm/db exec prisma generate
+pnpm --filter @dsm/db exec prisma migrate deploy
+pnpm --filter @dsm/db seed
 
-# 5. Levantar todo (web + api + worker)
-pnpm dev               # Next.js (web), NestJS (api), worker BullMQ
+# 5. Build + arranque (API_INTERNAL_ORIGIN es obligatoria para el web — ver RUN-MVP.md)
+pnpm --filter @dsm/api build
+API_INTERNAL_ORIGIN=http://localhost:3000 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 pnpm --filter @dsm/web build
+
+node apps/api/dist/apps/api/src/main.js   # API en :3000, en una terminal
+# en otra terminal:
+API_INTERNAL_ORIGIN=http://localhost:3000 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000 PORT=3200 pnpm --filter @dsm/web start
 ```
 
-- **Web (storefront + backoffice):** `http://localhost:3000`
-- **API:** `http://localhost:3001`
-- El **worker** procesa import, enriquecimiento IA y embeddings de forma asíncrona.
-- Para probar el flujo de compra **sin transacción real**, usar el **medio de pago simulado "DSM"** (habilitado solo en test/demo).
+- **Web (storefront + backoffice):** `http://localhost:3200`
+- **API:** `http://localhost:3000`
+- El enriquecimiento IA + generación de embeddings corre **dentro del proceso de la API** (sin worker separado, ADR-0014) — se dispara desde el panel admin (`POST /v1/admin/enrichment/runs`) o queda `disabled` sin `GEMINI_API_KEY`.
+- El checkout usa coordinación **manual/offline por WhatsApp** (US-023) — MercadoPago real está `Deferred` (US-009, sin cuenta/credenciales).
 
 ---
 
@@ -213,30 +231,32 @@ C4Container
 
 ### **2.2. Descripción de componentes principales:**
 
-> **Estado de implementación (2026-08-23).** Esta sección describe la **arquitectura de
-> destino**, que es lo que corresponde a la Entrega 1. Como la Entrega 2 ya está en curso,
-> conviene el mapa de lo que existe hoy para que nadie lea esta lista como inventario:
+> **Estado de implementación (2026-09-09).** Esta sección describe la **arquitectura de
+> destino**. El mapa de lo que existe hoy, para que nadie lea esta lista como inventario:
 >
 > | Componente | Estado real |
 > |---|---|
-> | `catalog` (productos, categorías, storefront público) | **construido** — US-001, US-002, US-003 |
+> | `catalog` (productos, categorías, storefront público) | **construido** — US-001, US-002, US-003, US-026 (destacados en el home) |
 > | `auth` (JWT + bcrypt, cookies, refresh rotado) | **construido** — US-014 |
-> | `cart` | **construido** (backend); el frontend en curso — US-007 |
+> | `cart` | **construido** — US-007 |
 > | `import` masivo | **construido** — US-006 |
-> | `enrichment` (IA + embeddings) | **construido** (backend) — US-005. La primera corrida contra el proveedor real está pendiente: hasta que se cargue `GEMINI_API_KEY` y se dispare, el catálogo no tiene vectores y la búsqueda semántica no tendría qué consultar. El campo de curación en el panel es trabajo FE diferido |
+> | `enrichment` (IA + embeddings) | **construido** — US-005 (backend + infra). `GEMINI_API_KEY` cargada en staging, el runner arranca habilitado (`GET /v1/admin/enrichment/status` → `runner_state: idle`); la primera corrida contra el catálogo real todavía no se disparó, así que la búsqueda semántica sigue sin vectores que consultar. El campo de curación en el panel es trabajo FE diferido |
 > | `search` (kNN + fallback) | **construido** (backend) — US-004. `GET /v1/search` con degradación a full-text. La relevancia ≥70% (AC-2) **no está verificada**: sin vectores en el catálogo el arnés mide el camino léxico, no el semántico. El frontend (`SearchExperience`) es trabajo FE pendiente |
-> | `checkout`, `payments`, `orders`, `stock` | **planificados** — US-008, US-009, US-010 |
-> | `metrics` | **planificado** — US-016 |
-> | `notifications` | **planificado** — US-011 |
-> | **Worker (BullMQ) y Redis** | **no aprovisionados.** El trabajo asíncrono corre **en proceso** dentro de `apps/api` con contrato asíncrono y estado durable, listo para cambiar el ejecutor por BullMQ cuando exista el add-on. Ver **ADR-0012** y **ADR-0014**, que enmiendan ADR-0004 |
+> | `checkout`, `orders`, `stock` | **construidos** — US-008 (checkout guest), US-010 (webhook + decremento de stock), US-013 (cancelación/reembolso) |
+> | `payments` | **MercadoPago real: `Deferred`** (US-009 — decisión de producto del PO, sin cuenta/credenciales). El pago en producción es **manual/offline por WhatsApp** — US-023, construido y en uso |
+> | `resenas-productos` (calificaciones + moderación) | **construido** — US-025 |
+> | `metrics` | **construido** — US-016 |
+> | `notifications` | **construido** — US-011 |
+> | **Worker (BullMQ) y Redis** | **no aprovisionados a propósito.** El trabajo asíncrono (import, enriquecimiento IA) corre **en proceso** dentro de `apps/api` con contrato asíncrono y estado durable, listo para cambiar el ejecutor por BullMQ cuando se cumpla el criterio de migración. Ver **ADR-0012** y **ADR-0014**, que enmiendan ADR-0004 |
+> | **Deploy** | **staging LIVE en Railway** — ver §2.4 |
 >
 > El detalle vive en `docs/_index/us-status.yaml` y `docs/_index/openspec-changes.yaml`.
 
 - **Web App (Next.js, SSR):** storefront público (home, categorías, ficha, búsqueda) **indexable** + el **backoffice del dueño** (catálogo, import, órdenes, métricas) como sección del mismo app. UI: Tailwind + ShadCN UI + TanStack Table + Recharts.
 - **API Backend (NestJS):** monolito modular. Módulos por dominio: `catalog`, `search` (embed de consulta + kNN sobre pgvector + fallback), `cart`, `checkout`, `payments` (webhook MP + medio simulado, idempotente), `orders` (FSM de orden), `stock` (decremento/reintegro atómico), `auth` (JWT + bcrypt), `import`, `metrics`, `notifications`.
-- **Worker (NestJS + BullMQ):** procesa import masivo, enriquecimiento de descripciones con IA y generación de embeddings, con reintentos y rate-limit del proveedor IA. Nunca bloquea el request.
+- **Worker (NestJS + BullMQ) — arquitectura de destino, no desplegado hoy:** ver la tabla de arriba y el callout de §2.4. El import masivo y el enriquecimiento IA (con reintentos y rate-limit del proveedor) corren hoy **in-process dentro de la API** (ADR-0012/ADR-0014), no en este worker.
 - **PostgreSQL + pgvector (Neon):** datos transaccionales + columna `vector(768)` con índice **HNSW** para kNN.
-- **Redis (Railway):** colas BullMQ, cache de listados/queries y rate-limit.
+- **Redis (Railway) — arquitectura de destino, no aprovisionado hoy:** cache de listados/queries y rate-limit distribuido; el estado que hoy vive en el proceso de la API (control de reintentos, cuota del proveedor) migraría acá cuando se cumpla el criterio de ADR-0014.
 - **Cloudflare R2:** imágenes de producto (S3-compatible, sin cargos de egress).
 
 ### **2.3. Descripción de alto nivel del proyecto y estructura de ficheros**
@@ -248,7 +268,7 @@ dsm-ecommerce/
 ├── apps/
 │   ├── web/                # Next.js (storefront SSR + backoffice del dueño)
 │   ├── api/                # NestJS — REST API, módulos de dominio, auth
-│   └── worker/             # NestJS + BullMQ — import, enriquecimiento IA, embeddings
+│   └── worker/             # placeholder — no desplegado (ADR-0014: enrich in-process en apps/api)
 ├── packages/
 │   ├── db/                 # Prisma schema + migraciones + cliente (pgvector vía $queryRaw)
 │   ├── shared/             # tipos / contratos (DTOs) compartidos front<->back
@@ -263,6 +283,21 @@ dsm-ecommerce/
 ```
 
 ### **2.4. Infraestructura y despliegue**
+
+> **Estado real del despliegue (2026-09-09).** El diagrama de abajo es la **arquitectura de
+> destino** (mismo criterio que §2.2). Lo que corre hoy en `staging`:
+>
+> - **Railway, proyecto `zesty-radiance`**, entornos `staging`+`production`. Servicios
+>   desplegados: **`web`+`api` únicamente** — `worker` y el add-on de Redis **no están
+>   aprovisionados a propósito** (ADR-0014: el enriquecimiento IA corre in-process dentro de
+>   `api`, sin cola BullMQ).
+> - **URLs de `staging`**: `web-staging-3418.up.railway.app` / `api-staging-778f.up.railway.app` (ver §0.4).
+> - **Neon PostgreSQL** (`us-east-2`, free tier) con `pgvector` habilitado, 18 migraciones aplicadas.
+> - **Cloudflare R2**: bucket `dsm-product-images` (acceso público vía subdominio `r2.dev`, sin dominio custom todavía).
+> - **Build/deploy**: Railway **deprecó Config-as-Code** (`railway.json`) para servicios creados después del 2026-08-28 — el build/start real de `web`/`api` se configura directo en Settings del servicio (o vía su API GraphQL), no por los archivos `apps/{api,web}/railway.json` del repo (que quedan como documentación de intención).
+> - **Autodeploy desde GitHub** (push a `main`/`staging` → deploy automático) **todavía no está conectado** — es una acción que afecta producción y queda para una confirmación explícita antes de activarla.
+> - **Sentry** todavía no está provisionado — sin cuenta creada.
+> - **MercadoPago** no está conectado (US-009, `Deferred`) — el pago real hoy es manual/offline por WhatsApp (US-023).
 
 ```mermaid
 flowchart TB
@@ -299,11 +334,11 @@ flowchart TB
     WK --> R2
 ```
 
-- **Despliegue:** GitHub Actions → Railway (web + api + worker + Redis en un único proyecto). Rollback = redeploy del commit verde anterior.
+- **Despliegue:** Railway (`web`+`api` en un único proyecto, sin `worker`/Redis — ver callout arriba). Hoy el deploy a `staging` se dispara manual (`railway up`); el autodeploy GitHub Actions → Railway en cada push está planificado pero todavía sin conectar. Rollback = redeploy del commit/deployment verde anterior.
 - **Región:** US-East (costo + latencia aceptable a MercadoPago AR; pendiente confirmar si la Ley 25.326 exige residencia AR para PII).
-- **Secretos:** variables de entorno cifradas de Railway (claves MP/Gemini/Resend, `JWT_SECRET`, URLs de DB/Redis). Nunca en el repo ni en la imagen.
-- **TLS:** gestionado por Railway/Cloudflare. **Backups:** Neon PITR + snapshots diarios (RPO ≤ 24h; RTO ≤ 4h).
-- **Observabilidad:** Sentry (errores FE+BE) + logs estructurados (`pino`) + métricas de Railway y de la cola (jobs ok/fail/retry).
+- **Secretos:** variables de entorno cifradas de Railway (claves Gemini/Resend, `JWT_SECRET`, `DATABASE_URL`). MP queda `Deferred` (US-009), sin credenciales cargadas. Nunca en el repo ni en la imagen.
+- **TLS:** gestionado por Railway/Cloudflare. **Backups:** Neon PITR + snapshots diarios (RPO ≤ 24h; RTO ≤ 4h) — el plan pago con PITR real es gate previo al primer deploy productivo; `staging` corre hoy en el free tier.
+- **Observabilidad (planificada, todavía sin Sentry):** logs estructurados (`pino`) + métricas nativas de Railway hoy; Sentry (errores FE+BE) queda para cuando exista la cuenta.
 
 ### **2.5. Seguridad**
 
